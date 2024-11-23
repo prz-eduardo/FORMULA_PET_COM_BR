@@ -34,7 +34,9 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
+            "scripts": [
+              "https://kit.fontawesome.com/530c5792d3.js"
+            ],
             "server": "src/main.server.ts",
             "prerender": true,
             "ssr": {
