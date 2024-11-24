@@ -155,10 +155,10 @@
  $bg-04: #73a5b5;
  */
  
- $bg-01: #2d3561;
- $bg-02: #c05c7e;
- $bg-03: #f3826f;
- $bg-04: #ffb961;
+ $bg-01: #366849;
+ $bg-02: #448c60;
+ $bg-03: #57a06f;
+ $bg-04: #73b58c;
  
  @mixin md {
    @media screen and (max-width: 1023px) {
@@ -199,7 +199,7 @@
    /* Nav Bar */
    .menubar {
      width: 100%;
-     height: 80px;
+     height: 50px;
      position: absolute;
      top: 0;
      display: flex;
@@ -377,12 +377,13 @@
      /* Open Menu */
      &.open {
        display: flex;
+       flex-direction: row-reverse;
        z-index: 3;
        overflow: hidden;
        
        /* Menu Open - Main Link */
        .menu-link {
-         width: 25%;
+         width: 8%;
          display: flex;
          justify-content: center;
          align-items: center;
@@ -726,4 +727,8 @@
 
  .icones-menu{
     max-height: 30px;
+}
+
+ul{
+  margin: -10px;
 }
