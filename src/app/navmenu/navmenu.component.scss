@@ -1,6 +1,7 @@
 
+.nav-menu{
 
-
+}
 .about {
     $cubic: cubic-bezier(0.64, 0.01, 0.07, 1.65);
     $transition: 0.6s $cubic;
@@ -205,7 +206,7 @@
      display: flex;
      align-items: center;
      justify-content: space-between;
-     padding: 0 40px;
+     padding: 0 10px;
      box-sizing: border-box;
      background-color: white;
      box-shadow: 0px 0px 20px -10px rgba(0, 0, 0, 0.3);
