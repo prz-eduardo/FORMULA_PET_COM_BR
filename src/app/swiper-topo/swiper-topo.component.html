@@ -1,15 +1,24 @@
 <swiper-container slides-per-view="1">
     <swiper-slide>
         <div>
-            <img src="/imagens/1.png" alt="">
+            <ng-container *ngIf="deviceType === 'mobile'">
+                <img src="/imagens/banner-cel.png" alt="" class="imagem-banner">
+            </ng-container>
+            <ng-container *ngIf="deviceType === 'desktop'">  
+                <img src="/imagens/1.png" alt="" class="imagem-banner">
+            </ng-container>
         </div>
+
     </swiper-slide>
     <swiper-slide>
-        <div>
-            <img src="/imagens/2.png" alt="">
-        </div>
+            <ng-container *ngIf="deviceType === 'mobile'">
+                <img src="/imagens/banner-cel.png" alt="" class="imagem-banner">
+            </ng-container>
+            <ng-container *ngIf="deviceType === 'desktop'">  
+                <img src="/imagens/2.png" alt="" class="imagem-banner">
+            </ng-container>
     </swiper-slide>
-    <swiper-slide>
+    <!-- <swiper-slide>
         <div style="background: lightblue">Slide 3</div>
-    </swiper-slide>
+    </swiper-slide> -->
 </swiper-container>
