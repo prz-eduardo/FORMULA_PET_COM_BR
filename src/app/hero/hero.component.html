@@ -7,9 +7,9 @@
 
     body {
       background: #eee;
-      font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+      
       font-size: 14px;
-      color: #000;
+      color: #333;
       margin: 0;
       padding: 0;
     }
@@ -25,7 +25,7 @@
       color: #fff;
       -webkit-box-sizing: border-box;
       box-sizing: border-box;
-      padding: 40px 60px;
+      padding: px 0px;
     }
 
     .parallax-bg {
@@ -40,71 +40,70 @@
     }
 
     swiper-slide .title {
-      font-size: 41px;
+      font-size: 50px;
       font-weight: 300;
     }
 
     swiper-slide .subtitle {
-      font-size: 21px;
+      font-size: 30px;
     }
 
     swiper-slide .text {
-      font-size: 14px;
+      font-size: 20px;
       max-width: 400px;
       line-height: 1.3;
+      background-color: #ffffffc4;
+    }
+    swiper-slide .title,
+    swiper-slide .subtitle,
+    swiper-slide .text p {
+      font-family: 'Roboto', sans-serif;
+      color: #000000; /* Para textos claros */
+      /* background-color: #ffffff36; */
+      /* border-radius: 30px; */
+      /* border: 11px solid #ffffff36; */
+      padding: 2px;
     }
   </style>
 
 
 
-  <swiper-container style="--swiper-navigation-color: #fff; --swiper-pagination-color: #fff" class="mySwiper"
-    speed="600" parallax="true" pagination="true" pagination-clickable="true" navigation="true">
-    <div slot="container-start" class="parallax-bg"
-      style="background-image: url(https://swiperjs.com/demos/images/nature-1.jpg);" data-swiper-parallax="-23%"></div>
+<swiper-container style="--swiper-navigation-color: #fff; --swiper-pagination-color: #fff" class="mySwiper"
+  speed="600" parallax="true" pagination="true" pagination-clickable="true" navigation="true">
+  <div slot="container-start" class="parallax-bg"
+    style="background-image: url(/imagens/fmanip.webp);" data-swiper-parallax="-23%"></div>
 
-    <swiper-slide>
-      <div class="title" data-swiper-parallax="-300">Slide 1</div>
-      <div class="subtitle" data-swiper-parallax="-200">Subtitle</div>
-      <div class="text" data-swiper-parallax="-100">
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
-          dictum mattis velit, sit amet faucibus felis iaculis nec. Nulla
-          laoreet justo vitae porttitor porttitor. Suspendisse in sem justo.
-          Integer laoreet magna nec elit suscipit, ac laoreet nibh euismod.
-          Aliquam hendrerit lorem at elit facilisis rutrum. Ut at
-          ullamcorper velit. Nulla ligula nisi, imperdiet ut lacinia nec,
-          tincidunt ut libero. Aenean feugiat non eros quis feugiat.
-        </p>
-      </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="title" data-swiper-parallax="-300">Slide 2</div>
-      <div class="subtitle" data-swiper-parallax="-200">Subtitle</div>
-      <div class="text" data-swiper-parallax="-100">
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
-          dictum mattis velit, sit amet faucibus felis iaculis nec. Nulla
-          laoreet justo vitae porttitor porttitor. Suspendisse in sem justo.
-          Integer laoreet magna nec elit suscipit, ac laoreet nibh euismod.
-          Aliquam hendrerit lorem at elit facilisis rutrum. Ut at
-          ullamcorper velit. Nulla ligula nisi, imperdiet ut lacinia nec,
-          tincidunt ut libero. Aenean feugiat non eros quis feugiat.
-        </p>
-      </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="title" data-swiper-parallax="-300">Slide 3</div>
-      <div class="subtitle" data-swiper-parallax="-200">Subtitle</div>
-      <div class="text" data-swiper-parallax="-100">
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
-          dictum mattis velit, sit amet faucibus felis iaculis nec. Nulla
-          laoreet justo vitae porttitor porttitor. Suspendisse in sem justo.
-          Integer laoreet magna nec elit suscipit, ac laoreet nibh euismod.
-          Aliquam hendrerit lorem at elit facilisis rutrum. Ut at
-          ullamcorper velit. Nulla ligula nisi, imperdiet ut lacinia nec,
-          tincidunt ut libero. Aenean feugiat non eros quis feugiat.
-        </p>
-      </div>
-    </swiper-slide>
-  </swiper-container>
+  <swiper-slide>
+    <div class="title" data-swiper-parallax="-1500">Fórmula Pet</div>
+    <div class="subtitle" data-swiper-parallax="-200">Cuidados sob medida para o seu pet</div>
+    <div class="text" data-swiper-parallax="-100">
+      <p style="font-family: 'Roboto', sans-serif;">
+        Somos especialistas na manipulação de medicamentos veterinários, 
+        oferecendo soluções personalizadas para atender às necessidades únicas do seu animal de estimação. 
+        Localizados em Curitiba, cuidamos da saúde e bem-estar do seu pet com qualidade e segurança.
+      </p>
+    </div>
+  </swiper-slide>
+
+  <swiper-slide>
+    <div class="title" data-swiper-parallax="-1500">Saúde com confiança</div>
+    <div class="subtitle" data-swiper-parallax="-200">Excelência na manipulação veterinária</div>
+    <div class="text" data-swiper-parallax="-100">
+      <p>
+        Na Fórmula Pet, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos 
+        que atendem às prescrições dos veterinários, garantindo tratamentos eficazes e adaptados ao seu pet.
+      </p>
+    </div>
+  </swiper-slide>
+
+  <swiper-slide>
+    <div class="title" data-swiper-parallax="-1500">Cuide de quem você AMA!</div>
+    <div class="subtitle" data-swiper-parallax="-200">Atendimento especializado e humanizado</div>
+    <div class="text" data-swiper-parallax="-100">
+      <p>
+        Seja para cães, gatos ou outros animais, nossa equipe está pronta para oferecer suporte completo. 
+        Conte com nossos serviços para promover a saúde do seu pet de maneira personalizada e atenciosa.
+      </p>
+    </div>
+  </swiper-slide>
+</swiper-container>
