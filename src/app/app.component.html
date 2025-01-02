@@ -4,18 +4,21 @@
   <app-navmenu></app-navmenu>
 </section>
 
-<!-- Seção de Banner -->
-<section id="swiper-topo" class="swiper-topo">
-  <app-swiper-topo app-swiper-topo></app-swiper-topo>
-</section>
+<div [ngClass]="{'main-content': this.deviceType == 'desktop'}">
 
+  <!-- Seção de Banner -->
+  <section id="swiper-topo" class="swiper-topo">
+    <app-swiper-topo app-swiper-topo></app-swiper-topo>
+  </section>
   
-<!-- Seção de Visão Geral -->
-<section id="hero">
-  <app-hero></app-hero> 
-  <!-- Componente que pode conter um banner com apresentação -->
-</section>
-
+  
+  <!-- Seção de Visão Geral -->
+  <section id="hero">
+    <app-hero></app-hero> 
+    <!-- Componente que pode conter um banner com apresentação -->
+  </section>
+  
+</div>
  <!-- Sobre a Farmácia -->
 <section id="about">
   <!-- <app-about></app-about>  -->
