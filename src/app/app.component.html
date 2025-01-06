@@ -1,10 +1,9 @@
-<!-- Barra de navegação -->
 
 <section id="header" class="header">  
   <app-navmenu></app-navmenu>
 </section>
 
-<div [ngClass]="{'main-content': this.deviceType == 'desktop'}">
+<div [ngClass]="deviceType">
 
   <!-- Seção de Banner -->
   <section id="swiper-topo" class="swiper-topo">
@@ -17,11 +16,16 @@
     <app-hero></app-hero> 
     <!-- Componente que pode conter um banner com apresentação -->
   </section>
+
+  <section id="Testimonials">
+    <app-testimonials></app-testimonials>
+
+  </section>
   
 </div>
  <!-- Sobre a Farmácia -->
 <section id="about">
-  <!-- <app-about></app-about>  -->
+  <app-about></app-about> 
   <!-- Componente com informações sobre a farmácia -->
 </section>
 
@@ -38,7 +42,8 @@
 </section>
 
 <!-- Rodapé -->
+ 
 <footer>
-  <!-- <app-footer></app-footer>  -->
+  <app-footer></app-footer> 
   <!-- Componente para o rodapé com informações gerais -->
 </footer>

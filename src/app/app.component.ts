@@ -8,17 +8,18 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import { NgModule } from '@angular/core';
-
 import { BrowserModule } from '@angular/platform-browser';
-
 import { CommonModule } from '@angular/common';
+import { FooterComponent } from './footer/footer.component';
+import { AboutComponent } from './about/about.component';
+import { TestimonialsComponent } from './testimonials/testimonials.component';
 
 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NavmenuComponent, SwiperTopoComponent, HeroComponent,CommonModule],
+  imports: [NavmenuComponent, SwiperTopoComponent, HeroComponent,CommonModule, FooterComponent, AboutComponent,TestimonialsComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
