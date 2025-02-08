@@ -26,7 +26,15 @@
       -webkit-box-sizing: border-box;
       box-sizing: border-box;
       padding: px 0px;
+
+
+      background-color: #27ffc936;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0));
+
+
+
     }
+
 
     .parallax-bg {
       position: absolute;
@@ -52,9 +60,10 @@
       font-size: 20px;
       max-width: 400px;
       line-height: 1.3;
-      background-color: #ffffffc4;
+
     }
-    swiper-slide .title,
+    @import url('https://fonts.googleapis.com/css2?family=Butterfly+Kids&display=swap');
+   
     swiper-slide .subtitle,
     swiper-slide .text p {
       font-family: 'Roboto', sans-serif;
@@ -64,6 +73,20 @@
       /* border: 11px solid #ffffff36; */
       padding: 2px;
     }
+
+    swiper-slide .title{
+      font-family: "Butterfly Kids", serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 2.75em;
+      color: #ffffff; /* Para textos claros */
+      /* background-color: #ffffff36; */
+      /* border-radius: 30px; */
+      /* border: 11px solid #ffffff36; */
+      padding: 2px;
+    }
+
+    
   </style>
 
 
@@ -74,14 +97,17 @@
     style="background-image: url(/imagens/fmanip.webp);" data-swiper-parallax="-23%"></div>
 
   <swiper-slide>
-    <div class="title" data-swiper-parallax="-1500">Fórmula Pet</div>
-    <div class="subtitle" data-swiper-parallax="-200">Cuidados sob medida para o seu pet</div>
-    <div class="text" data-swiper-parallax="-100">
-      <p style="font-family: 'Roboto', sans-serif;">
-        Somos especialistas na manipulação de medicamentos veterinários, 
-        oferecendo soluções personalizadas para atender às necessidades únicas do seu animal de estimação. 
-        Localizados em Curitiba, cuidamos da saúde e bem-estar do seu pet com qualidade e segurança.
-      </p>
+    <div class="text" >
+
+      <div class="title" data-swiper-parallax="-1500">Fórmula Pet</div>
+      <div class="subtitle" data-swiper-parallax="-200">Cuidados sob medida para o seu pet</div>
+      <div class="text" data-swiper-parallax="-100">
+        <p style="font-family: 'Roboto', sans-serif;">
+          Somos especialistas na manipulação de medicamentos veterinários, 
+          oferecendo soluções personalizadas para atender às necessidades únicas do seu animal de estimação. 
+          Localizados em Curitiba, cuidamos da saúde e bem-estar do seu pet com qualidade e segurança.
+        </p>
+      </div>
     </div>
   </swiper-slide>
 
