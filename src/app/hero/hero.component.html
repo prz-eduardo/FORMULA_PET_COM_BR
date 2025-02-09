@@ -66,8 +66,8 @@
    
     swiper-slide .subtitle,
     swiper-slide .text p {
-      font-family: 'Roboto', sans-serif;
-      color: #000000; /* Para textos claros */
+      font-family: "Butterfly Kids", serif;
+      color: #ffffff; /* Para textos claros */
       /* background-color: #ffffff36; */
       /* border-radius: 30px; */
       /* border: 11px solid #ffffff36; */
@@ -92,23 +92,28 @@
 
 
 <swiper-container style="--swiper-navigation-color: #fff; --swiper-pagination-color: #fff" class="mySwiper"
-  speed="600" parallax="true" pagination="true" pagination-clickable="true" navigation="true">
+  speed="600" 
+  parallax="true" 
+  pagination="true" 
+  pagination-clickable="true" 
+  navigation="false"
+  autoplay="true"
+  loop="true"
+  >
   <div slot="container-start" class="parallax-bg"
     style="background-image: url(/imagens/fmanip.webp);" data-swiper-parallax="-23%"></div>
 
   <swiper-slide>
-    <div class="text" >
 
       <div class="title" data-swiper-parallax="-1500">Fórmula Pet</div>
       <div class="subtitle" data-swiper-parallax="-200">Cuidados sob medida para o seu pet</div>
       <div class="text" data-swiper-parallax="-100">
-        <p style="font-family: 'Roboto', sans-serif;">
+        <p>
           Somos especialistas na manipulação de medicamentos veterinários, 
           oferecendo soluções personalizadas para atender às necessidades únicas do seu animal de estimação. 
           Localizados em Curitiba, cuidamos da saúde e bem-estar do seu pet com qualidade e segurança.
         </p>
       </div>
-    </div>
   </swiper-slide>
 
   <swiper-slide>
