@@ -1,45 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
 .card {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin: 1rem;
-    max-width: 300px;
-    background-color: #fff;
+  font-family: 'Poppins', sans-serif;
+  background: #fff;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin: 1rem;
+  max-width: 300px;
+  height: 800px;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
   }
-  
-  .card-img-top {
-    width: 100%;
-    height: auto;
+}
+
+.card-img-container {
+  position: relative;
+}
+
+.card-img-top {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.discount-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: #ff4081;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.favourite-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #f50057;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
   }
-  
-  .card-body {
-    padding: 1rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+  padding-top: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.card-text {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.card-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #eee;
+  padding-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.price-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-price {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #e91e63;
+}
+
+.original-price {
+  font-size: 0.9rem;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.category-rating {
+  text-align: right;
+}
+
+.card-category {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 0.25rem;
+}
+
+.card-rating {
+  font-size: 0.9rem;
+  color: #ffc107;
+}
+
+.card-extra {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.card-customizations {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 1rem;
+
+  p {
+    margin: 0.25rem 0;
   }
-  
-  .card-title {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
+
+  strong {
     color: #333;
   }
-  
-  .card-text {
-    font-size: 1rem;
-    color: #666;
-    margin-bottom: 0.5rem;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.tag {
+  background-color: #f1f1f1;
+  color: #555;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+.card-action {
+  text-align: center;
+  margin-top: auto;
+}
+
+.btn-action {
+  background: linear-gradient(45deg, #ff4081, #f50057);
+  border: none;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(45deg, #f50057, #ff4081);
+    transform: scale(1.03);
   }
-  
-  .card-details {
-    margin-top: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    font-size: 0.95rem;
-  }
-  
-  .card-customizations p {
-    margin: 0.5rem 0 0;
-    font-size: 0.9rem;
-    color: #555;
-  }
-  
+}

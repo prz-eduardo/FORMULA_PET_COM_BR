@@ -1,134 +1,206 @@
 [
+  
     {
       "id": 1,
       "name": "Suplemento para Cães - Vitaminas",
       "description": "Suplemento vitamínico para cães com necessidades nutricionais especiais.",
       "price": 39.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://s2-ge.glbimg.com/A3qYbSZUHErnbuIK11hrm_NlQJo=/0x0:1254x836/984x0/smart/filters:strip_icc()/i.s3.glbimg.com/v1/AUTH_bc8228b6673f488aa253bbcb03c80ec5/internal_photos/bs/2023/W/Z/1ckIiORXqbN64zd2i9zw/istock-851155418.jpg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["15mg", "30mg", "50mg"],
-        "packaging": ["Vidro", "Plástico"]
-      }
+      "dosage": ["15mg", "30mg", "50mg"],
+      "packaging": ["Vidro", "Plástico"]
+      },
+      "discount": 10,
+      "rating": 4.5,
+      "stock": 20,
+      "tags": ["vitaminas", "cães"],
+      "weight": "500g",
+      "isFavourite": true,
+      "isAddedToCart": false
     },
     {
       "id": 2,
       "name": "Suplemento para Cães - Omega 3",
       "description": "Suplemento com Omega 3 para melhorar a saúde das articulações e pelagem.",
       "price": 45.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqW2sTsrNt1RE1oF4RKZDQhVgswexlKZ2hxg&s",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["500mg", "1000mg"],
-        "packaging": ["Plástico"]
-      }
+      "dosage": ["500mg", "1000mg"],
+      "packaging": ["Plástico"]
+      },
+      "discount": 15,
+      "rating": 4.7,
+      "stock": 15,
+      "tags": ["omega 3", "articulações"],
+      "weight": "300g",
+      "isFavourite": false,
+      "isAddedToCart": true
     },
     {
       "id": 3,
       "name": "Suplemento para Cães - Articulações",
       "description": "Suplemento para cães com problemas nas articulações, ajudando na mobilidade.",
       "price": 59.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://p2.trrsf.com/image/fget/cf/774/0/images.terra.com/2024/06/03/1703691249-suplementos.jpeg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["100mg", "200mg"],
-        "packaging": ["Vidro"]
-      }
+      "dosage": ["100mg", "200mg"],
+      "packaging": ["Vidro"]
+      },
+      "discount": 5,
+      "rating": 4.8,
+      "stock": 10,
+      "tags": ["articulações", "mobilidade"],
+      "weight": "400g",
+      "isFavourite": true,
+      "isAddedToCart": false
     },
     {
       "id": 4,
       "name": "Suplemento para Cães - Digestão",
       "description": "Suplemento para melhorar o sistema digestivo dos cães.",
       "price": 35.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://s2-ge.glbimg.com/A3qYbSZUHErnbuIK11hrm_NlQJo=/0x0:1254x836/984x0/smart/filters:strip_icc()/i.s3.glbimg.com/v1/AUTH_bc8228b6673f488aa253bbcb03c80ec5/internal_photos/bs/2023/W/Z/1ckIiORXqbN64zd2i9zw/istock-851155418.jpg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["20mg", "40mg"],
-        "packaging": ["Plástico"]
-      }
+      "dosage": ["20mg", "40mg"],
+      "packaging": ["Plástico"]
+      },
+      "discount": 20,
+      "rating": 4.3,
+      "stock": 25,
+      "tags": ["digestão", "saúde"],
+      "weight": "250g",
+      "isFavourite": false,
+      "isAddedToCart": true
     },
     {
       "id": 5,
       "name": "Suplemento para Cães - Energia",
       "description": "Suplemento energético para cães ativos e que precisam de mais disposição.",
       "price": 49.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqW2sTsrNt1RE1oF4RKZDQhVgswexlKZ2hxg&s",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["10mg", "20mg"],
-        "packaging": ["Vidro", "Plástico"]
-      }
+      "dosage": ["10mg", "20mg"],
+      "packaging": ["Vidro", "Plástico"]
+      },
+      "discount": 10,
+      "rating": 4.6,
+      "stock": 30,
+      "tags": ["energia", "disposição"],
+      "weight": "350g",
+      "isFavourite": true,
+      "isAddedToCart": false
     },
     {
       "id": 6,
       "name": "Suplemento para Cães - Imunidade",
       "description": "Suplemento para fortalecer o sistema imunológico dos cães.",
       "price": 34.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://p2.trrsf.com/image/fget/cf/774/0/images.terra.com/2024/06/03/1703691249-suplementos.jpeg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["15mg", "30mg"],
-        "packaging": ["Vidro"]
-      }
+      "dosage": ["15mg", "30mg"],
+      "packaging": ["Vidro"]
+      },
+      "discount": 25,
+      "rating": 4.9,
+      "stock": 5,
+      "tags": ["imunidade", "saúde"],
+      "weight": "200g",
+      "isFavourite": false,
+      "isAddedToCart": true
     },
     {
       "id": 7,
       "name": "Suplemento para Cães - Pelagem",
       "description": "Suplemento para melhorar a pelagem e a saúde da pele dos cães.",
       "price": 44.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://s2-ge.glbimg.com/A3qYbSZUHErnbuIK11hrm_NlQJo=/0x0:1254x836/984x0/smart/filters:strip_icc()/i.s3.glbimg.com/v1/AUTH_bc8228b6673f488aa253bbcb03c80ec5/internal_photos/bs/2023/W/Z/1ckIiORXqbN64zd2i9zw/istock-851155418.jpg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["30mg", "50mg"],
-        "packaging": ["Plástico"]
-      }
+      "dosage": ["30mg", "50mg"],
+      "packaging": ["Plástico"]
+      },
+      "discount": 30,
+      "rating": 4.2,
+      "stock": 18,
+      "tags": ["pelagem", "saúde"],
+      "weight": "450g",
+      "isFavourite": true,
+      "isAddedToCart": false
     },
     {
       "id": 8,
       "name": "Suplemento para Cães - Coração",
       "description": "Suplemento para proteger a saúde cardiovascular dos cães.",
       "price": 55.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqW2sTsrNt1RE1oF4RKZDQhVgswexlKZ2hxg&s",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["100mg", "200mg"],
-        "packaging": ["Vidro"]
-      }
+      "dosage": ["100mg", "200mg"],
+      "packaging": ["Vidro"]
+      },
+      "discount": 10,
+      "rating": 4.7,
+      "stock": 12,
+      "tags": ["coração", "saúde"],
+      "weight": "500g",
+      "isFavourite": false,
+      "isAddedToCart": true
     },
     {
       "id": 9,
       "name": "Suplemento para Cães - Stress",
       "description": "Suplemento para cães com quadro de ansiedade e estresse.",
       "price": 29.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://p2.trrsf.com/image/fget/cf/774/0/images.terra.com/2024/06/03/1703691249-suplementos.jpeg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["10mg", "20mg"],
-        "packaging": ["Plástico"]
-      }
+      "dosage": ["10mg", "20mg"],
+      "packaging": ["Plástico"]
+      },
+      "discount": 5,
+      "rating": 4.4,
+      "stock": 22,
+      "tags": ["stress", "ansiedade"],
+      "weight": "300g",
+      "isFavourite": true,
+      "isAddedToCart": false
     },
     {
       "id": 10,
       "name": "Suplemento para Cães - Equilíbrio",
       "description": "Suplemento para promover o equilíbrio hormonal dos cães.",
       "price": 49.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://s2-ge.glbimg.com/A3qYbSZUHErnbuIK11hrm_NlQJo=/0x0:1254x836/984x0/smart/filters:strip_icc()/i.s3.glbimg.com/v1/AUTH_bc8228b6673f488aa253bbcb03c80ec5/internal_photos/bs/2023/W/Z/1ckIiORXqbN64zd2i9zw/istock-851155418.jpg",
       "category": "Suplementos",
       "customizations": {
-        "dosage": ["20mg", "30mg"],
-        "packaging": ["Vidro"]
-      }
-    },
+      "dosage": ["20mg", "30mg"],
+      "packaging": ["Vidro"]
+      },
+      "discount": 15,
+      "rating": 4.6,
+      "stock": 8,
+      "tags": ["equilíbrio", "hormonal"],
+      "weight": "350g",
+      "isFavourite": false,
+      "isAddedToCart": true
+    }
+  ,  
     {
       "id": 11,
       "name": "Remédio para Gatos - Resfriado",
       "description": "Remédio para tratamento de resfriados e gripes em gatos.",
       "price": 19.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSiS40zpbvOS3ajkGax872imRii6o285tEQChoHOWx0C4DJ96RRW5Tpp_ppbRRufcbyprs&usqp=CAU",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["2mg", "5mg"],
-        "packaging": ["Plástico"]
+      "dosage": ["2mg", "5mg"],
+      "packaging": ["Plástico"]
       }
     },
     {
@@ -136,11 +208,11 @@
       "name": "Remédio para Gatos - Parasitas",
       "description": "Remédio para combater parasitas internos e externos em gatos.",
       "price": 29.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://cptstatic.s3.amazonaws.com/imagens/enviadas/materias/materia13216/remdios-manipulados-cursos-cpt.jpg",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["10mg", "15mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["10mg", "15mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -148,11 +220,11 @@
       "name": "Remédio para Gatos - Dor",
       "description": "Medicação para alívio de dor e inflamação em gatos.",
       "price": 39.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://solutudo-cdn.s3-sa-east-1.amazonaws.com/prod/adv_files/58417738-d688-433a-9d42-2f49ac1f1875/69e4f9f6-d556-43d1-a883-419c3edba6b2.jpg",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["5mg", "10mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["5mg", "10mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -160,11 +232,11 @@
       "name": "Remédio para Gatos - Cálculos Renais",
       "description": "Remédio para o tratamento de cálculos renais em gatos.",
       "price": 49.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://mppharma.com.br/wp-content/uploads/2019/06/medicamentos-manipulados-mp-pharma.png",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["10mg", "15mg"],
-        "packaging": ["Plástico"]
+      "dosage": ["10mg", "15mg"],
+      "packaging": ["Plástico"]
       }
     },
     {
@@ -172,11 +244,11 @@
       "name": "Remédio para Gatos - Anemia",
       "description": "Medicação para tratamento de anemia em gatos.",
       "price": 45.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSiS40zpbvOS3ajkGax872imRii6o285tEQChoHOWx0C4DJ96RRW5Tpp_ppbRRufcbyprs&usqp=CAU",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["5mg", "10mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["5mg", "10mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -184,11 +256,11 @@
       "name": "Remédio para Gatos - Hipertensão",
       "description": "Medicação para controle da hipertensão em gatos.",
       "price": 59.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://cptstatic.s3.amazonaws.com/imagens/enviadas/materias/materia13216/remdios-manipulados-cursos-cpt.jpg",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["10mg", "20mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["10mg", "20mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -196,11 +268,11 @@
       "name": "Remédio para Gatos - Coração",
       "description": "Medicação para tratar problemas cardíacos em gatos.",
       "price": 55.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://solutudo-cdn.s3-sa-east-1.amazonaws.com/prod/adv_files/58417738-d688-433a-9d42-2f49ac1f1875/69e4f9f6-d556-43d1-a883-419c3edba6b2.jpg",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["5mg", "10mg"],
-        "packaging": ["Plástico"]
+      "dosage": ["5mg", "10mg"],
+      "packaging": ["Plástico"]
       }
     },
     {
@@ -208,11 +280,11 @@
       "name": "Remédio para Gatos - Fezes",
       "description": "Medicação para tratar distúrbios digestivos em gatos.",
       "price": 34.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://mppharma.com.br/wp-content/uploads/2019/06/medicamentos-manipulados-mp-pharma.png",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["5mg", "10mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["5mg", "10mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -220,11 +292,11 @@
       "name": "Remédio para Gatos - Resfriado Grave",
       "description": "Medicação para tratar resfriados graves em gatos.",
       "price": 49.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSiS40zpbvOS3ajkGax872imRii6o285tEQChoHOWx0C4DJ96RRW5Tpp_ppbRRufcbyprs&usqp=CAU",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["10mg", "15mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["10mg", "15mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -232,11 +304,11 @@
       "name": "Remédio para Gatos - Estresse",
       "description": "Remédio para reduzir o estresse e ansiedade em gatos.",
       "price": 29.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://cptstatic.s3.amazonaws.com/imagens/enviadas/materias/materia13216/remdios-manipulados-cursos-cpt.jpg",
       "category": "Medicamentos",
       "customizations": {
-        "dosage": ["5mg", "10mg"],
-        "packaging": ["Vidro"]
+      "dosage": ["5mg", "10mg"],
+      "packaging": ["Vidro"]
       }
     },
     {
@@ -256,11 +328,11 @@
       "name": "Shampoo para Cães - Anti-Cheiro",
       "description": "Shampoo para cães com forte odor, ajudando a eliminar o cheiro.",
       "price": 19.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://www.santelaboratorio.com.br/wp-content/uploads/2020/06/04_produtolimpeza-corpo-1.jpg",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Menta", "Eucalipto"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Menta", "Eucalipto"]
       }
     },
     {
@@ -268,11 +340,11 @@
       "name": "Shampoo para Cães - Brilho",
       "description": "Shampoo que proporciona brilho e maciez para a pelagem.",
       "price": 32.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://chemitec.com.br/wp-content/uploads/2020/06/higiene-animal.jpg",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Frutas Vermelhas", "Florais"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Frutas Vermelhas", "Florais"]
       }
     },
     {
@@ -280,11 +352,11 @@
       "name": "Shampoo para Cães - Anticaspa",
       "description": "Shampoo para cães com caspa ou problemas de pele.",
       "price": 29.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://www.assai.com.br/sites/default/files/styles/blog_destaque/public/blog/gato_laranja_em_um_balde_verde_com_produtos_de_limpeza_ao_lado_-_higiene_para_pets_-_assai_atacadista.jpg?itok=llmY9-9b",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Coco", "Almendra"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Coco", "Almendra"]
       }
     },
     {
@@ -292,11 +364,11 @@
       "name": "Shampoo para Cães - Clareador",
       "description": "Shampoo para clarear a pelagem dos cães de pelos claros.",
       "price": 39.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://www.santelaboratorio.com.br/wp-content/uploads/2020/06/04_produtolimpeza-corpo-1.jpg",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Limão", "Alfazema"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Limão", "Alfazema"]
       }
     },
     {
@@ -304,11 +376,11 @@
       "name": "Shampoo para Cães - Hidratante",
       "description": "Shampoo hidratante para cães com pelagem ressecada.",
       "price": 24.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://chemitec.com.br/wp-content/uploads/2020/06/higiene-animal.jpg",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Peônia", "Baunilha"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Peônia", "Baunilha"]
       }
     },
     {
@@ -316,11 +388,11 @@
       "name": "Shampoo para Cães - Protetor Solar",
       "description": "Shampoo com proteção solar para pelagem sensível ao sol.",
       "price": 49.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://www.assai.com.br/sites/default/files/styles/blog_destaque/public/blog/gato_laranja_em_um_balde_verde_com_produtos_de_limpeza_ao_lado_-_higiene_para_pets_-_assai_atacadista.jpg?itok=llmY9-9b",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Citrus", "Jasmim"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Citrus", "Jasmim"]
       }
     },
     {
@@ -328,11 +400,11 @@
       "name": "Shampoo para Cães - Antifúngico",
       "description": "Shampoo antifúngico para cães com problemas de pele.",
       "price": 36.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://www.santelaboratorio.com.br/wp-content/uploads/2020/06/04_produtolimpeza-corpo-1.jpg",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Lavanda", "Eucalipto"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Lavanda", "Eucalipto"]
       }
     },
     {
@@ -340,11 +412,11 @@
       "name": "Shampoo para Cães - Relaxante",
       "description": "Shampoo com propriedades relaxantes para cães estressados.",
       "price": 39.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://chemitec.com.br/wp-content/uploads/2020/06/higiene-animal.jpg",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Lavanda", "Camomila"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Lavanda", "Camomila"]
       }
     },
     {
@@ -352,11 +424,11 @@
       "name": "Shampoo para Cães - Antibacteriano",
       "description": "Shampoo com propriedades antibacterianas para cães.",
       "price": 31.90,
-      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "image": "https://www.assai.com.br/sites/default/files/styles/blog_destaque/public/blog/gato_laranja_em_um_balde_verde_com_produtos_de_limpeza_ao_lado_-_higiene_para_pets_-_assai_atacadista.jpg?itok=llmY9-9b",
       "category": "Higiene",
       "customizations": {
-        "size": ["200ml", "500ml"],
-        "scent": ["Melaleuca", "Alecrim"]
+      "size": ["200ml", "500ml"],
+      "scent": ["Melaleuca", "Alecrim"]
       }
     }
   ]

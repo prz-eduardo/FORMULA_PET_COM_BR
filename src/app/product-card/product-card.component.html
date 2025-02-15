@@ -1,28 +1,80 @@
-
 <div class="card">
-    <!-- Imagem do card -->
-    <img *ngIf="image" [src]="image" [alt]="name" class="card-img-top">
-  
-    <!-- Conteúdo do card -->
-    <div class="card-body">
-      <h5 class="card-title">{{ name }}</h5>
-      <p class="card-text">{{ description }}</p>
-  
-      <!-- Detalhes: preço e categoria -->
-      <div class="card-details">
-        <span class="card-price">{{ price | currency:'BRL':'symbol':'1.2-2' }}</span>
-        <span class="card-category">{{ category }}</span>
+  <!-- Container da imagem com badge de desconto e ícone de favorito -->
+  <div class="card-img-container">
+    <img *ngIf="image" [src]="image" [alt]="name" class="card-img-top" />
+    <!-- Badge de desconto -->
+    <div *ngIf="discount && discount > 0" class="discount-badge">
+      {{ discount }}% OFF
+    </div>
+    <!-- Ícone de favorito -->
+    <div *ngIf="isFavourite" class="favourite-icon">
+      <!-- Aqui pode ser usado uma biblioteca de ícones, como Font Awesome -->
+      <i class="fa fa-heart"></i>
+    </div>
+  </div>
+
+  <!-- Conteúdo do card -->
+  <div class="card-body">
+    <h5 class="card-title">{{ name }}</h5>
+    <p class="card-text">{{ description }}</p>
+
+    <!-- Detalhes: preço, categoria, rating -->
+    <div class="card-details">
+      <div class="price-section">
+        <span class="card-price">
+          {{ price | currency:'BRL':'symbol':'1.2-2' }}
+        </span>
+        <!-- Se houver desconto, mostra o preço original riscado -->
+        <span *ngIf="discount && discount > 0" class="original-price">
+          {{ ((price ?? 0) + ((price ?? 0) * (discount ?? 0) / 100)) | currency:'BRL':'symbol':'1.2-2' }}
+        </span>
       </div>
-  
-      <!-- Customizações: dosagem e embalagem -->
-      <div *ngIf="customizations" class="card-customizations">
+      <div class="category-rating">
+        <span class="card-category">{{ category }}</span>
+        <span *ngIf="rating" class="card-rating">
+          <i class="fa fa-star"></i> {{ rating }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Informações extras: peso e estoque -->
+    <div class="card-extra">
+      <span *ngIf="weight" class="card-weight">Peso: {{ weight }}</span>
+      <span *ngIf="stock !== undefined" class="card-stock">
+        {{ stock > 0 ? ('Em estoque: ' + stock) : 'Sem estoque' }}
+      </span>
+    </div>
+
+    <!-- Customizações (suporte para customizações de suplementos ou de produtos de higiene) -->
+    <div *ngIf="customizations" class="card-customizations">
+      <ng-container *ngIf="customizations.dosage; else sizeCustomization">
         <p *ngIf="customizations.dosage && customizations.dosage.length">
           <strong>Dosagem:</strong> {{ customizations.dosage.join(', ') }}
         </p>
         <p *ngIf="customizations.packaging && customizations.packaging.length">
           <strong>Embalagem:</strong> {{ customizations.packaging.join(', ') }}
         </p>
-      </div>
+      </ng-container>
+      <ng-template #sizeCustomization>
+        <p *ngIf="customizations.size && customizations.size.length">
+          <strong>Tamanho:</strong> {{ customizations.size.join(', ') }}
+        </p>
+        <p *ngIf="customizations.scent && customizations.scent.length">
+          <strong>Fragrância:</strong> {{ customizations.scent.join(', ') }}
+        </p>
+      </ng-template>
+    </div>
+
+    <!-- Exibição de tags -->
+    <div *ngIf="tags && tags.length" class="card-tags">
+      <span *ngFor="let tag of tags" class="tag">{{ tag }}</span>
+    </div>
+
+    <!-- Área de ação -->
+    <div class="card-action">
+      <button type="button" class="btn-action">
+        {{ isAddedToCart ? 'Adicionado' : 'Comprar' }}
+      </button>
     </div>
   </div>
-  
+</div>
