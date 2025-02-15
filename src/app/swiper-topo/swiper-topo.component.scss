@@ -1,29 +1,23 @@
-.swiper{
+/* Exibe a imagem para telas pequenas (celular) */
+.mobile-banner {
+    display: block;
+  }
+  
+  /* Esconde a imagem para telas grandes */
+  .desktop-banner {
+    display: none;
+  }
+  
+  /* Para telas grandes, exibe a imagem do desktop e esconde a do celular */
+  @media (min-width: 768px) {
+    .mobile-banner {
+      display: none;
+    }
+    .desktop-banner {
+      display: block;
+    }
+  }
+  img {
     width: 100%;
-    height: 100%;
-    text-align: center;
-    background-color: #f1f1f1;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-}
+  }
 
-.imagem-banner{
-    margin-top: 10px;
-    width: 100%;
-    // height: 100%;
-    // object-fit: cover;
-    // border-radius: 10px;
-}
-
-.imagem-banner-mobile{
-    width: 100vw;
-    // height: 100%;
-    // object-fit: cover;
-    // border-radius: 10px;
-}

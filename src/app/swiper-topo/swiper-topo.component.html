@@ -1,12 +1,9 @@
-<swiper-container slides-per-view="1">
-  <swiper-slide>
-    <div>
-      <ng-container *ngIf="deviceType === 'mobile'">
-        <img src="/imagens/banner-cel.png" alt="Imagem Mobile" class="imagem-banner">
-      </ng-container>
-      <ng-container *ngIf="deviceType === 'desktop'">
-        <img src="/imagens/1.png" alt="Imagem Desktop" class="imagem-banner">
-      </ng-container>
-    </div>
-  </swiper-slide>
-</swiper-container>
+<div>
+
+    <ng-container>
+        <img [src]="imagem" alt="">
+    </ng-container>
+
+</div>
+    
+  

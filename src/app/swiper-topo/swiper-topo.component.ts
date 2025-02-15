@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
 import { Swiper } from 'swiper/bundle';
 import { register } from 'swiper/element/bundle';
 import { CommonModule } from '@angular/common';
@@ -14,33 +14,20 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
   styleUrls: ['./swiper-topo.component.scss'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]  // Adicionei essa linha aqui para permitir componentes personalizados
 })
-export class SwiperTopoComponent implements OnInit {
-  deviceType: string = 'desktop'; // Variável para armazenar o tipo de dispositivo
+export class SwiperTopoComponent implements OnInit, AfterViewInit {
+  deviceType: string = 'desktop'; 
+  imagem: string = '';
 
   constructor(@Inject(PLATFORM_ID) private platformId: any) {
     register(); // Registra os elementos do Swiper para uso
   }
 
-  ngOnInit(): void {
-    this.detectDevice(); // Detecta o tipo de dispositivo ao iniciar o componente
+  ngAfterViewInit(): void {
+    this.detectDevice();
+  }
 
-    // Verifica se o código está sendo executado no cliente (navegador)
-    if (isPlatformBrowser(this.platformId)) {
-      const swiper = new Swiper('.swiper-container', {
-        slidesPerView: 1,
-        spaceBetween: 30,
-        loop: true,
-        pagination: {
-          el: '.swiper-pagination',
-          clickable: true,
-        },
-        navigation: {
-          nextEl: '.swiper-button-next',
-          prevEl: '.swiper-button-prev',
-        },
-      });
-    } else {
-    }
+  ngOnInit(): void {
+    // this.detectDevice();
   }
 
   // Método para detectar o tipo de dispositivo
@@ -50,16 +37,15 @@ export class SwiperTopoComponent implements OnInit {
     if (isPlatformBrowser(this.platformId)) {
       const width = window.innerWidth;
       console.log('width', width);
+      
 
-      if (width < 768) {
-        console.log('mobile');
-        this.deviceType = 'mobile';
-      } 
-      else {
-        console.log('desktop'); 
-        this.deviceType = 'desktop';
+      if (window.innerWidth < 768) {
+        this.imagem = '/imagens/banner-cel.png';
+        console.log('imagem', this.imagem);
+      } else {
+        this.imagem = '/imagens/1.png';
+        console.log('imagem', this.imagem);
       }
-
     } else {
     }
   }
