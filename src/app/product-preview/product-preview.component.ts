@@ -70,14 +70,14 @@ export class ProductPreviewComponent implements OnInit, AfterViewInit {
       } else {
         this.deviceType = 'desktop';
       }
-      this.slidesPerViewLoad(); // Configura o slidesPerView de acordo com o dispositivo
+      this.slidesPerViewLoad();
     }
   }
 
   initializeSwiper() {
-    this.swiper = new Swiper('.swiper-container', {
+    this.swiper = new Swiper('.product-swiper', {
       slidesPerView: this.slidesPerView,
-      spaceBetween: 2,
+      spaceBetween: 10,
       loop: true,
       pagination: {
         el: '.swiper-pagination',
@@ -90,20 +90,17 @@ export class ProductPreviewComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // Função para filtrar produtos por categoria
   filterProductsByCategory(category: string): void {
     this.selectedCategory = category;
     if (category) {
       this.filteredProducts = this.produtos.filter(produto => produto.category === category);
     } else {
-      this.filteredProducts = this.produtos; // Exibe todos os produtos se nenhuma categoria for selecionada
+      this.filteredProducts = this.produtos;
     }
   }
 
-  // Função para extrair categorias únicas
   extractCategories() {
     const categoriesSet = new Set(this.produtos.map(produto => produto.category));
     this.categories = Array.from(categoriesSet);
   }
-
 }

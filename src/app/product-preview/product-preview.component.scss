@@ -1,53 +1,71 @@
+/* Estilos para o slider de categorias */
 .category-swiper {
   padding: 1rem 0;
+  height: 75px;
 
   .category-slide {
-    width: 120px; /* Para que o slide se ajuste ao conteúdo */
-    height: 40px;
+    /* Se desejar, defina uma largura fixa ou deixe automática */
+    width: auto;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+}
 
-  button {
-    width: 120px; /* Para que o slide se ajuste ao conteúdo */
-    height: 35px;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    background-color: #fff;
-    border: none;
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
+/* Estilos do botão com o efeito after */
+.button-56 {
+  align-items: center;
+  background-color: #c7f7ef;
+  border: 2px solid #111;
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: #111;
+  cursor: pointer;
+  display: flex;
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  height: 48px;
+  justify-content: center;
+  line-height: 24px;
+  max-width: 100%;
+  padding: 0 25px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: background-color 0.2s ease-out, border-color 0.2s ease-out;
+}
 
-    img {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-    }
+.button-56:after {
+  background-color: #111;
+  border-radius: 8px;
+  content: "";
+  display: block;
+  height: 48px;
+  left: 0;
+  width: 100%;
+  position: absolute;
+  top: -2px;
+  transform: translate(8px, 8px);
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  z-index: -1;
+}
 
-    span {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: #555;
-    }
+/* Estado ativo: altera as cores e "desativa" o after */
+.button-56.active {
+  background-color: #111; /* fundo escuro quando selecionado */
+  color: #c7f7ef;        /* texto claro */
+  border-color: #111;
+}
 
-    &:hover {
-      transform: scale(1.05);
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-    }
+.button-56.active:after {
+  transform: translate(0, 0);
+  opacity: 0; /* Esconde o pseudo-elemento */
+}
 
-    &.active {
-      background-color: #1e8e9f; /* Cor de destaque, pode ser ajustada */
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-
-      span {
-        color: #fff;
-        font-weight: 600;
-      }
-    }
-  }
+/* (Opcional) Ajustes para o slider de produtos */
+.product-swiper {
+  margin-top: 1rem;
 }
