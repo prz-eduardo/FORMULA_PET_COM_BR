@@ -61,7 +61,7 @@ export class TestimonialsComponent implements OnInit, OnDestroy {
       this.intervalId = setInterval(() => {
         this.activeIndex = (this.activeIndex + 1) % this.testimonials.length;
         this.cdr.detectChanges(); 
-      }, 5000); // Troca a cada 5 segundos
+      }, 5000);
     });
   }
 }

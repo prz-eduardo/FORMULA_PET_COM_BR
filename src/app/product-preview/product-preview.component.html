@@ -1,18 +1,40 @@
-<swiper-container [slides-per-view]="   slidesPerView">
-    <ng-container *ngFor="let produto of produtos" class="swiper-wrapper-produtos">
-
-        <swiper-slide>
-            <app-product-card 
-                [id]="produto.id"
-                [category]="produto.category"
-                [customizations]="produto.customizations"
-                [description]="produto.description"
-                [image]="produto.image"
-                [name]="produto.name"
-                [price]="produto.price"></app-product-card>
-
-        </swiper-slide>
+<!-- Slider de Categorias -->
+<swiper-container class="category-swiper" [slidesPerView]="'auto'" [spaceBetween]="10">
+    <ng-container *ngFor="let category of categories">
+      <swiper-slide class="category-slide">
+        <button 
+          [class.active]="selectedCategory === category" 
+          (click)="filterProductsByCategory(category)"
+        >
+          <span>{{ category }}</span>
+        </button>
+      </swiper-slide>
     </ng-container>
-    
-
-</swiper-container>
+    <!-- Botão para Todos -->
+    <swiper-slide class="category-slide">
+      <button 
+        [class.active]="selectedCategory === ''" 
+        (click)="filterProductsByCategory('')"
+      >
+        <span>Todos</span>
+      </button>
+    </swiper-slide>
+  </swiper-container>
+  
+  <!-- Slider de Produtos -->
+  <swiper-container [spaceBetween]="10" [slidesPerView]="slidesPerView">
+    <ng-container *ngFor="let produto of filteredProducts">
+      <swiper-slide>
+        <app-product-card 
+          [id]="produto.id"
+          [category]="produto.category"
+          [customizations]="produto.customizations"
+          [description]="produto.description"
+          [image]="produto.image"
+          [name]="produto.name"
+          [price]="produto.price">
+        </app-product-card>
+      </swiper-slide>
+    </ng-container>
+  </swiper-container>
+  

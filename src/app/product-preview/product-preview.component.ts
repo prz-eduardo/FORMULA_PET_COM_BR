@@ -1,5 +1,5 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
-import {  Swiper } from 'swiper/bundle';
+import { Component, OnInit, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
+import { Swiper } from 'swiper/bundle';
 import { register } from 'swiper/element/bundle';
 import ProdutosJson from '../../../public/products.json';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -10,67 +10,59 @@ import { ProductCardComponent } from '../product-card/product-card.component';
 @Component({
   selector: 'app-product-preview',
   standalone: true,
-  imports: [CommonModule,ProductCardComponent],
+  imports: [CommonModule, ProductCardComponent],
   templateUrl: './product-preview.component.html',
-  styleUrl: './product-preview.component.scss',
+  styleUrls: ['./product-preview.component.scss'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class ProductPreviewComponent implements OnInit {
+export class ProductPreviewComponent implements OnInit, AfterViewInit {
   produtos: any[] = ProdutosJson;
+  filteredProducts: any[] = ProdutosJson; // Lista de produtos filtrados
   deviceType: string | undefined;
   slidesPerView: number = 1;
-
+  swiper: Swiper | undefined;
+  selectedCategory: string = ''; // Categoria selecionada
+  categories: string[] = []; // Lista de categorias únicas
 
   constructor(@Inject(PLATFORM_ID) private platformId: any) {
     register(); // Registra os elementos do Swiper para uso
   }
 
-  async slidesPerViewLoad() {
-    // Verifica se o código está rodando no cliente (navegador)
+  ngOnInit() {
+    this.detectDevice();
+    this.extractCategories(); // Extrai as categorias únicas ao iniciar
+  }
+
+  ngAfterViewInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeSwiper();
+    }
+  }
+
+  slidesPerViewLoad() {
     if (isPlatformBrowser(this.platformId)) {
       const width = window.innerWidth;
-      if (this.deviceType === 'mobile') {
-        this.slidesPerView = 1;
-      } else if (this.deviceType === 'tablet') {
-        this.slidesPerView = 2;
+      if (width < 768) {
+        this.deviceType = 'mobile';
+        this.slidesPerView = Math.floor((width - 10) / 300) + 0.5;
+      } else if (width >= 768 && width < 1024) {
+        this.deviceType = 'tablet';
+        this.slidesPerView = Math.floor((width - 10) / 300) + 0.5;
       } else {
-        this.slidesPerView = 3;
+        this.deviceType = 'desktop';
+        this.slidesPerView = Math.floor((width - 10) / 300) + 0.5;
       }
 
-       } else {
+      if (this.swiper) {
+        this.swiper.params.slidesPerView = this.slidesPerView;
+        this.swiper.update();
       }
+    }
   }
-
-  async ngOnInit() {
-
-    await this.slidesPerViewLoad();
-
-
-    this.detectDevice();
-     // Verifica se o código está sendo executado no cliente (navegador)
-     if (isPlatformBrowser(this.platformId)) {
-      const swiper = new Swiper('.swiper-container', {
-        slidesPerView: 1,
-        spaceBetween: 30,
-        loop: true,
-        pagination: {
-          el: '.swiper-pagination',
-          clickable: true,
-        },
-        navigation: {
-          nextEl: '.swiper-button-next',
-          prevEl: '.swiper-button-prev',
-        },
-      });
-    } else {
-     }
-  }
-
 
   detectDevice(): void {
     if (isPlatformBrowser(this.platformId)) {
       const width = window.innerWidth;
-     
       if (width < 768) {
         this.deviceType = 'mobile';
       } else if (width >= 768 && width < 1024) {
@@ -78,8 +70,40 @@ export class ProductPreviewComponent implements OnInit {
       } else {
         this.deviceType = 'desktop';
       }
-
-       } else {
-      }
+      this.slidesPerViewLoad(); // Configura o slidesPerView de acordo com o dispositivo
+    }
   }
+
+  initializeSwiper() {
+    this.swiper = new Swiper('.swiper-container', {
+      slidesPerView: this.slidesPerView,
+      spaceBetween: 2,
+      loop: true,
+      pagination: {
+        el: '.swiper-pagination',
+        clickable: true,
+      },
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+    });
+  }
+
+  // Função para filtrar produtos por categoria
+  filterProductsByCategory(category: string): void {
+    this.selectedCategory = category;
+    if (category) {
+      this.filteredProducts = this.produtos.filter(produto => produto.category === category);
+    } else {
+      this.filteredProducts = this.produtos; // Exibe todos os produtos se nenhuma categoria for selecionada
+    }
+  }
+
+  // Função para extrair categorias únicas
+  extractCategories() {
+    const categoriesSet = new Set(this.produtos.map(produto => produto.category));
+    this.categories = Array.from(categoriesSet);
+  }
+
 }
