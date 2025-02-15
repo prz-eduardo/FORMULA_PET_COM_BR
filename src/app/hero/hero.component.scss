@@ -1,44 +1,10 @@
-html,
-body {
-  position: relative;
-  height: 100%;
-}
-
-body {
-  background: #eee;
-  
-  font-size: 14px;
-  color: #333;
-  margin: 0;
-  padding: 0;
-}
-
-swiper-container {
-  width: 100%;
-  height: 100%;
-  background: #000;
-}
-
-swiper-slide {
-  font-size: 18px;
-  color: #fff;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  padding: px 0px;
-
-
-  background-color: #27ffc936;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0));
-
-
-
-}
-
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap');
 
 .parallax-bg {
   position: absolute;
   left: 0;
   top: 0;
+  min-height: 400px;
   width: 130%;
   height: 100%;
   -webkit-background-size: cover;
@@ -46,41 +12,47 @@ swiper-slide {
   background-position: center;
 }
 
-swiper-slide .title {
-  font-size: 50px;
-  font-weight: 300;
-}
+swiper-slide {
+  min-height: 400px;
 
-swiper-slide .subtitle {
-  font-size: 30px;
-}
+  .title {
+    font-family: "Dancing Script", serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-size: 4em;
+    font-weight: 500;
+    font-style: normal;
+    color: #6ef5de;
+    padding-top: 40px;
+    padding: 0 22px;
+  }
+  .subtitle{
+    padding-left: 22px;
+    font-size: 3em;
+    padding-right: 100px;
+  }
+  .text {
+    padding: 0 22px;
+    font-size: 2em;
+  } 
+  .subtitle,
+  .text p {
+    font-family: "Dancing Script", serif;
 
-swiper-slide .text {
-  font-size: 20px;
-  max-width: 400px;
-  line-height: 1.3;
 
-}
-@import url('https://fonts.googleapis.com/css2?family=Butterfly+Kids&display=swap');
+    
+    line-height: 1.6;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  }
 
-swiper-slide .subtitle,
-swiper-slide .text p {
-  font-family: "Butterfly Kids", serif;
-  color: #ffffff; /* Para textos claros */
-  /* background-color: #ffffff36; */
-  /* border-radius: 30px; */
-  /* border: 11px solid #ffffff36; */
-  padding: 2px;
-}
+  .subtitle {
+    font-size: 30px;
+  }
 
-swiper-slide .title{
-  font-family: "Butterfly Kids", serif;
-font-weight: 500;
-font-style: normal;
-font-size: 2.75em;
-    color: #ffffff; /* Para textos claros */
-    /* background-color: #ffffff36; */
-    /* border-radius: 30px; */
-    /* border: 11px solid #ffffff36; */
-    padding: 2px;
-}
+  .text {
+    font-size: 20px;
+    max-width: 400px;
+    line-height: 1.3;
+  }
+

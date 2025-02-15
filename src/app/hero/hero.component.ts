@@ -15,19 +15,19 @@ import { CommonModule } from '@angular/common';
 export class HeroComponent implements OnInit {
   slides = [
     {
-      title: 'Fórmula Pet',
+      title: '',
       subtitle: 'Cuidados sob medida para o seu pet',
-      text: 'Somos especialistas na manipulação de medicamentos veterinários, oferecendo soluções personalizadas...',
+      text: 'Somos especialistas na manipulação de medicamentos veterinários, oferecendo soluções personalizadas.',
     },
     {
-      title: 'Saúde com confiança',
+      title: '',
       subtitle: 'Excelência na manipulação veterinária',
-      text: 'Na Fórmula Pet, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos...',
+      text: 'Na Fórmula Pet, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos.',
     },
     {
-      title: 'Cuide de quem você AMA!',
+      title: '',
       subtitle: 'Atendimento especializado e humanizado',
-      text: 'Seja para cães, gatos ou outros animais, nossa equipe está pronta para oferecer suporte completo...',
+      text: 'Seja para cães, gatos ou outros animais, nossa equipe está pronta para oferecer suporte completo.',
     },
   ];
   isBrowser: boolean = false;

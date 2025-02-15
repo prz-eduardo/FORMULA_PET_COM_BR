@@ -161,11 +161,10 @@ li{
  $bg-04: #73a5b5;
  */
  
-$bg-01: #31fddb;
-$bg-02: #28c2d1;
-$bg-03: #1e8e9f;
-$bg-04: #146a6d;
- 
+$bg-01: #c7f7ef;
+$bg-02: #a3e8e1;
+$bg-03: #7fd9d3;
+$bg-04: #5bcac5;
  @mixin md {
    @media screen and (max-width: 1023px) {
      @content;
