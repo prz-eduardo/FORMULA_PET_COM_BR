@@ -44,13 +44,13 @@ export class ProductPreviewComponent implements OnInit, AfterViewInit {
       const width = window.innerWidth;
       if (width < 768) {
         this.deviceType = 'mobile';
-        this.slidesPerView = Math.floor((width - 10) / 300) + 0.2;
+        this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
       } else if (width >= 768 && width < 1024) {
         this.deviceType = 'tablet';
-        this.slidesPerView = Math.floor((width - 10) / 300) + 0.2;
+        this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
       } else {
         this.deviceType = 'desktop';
-        this.slidesPerView = Math.floor((width - 10) / 300) + 0.2;
+        this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
       }
 
       if (this.swiper) {

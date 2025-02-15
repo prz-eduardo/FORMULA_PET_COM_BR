@@ -24,7 +24,7 @@
 </swiper-container>
 
 <!-- Slider de Produtos -->
-<swiper-container class="product-swiper" [spaceBetween]="10" [slidesPerView]="slidesPerView">
+<swiper-container class="product-swiper" [slidesPerView]="slidesPerView">
   <ng-container *ngFor="let produto of filteredProducts">
     <swiper-slide>
       <app-product-card 

@@ -1,29 +1,18 @@
-<section class="testimonial-slider" *ngIf="isBrowser">
-  
-
-    <swiper-container
-    class="hero-slider"
+<section class="" *ngIf="isBrowser">
+  <swiper-container
     speed="600"
     parallax="true"
     navigation="false"
     autoplay="true"
     loop="true"
   >
-  <div slot="container-start" class="parallax-bg" 
-  style="background-image: url(/imagens/fmanip.webp);" 
-  data-swiper-parallax="-23%">
-</div>
-
-
-<swiper-slide *ngFor="let testimonial of testimonials">
-  <blockquote>
+    <swiper-slide *ngFor="let testimonial of testimonials" class="hero-slide">
+      <blockquote>
         <div class="card">
-        <p class="testimonial-text">“{{ testimonial.text }}”</p>
-        <footer class="testimonial-author">— {{ testimonial.author }}</footer>
-      </div>
+          <p class="testimonial-text">“{{ testimonial.text }}”</p>
+          <footer class="testimonial-author">— {{ testimonial.author }}</footer>
+        </div>
       </blockquote>
     </swiper-slide>
-
-
   </swiper-container>
 </section>

@@ -73,6 +73,12 @@ nav {
 
   &.hidden {
     transform: translateY(-120%);
+    &.menu {
+
+      &.open{
+        transform: translateY(0);
+      }
+    }
   }
 
   // Nav Bar
