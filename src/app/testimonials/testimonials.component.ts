@@ -1,14 +1,19 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Inject, PLATFORM_ID,Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { register } from 'swiper/element/bundle';
+import { isPlatformBrowser } from '@angular/common';
+import 'swiper/element/bundle';
 
 @Component({
   selector: 'app-testimonials',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './testimonials.component.html',
-  styleUrl: './testimonials.component.scss'
+  styleUrl: './testimonials.component.scss',
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class TestimonialsComponent implements OnInit, OnDestroy {
+  isBrowser: boolean;
   activeIndex: number = 0;
   intervalId: any;
 
@@ -31,11 +36,15 @@ export class TestimonialsComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
+    @Inject(PLATFORM_ID) private platformId: any,
     private cdr: ChangeDetectorRef,
-    private zone: NgZone // Importando NgZone
-  ) {}
+    private zone: NgZone
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit(): void {
+    register();
     // this.startAutoSlide();
   }
 
@@ -51,7 +60,7 @@ export class TestimonialsComponent implements OnInit, OnDestroy {
     this.zone.run(() => {
       this.intervalId = setInterval(() => {
         this.activeIndex = (this.activeIndex + 1) % this.testimonials.length;
-        this.cdr.detectChanges(); // Forçar a detecção de mudanças após atualizar o activeIndex
+        this.cdr.detectChanges(); 
       }, 5000); // Troca a cada 5 segundos
     });
   }

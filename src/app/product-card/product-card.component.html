@@ -1,0 +1,28 @@
+
+<div class="card">
+    <!-- Imagem do card -->
+    <img *ngIf="image" [src]="image" [alt]="name" class="card-img-top">
+  
+    <!-- Conteúdo do card -->
+    <div class="card-body">
+      <h5 class="card-title">{{ name }}</h5>
+      <p class="card-text">{{ description }}</p>
+  
+      <!-- Detalhes: preço e categoria -->
+      <div class="card-details">
+        <span class="card-price">{{ price | currency:'BRL':'symbol':'1.2-2' }}</span>
+        <span class="card-category">{{ category }}</span>
+      </div>
+  
+      <!-- Customizações: dosagem e embalagem -->
+      <div *ngIf="customizations" class="card-customizations">
+        <p *ngIf="customizations.dosage && customizations.dosage.length">
+          <strong>Dosagem:</strong> {{ customizations.dosage.join(', ') }}
+        </p>
+        <p *ngIf="customizations.packaging && customizations.packaging.length">
+          <strong>Embalagem:</strong> {{ customizations.packaging.join(', ') }}
+        </p>
+      </div>
+    </div>
+  </div>
+  

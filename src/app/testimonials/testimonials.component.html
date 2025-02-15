@@ -1,36 +1,29 @@
-<section class="testimonial">
-    <div class="container">
-      <div class="row align-items-center">
-        <!-- Testimonials Section -->
-        <div class="col-12">
-          <div class="carousel-content">
-            <h3 class="section-title">Veja o que nossos clientes dizem</h3>
-            <div class="carousel-inner">
-              <div
-                class="carousel-item"
-                *ngFor="let testimonial of testimonials; let i = index"
-                [class.active]="activeIndex === i"
-              >
-                <blockquote>
-                  <!-- <figure>
-                    <img [src]="testimonial.image" alt="testimonial.author" class="testimonial-img" />
-                  </figure> -->
-                  <p class="testimonial-text">“{{ testimonial.text }}”</p>
-                  <footer class="testimonial-author">— {{ testimonial.author }}</footer>
-                </blockquote>
-              </div>
-            </div>
-            <!-- Indicators -->
-            <ul class="indicators">
-              <li
-                *ngFor="let _ of testimonials; let i = index"
-                [class.active]="activeIndex === i"
-                (click)="setActiveIndex(i)"
-              ></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+<section class="testimonial-slider" *ngIf="isBrowser">
   
+
+    <swiper-container
+    class="hero-slider"
+    speed="600"
+    parallax="true"
+    navigation="false"
+    autoplay="true"
+    loop="true"
+  >
+  <div slot="container-start" class="parallax-bg" 
+  style="background-image: url(/imagens/fmanip.webp);" 
+  data-swiper-parallax="-23%">
+</div>
+
+
+<swiper-slide *ngFor="let testimonial of testimonials">
+  <blockquote>
+        <div class="card">
+        <p class="testimonial-text">“{{ testimonial.text }}”</p>
+        <footer class="testimonial-author">— {{ testimonial.author }}</footer>
+      </div>
+      </blockquote>
+    </swiper-slide>
+
+
+  </swiper-container>
+</section>

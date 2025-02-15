@@ -13,13 +13,14 @@ import { CommonModule } from '@angular/common';
 import { FooterComponent } from './footer/footer.component';
 import { AboutComponent } from './about/about.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
+import { ProductPreviewComponent } from './product-preview/product-preview.component';
 
 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NavmenuComponent, SwiperTopoComponent, HeroComponent,CommonModule, FooterComponent, AboutComponent,TestimonialsComponent],
+  imports: [ProductPreviewComponent,NavmenuComponent, SwiperTopoComponent, HeroComponent,CommonModule, FooterComponent, AboutComponent,TestimonialsComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -34,13 +35,11 @@ export class AppComponent {
   
   // Método para detectar o tipo de dispositivo
     detectDevice(): void {
-      console.log('Detecting device...');
-  
+
       // Verifica se o código está rodando no cliente (navegador)
       if (isPlatformBrowser(this.platformId)) {
         const width = window.innerWidth;
-        console.log(width);
-  
+
         if (width < 768) {
           this.deviceType = 'mobile';
         } else if (width >= 768 && width < 1024) {
@@ -49,7 +48,7 @@ export class AppComponent {
           this.deviceType = 'desktop';
         }
   
-        console.log(`Detected device: ${this.deviceType}`);
+
       } else {
         console.log('Running on server, window object not available');
       }

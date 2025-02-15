@@ -1,0 +1,33 @@
+/* src/app/product-preview/product-preview.component.scss */
+.product-preview {
+    padding: 2rem;
+    background: #f4f4f4;
+  
+    .loading,
+    .error {
+      text-align: center;
+      font-size: 1.2rem;
+      margin-top: 2rem;
+      color: #333;
+    }
+  
+    .category-section {
+      margin-bottom: 3rem;
+  
+      h2 {
+        font-size: 1.8rem;
+        color: #222;
+        margin-bottom: 1rem;
+      }
+  
+      .swiper-container {
+        padding: 1rem 0;
+  
+        .swiper-slide {
+          display: flex;
+          justify-content: center;
+        }
+      }
+    }
+  }
+  

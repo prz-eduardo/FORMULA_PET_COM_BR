@@ -11,10 +11,17 @@
   
   
   <!-- Seção de Visão Geral -->
-  <section id="hero">
-    <app-hero></app-hero> 
+  <section id="hero" >
+    <app-hero ngSkipHydration></app-hero> 
     <!-- Componente que pode conter um banner com apresentação -->
   </section>
+
+  <!-- Seção de Produtos em Destaque (Preview) -->
+<section id="products-preview">
+  <app-product-preview></app-product-preview> 
+  <!-- Componente para mostrar alguns produtos destacados -->
+</section>
+
 
   <section id="Testimonials">
     <app-testimonials></app-testimonials>
@@ -27,11 +34,6 @@
   <!-- Componente com informações sobre a farmácia -->
 </section>
 
-<!-- Seção de Produtos em Destaque (Preview) -->
-<section id="products-preview">
-  <!-- <app-products-preview></app-products-preview>  -->
-  <!-- Componente para mostrar alguns produtos destacados -->
-</section>
 
 <!-- Seção de Contato -->
 <section id="contact">

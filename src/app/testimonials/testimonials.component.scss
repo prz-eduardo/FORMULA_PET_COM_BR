@@ -11,6 +11,14 @@
     }
   
     .carousel-content {
+
+
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    background-color: #fff;
+
       .carousel-inner {
         position: relative;
         margin: 20px 0;
@@ -101,3 +109,11 @@
     }
   }
   
+  .card{
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    background-color: #fff;
+    border: 10px;
+  }

@@ -1,0 +1,363 @@
+[
+    {
+      "id": 1,
+      "name": "Suplemento para Cães - Vitaminas",
+      "description": "Suplemento vitamínico para cães com necessidades nutricionais especiais.",
+      "price": 39.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["15mg", "30mg", "50mg"],
+        "packaging": ["Vidro", "Plástico"]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Suplemento para Cães - Omega 3",
+      "description": "Suplemento com Omega 3 para melhorar a saúde das articulações e pelagem.",
+      "price": 45.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["500mg", "1000mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Suplemento para Cães - Articulações",
+      "description": "Suplemento para cães com problemas nas articulações, ajudando na mobilidade.",
+      "price": 59.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["100mg", "200mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 4,
+      "name": "Suplemento para Cães - Digestão",
+      "description": "Suplemento para melhorar o sistema digestivo dos cães.",
+      "price": 35.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["20mg", "40mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 5,
+      "name": "Suplemento para Cães - Energia",
+      "description": "Suplemento energético para cães ativos e que precisam de mais disposição.",
+      "price": 49.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["10mg", "20mg"],
+        "packaging": ["Vidro", "Plástico"]
+      }
+    },
+    {
+      "id": 6,
+      "name": "Suplemento para Cães - Imunidade",
+      "description": "Suplemento para fortalecer o sistema imunológico dos cães.",
+      "price": 34.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["15mg", "30mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 7,
+      "name": "Suplemento para Cães - Pelagem",
+      "description": "Suplemento para melhorar a pelagem e a saúde da pele dos cães.",
+      "price": 44.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["30mg", "50mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 8,
+      "name": "Suplemento para Cães - Coração",
+      "description": "Suplemento para proteger a saúde cardiovascular dos cães.",
+      "price": 55.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["100mg", "200mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 9,
+      "name": "Suplemento para Cães - Stress",
+      "description": "Suplemento para cães com quadro de ansiedade e estresse.",
+      "price": 29.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["10mg", "20mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 10,
+      "name": "Suplemento para Cães - Equilíbrio",
+      "description": "Suplemento para promover o equilíbrio hormonal dos cães.",
+      "price": 49.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Suplementos",
+      "customizations": {
+        "dosage": ["20mg", "30mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 11,
+      "name": "Remédio para Gatos - Resfriado",
+      "description": "Remédio para tratamento de resfriados e gripes em gatos.",
+      "price": 19.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["2mg", "5mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 12,
+      "name": "Remédio para Gatos - Parasitas",
+      "description": "Remédio para combater parasitas internos e externos em gatos.",
+      "price": 29.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["10mg", "15mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 13,
+      "name": "Remédio para Gatos - Dor",
+      "description": "Medicação para alívio de dor e inflamação em gatos.",
+      "price": 39.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["5mg", "10mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 14,
+      "name": "Remédio para Gatos - Cálculos Renais",
+      "description": "Remédio para o tratamento de cálculos renais em gatos.",
+      "price": 49.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["10mg", "15mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 15,
+      "name": "Remédio para Gatos - Anemia",
+      "description": "Medicação para tratamento de anemia em gatos.",
+      "price": 45.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["5mg", "10mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 16,
+      "name": "Remédio para Gatos - Hipertensão",
+      "description": "Medicação para controle da hipertensão em gatos.",
+      "price": 59.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["10mg", "20mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 17,
+      "name": "Remédio para Gatos - Coração",
+      "description": "Medicação para tratar problemas cardíacos em gatos.",
+      "price": 55.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["5mg", "10mg"],
+        "packaging": ["Plástico"]
+      }
+    },
+    {
+      "id": 18,
+      "name": "Remédio para Gatos - Fezes",
+      "description": "Medicação para tratar distúrbios digestivos em gatos.",
+      "price": 34.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["5mg", "10mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 19,
+      "name": "Remédio para Gatos - Resfriado Grave",
+      "description": "Medicação para tratar resfriados graves em gatos.",
+      "price": 49.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["10mg", "15mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 20,
+      "name": "Remédio para Gatos - Estresse",
+      "description": "Remédio para reduzir o estresse e ansiedade em gatos.",
+      "price": 29.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Medicamentos",
+      "customizations": {
+        "dosage": ["5mg", "10mg"],
+        "packaging": ["Vidro"]
+      }
+    },
+    {
+      "id": 21,
+      "name": "Shampoo para Cães - Hipoalergênico",
+      "description": "Shampoo para cães com pelagem sensível ou com alergias.",
+      "price": 25.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Lavanda", "Citrus"]
+      }
+    },
+    {
+      "id": 22,
+      "name": "Shampoo para Cães - Anti-Cheiro",
+      "description": "Shampoo para cães com forte odor, ajudando a eliminar o cheiro.",
+      "price": 19.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Menta", "Eucalipto"]
+      }
+    },
+    {
+      "id": 23,
+      "name": "Shampoo para Cães - Brilho",
+      "description": "Shampoo que proporciona brilho e maciez para a pelagem.",
+      "price": 32.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Frutas Vermelhas", "Florais"]
+      }
+    },
+    {
+      "id": 24,
+      "name": "Shampoo para Cães - Anticaspa",
+      "description": "Shampoo para cães com caspa ou problemas de pele.",
+      "price": 29.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Coco", "Almendra"]
+      }
+    },
+    {
+      "id": 25,
+      "name": "Shampoo para Cães - Clareador",
+      "description": "Shampoo para clarear a pelagem dos cães de pelos claros.",
+      "price": 39.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Limão", "Alfazema"]
+      }
+    },
+    {
+      "id": 26,
+      "name": "Shampoo para Cães - Hidratante",
+      "description": "Shampoo hidratante para cães com pelagem ressecada.",
+      "price": 24.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Peônia", "Baunilha"]
+      }
+    },
+    {
+      "id": 27,
+      "name": "Shampoo para Cães - Protetor Solar",
+      "description": "Shampoo com proteção solar para pelagem sensível ao sol.",
+      "price": 49.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Citrus", "Jasmim"]
+      }
+    },
+    {
+      "id": 28,
+      "name": "Shampoo para Cães - Antifúngico",
+      "description": "Shampoo antifúngico para cães com problemas de pele.",
+      "price": 36.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Lavanda", "Eucalipto"]
+      }
+    },
+    {
+      "id": 29,
+      "name": "Shampoo para Cães - Relaxante",
+      "description": "Shampoo com propriedades relaxantes para cães estressados.",
+      "price": 39.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Lavanda", "Camomila"]
+      }
+    },
+    {
+      "id": 30,
+      "name": "Shampoo para Cães - Antibacteriano",
+      "description": "Shampoo com propriedades antibacterianas para cães.",
+      "price": 31.90,
+      "image": "https://th.bing.com/th/id/R.2196f2134026e742ae33f9f90a154506?rik=cJNKOD2IalqIYA&pid=ImgRaw&r=0",
+      "category": "Higiene",
+      "customizations": {
+        "size": ["200ml", "500ml"],
+        "scent": ["Melaleuca", "Alecrim"]
+      }
+    }
+  ]
+  

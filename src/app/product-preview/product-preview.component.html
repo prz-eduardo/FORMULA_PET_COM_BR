@@ -1,0 +1,18 @@
+<swiper-container [slides-per-view]="   slidesPerView">
+    <ng-container *ngFor="let produto of produtos" class="swiper-wrapper-produtos">
+
+        <swiper-slide>
+            <app-product-card 
+                [id]="produto.id"
+                [category]="produto.category"
+                [customizations]="produto.customizations"
+                [description]="produto.description"
+                [image]="produto.image"
+                [name]="produto.name"
+                [price]="produto.price"></app-product-card>
+
+        </swiper-slide>
+    </ng-container>
+    
+
+</swiper-container>

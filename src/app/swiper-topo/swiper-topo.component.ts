@@ -40,30 +40,27 @@ export class SwiperTopoComponent implements OnInit {
         },
       });
     } else {
-      console.log('Running on server, Swiper cannot be initialized');
     }
   }
 
   // Método para detectar o tipo de dispositivo
   detectDevice(): void {
-    console.log('Detecting device...');
 
     // Verifica se o código está rodando no cliente (navegador)
     if (isPlatformBrowser(this.platformId)) {
       const width = window.innerWidth;
-      console.log(width);
+      console.log('width', width);
 
       if (width < 768) {
+        console.log('mobile');
         this.deviceType = 'mobile';
-      } else if (width >= 768 && width < 1024) {
-        this.deviceType = 'tablet';
-      } else {
+      } 
+      else {
+        console.log('desktop'); 
         this.deviceType = 'desktop';
       }
 
-      console.log(`Detected device: ${this.deviceType}`);
     } else {
-      console.log('Running on server, window object not available');
     }
   }
 }
