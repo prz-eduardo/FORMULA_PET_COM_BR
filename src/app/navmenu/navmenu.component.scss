@@ -66,18 +66,18 @@ li{
           border-radius: 100%;
        }
  
-       &.portfolio {
+       &.whatsapp {
           transition: all 0.8s ease;
  
           .icon {
-             background-image: url(https://rafaelavlucas.github.io/assets/codepen/link.svg);
+            background-image: url(/imagens/whatsapp-xxl.png); 
           }
        }
  
-       &.dribbble {
+       &.Instagram {
           transition: all 0.3s ease;
           .icon {
-             background-image: url(https://rafaelavlucas.github.io/assets/codepen/dribbble.svg);
+             background-image: url(/imagens/icons8-instagram-500.png);
           }
        }
  
@@ -114,18 +114,18 @@ li{
              }
           }
  
-          &.portfolio {
+          &.whatsapp {
              right: 0;
              bottom: calc(100% - 40px);
              transition: all 0.3s 0s $cubic;
              .icon {
                 &:hover {
-                   background-color: #698fb7;
+                   background-color: #00ff15;
                 }
              }
           }
  
-          &.dribbble {
+          &.Instagram {
              bottom: 45%;
              right: 45%;
              transition: all 0.3s 0.15s $cubic;
@@ -738,4 +738,12 @@ $bg-04: #5bcac5;
 
  .icones-menu{
     max-height: 30px;
+}
+
+.menu-link .text-item {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1.5);
+}
+
+.sub-item a {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1.5);
 }
