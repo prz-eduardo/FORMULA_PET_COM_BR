@@ -3,22 +3,149 @@
   <app-navmenu></app-navmenu>
 </section>
 
+<div style="padding: 1vh;"></div>
 
   <!-- Seção de Banner -->
   <section id="swiper-topo" class="swiper-topo">
-    <app-swiper-topo app-swiper-topo></app-swiper-topo>
+    <!-- <app-swiper-topo app-swiper-topo></app-swiper-topo> -->
   </section>
+  <section class="info-section">
+    <div class="info-content">
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem;">
+        <h2 class="info-title" style="text-align: center; font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif; font-size: 2.8rem;">
+          Fórmula PET
+        </h2>
+        <div class="info-card" style="max-width: 600px; margin: 0 auto; align-items: center;">
+          <h3 class="card-title" style="text-align: center;">Especialistas em Manipulação Veterinária</h3>
+          <p class="card-text" style="text-align: center;">
+            A Fórmula Pet é uma farmácia de manipulação dedicada exclusivamente à saúde animal. Oferecemos soluções personalizadas para cães, gatos e pets exóticos, com fórmulas adaptadas às necessidades de cada paciente.
+          </p>
+        </div>
+      </div>
+      <div class="info-cards">
+        <div class="info-card">
+          <h3 class="card-title">Atendimento Personalizado</h3>
+          <p class="card-text">
+            Nossa equipe é formada por profissionais qualificados, prontos para orientar tutores e veterinários sobre as melhores opções de tratamento, sempre com foco no bem-estar dos animais.
+          </p>
+        </div>
+        <div class="info-card">
+          <h3 class="card-title">Qualidade e Segurança</h3>
+          <p class="card-text">
+            Trabalhamos com rigorosos padrões de qualidade, garantindo medicamentos manipulados com segurança, precisão e carinho. Conte conosco para cuidar do seu pet!
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+  </style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+    .info-section {
+      width: 100%;
+      box-sizing: border-box;
+      padding-left: 6vw;
+      padding-right: 6vw;
+      margin: 48px 0;
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: #f8fafc;
+    }
+    .info-content {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .info-title {
+      font-size: 2.3rem;
+      margin-bottom: 2rem;
+      text-align: left;
+      font-weight: 700;
+      color: #2d3a4a;
+      letter-spacing: 1px;
+    }
+    .info-cards {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .info-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
+      padding: 2rem 1.5rem;
+      flex: 1 1 260px;
+      min-width: 260px;
+      max-width: 320px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #3b5d50;
+      margin-bottom: 0.7rem;
+    }
+    .card-text {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: #444;
+      font-weight: 400;
+    }
+    @media (max-width: 900px) {
+      .info-section {
+        padding-left: 5vw;
+        padding-right: 5vw;
+      }
+      .info-cards {
+        flex-direction: column;
+        gap: 1.2rem;
+        align-items: center;
+      }
+      .info-card {
+        max-width: 100%;
+        align-items: center;
+      }
+    }
+    @media (max-width: 600px) {
+      .info-section {
+        padding-left: 2vw;
+        padding-right: 2vw;
+      }
+      .info-title {
+        font-size: 1.5rem;
+      }
+      .card-title {
+        font-size: 1rem;
+      }
+      .card-text {
+        font-size: 0.98rem;
+      }
+      .info-cards {
+        align-items: center;
+      }
+      .info-card {
+        padding: 1.2rem 1rem;
+        max-width: 100%;
+        align-items: center;
+      }
+    }
+  </style>
+
   
   
   <!-- Seção de Visão Geral -->
   <section id="hero" >
-    <app-hero ngSkipHydration></app-hero> 
+    <!-- <app-hero ngSkipHydration></app-hero>  -->
     <!-- Componente que pode conter um banner com apresentação -->
   </section>
 
   <!-- Seção de Produtos em Destaque (Preview) -->
 <section id="products-preview">
-  <app-product-preview ngSkipHydration></app-product-preview> 
+  <!-- <app-product-preview ngSkipHydration></app-product-preview>  -->
   <!-- Componente para mostrar alguns produtos destacados -->
 </section>
 
@@ -30,7 +157,7 @@
   
  <!-- Sobre a Farmácia -->
 <section id="about">
-  <app-about></app-about> 
+  <!-- <app-about></app-about>  -->
   <!-- Componente com informações sobre a farmácia -->
 </section>
 
