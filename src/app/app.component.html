@@ -8,7 +8,6 @@
   <!-- Seção de Banner -->
   <section id="swiper-topo" class="swiper-topo">
     <!-- <app-swiper-topo app-swiper-topo></app-swiper-topo> -->
-  </section>
   <section class="info-section">
     <div class="info-content">
       <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem;">
@@ -20,6 +19,15 @@
           <p class="card-text" style="text-align: center;">
             A Fórmula Pet é uma farmácia de manipulação dedicada exclusivamente à saúde animal. Oferecemos soluções personalizadas para cães, gatos e pets exóticos, com fórmulas adaptadas às necessidades de cada paciente.
           </p>
+          <a 
+            href="https://wa.me/5511999999999?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20as%20fórmulas%20personalizadas%20para%20meu%20pet." 
+            target="_blank" 
+            class="cta-whatsapp-btn"
+            style="display: inline-block; margin-top: 1.2rem; padding: 0.8rem 2rem; background: #25d366; color: #fff; border-radius: 8px; font-weight: 700; font-size: 1.1rem; text-decoration: none; transition: background 0.2s;">
+            Fale pelo WhatsApp
+            <i class="fa-brands fa-whatsapp"></i>
+          </a>
+
         </div>
       </div>
       <div class="info-cards">
@@ -32,7 +40,8 @@
         <div class="info-card">
           <h3 class="card-title">Qualidade e Segurança</h3>
           <p class="card-text">
-            Trabalhamos com rigorosos padrões de qualidade, garantindo medicamentos manipulados com segurança, precisão e carinho. Conte conosco para cuidar do seu pet!
+            Trabalhamos com rigorosos padrões de qualidade, garantindo medicamentos manipulados com segurança, precisão e carinho. <br>
+            <strong>Pedidos personalizados podem ser feitos diretamente pelo WhatsApp!</strong> Clique no botão acima e envie sua necessidade, nossa equipe irá te atender com agilidade.
           </p>
         </div>
       </div>
@@ -95,6 +104,9 @@
       color: #444;
       font-weight: 400;
     }
+    .cta-whatsapp-btn:hover {
+      background: #128c7e;
+    }
     @media (max-width: 900px) {
       .info-section {
         padding-left: 5vw;
@@ -131,6 +143,10 @@
         padding: 1.2rem 1rem;
         max-width: 100%;
         align-items: center;
+      }
+      .cta-whatsapp-btn {
+        font-size: 1rem;
+        padding: 0.7rem 1.5rem;
       }
     }
   </style>
