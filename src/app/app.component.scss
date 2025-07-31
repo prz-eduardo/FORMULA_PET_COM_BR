@@ -159,3 +159,7 @@
     display: flex;
     justify-content: center;
  }
+
+ a[href*="elfsight.com/google-reviews-widget"] {
+  display: none !important;
+}
