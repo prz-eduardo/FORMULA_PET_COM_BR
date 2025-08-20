@@ -1,0 +1,24 @@
+<div class="admin-wrapper animate-fade">
+  <div class="admin-header">
+    <h1>ADMIN PANEL</h1>
+    <button (click)="logout()" class="btn-logout">Sair</button>
+  </div>
+
+  <div class="admin-actions">
+    <div class="action-card" (click)="goToCadastro()">
+      <i class="fa fa-plus-circle"></i>
+      <h2>Cadastrar Produto</h2>
+      <p>Adicione novos produtos ao site.</p>
+    </div>
+
+    <!-- Futuras ações -->
+    <div class="action-card" 
+        [class.disabled]="!hasProducts" 
+        (click)="goToLista()">
+    <i class="fa fa-list"></i>
+    <h2>Lista de Produtos</h2>
+    <p>Visualize todos os produtos cadastrados.</p>
+    </div>
+
+  </div>
+</div>

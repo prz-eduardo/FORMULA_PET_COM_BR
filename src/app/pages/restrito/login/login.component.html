@@ -1,0 +1,27 @@
+<div class="login-wrapper">
+  <div class="login-box animate-fade">
+    <div class="login-key">
+      <i class="fa fa-key"></i>
+    </div>
+    <div class="login-title">
+      ADMIN PANEL
+    </div>
+
+    <form (ngSubmit)="login()">
+      <div class="form-group">
+        <label>USERNAME</label>
+        <input type="text" [(ngModel)]="email" name="email" required placeholder="Enter username">
+      </div>
+
+      <div class="form-group">
+        <label>PASSWORD</label>
+        <input type="password" [(ngModel)]="senha" name="senha" required placeholder="Enter password">
+      </div>
+
+      <div class="login-bottom">
+        <div class="login-error" *ngIf="error">{{ error }}</div>
+        <button type="submit" class="btn-login">LOGIN</button>
+      </div>
+    </form>
+  </div>
+</div>

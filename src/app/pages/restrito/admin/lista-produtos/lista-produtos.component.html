@@ -1,0 +1,77 @@
+<!-- lista-produtos.component.html -->
+<div class="lista-produtos-wrapper animate-fade">
+  <h2>Produtos Cadastrados</h2>
+
+  <div class="lista-actions">
+    <button class="btn-add" (click)="addProduto()">+ Cadastrar Produto</button>
+    <button class="btn-toggle" (click)="toggleView()">
+      {{ isCardView ? 'Ver Lista Clássica' : 'Ver Cards Grandes' }}
+    </button>
+  </div>
+
+  <!-- GRID CARDS -->
+  <div class="produtos-grid" *ngIf="isCardView && produtos.length; else tableView">
+    <div class="produto-card" *ngFor="let p of produtos">
+      <div class="produto-img">
+        <img *ngIf="p.image" [src]="p.image" alt="{{p.name}}">
+        <div *ngIf="!p.image" class="placeholder-img">Sem imagem</div>
+      </div>
+      <div class="produto-info">
+        <h3>{{p.name}}</h3>
+        <p class="categoria">{{p.category}}</p>
+        <p class="preco">R$ {{p.price.toFixed(2)}}</p>
+        <p class="estoque">Estoque: {{p.stock ?? '-'}}</p>
+        <div class="tags">
+          <span *ngFor="let t of p.tags">{{t}}</span>
+        </div>
+      </div>
+      <div class="produto-actions">
+        <button class="btn-edit" (click)="editProduto(p)">Editar</button>
+        <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABELA CLÁSSICA -->
+<ng-template #tableView>
+  <div *ngIf="produtos.length; else empty" class="table-wrapper">
+    <table class="produtos-table">
+      <thead>
+        <tr>
+          <th>Imagem</th>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Estoque</th>
+          <th>Tags</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of produtos">
+          <td>
+            <img *ngIf="p.image" [src]="p.image" alt="{{p.name}}" class="thumb">
+            <span *ngIf="!p.image">-</span>
+          </td>
+          <td>{{p.name}}</td>
+          <td>{{p.category}}</td>
+          <td>R$ {{p.price.toFixed(2)}}</td>
+          <td>{{p.stock ?? '-'}}</td>
+          <td>
+            <span *ngFor="let t of p.tags" class="tag">{{t}}</span>
+          </td>
+          <td>
+            <button class="btn-edit" (click)="editProduto(p)">Editar</button>
+            <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</ng-template>
+
+
+  <ng-template #empty>
+    <p class="empty-msg">Nenhum produto cadastrado ainda.</p>
+  </ng-template>
+</div>

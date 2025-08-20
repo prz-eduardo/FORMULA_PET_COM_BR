@@ -1,0 +1,145 @@
+<div class="produto-container">
+  <h2>{{ produto.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
+
+  <!-- Upload de imagem -->
+  <div class="image-upload">
+    <label for="imgUpload">
+      <div class="img-preview" *ngIf="produto.image; else placeholder">
+        <img [src]="produto.image" alt="Imagem do produto">
+      </div>
+      <ng-template #placeholder>
+        <div class="img-placeholder">Clique para adicionar imagem</div>
+      </ng-template>
+    </label>
+    <input type="file" id="imgUpload" (change)="onImageSelected($event)">
+  </div>
+
+  <form (ngSubmit)="submit()">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome do Produto</label>
+        <input type="text" [(ngModel)]="produto.name" name="name" required>
+      </div>
+
+      <div class="form-group">
+        <label>Categoria</label>
+        <select [(ngModel)]="produto.category" name="category" required>
+          <option *ngFor="let cat of categorias" [value]="cat">{{cat}}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Preço</label>
+        <input type="number" [(ngModel)]="produto.price" name="price" required>
+      </div>
+
+      <div class="form-group">
+        <label>Estoque</label>
+        <input type="number" [(ngModel)]="produto.stock" name="stock">
+      </div>
+
+      <div class="form-group full-width">
+        <label>Descrição</label>
+        <textarea [(ngModel)]="produto.description" name="description" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Desconto (%)</label>
+        <input type="number" [(ngModel)]="produto.discount" name="discount">
+      </div>
+
+      <div class="form-group">
+        <label>Avaliação</label>
+        <input type="number" [(ngModel)]="produto.rating" name="rating" step="0.1" max="5" min="0">
+      </div>
+
+      <!-- Peso/Volume/Unidade -->
+      <div class="form-group">
+        <label>Peso/Volume/Unidade</label>
+        <div style="display:flex; gap:0.5rem;">
+          <input type="number" [(ngModel)]="produto.weightValue" name="weightValue" placeholder="Valor">
+          <select [(ngModel)]="produto.weightUnit" name="weightUnit">
+            <option value="mg">mg</option>
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+            <option value="ml">ml</option>
+            <option value="un">un</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dosagens toggle + personalizadas -->
+    <div class="customizations">
+      <h4>Dosagens</h4>
+      <div class="dosagens">
+        <button type="button" *ngFor="let d of produto.customizations.dosage"
+          class="active">{{d}}</button>
+        <button type="button" (click)="showDosageModal=true">+ Adicionar</button>
+      </div>
+    </div>
+
+    <!-- Embalagens toggle + personalizadas -->
+    <div class="customizations">
+      <h4>Embalagens</h4>
+      <div class="embalagens">
+        <button type="button" *ngFor="let p of produto.customizations.packaging"
+          class="active">{{p}}</button>
+        <button type="button" (click)="showPackagingModal=true">+ Adicionar</button>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="tags-section">
+      <h4>Tags</h4>
+      <div class="tags">
+        <span *ngFor="let t of produto.tags">{{t}} <span (click)="removeTag(t)">✖</span></span>
+        <button type="button" (click)="showTagModal=true">+ Adicionar</button>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-submit">{{ produto.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
+      <button type="button" class="btn-reset" (click)="resetForm()">Limpar</button>
+    </div>
+  </form>
+
+  <!-- Modal Dosagem -->
+  <div class="modal" *ngIf="showDosageModal">
+    <div class="modal-content">
+      <h4>Adicionar Dosagem</h4>
+      <input type="text" [(ngModel)]="newDosage" placeholder="Ex: 25mg">
+      <button (click)="addDosage(newDosage); newDosage=''; showDosageModal=false">Adicionar</button>
+      <button (click)="showDosageModal=false">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Modal Embalagem -->
+  <div class="modal" *ngIf="showPackagingModal">
+    <div class="modal-content">
+      <h4>Adicionar Embalagem</h4>
+      <input type="text" [(ngModel)]="newPackaging" placeholder="Ex: Caixa grande">
+      <button (click)="addPackaging(newPackaging); newPackaging=''; showPackagingModal=false">Adicionar</button>
+      <button (click)="showPackagingModal=false">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Modal Tags -->
+  <div class="modal" *ngIf="showTagModal">
+    <div class="modal-content">
+      <h4>Adicionar Tag</h4>
+      <input type="text" [(ngModel)]="newTag" placeholder="Ex: vitamina">
+      <button (click)="addTag(newTag); newTag=''; showTagModal=false">Adicionar</button>
+      <button (click)="showTagModal=false">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" *ngIf="showSuccessModal">
+  <div class="modal-content">
+    <h4>Produto {{ produto.id ? 'atualizado' : 'cadastrado' }} com sucesso!</h4>
+    <button (click)="showSuccessModal=false; router.navigate(['/restrito/admin'])">
+      OK
+    </button>
+  </div>
+</div>

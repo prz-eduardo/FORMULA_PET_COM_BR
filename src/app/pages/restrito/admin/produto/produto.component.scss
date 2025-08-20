@@ -1,0 +1,154 @@
+.produto-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #1A2226;
+  color: #ECF0F5;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  font-family: 'Roboto', sans-serif;
+}
+
+h2 { text-align: center; margin-bottom: 2rem; }
+
+.image-upload {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  input[type=file] { display: none; }
+
+  .img-preview, .img-placeholder {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+    border-radius: 12px;
+    background: #0E151A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  .img-preview:hover, .img-placeholder:hover { transform: scale(1.05); }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  .form-group { display: flex; flex-direction: column; }
+  .full-width { grid-column: span 2; }
+}
+
+input, textarea, select {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-bottom: 2px solid #0DB8DE;
+  border-radius: 4px;
+  background: #0E151A;
+  color: #ECF0F5;
+  font-size: 1rem;
+  outline: none;
+  margin-bottom: 0.5rem;
+  transition: 0.2s all;
+}
+
+input:focus, textarea:focus, select:focus { border-bottom-color: #27EF9F; }
+
+button { padding: 0.5rem 1rem; margin-top: 0.5rem; background: #0DB8DE; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s all; }
+button:hover { background: #27EF9F; }
+
+.customizations {
+  margin-top: 1.5rem;
+
+  h4 { margin-bottom: 0.5rem; }
+
+  .dosagens button {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #0DB8DE;
+    color: #fff;
+    transition: 0.2s all;
+  }
+
+  .dosagens button.active { background: #27EF9F; color:#000; }
+
+  .embalagens label { margin-right: 1rem; cursor:pointer; }
+  .embalagens input { margin-right: 0.25rem; }
+}
+
+.tags-section {
+  margin-top:1rem;
+
+  .tags { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem; }
+  .tags span { background:#27EF9F; color:#000; padding:2px 8px; border-radius:4px; cursor:pointer; }
+  .tags span span { color:#fff; margin-left:4px; }
+}
+
+.form-actions { display: flex; justify-content: space-between; margin-top: 2rem; }
+
+@media(max-width: 768px){
+  .form-grid { grid-template-columns: 1fr; }
+  .full-width { grid-column: span 1; }
+}
+
+.form-grid .form-group label {
+  display: block;
+  height: 40px;
+  line-height: 1.2rem;
+  font-weight: bold;
+}
+
+.embalagens {
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.5rem;
+  margin-top:0.5rem;
+
+  button, input[type=text] {
+    border:none;
+    padding:0.5rem 1rem;
+    border-radius:6px;
+    cursor:pointer;
+    background:#0DB8DE;
+    color:#fff;
+    transition:0.2s all;
+  }
+
+  button.active { background:#27EF9F; color:#000; }
+
+  input[type=text] { flex:1; min-width:120px; }
+}
+
+.modal {
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  .modal-content {
+    background:#1A2226;
+    padding:2rem;
+    border-radius:12px;
+    display:flex;
+    flex-direction:column;
+    gap:0.5rem;
+
+    input { width:100%; padding:0.5rem; border-radius:6px; border:none; background:#0E151A; color:#ECF0F5; }
+    button { padding:0.5rem 1rem; border:none; border-radius:6px; background:#0DB8DE; color:#fff; cursor:pointer; }
+    button:hover { background:#27EF9F; color:#000; }
+  }
+}

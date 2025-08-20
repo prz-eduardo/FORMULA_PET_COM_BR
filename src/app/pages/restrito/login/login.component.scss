@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  margin: 0;
+  background: linear-gradient(135deg, #1e2a38, #0d151f);
+  font-family: 'Inter', sans-serif; /* fonte sem serifa moderna */
+}
+
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-box {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  background: #1a1f28;
+  padding: 40px;
+  width: 360px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  text-align: center;
+  color: #ecf0f5;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-key {
+  font-size: 60px;
+  color: #0db8de;
+  margin-bottom: 20px;
+  transition: transform 0.4s ease;
+}
+
+.login-box:hover .login-key {
+  transform: rotate(10deg);
+}
+
+.login-title {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+    color: #ffffff;
+}
+
+.form-group {
+  text-align: left;
+  margin-bottom: 25px;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a2a4a4;
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+  background: #1a1f28;
+  border: none;
+  border-bottom: 2px solid #0db8de;
+  color: #ecf0f5;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  outline: none;
+  border-bottom: 2px solid #27ef9f;
+}
+
+.login-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.login-error {
+  color: #ff4d4f;
+  font-size: 12px;
+}
+
+.btn-login {
+  background-color: transparent;
+  border: 2px solid #0db8de;
+  color: #0db8de;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+.btn-login:hover {
+  background-color: #0db8de;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.animate-fade {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
