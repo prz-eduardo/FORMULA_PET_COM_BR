@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { getAuth, signOut } from 'firebase/auth';
+// import { getAuth, signOut } from 'firebase/auth';
 
 @Component({
   selector: 'app-admin',
@@ -23,8 +23,8 @@ export class AdminComponent implements OnInit {
   }
 
   logout() {
-    const auth = getAuth();
-    signOut(auth).then(() => this.router.navigate(['/restrito/login']));
+    // const auth = getAuth();
+    // signOut(auth).then(() => this.router.navigate(['/restrito/login']));
   }
 
   goToCadastro() {

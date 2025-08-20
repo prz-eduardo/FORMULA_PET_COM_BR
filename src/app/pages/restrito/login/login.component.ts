@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+// import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 @Component({
   selector: 'app-login',
@@ -27,9 +27,9 @@ export class LoginComponent {
     }
 
     // Firebase login
-    const auth = getAuth();
-    signInWithEmailAndPassword(auth, this.email, this.senha)
-      .then(() => this.router.navigate(['/restrito/admin']))
-      .catch(err => this.error = err.message);
+    // const auth = getAuth();
+    // signInWithEmailAndPassword(auth, this.email, this.senha)
+    //   .then(() => this.router.navigate(['/restrito/admin']))
+    //   .catch(err => this.error = err.message);
   }
 }

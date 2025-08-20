@@ -32,7 +32,7 @@ interface Produto {
   templateUrl: './lista-produtos.component.html',
   styleUrl: './lista-produtos.component.scss'
 })
-export class ProdutoListComponent implements OnInit {
+export class ListaProdutosComponent implements OnInit {
   isCardView = true;
 
 
