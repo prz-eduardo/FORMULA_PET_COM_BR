@@ -1,27 +1,28 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { db } from '../../../../firebase-config';
+import { collection, doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface Produto {
-  id?: number;
+  id?: string;
   name: string;
   description: string;
   price: number;
-  image?: string;
+  image?: string | null;
   category: string;
   customizations: {
     dosage: string[];
     packaging: string[];
   };
-  discount?: number;
-  rating?: number;
-  stock?: number;
+  discount?: number | null;
+  rating?: number | null;
+  stock?: number | null;
   tags: string[];
-  weight?: string;
-  weightUnit?: string; // para mg, kg, L, un
-  weightValue?: number; // <-- adiciona aqui
+  weight?: string | null;
+  weightUnit?: string | null;
+  weightValue?: number | null;
   isFavourite?: boolean;
   isAddedToCart?: boolean;
 }
@@ -46,118 +47,100 @@ export class ProdutoComponent implements OnInit {
     weightUnit: 'g'
   };
 
-
   categorias = ['Suplementos', 'Brinquedos', 'Rações'];
-  dosagensComuns = ['15mg', '30mg', '50mg'];
-  embalagensComuns = ['Vidro', 'Plástico', 'Saco', 'Lata'];
   showDosageModal = false;
   showPackagingModal = false;
   showTagModal = false;
   newDosage = '';
   newPackaging = '';
   newTag = '';
-  weightValue: number | null = null;
-  weightUnit: string = 'g';
+  showSuccessModal = false;
 
-  constructor(private route: ActivatedRoute,public router: Router) {}
+  constructor(private route: ActivatedRoute, public router: Router) {}
 
-ngOnInit(): void {
-  const produtoId = this.route.snapshot.queryParamMap.get('produto_id');
-  if (produtoId) {
-    this.fetchProdutoFromStorage(+produtoId);
-  }
-}
-
-fetchProdutoFromStorage(id: number) {
-  const produtosStored = localStorage.getItem('produtos');
-  const produtos: Produto[] = produtosStored ? JSON.parse(produtosStored) : [];
-
-  const produto = produtos.find(p => p.id === id);
-  if (produto) {
-    this.produto = { ...produto }; // copia para manter reatividade
-  } else {
-    alert('Produto não encontrado!');
-    this.router.navigate(['/restrito/admin']); // volta pro admin se não achar
-  }
-}
-
-  mockFetchProduto(id:number){
-    // mock de produto
-    this.produto = {
-      id: id,
-      name: "Suplemento para Cães - Vitaminas",
-      description: "Suplemento vitamínico para cães com necessidades nutricionais especiais.",
-      price: 39.90,
-      image: "https://s2-ge.glbimg.com/A3qYbSZUHErnbuIK11hrm_NlQJo=/0x0:1254x836/984x0/smart/filters:strip_icc()/i.s3.glbimg.com/v1/AUTH_bc8228b6673f488aa253bbcb03c80ec5/internal_photos/bs/2023/W/Z/1ckIiORXqbN64zd2i9zw/istock-851155418.jpg",
-      category: "Suplementos",
-      customizations: {
-        dosage: ["30mg"],
-        packaging: ["Vidro"]
-      },
-      discount: 10,
-      rating: 4.5,
-      stock: 20,
-      tags: ["vitaminas","cães"],
-      weight: "500g",
-      isFavourite: true,
-      isAddedToCart: false
+  ngOnInit(): void {
+    const produtoId = this.route.snapshot.queryParamMap.get('produto_id');
+    if (produtoId) {
+      this.fetchProdutoFromFirestore(produtoId);
     }
   }
 
-  onImageSelected(event: any){
+  async fetchProdutoFromFirestore(id: string) {
+    try {
+      const docRef = doc(db, 'produtos', id);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Produto;
+        this.produto = {
+          id: docSnap.id,
+          name: data.name || '',
+          description: data.description || '',
+          price: data.price || 0,
+          category: data.category || '',
+          customizations: data.customizations || { dosage: [], packaging: [] },
+          discount: data.discount ?? null,
+          rating: data.rating ?? null,
+          stock: data.stock ?? null,
+          tags: data.tags || [],
+          weight: data.weight ?? null,
+          weightValue: data.weightValue ?? 0,
+          weightUnit: data.weightUnit ?? 'g',
+          isFavourite: data.isFavourite ?? false,
+          isAddedToCart: data.isAddedToCart ?? false,
+          image: data.image ?? null
+        };
+      } else {
+        alert('Produto não encontrado!');
+        this.router.navigate(['/restrito/admin']);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar produto:', err);
+    }
+  }
+
+  onImageSelected(event: any) {
     const file = event.target.files[0];
-    if(file){
+    if (file) {
       const reader = new FileReader();
-      reader.onload = (e:any) => this.produto.image = e.target.result;
+      reader.onload = (e: any) => this.produto.image = e.target.result;
       reader.readAsDataURL(file);
     }
   }
 
-  toggleDosage(dos:string){
+  toggleDosage(dos: string) {
     const idx = this.produto.customizations.dosage.indexOf(dos);
-    if(idx > -1) this.produto.customizations.dosage.splice(idx,1);
+    if (idx > -1) this.produto.customizations.dosage.splice(idx, 1);
     else this.produto.customizations.dosage.push(dos);
   }
 
-    addDosage(d:string){
-    if(d && !this.produto.customizations.dosage.includes(d)){
+  addDosage(d: string) {
+    if (d && !this.produto.customizations.dosage.includes(d)) {
       this.produto.customizations.dosage.push(d);
     }
   }
 
-  setPackaging(pack:string){
-    this.produto.customizations.packaging = [pack]; // radio style
+  togglePackaging(pack: string) {
+    const idx = this.produto.customizations.packaging.indexOf(pack);
+    if (idx > -1) this.produto.customizations.packaging.splice(idx, 1);
+    else this.produto.customizations.packaging.push(pack);
   }
 
-  addTag(tag:string){
-    if(tag && !this.produto.tags.includes(tag)) this.produto.tags.push(tag);
+  addPackaging(pack: string) {
+    if (pack && !this.produto.customizations.packaging.includes(pack)) {
+      this.produto.customizations.packaging.push(pack);
+    }
   }
 
-  removeTag(tag:string){
-    this.produto.tags = this.produto.tags.filter(t=>t!==tag);
+  addTag(tag: string) {
+    if (tag && !this.produto.tags.includes(tag)) this.produto.tags.push(tag);
   }
 
-submit(){
-  const produtosStored = localStorage.getItem('produtos');
-  let produtos: Produto[] = produtosStored ? JSON.parse(produtosStored) : [];
-
-  if(this.produto.id){ 
-    produtos = produtos.map(p => p.id === this.produto.id ? this.produto : p);
-  } else {
-    const maxId = produtos.length ? Math.max(...produtos.map(p=>p.id||0)) : 0;
-    this.produto.id = maxId + 1;
-    produtos.push(this.produto);
+  removeTag(tag: string) {
+    this.produto.tags = this.produto.tags.filter(t => t !== tag);
   }
 
-  localStorage.setItem('produtos', JSON.stringify(produtos));
-
-  // Abre modal de sucesso
-  this.showSuccessModal = true;
-}
-  showSuccessModal = false;
-
-
-  resetForm(){
+  resetForm() {
     this.produto = {
       name: '',
       description: '',
@@ -165,19 +148,43 @@ submit(){
       category: '',
       customizations: { dosage: [], packaging: [] },
       tags: [],
-    }
+      weightValue: 0,
+      weightUnit: 'g'
+    };
   }
 
-  togglePackaging(pack: string){
-    const idx = this.produto.customizations.packaging.indexOf(pack);
-    if(idx > -1) this.produto.customizations.packaging.splice(idx,1);
-    else this.produto.customizations.packaging.push(pack);
-  }
+async submit() {
+  try {
+    const produtoId = this.produto.id ?? doc(collection(db, 'produtos')).id;
+    this.produto.id = produtoId;
 
- addPackaging(pack: string){
-    if(pack && !this.produto.customizations.packaging.includes(pack)){
-      this.produto.customizations.packaging.push(pack);
-    }
+    const produtoData = {
+      name: this.produto.name ?? '',
+      description: this.produto.description ?? '',
+      price: this.produto.price ?? 0,
+      category: this.produto.category ?? '',
+      customizations: {
+        dosage: this.produto.customizations?.dosage ?? [],
+        packaging: this.produto.customizations?.packaging ?? []
+      },
+      discount: this.produto.discount ?? null,
+      rating: this.produto.rating ?? null,
+      stock: this.produto.stock ?? null,
+      tags: this.produto.tags ?? [],
+      weightValue: this.produto.weightValue ?? null,
+      weightUnit: this.produto.weightUnit ?? null,
+      isFavourite: this.produto.isFavourite ?? false,
+      isAddedToCart: this.produto.isAddedToCart ?? false,
+      image: this.produto.image?.substring(0, 500) ?? null // só exemplo, evita doc muito grande
+    };
+
+    await setDoc(doc(db, 'produtos', produtoId), produtoData);
+
+    this.showSuccessModal = true;
+
+  } catch (err) {
+    console.error('Erro ao salvar produto:', err);
   }
+}
 
 }
