@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { db } from '../../../../firebase-config';
 import { collection, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getCollectionItems, addCollectionItem, deleteCollectionItem } from '../firebase-helpers';
 
 interface Produto {
   id?: string;
@@ -20,11 +21,8 @@ interface Produto {
   rating?: number | null;
   stock?: number | null;
   tags: string[];
-  weight?: string | null;
-  weightUnit?: string | null;
   weightValue?: number | null;
-  isFavourite?: boolean;
-  isAddedToCart?: boolean;
+  weightUnit?: string | null;
 }
 
 @Component({
@@ -47,49 +45,42 @@ export class ProdutoComponent implements OnInit {
     weightUnit: 'g'
   };
 
-  categorias = ['Suplementos', 'Brinquedos', 'Rações'];
+  // Coleções
+  categoriasList: { id: string, name: string }[] = [];
+  tagsList: { id: string, name: string }[] = [];
+  embalagensList: { id: string, name: string }[] = [];
+
+  // Modais
   showDosageModal = false;
   showPackagingModal = false;
   showTagModal = false;
+  showCategoryModal = false;
+  showSuccessModal = false;
+
+  // Inputs novos
   newDosage = '';
   newPackaging = '';
   newTag = '';
-  showSuccessModal = false;
+  newCategory = '';
 
   constructor(private route: ActivatedRoute, public router: Router) {}
 
-  ngOnInit(): void {
+  async ngOnInit() {
     const produtoId = this.route.snapshot.queryParamMap.get('produto_id');
-    if (produtoId) {
-      this.fetchProdutoFromFirestore(produtoId);
-    }
+    if (produtoId) await this.fetchProdutoFromFirestore(produtoId);
+
+    this.categoriasList = await this.fetchCollection('categorias');
+    this.tagsList = await this.fetchCollection('tags');
+    this.embalagensList = await this.fetchCollection('embalagens');
   }
 
-  async fetchProdutoFromFirestore(id: string) {
+  private async fetchProdutoFromFirestore(id: string) {
     try {
       const docRef = doc(db, 'produtos', id);
       const docSnap = await getDoc(docRef);
-
       if (docSnap.exists()) {
         const data = docSnap.data() as Produto;
-        this.produto = {
-          id: docSnap.id,
-          name: data.name || '',
-          description: data.description || '',
-          price: data.price || 0,
-          category: data.category || '',
-          customizations: data.customizations || { dosage: [], packaging: [] },
-          discount: data.discount ?? null,
-          rating: data.rating ?? null,
-          stock: data.stock ?? null,
-          tags: data.tags || [],
-          weight: data.weight ?? null,
-          weightValue: data.weightValue ?? 0,
-          weightUnit: data.weightUnit ?? 'g',
-          isFavourite: data.isFavourite ?? false,
-          isAddedToCart: data.isAddedToCart ?? false,
-          image: data.image ?? null
-        };
+        this.produto = { id: docSnap.id, ...data };
       } else {
         alert('Produto não encontrado!');
         this.router.navigate(['/restrito/admin']);
@@ -99,45 +90,85 @@ export class ProdutoComponent implements OnInit {
     }
   }
 
-  onImageSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => this.produto.image = e.target.result;
-      reader.readAsDataURL(file);
-    }
+  private async fetchCollection(name: string) {
+    return (await getCollectionItems(name)).map((item: any) => ({
+      id: item.id,
+      name: item.name ?? ''
+    }));
   }
 
+  onImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e: any) => this.produto.image = e.target.result;
+    reader.readAsDataURL(file);
+  }
+
+  // =================== DOSAGENS ===================
   toggleDosage(dos: string) {
     const idx = this.produto.customizations.dosage.indexOf(dos);
     if (idx > -1) this.produto.customizations.dosage.splice(idx, 1);
     else this.produto.customizations.dosage.push(dos);
   }
-
   addDosage(d: string) {
-    if (d && !this.produto.customizations.dosage.includes(d)) {
+    if (!d) return;
+    if (!this.produto.customizations.dosage.includes(d)) {
       this.produto.customizations.dosage.push(d);
     }
+    this.newDosage = '';
+    this.showDosageModal = false;
   }
 
-  togglePackaging(pack: string) {
-    const idx = this.produto.customizations.packaging.indexOf(pack);
-    if (idx > -1) this.produto.customizations.packaging.splice(idx, 1);
-    else this.produto.customizations.packaging.push(pack);
-  }
-
-  addPackaging(pack: string) {
-    if (pack && !this.produto.customizations.packaging.includes(pack)) {
-      this.produto.customizations.packaging.push(pack);
+  // =================== EMBALAGENS ===================
+  // togglePackaging(pack: string) {
+  //   const idx = this.produto.customizations.packaging.indexOf(pack);
+  //   if (idx > -1) this.produto.customizations.packaging.splice(idx, 1);
+  //   else this.produto.customizations.packaging.push(pack);
+  // }
+  async addNewPackaging(packName: string) {
+    if (!packName) return;
+    if (!this.produto.customizations.packaging.includes(packName)) {
+      this.produto.customizations.packaging.push(packName);
     }
+    if (!this.embalagensList.some(p => p.name.toLowerCase() === packName.toLowerCase())) {
+      await addCollectionItem('embalagens', packName);
+      this.embalagensList = await this.fetchCollection('embalagens');
+    }
+    this.newPackaging = '';
+    this.showPackagingModal = false;
   }
 
-  addTag(tag: string) {
-    if (tag && !this.produto.tags.includes(tag)) this.produto.tags.push(tag);
+  // =================== TAGS ===================
+  toggleTag(tagName: string) {
+    const idx = this.produto.tags.indexOf(tagName);
+    if (idx > -1) this.produto.tags.splice(idx, 1);
+    else this.produto.tags.push(tagName);
   }
-
+  async addNewTag(tagName: string) {
+    if (!tagName) return;
+    if (!this.produto.tags.includes(tagName)) this.produto.tags.push(tagName);
+    if (!this.tagsList.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+      await addCollectionItem('tags', tagName);
+      this.tagsList = await this.fetchCollection('tags');
+    }
+    this.newTag = '';
+    this.showTagModal = false;
+  }
   removeTag(tag: string) {
     this.produto.tags = this.produto.tags.filter(t => t !== tag);
+  }
+
+  // =================== CATEGORIAS ===================
+  async addNewCategory(catName: string) {
+    if (!catName) return;
+    if (!this.categoriasList.some(c => c.name.toLowerCase() === catName.toLowerCase())) {
+      await addCollectionItem('categorias', catName);
+      this.categoriasList = await this.fetchCollection('categorias');
+    }
+    this.produto.category = catName;
+    this.newCategory = '';
+    this.showCategoryModal = false;
   }
 
   resetForm() {
@@ -153,38 +184,42 @@ export class ProdutoComponent implements OnInit {
     };
   }
 
-async submit() {
-  try {
-    const produtoId = this.produto.id ?? doc(collection(db, 'produtos')).id;
-    this.produto.id = produtoId;
+  async submit() {
+    try {
+      const produtoId = this.produto.id ?? doc(collection(db, 'produtos')).id;
+      this.produto.id = produtoId;
+      await setDoc(doc(db, 'produtos', produtoId), { ...this.produto });
+      this.showSuccessModal = true;
+    } catch (err) {
+      console.error('Erro ao salvar produto:', err);
+    }
+  }
 
-    const produtoData = {
-      name: this.produto.name ?? '',
-      description: this.produto.description ?? '',
-      price: this.produto.price ?? 0,
-      category: this.produto.category ?? '',
-      customizations: {
-        dosage: this.produto.customizations?.dosage ?? [],
-        packaging: this.produto.customizations?.packaging ?? []
-      },
-      discount: this.produto.discount ?? null,
-      rating: this.produto.rating ?? null,
-      stock: this.produto.stock ?? null,
-      tags: this.produto.tags ?? [],
-      weightValue: this.produto.weightValue ?? null,
-      weightUnit: this.produto.weightUnit ?? null,
-      isFavourite: this.produto.isFavourite ?? false,
-      isAddedToCart: this.produto.isAddedToCart ?? false,
-      image: this.produto.image?.substring(0, 500) ?? null // só exemplo, evita doc muito grande
-    };
+  // =================== CATEGORIAS ===================
+toggleCategory(name: string) {
+  if (this.produto.category === name) this.produto.category = ''; // desmarcar
+  else this.produto.category = name; // marcar
+}
 
-    await setDoc(doc(db, 'produtos', produtoId), produtoData);
-
-    this.showSuccessModal = true;
-
-  } catch (err) {
-    console.error('Erro ao salvar produto:', err);
+async removeCategory(name: string, e: Event) {
+  e.stopPropagation();
+  if (confirm('Excluir categoria do Firebase?')) {
+    await deleteCollectionItem('categorias', name); // função do firebase
+    this.categoriasList = await this.fetchCollection('categorias');
+    if (this.produto.category === name) this.produto.category = '';
   }
 }
 
+// =================== EMBALAGENS ===================
+togglePackaging(pack: string) {
+  const idx = this.produto.customizations.packaging.indexOf(pack);
+  if (idx > -1) this.produto.customizations.packaging.splice(idx, 1);
+  else this.produto.customizations.packaging.push(pack);
+}
+
+removePackaging(pack: string, e: Event) {
+  e.stopPropagation();
+  this.produto.customizations.packaging =
+    this.produto.customizations.packaging.filter(p => p !== pack);
+}
 }

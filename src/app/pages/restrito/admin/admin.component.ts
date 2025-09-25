@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { db } from '../../../firebase-config';
+import { collection, getDocs } from 'firebase/firestore';
 
 @Component({
   selector: 'app-admin',
@@ -15,10 +17,15 @@ export class AdminComponent implements OnInit {
 
   constructor(private router: Router) {}
 
-  ngOnInit() {
-    const produtosStored = localStorage.getItem('produtos');
-    const produtos = produtosStored ? JSON.parse(produtosStored) : [];
-    this.hasProducts = produtos.length > 0;
+  async ngOnInit() {
+    try {
+      const colRef = collection(db, 'produtos');
+      const snapshot = await getDocs(colRef);
+      this.hasProducts = snapshot.size > 0; // se tiver docs, ativa a lista
+    } catch (err) {
+      console.error('Erro ao checar produtos:', err);
+      this.hasProducts = false;
+    }
   }
 
   logout() {

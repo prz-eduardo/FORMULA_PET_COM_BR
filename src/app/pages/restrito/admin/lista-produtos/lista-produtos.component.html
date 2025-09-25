@@ -19,7 +19,16 @@
       <div class="produto-info">
         <h3>{{p.name}}</h3>
         <p class="categoria">{{p.category}}</p>
-        <p class="preco">R$ {{p.price.toFixed(2)}}</p>
+        <p class="preco">
+          <span *ngIf="p.discount">
+            <span class="preco-antigo">R$ {{p.price.toFixed(2)}}</span>
+            R$ {{ (p.price * (1 - p.discount / 100)).toFixed(2) }}
+          </span>
+          <span *ngIf="!p.discount">
+            R$ {{p.price.toFixed(2)}}
+          </span>
+        </p>
+
         <p class="estoque">Estoque: {{p.stock ?? '-'}}</p>
         <div class="tags">
           <span *ngFor="let t of p.tags">{{t}}</span>
@@ -55,7 +64,16 @@
           </td>
           <td>{{p.name}}</td>
           <td>{{p.category}}</td>
-          <td>R$ {{p.price.toFixed(2)}}</td>
+          <td>
+            <span *ngIf="p.discount">
+              <span class="preco-antigo">R$ {{p.price.toFixed(2)}}</span>
+              R$ {{ (p.price * (1 - p.discount / 100)).toFixed(2) }}
+            </span>
+            <span *ngIf="!p.discount">
+              R$ {{p.price.toFixed(2)}}
+            </span>
+          </td>
+
           <td>{{p.stock ?? '-'}}</td>
           <td>
             <span *ngFor="let t of p.tags" class="tag">{{t}}</span>

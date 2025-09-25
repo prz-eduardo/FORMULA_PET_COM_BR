@@ -119,3 +119,9 @@
 .produtos-table {
   min-width: 600px; /* força tabela a não ficar compacta demais */
 }
+
+.preco-antigo {
+  text-decoration: line-through;
+  color: #999;
+  margin-right: 5px;
+}
