@@ -1,7 +1,18 @@
 <!-- Slider de Categorias -->
-<swiper-container class="category-swiper" [slidesPerView]="'auto'" [spaceBetween]="10">
+<swiper-container class="category-swiper swiper-categorias" [slidesPerView]="'auto'" [spaceBetween]="10">
+<div class="category-slide p-r">
+  <button 
+    type="button"
+    class="button-56"
+    [class.active]="selectedCategory === ''" 
+    (click)="filterProductsByCategory('')">
+    <span>Todos</span>
+  </button>
+</div>
+  
   <ng-container *ngFor="let category of categories">
     <swiper-slide class="category-slide">
+      
       <button 
         type="button"
         class="button-56"
@@ -13,13 +24,7 @@
   </ng-container>
   <!-- Botão para Todos -->
   <swiper-slide class="category-slide">
-    <button 
-      type="button"
-      class="button-56"
-      [class.active]="selectedCategory === ''" 
-      (click)="filterProductsByCategory('')">
-      <span>Todos</span>
-    </button>
+
   </swiper-slide>
 </swiper-container>
 

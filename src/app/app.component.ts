@@ -50,17 +50,20 @@ export class AppComponent implements OnInit, AfterViewInit {
       // Tentando várias vezes porque o widget pode demorar pra renderizar
       let tries = 0;
       const maxTries = 25;
+      let loadingTestimonials = true;
       const intervalId = setInterval(() => {
         const badge = document.querySelector('a[href*="elfsight.com/google-reviews-widget"]');
         if (badge) {
           badge.remove();
           console.log('Badge Elfsight removido.');
+          loadingTestimonials = false;
           clearInterval(intervalId);
         } else if (++tries >= maxTries) {
+          loadingTestimonials = false;
           clearInterval(intervalId);
           console.warn('Não encontrou o badge Elfsight após várias tentativas.');
         }
-      }, 1000);
+      }, 2000);
     }
   }
 

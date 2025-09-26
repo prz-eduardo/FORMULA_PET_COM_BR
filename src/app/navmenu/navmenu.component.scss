@@ -29,6 +29,15 @@ $bg-04: #5bcac5;
   }
 }
 
+.font{
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  text-rendering: optimizeLegibility;
+
+  font-family: $font-01;
+}
+
 // Reset e configurações globais
 body {
   margin: 0;
@@ -315,6 +324,7 @@ nav {
         // Texto do Main Link
         .text-item {
           color: white;
+          font-family: $font-01;
           text-transform: uppercase;
           font-weight: 800;
           font-size: 40px;
