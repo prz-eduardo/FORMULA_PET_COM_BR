@@ -1,1 +1,244 @@
-<app-navmenu></app-navmenu>
+<section id="header" class="header">
+  <app-navmenu></app-navmenu>
+</section>
+
+<div style="padding: 1vh;"></div>
+
+<!-- Seção Hero -->
+<section class="about-hero">
+  <div class="hero-content">
+    <h1 class="hero-title">Sobre Nós</h1>
+    <p class="hero-subtitle">
+      Descubra a história da Fórmula Pet e como nos tornamos referência em manipulação veterinária.
+    </p>
+  </div>
+</section>
+
+<!-- Seção História -->
+<section class="about-history">
+  <div class="about-content">
+    <h2 class="section-title">Nossa História</h2>
+    <p class="section-text">
+      Fundada com o objetivo de cuidar da saúde animal de forma personalizada, a Fórmula Pet nasceu da paixão por pets e da necessidade de oferecer medicamentos manipulados com qualidade, segurança e amor. 
+      Ao longo dos anos, evoluímos e nos especializamos em soluções exclusivas para cães, gatos e animais exóticos.
+    </p>
+  </div>
+</section>
+
+<!-- Seção Missão, Visão e Valores -->
+<section class="about-mvv">
+  <div class="mvv-cards">
+    <div class="mvv-card">
+      <h3>Missão</h3>
+      <p>Oferecer saúde e bem-estar aos pets com fórmulas personalizadas, seguras e eficazes, priorizando a qualidade de vida de cada paciente.</p>
+    </div>
+    <div class="mvv-card">
+      <h3>Visão</h3>
+      <p>Ser a farmácia de manipulação veterinária mais confiável e inovadora do país, reconhecida pela excelência no atendimento e nos produtos.</p>
+    </div>
+    <div class="mvv-card">
+      <h3>Valores</h3>
+      <p>Compromisso, ética, transparência, cuidado com os animais e inovação constante são a base de tudo que fazemos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Seção Equipe -->
+<section class="about-team">
+  <div class="team-content">
+    <h2 class="section-title">Nossa Equipe</h2>
+    <p class="section-text">
+      Contamos com profissionais qualificados, apaixonados por animais, prontos para orientar tutores e veterinários com atenção e conhecimento técnico.
+    </p>
+    <div class="team-cards">
+      <div class="team-card">
+        <img src="assets/team1.jpg" alt="Veterinário 1">
+        <h4>Dr. Lucas</h4>
+        <p>Veterinário Responsável</p>
+      </div>
+      <div class="team-card">
+        <img src="assets/team2.jpg" alt="Farmacêutica 1">
+        <h4>Dra. Marina</h4>
+        <p>Farmacêutica Especialista</p>
+      </div>
+      <div class="team-card">
+        <img src="assets/team3.jpg" alt="Atendimento 1">
+        <h4>Carla</h4>
+        <p>Atendimento ao Cliente</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA WhatsApp -->
+<section class="about-cta">
+  <div class="cta-content">
+    <h2>Quer saber mais?</h2>
+    <p>Fale com nossa equipe pelo WhatsApp e tire todas as suas dúvidas sobre fórmulas personalizadas para seu pet.</p>
+    <a href="https://wa.me/4132051910?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20as%20fórmulas%20personalizadas%20para%20meu%20pet."
+       target="_blank"
+       class="cta-whatsapp-btn">
+      Fale pelo WhatsApp
+      <i class="fa-brands fa-whatsapp"></i>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <app-footer></app-footer>
+</footer>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+/* Hero */
+.about-hero {
+  background: #f8fafc;
+  text-align: center;
+  padding: 6rem 2rem;
+}
+.hero-title {
+  font-family: 'Pacifico', cursive, 'Montserrat', sans-serif;
+  font-size: 3rem;
+  color: #2d3a4a;
+  margin-bottom: 1rem;
+}
+.hero-subtitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.2rem;
+  color: #444;
+}
+
+/* Seções */
+section {
+  padding: 4rem 6vw;
+}
+.section-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2d3a4a;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+.section-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.05rem;
+  color: #444;
+  line-height: 1.7;
+  max-width: 900px;
+  margin: 0 auto 2rem auto;
+  text-align: center;
+}
+
+/* MVV Cards */
+.mvv-cards {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mvv-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
+  padding: 2rem 1.5rem;
+  max-width: 300px;
+  flex: 1 1 260px;
+  text-align: center;
+}
+.mvv-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #3b5d50;
+  margin-bottom: 0.7rem;
+}
+.mvv-card p {
+  font-size: 1rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* Equipe */
+.team-cards {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 2rem;
+}
+.team-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
+  padding: 1.5rem;
+  max-width: 220px;
+  text-align: center;
+  flex: 1 1 200px;
+}
+.team-card img {
+  width: 100%;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+/* CTA */
+.about-cta {
+  background: #25d366;
+  color: #fff;
+  text-align: center;
+  padding: 4rem 2rem;
+  border-radius: 16px;
+  margin: 4rem 6vw;
+}
+.about-cta h2 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+.about-cta p {
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+}
+.cta-whatsapp-btn {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background: #fff;
+  color: #25d366;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.cta-whatsapp-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Responsivo */
+@media (max-width: 900px) {
+  .mvv-cards, .team-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+@media (max-width: 600px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+  .section-title {
+    font-size: 1.5rem;
+  }
+  .section-text {
+    font-size: 0.98rem;
+  }
+  .mvv-card, .team-card {
+    max-width: 100%;
+  }
+}
+</style>

@@ -15,5 +15,8 @@ export const routes: Routes = [
   { path: 'restrito/produto', component: ProdutoComponent, canActivate: [authGuard] },
   { path: 'restrito/lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard] },
   { path: 'restrito/usuarios', loadComponent: () => import('./pages/restrito/usuarios/usuarios.component').then(m => m.UsuariosComponent), canActivate: [authGuard] },
+  // { path: 'restrito/area-vet', loadComponent: () => import('./pages/restrito/area-vet/area-vet.component').then(m => m.AreaVetComponent), canActivate: [authGuard] },
+    { path: 'restrito/area-vet', loadComponent: () => import('./pages/restrito/area-vet/area-vet.component').then(m => m.AreaVetComponent)},
+    {path: 'restrito/admin/guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard]},
   { path: '**', redirectTo: '' }                        // Redireciona qualquer rota inválida pra home
 ];

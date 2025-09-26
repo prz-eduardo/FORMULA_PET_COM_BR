@@ -1,0 +1,68 @@
+<div class="admin-wrapper animate-fade">
+  <div class="admin-header">
+    <h1>Guia de Ativos</h1>
+    <button class="btn btn-add" (click)="openModal()">Novo Ativo</button>
+    <button class="btn" (click)="scrapForVets()">Importar Ativos do ForVets</button>
+  </div>
+
+  <div class="tabela-wrapper">
+    <table class="ativos-table">
+      <thead>
+        <tr>
+          <th>Princípio Ativo</th>
+          <th>Farmacologia</th>
+          <th>Dose para cães</th>
+          <th>Dose para gatos</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ativo of ativos; trackBy: trackById">
+          <td>{{ ativo.nome }}</td>
+          <td>{{ ativo.descricao }}</td>
+          <td>{{ ativo.doseCaes || '-' }}</td>
+          <td>{{ ativo.doseGatos || '-' }}</td>
+          <td class="acoes">
+            <button class="btn btn-edit" (click)="openModal(ativo)">Editar</button>
+            <button class="btn btn-delete" (click)="deleteAtivo(ativo.id)">Deletar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" *ngIf="showModal">
+  <div class="modal">
+    <h2>{{ editMode ? 'Editar Ativo' : 'Novo Ativo' }}</h2>
+    <form (ngSubmit)="saveAtivo()">
+      <div class="form-group">
+        <label>Princípio Ativo</label>
+        <input type="text" [(ngModel)]="ativoForm.nome" name="nome" required />
+      </div>
+
+      <div class="form-group">
+        <label>Farmacologia</label>
+        <textarea [(ngModel)]="ativoForm.descricao" name="descricao" required></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Dose para cães</label>
+          <input type="text" [(ngModel)]="ativoForm.doseCaes" name="doseCaes" />
+        </div>
+        <div class="form-group">
+          <label>Dose para gatos</label>
+          <input type="text" [(ngModel)]="ativoForm.doseGatos" name="doseGatos" />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn">{{ editMode ? 'Salvar' : 'Criar' }}</button>
+        <button type="button" class="btn btn-sec" (click)="closeModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+  
+</div>

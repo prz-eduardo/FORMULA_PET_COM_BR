@@ -42,7 +42,12 @@
     </div>
     <ul class="menu">
       
-      <li class="menu-link"><a href="sobre-nos" class="text-item">Sobre Nós</a></li>
+    <li class="menu-link">
+      <a [routerLink]="currentRoute === '/' ? '/sobre-nos' : '/'" class="text-item">
+        {{ currentRoute === '/' ? 'Sobre Nós' : 'Home' }}
+      </a>
+    </li>
+
       <li class="menu-link sub">
         <a href="#0" class="text-item">Serviços<span class="icon"></span></a>
         <ul class="submenu">
@@ -59,7 +64,7 @@
           <li class="sub-item"><a href="#0">Mobile App Development</a></li>
         </ul>
       </li>
-      <li class="menu-link"><a href="#0" class="text-item">Área vet 🐾</a></li>
+      <li class="menu-link"><a href="restrito/area-vet" class="text-item">Área vet 🐾</a></li>
     </ul>
   </nav>
 </div>
