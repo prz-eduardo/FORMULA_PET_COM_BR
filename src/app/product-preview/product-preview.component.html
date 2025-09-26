@@ -1,25 +1,25 @@
 <!-- Slider de Categorias -->
-<swiper-container class="" [slidesPerView]="'auto'" [spaceBetween]="10">
+<swiper-container class="category-swiper" [slidesPerView]="'auto'" [spaceBetween]="10">
   <ng-container *ngFor="let category of categories">
     <swiper-slide class="category-slide">
-      <!-- <button 
+      <button 
         type="button"
         class="button-56"
         [class.active]="selectedCategory === category" 
         (click)="filterProductsByCategory(category)">
         <span>{{ category }}</span>
-      </button> -->
+      </button>
     </swiper-slide>
   </ng-container>
   <!-- Botão para Todos -->
   <swiper-slide class="category-slide">
-    <!-- <button 
+    <button 
       type="button"
       class="button-56"
       [class.active]="selectedCategory === ''" 
       (click)="filterProductsByCategory('')">
       <span>Todos</span>
-    </button> -->
+    </button>
   </swiper-slide>
 </swiper-container>
 
@@ -27,22 +27,28 @@
 <swiper-container class="product-swiper" [slidesPerView]="slidesPerView">
   <ng-container *ngFor="let produto of filteredProducts">
     <swiper-slide>
-      <app-product-card 
+      <app-product-card
         [id]="produto.id"
         [category]="produto.category"
-        [customizations]="produto.customizations"
+        [customizations]="{
+          dosage: produto.customizations?.dosage ?? [],
+          packaging: produto.customizations?.packaging ?? [],
+          size: produto.customizations?.size,
+          scent: produto.customizations?.scent
+        }"
         [description]="produto.description"
-        [image]="produto.image"
+        [image]="produto.image ?? undefined"
         [name]="produto.name"
         [price]="produto.price"
-        [rating]="produto.rating"
-        [stock]="produto.stock"
-        [tags]="produto.tags"
-        [weight]="produto.weight"
+        [rating]="produto.rating ?? undefined"
+        [stock]="produto.stock ?? undefined"
+        [tags]="produto.tags ?? []"
+        [weight]="produto && produto.weightValue !== undefined && produto.weightValue !== null ? produto.weightValue.toString() : undefined"
         [isFavourite]="produto.isFavourite"
         [isAddedToCart]="produto.isAddedToCart"
-        [discount]="produto.discount">
+        [discount]="produto.discount ?? undefined">
       </app-product-card>
+
     </swiper-slide>
   </ng-container>
 </swiper-container>

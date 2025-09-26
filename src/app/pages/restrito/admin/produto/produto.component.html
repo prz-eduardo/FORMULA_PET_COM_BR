@@ -25,15 +25,9 @@
       <!-- Categoria -->
     <div class="form-group">
       <label>Categoria</label>
-      <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button *ngFor="let cat of categoriasList"
-                type="button"
-                [class.selected]="produto.category === cat.name"
-                (click)="toggleCategory(cat.name)">
-          {{ cat.name }}
-          <span class="remove-item" (click)="removeCategory(cat.name, $event)">✖</span>
-        </button>
-      </div>
+      <select [(ngModel)]="produto.category" name="category" required>
+        <option *ngFor="let c of categoriasList" [value]="c.name">{{ c.name }}</option>
+      </select>
       <button type="button" (click)="showCategoryModal=true">+ Nova Categoria</button>
     </div>
 
@@ -62,10 +56,19 @@
       </div>
 
       <!-- Avaliação -->
-      <div class="form-group">
-        <label>Avaliação</label>
-        <input type="number" [(ngModel)]="produto.rating" name="rating" step="0.1" max="5" min="0">
-      </div>
+<!-- Avaliação -->
+<div class="form-group">
+  <label>Avaliação</label>
+  <input 
+    type="number" 
+    [(ngModel)]="produto.rating" 
+    (blur)="fixRating($event)" 
+    name="rating" 
+    step="0.1" 
+    max="5" 
+    min="0">
+</div>
+
 
       <!-- Peso/Unidade -->
       <div class="form-group">
@@ -111,12 +114,15 @@
     </div>
 
     <!-- Tags -->
-    <div class="tags-section">
+    <div class="customizations">
       <h4>Tags</h4>
       <div class="tags" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let t of produto.tags" class="tag">
-          {{t}} <span (click)="removeTag(t)">✖</span>
-        </span>
+        <button type="button" *ngFor="let t of produto.tags"
+                [class.selected]="produto.tags.includes(t)"
+                (click)="toggleTag(t)">
+          {{t}}
+          <span class="remove-item" (click)="removeTag(t)">✖</span>
+        </button>
         <button type="button" (click)="showTagModal=true">+ Adicionar</button>
       </div>
     </div>
@@ -135,11 +141,13 @@
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Categoria</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button *ngFor="let c of categoriasList"
-                [class.selected]="produto.category === c.name"
-                (click)="produto.category = c.name">
-          {{ c.name }}
-        </button>
+      <span *ngFor="let c of categoriasList" 
+            class="badge" 
+            [class.selected]="produto.category === c.name"
+            (click)="toggleCategory(c.name)">
+        {{ c.name }}
+        <span class="badge-remove" (click)="removeCategory(c.name, $event)">-</span>
+      </span>
       </div>
       <hr>
       <input type="text" [(ngModel)]="newCategory" placeholder="Ex: Vitaminas">
@@ -149,25 +157,39 @@
   </div>
 
   <!-- Modal Dosagem -->
+  <!-- Modal Dosagem -->
   <div class="modal" *ngIf="showDosageModal">
     <div class="modal-content">
       <h4>Adicionar Dosagem</h4>
+      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+<span *ngFor="let d of dosagesList" class="badge"
+      [class.selected]="produto.customizations.dosage.includes(d.name)"
+      (click)="toggleDosage(d.name)">
+  {{ d.name }}
+  <span class="badge-remove" (click)="removeDosage(d.name, $event)">-</span>
+</span>
+
+
+      </div>
+      <hr>
       <input type="text" [(ngModel)]="newDosage" placeholder="Ex: 25mg">
       <button (click)="addDosage(newDosage)">Adicionar</button>
       <button (click)="showDosageModal=false">Cancelar</button>
     </div>
   </div>
 
+
   <!-- Modal Embalagem -->
   <div class="modal" *ngIf="showPackagingModal">
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Embalagem</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button *ngFor="let p of embalagensList"
-                [class.selected]="produto.customizations.packaging.includes(p.name)"
-                (click)="togglePackaging(p.name)">
+        <span *ngFor="let p of embalagensList" class="badge"
+              [class.selected]="produto.customizations.packaging.includes(p.name)"
+              (click)="togglePackaging(p.name)">
           {{ p.name }}
-        </button>
+          <span class="badge-remove" (click)="removePackaging(p.name, $event)">-</span>
+        </span>
       </div>
       <hr>
       <input type="text" [(ngModel)]="newPackaging" placeholder="Ex: Caixa grande">
@@ -181,11 +203,12 @@
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Tag</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button *ngFor="let t of tagsList"
-                [class.selected]="produto.tags.includes(t.name)"
-                (click)="toggleTag(t.name)">
+        <span *ngFor="let t of tagsList" class="badge"
+              [class.selected]="produto.tags.includes(t.name)"
+              (click)="toggleTag(t.name)">
           {{ t.name }}
-        </button>
+          <span class="badge-remove" (click)="removeTag(t.name)">-</span>
+        </span>
       </div>
       <hr>
       <input type="text" [(ngModel)]="newTag" placeholder="Ex: vitamina">

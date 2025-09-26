@@ -1,32 +1,34 @@
 <div class="card">
-  <!-- Container da imagem com badge de desconto e ícone de favorito -->
+  <!-- Imagem -->
   <div class="card-img-container">
     <img *ngIf="image" [src]="image" [alt]="name" class="card-img-top" />
-    <!-- Badge de desconto -->
+
+    <!-- Desconto -->
     <div *ngIf="discount && discount > 0" class="discount-badge">
       {{ discount }}% OFF
     </div>
-    <!-- Ícone de favorito -->
+
+    <!-- Favorito -->
     <div *ngIf="isFavourite" class="favourite-icon">
-      <!-- Aqui pode ser usado uma biblioteca de ícones, como Font Awesome -->
       <i class="fa fa-heart"></i>
     </div>
   </div>
 
-  <!-- Conteúdo do card -->
+  <!-- Conteúdo -->
   <div class="card-body">
     <h5 class="card-title">{{ name }}</h5>
-    <p class="card-text">{{ description }}</p>
+    <p class="card-text" style="max-height: 80px; overflow-y: auto;">
+      {{ description }}
+    </p>
 
-    <!-- Detalhes: preço, categoria, rating -->
+    <!-- Preço e categoria -->
     <div class="card-details">
       <div class="price-section">
         <span class="card-price">
-          {{ price | currency:'BRL':'symbol':'1.2-2' }}
+          {{ (price ?? 0) - ((price ?? 0) * (discount ?? 0) / 100) | currency:'BRL':'symbol':'1.2-2' }}
         </span>
-        <!-- Se houver desconto, mostra o preço original riscado -->
         <span *ngIf="discount && discount > 0" class="original-price">
-          {{ ((price ?? 0) + ((price ?? 0) * (discount ?? 0) / 100)) | currency:'BRL':'symbol':'1.2-2' }}
+          {{ price | currency:'BRL':'symbol':'1.2-2' }}
         </span>
       </div>
       <div class="category-rating">
@@ -37,7 +39,7 @@
       </div>
     </div>
 
-    <!-- Informações extras: peso e estoque -->
+    <!-- Info extra -->
     <div class="card-extra">
       <span *ngIf="weight" class="card-weight">Peso: {{ weight }}</span>
       <span *ngIf="stock !== undefined" class="card-stock">
@@ -45,32 +47,35 @@
       </span>
     </div>
 
-    <!-- Customizações (suporte para customizações de suplementos ou de produtos de higiene) -->
+    <!-- Customizações -->
     <div *ngIf="customizations" class="card-customizations">
-      <ng-container *ngIf="customizations.dosage; else sizeCustomization">
-        <p *ngIf="customizations.dosage && customizations.dosage.length">
-          <strong>Dosagem:</strong> {{ customizations.dosage.join(', ') }}
-        </p>
-        <p *ngIf="customizations.packaging && customizations.packaging.length">
-          <strong>Embalagem:</strong> {{ customizations.packaging.join(', ') }}
-        </p>
-      </ng-container>
-      <ng-template #sizeCustomization>
-        <p *ngIf="customizations.size && customizations.size.length">
-          <strong>Tamanho:</strong> {{ customizations.size.join(', ') }}
-        </p>
-        <p *ngIf="customizations.scent && customizations.scent.length">
-          <strong>Fragrância:</strong> {{ customizations.scent.join(', ') }}
-        </p>
-      </ng-template>
+      <!-- Dosagem -->
+      <p *ngIf="customizations?.dosage?.length">
+        <strong>Dosagem:</strong> {{ customizations.dosage.join(', ') }}
+      </p>
+
+      <!-- Embalagem -->
+      <p *ngIf="customizations?.packaging?.length">
+        <strong>Embalagem:</strong> {{ customizations.packaging.join(', ') }}
+      </p>
+
+      <!-- Tamanho -->
+      <p *ngIf="customizations?.size?.length">
+        <strong>Tamanho:</strong> {{ (customizations.size ?? []).join(', ') }}
+      </p>
+
+      <!-- Fragrância -->
+      <p *ngIf="customizations?.scent?.length">
+        <strong>Fragrância:</strong> {{ (customizations.scent ?? []).join(', ') }}
+      </p>
     </div>
 
-    <!-- Exibição de tags -->
-    <div *ngIf="tags && tags.length" class="card-tags">
+    <!-- Tags -->
+    <div *ngIf="tags?.length" class="card-tags">
       <span *ngFor="let tag of tags" class="tag">{{ tag }}</span>
     </div>
 
-    <!-- Área de ação -->
+    <!-- Ação -->
     <div class="card-action">
       <button type="button" class="btn-action">
         {{ isAddedToCart ? 'Adicionado' : 'Comprar' }}

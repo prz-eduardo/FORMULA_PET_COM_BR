@@ -87,14 +87,6 @@ button:hover { background: #27EF9F; }
   .embalagens input { margin-right: 0.25rem; }
 }
 
-.tags-section {
-  margin-top:1rem;
-
-  .tags { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem; }
-  .tags span { background:#27EF9F; color:#000; padding:2px 8px; border-radius:4px; cursor:pointer; }
-  .tags span span { color:#fff; margin-left:4px; }
-}
-
 .form-actions { display: flex; justify-content: space-between; margin-top: 2rem; }
 
 @media(max-width: 768px){
@@ -150,5 +142,35 @@ button:hover { background: #27EF9F; }
     input { width:100%; padding:0.5rem; border-radius:6px; border:none; background:#0E151A; color:#ECF0F5; }
     button { padding:0.5rem 1rem; border:none; border-radius:6px; background:#0DB8DE; color:#fff; cursor:pointer; }
     button:hover { background:#27EF9F; color:#000; }
+  }
+}
+.badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  background: #f0f0f059;
+  cursor: pointer;
+  &.selected {
+    background: #16dae3;
+  }
+
+  .badge-remove {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 18px;
+    height: 18px;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
   }
 }

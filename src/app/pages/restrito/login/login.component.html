@@ -21,7 +21,19 @@
       <div class="login-bottom">
         <div class="login-error" *ngIf="error">{{ error }}</div>
         <button type="submit" class="btn-login">LOGIN</button>
+        <button type="button" class="btn-forgot" (click)="showForgot = true">Esqueci minha senha</button>
       </div>
     </form>
+
+    <!-- Modal Esqueci Senha -->
+    <div class="modal" *ngIf="showForgot">
+      <div class="modal-content">
+        <h4>Redefinir Senha</h4>
+        <input type="email" [(ngModel)]="forgotEmail" placeholder="Digite seu email" />
+        <div *ngIf="forgotMessage" class="info">{{ forgotMessage }}</div>
+        <button (click)="sendResetEmail()" class="esqueci-env">Enviar</button>
+        <button (click)="showForgot = false" class="esqueci-cancelar">Cancelar</button>
+      </div>
+    </div>
   </div>
 </div>

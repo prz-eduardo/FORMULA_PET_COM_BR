@@ -13,5 +13,6 @@ export const routes: Routes = [
   { path: 'restrito/admin', component: AdminComponent, canActivate: [authGuard] },
   { path: 'restrito/produto', component: ProdutoComponent, canActivate: [authGuard] },
   { path: 'restrito/lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard] },
+  {path: 'restrito/usuarios', loadComponent: () => import('./pages/restrito/usuarios/usuarios.component').then(m => m.UsuariosComponent), canActivate: [authGuard] },
   { path: '**', redirectTo: '' }                        // Redireciona qualquer rota inválida pra home
 ];

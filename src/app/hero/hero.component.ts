@@ -34,7 +34,7 @@ export class HeroComponent implements OnInit {
 
   constructor() {
     const platformId = inject(PLATFORM_ID);
-    this.isBrowser = isPlatformBrowser(platformId);
+    // this.isBrowser = isPlatformBrowser(platformId);
 
     if (this.isBrowser) {
       register();

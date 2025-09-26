@@ -49,6 +49,7 @@ export class ProdutoComponent implements OnInit {
   categoriasList: { id: string, name: string }[] = [];
   tagsList: { id: string, name: string }[] = [];
   embalagensList: { id: string, name: string }[] = [];
+  dosagesList: { id: string, name: string }[] = [];
 
   // Modais
   showDosageModal = false;
@@ -72,23 +73,31 @@ export class ProdutoComponent implements OnInit {
     this.categoriasList = await this.fetchCollection('categorias');
     this.tagsList = await this.fetchCollection('tags');
     this.embalagensList = await this.fetchCollection('embalagens');
+    this.dosagesList = await this.fetchCollection('dosages');
   }
 
-  private async fetchProdutoFromFirestore(id: string) {
-    try {
-      const docRef = doc(db, 'produtos', id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data() as Produto;
-        this.produto = { id: docSnap.id, ...data };
-      } else {
-        alert('Produto não encontrado!');
-        this.router.navigate(['/restrito/admin']);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar produto:', err);
+private async fetchProdutoFromFirestore(id: string) {
+  try {
+    const docRef = doc(db, 'produtos', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data() as Produto;
+      this.produto = {
+        id: docSnap.id,
+        ...data,
+        customizations: {
+          dosage: data.customizations?.dosage ?? [],
+          packaging: data.customizations?.packaging ?? []
+        }
+      };
+    } else {
+      alert('Produto não encontrado!');
+      this.router.navigate(['/restrito/admin']);
     }
+  } catch (err) {
+    console.error('Erro ao buscar produto:', err);
   }
+}
 
   private async fetchCollection(name: string) {
     return (await getCollectionItems(name)).map((item: any) => ({
@@ -111,14 +120,39 @@ export class ProdutoComponent implements OnInit {
     if (idx > -1) this.produto.customizations.dosage.splice(idx, 1);
     else this.produto.customizations.dosage.push(dos);
   }
-  addDosage(d: string) {
+
+  async addDosage(d: string) {
     if (!d) return;
+
+    // Adiciona no produto
     if (!this.produto.customizations.dosage.includes(d)) {
       this.produto.customizations.dosage.push(d);
     }
+
+    // Adiciona na coleção global de dosagens
+    if (!this.dosagesList.some(p => p.name.toLowerCase() === d.toLowerCase())) {
+      await addCollectionItem('dosages', d);
+      this.dosagesList = await this.fetchCollection('dosages');
+    }
+
     this.newDosage = '';
     this.showDosageModal = false;
   }
+
+
+  async removeDosage(dos: string, e: Event) {
+  e.stopPropagation();
+
+  // Remove do produto se estiver selecionada
+  this.produto.customizations.dosage =
+    this.produto.customizations.dosage.filter(d => d !== dos);
+
+  if (confirm('Excluir dosagem do Firebase?')) {
+    await deleteCollectionItem('dosages', dos);
+    this.dosagesList = await this.fetchCollection('dosages');
+  }
+}
+
 
   // =================== EMBALAGENS ===================
   // togglePackaging(pack: string) {
@@ -222,4 +256,11 @@ removePackaging(pack: string, e: Event) {
   this.produto.customizations.packaging =
     this.produto.customizations.packaging.filter(p => p !== pack);
 }
+fixRating(event: any) {
+  let value = parseFloat(event.target.value);
+  if (value > 5) value = 5;
+  else if (value < 0) value = 0;
+  this.produto.rating = value;
+}
+
 }

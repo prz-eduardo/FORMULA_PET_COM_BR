@@ -1,0 +1,31 @@
+<div class="users-wrapper animate-fade">
+  <div class="users-header">
+    <h1>Gerenciar Usuários</h1>
+
+    <div class="invite-box">
+      <input type="email" placeholder="Email do usuário" [(ngModel)]="inviteEmail">
+      <select [(ngModel)]="inviteRole">
+        <option value="user">Usuário</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button (click)="sendInvite()">Enviar Invite</button>
+    </div>
+  </div>
+
+  <div class="user-list">
+    <div class="user-card" *ngFor="let u of users">
+      <div class="user-info">
+        <p class="email">{{ u.email }}</p>
+        <span class="role" [class.admin]="u.role==='admin'">{{ u.role }}</span>
+      </div>
+
+      <div *ngIf="u.uid === currentUser?.uid" class="edit-profile">
+        <input [(ngModel)]="newName" placeholder="Nome">
+        <input type="password" [(ngModel)]="newPassword" placeholder="Nova senha">
+        <button (click)="updateProfile()">Salvar</button>
+      </div>
+
+      <button class="btn-delete" (click)="deleteUser(u.uid)">✖</button>
+    </div>
+  </div>
+</div>

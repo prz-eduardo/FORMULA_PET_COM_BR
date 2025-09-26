@@ -11,14 +11,22 @@
       <p>Adicione novos produtos ao site.</p>
     </div>
 
-    <!-- Futuras ações -->
     <div class="action-card" 
         [class.disabled]="!hasProducts" 
         (click)="goToLista()">
-    <i class="fa fa-list"></i>
-    <h2>Lista de Produtos</h2>
-    <p>Visualize todos os produtos cadastrados.</p>
+      <i class="fa fa-list"></i>
+      <h2>Lista de Produtos</h2>
+      <p>Visualize todos os produtos cadastrados.</p>
     </div>
 
+    <!-- Card de Usuários só para admins -->
+     <!-- *ngIf="isAdmin"  -->
+    <div class="action-card" 
+        
+        (click)="goToUsuarios()">
+      <i class="fa fa-cog"></i>
+      <h2>Gerenciar Usuários</h2>
+      <p>Crie invites, remova ou altere níveis de acesso.</p>
+    </div>
   </div>
 </div>

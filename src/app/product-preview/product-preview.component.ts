@@ -1,11 +1,36 @@
 import { Component, OnInit, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
 import { Swiper } from 'swiper/bundle';
 import { register } from 'swiper/element/bundle';
-import ProdutosJson from '../../../public/products.json';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ProductCardComponent } from '../product-card/product-card.component';
+
+// Firebase
+import { db } from '../firebase-config';
+import { collection, getDocs } from 'firebase/firestore';
+
+export interface Produto {
+  id?: string;
+  name: string;
+  description: string;
+  price: number;
+  image?: string | null;
+  category: string;
+  customizations?: {
+    dosage?: string[];
+    packaging?: string[];
+    size?: string[];
+    scent?: string[];
+  };
+  discount?: number | null;
+  rating?: number | null;
+  stock?: number | null;
+  tags?: string[];
+  weightValue?: number | null;
+  weightUnit?: string | null;
+  isFavourite?: boolean;
+  isAddedToCart?: boolean;
+}
 
 @Component({
   selector: 'app-product-preview',
@@ -16,69 +41,77 @@ import { ProductCardComponent } from '../product-card/product-card.component';
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class ProductPreviewComponent implements OnInit, AfterViewInit {
-  produtos: any[] = ProdutosJson;
-  filteredProducts: any[] = ProdutosJson; // Lista de produtos filtrados
+  produtos: Produto[] = [];
+  filteredProducts: Produto[] = [];
   deviceType: string | undefined;
   slidesPerView: number = 1;
   swiper: Swiper | undefined;
-  selectedCategory: string = ''; // Categoria selecionada
-  categories: string[] = []; // Lista de categorias únicas
+  selectedCategory: string = '';
+  categories: string[] = [];
 
   constructor(@Inject(PLATFORM_ID) private platformId: any) {
-    register(); // Registra os elementos do Swiper para uso
+    register();
   }
 
-  ngOnInit() {
-    this.detectDevice();
-    this.extractCategories(); // Extrai as categorias únicas ao iniciar
+  async ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.detectDevice();
+      await this.loadProductsFromFirebase();
+    }
   }
-
   ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
       this.initializeSwiper();
+      window.addEventListener('resize', () => this.slidesPerViewLoad());
     }
   }
 
-  slidesPerViewLoad() {
-    if (isPlatformBrowser(this.platformId)) {
-      const width = window.innerWidth;
-      if (width < 768) {
-        this.deviceType = 'mobile';
-        this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
-      } else if (width >= 768 && width < 1024) {
-        this.deviceType = 'tablet';
-        this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
-      } else {
-        this.deviceType = 'desktop';
-        this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
-      }
 
-      if (this.swiper) {
-        this.swiper.params.slidesPerView = this.slidesPerView;
-        this.swiper.update();
-      }
+  // ================= FIREBASE =================
+  private async loadProductsFromFirebase() {
+    try {
+      const snapshot = await getDocs(collection(db, 'produtos'));
+      this.produtos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as Produto),
+      }));
+      this.filteredProducts = [...this.produtos];
+      this.extractCategories();
+      if (this.swiper) this.swiper.update();
+    } catch (err) {
+      console.error('Erro ao carregar produtos do Firestore:', err);
+    }
+  }
+
+  // ================= SLIDER =================
+  slidesPerViewLoad() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const width = window.innerWidth;
+    if (width < 768) this.deviceType = 'mobile';
+    else if (width >= 768 && width < 1024) this.deviceType = 'tablet';
+    else this.deviceType = 'desktop';
+
+    this.slidesPerView = Math.floor((width - 10) / 350) + 0.2;
+
+    if (this.swiper) {
+      this.swiper.params.slidesPerView = this.slidesPerView;
+      this.swiper.update();
     }
   }
 
   detectDevice(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const width = window.innerWidth;
-      if (width < 768) {
-        this.deviceType = 'mobile';
-      } else if (width >= 768 && width < 1024) {
-        this.deviceType = 'tablet';
-      } else {
-        this.deviceType = 'desktop';
-      }
-      this.slidesPerViewLoad();
-    }
+    if (!isPlatformBrowser(this.platformId)) return;
+    const width = window.innerWidth;
+    this.deviceType = width < 768 ? 'mobile' : width < 1024 ? 'tablet' : 'desktop';
+    this.slidesPerViewLoad();
   }
 
   initializeSwiper() {
     this.swiper = new Swiper('.product-swiper', {
       slidesPerView: this.slidesPerView,
       spaceBetween: 10,
-      loop: true,
+      loop: false,
       pagination: {
         el: '.swiper-pagination',
         clickable: true,
@@ -90,13 +123,12 @@ export class ProductPreviewComponent implements OnInit, AfterViewInit {
     });
   }
 
+  // ================= CATEGORIAS =================
   filterProductsByCategory(category: string): void {
     this.selectedCategory = category;
-    if (category) {
-      this.filteredProducts = this.produtos.filter(produto => produto.category === category);
-    } else {
-      this.filteredProducts = this.produtos;
-    }
+    this.filteredProducts = category
+      ? this.produtos.filter(produto => produto.category === category)
+      : this.produtos;
   }
 
   extractCategories() {

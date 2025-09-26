@@ -38,17 +38,18 @@ export class AppComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.detectDevice();
 
-    if (isPlatformBrowser(this.platformId)) {
-      this.loadElfsightScript();
-    }
+
   }
 
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
+      this.loadElfsightScript();
+    }
+    if (isPlatformBrowser(this.platformId)) {
       // Remove o badge de branding do Elfsight depois que o widget carregar
       // Tentando várias vezes porque o widget pode demorar pra renderizar
       let tries = 0;
-      const maxTries = 5;
+      const maxTries = 25;
       const intervalId = setInterval(() => {
         const badge = document.querySelector('a[href*="elfsight.com/google-reviews-widget"]');
         if (badge) {
