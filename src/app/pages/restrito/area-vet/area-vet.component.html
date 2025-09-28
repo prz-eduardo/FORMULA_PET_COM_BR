@@ -1,18 +1,50 @@
 <div class="area-vet-wrapper">
   <h1 class="titulo">Área Veterinária 🐾</h1>
 
-  <!-- Login -->
+  <!-- Login / Criar Conta -->
   <div *ngIf="!isLoggedIn" class="card login-card">
     <h2>Bem-vindo(a) Veterinário(a)</h2>
     <p>Faça login ou crie sua conta para acessar os recursos.</p>
     <div class="acoes">
-      <a routerLink="/restrito/login" class="btn">Login</a>
-      <a routerLink="/restrito/cadastro-vet" class="btn btn-sec">Criar Conta</a>
+      <button class="btn" (click)="abrirModalLogin()">Login</button>
+      <button class="btn btn-sec" (click)="abrirModalCadastro()">Criar Conta</button>
     </div>
   </div>
 
-  <!-- Guia de Ativos -->
-  <div class="card guia-ativos">
+  <!-- Dados Vet -->
+  <div *ngIf="isLoggedIn">
+    <p><strong>Nome:</strong> {{ vetData?.nome }}</p>
+    <p><strong>Email:</strong> {{ vetData?.email }}</p>
+    <p *ngIf="!vetApproved" style="color:red">Aguardando aprovação do admin</p>
+  </div>
+
+
+
+  <!-- Criar Receita -->
+  <div *ngIf="isLoggedIn && vetApproved" class="card receita-card">
+    <h2>Criar Receita Digital</h2>
+    <form #f="ngForm" (ngSubmit)="criarReceita(f)">
+      <div class="form-group">
+        <label>Ativo</label>
+        <select name="ativoId" ngModel required>
+          <option value="">Selecione um ativo</option>
+          <option *ngFor="let ativo of ativos" [value]="ativo.id">{{ ativo.nome }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Peso do Animal (kg)</label>
+        <input type="number" name="peso" ngModel required />
+      </div>
+      <div class="form-group">
+        <label>Nome do Paciente</label>
+        <input type="text" name="paciente" ngModel required />
+      </div>
+      <button type="submit" class="btn">Gerar Receita</button>
+    </form>
+  </div>
+
+    <!-- Guia de Ativos -->
+  <div  class="card guia-ativos">
     <div class="top-bar">
       <h2>Guia de Ativos</h2>
       <input type="text" placeholder="Buscar ativo..." [(ngModel)]="filtro" class="input-busca" />
@@ -23,21 +55,19 @@
     </div>
 
     <!-- CARDS -->
-<div *ngIf="viewMode==='cards'" class="lista-ativos">
-  <ng-container *ngFor="let letra of alfabetico">
-    <h3 class="indice-letra">{{ letra.letra }}</h3>
-    <div class="cards-da-letra">
-      <div class="ativo-item" *ngFor="let ativo of ativosFiltradosPorLetra(letra.letra); trackBy: trackById">
-        <h4>{{ ativo.nome }}</h4>
-        <p>{{ ativo.descricao }}</p>
-        <p><strong>Dose Cães:</strong> {{ ativo.doseCaes }}</p>
-        <p><strong>Dose Gatos:</strong> {{ ativo.doseGatos }}</p>
-      </div>
+    <div *ngIf="viewMode==='cards'" class="lista-ativos">
+      <ng-container *ngFor="let letra of alfabetico">
+        <h3 class="indice-letra">{{ letra.letra }}</h3>
+        <div class="cards-da-letra">
+          <div class="ativo-item" *ngFor="let ativo of ativosFiltradosPorLetra(letra.letra); trackBy: trackById">
+            <h4>{{ ativo.nome }}</h4>
+            <p>{{ ativo.descricao }}</p>
+            <p><strong>Dose Cães:</strong> {{ ativo.doseCaes }}</p>
+            <p><strong>Dose Gatos:</strong> {{ ativo.doseGatos }}</p>
+          </div>
+        </div>
+      </ng-container>
     </div>
-  </ng-container>
-</div>
-
-
 
     <!-- TABELA -->
     <div *ngIf="viewMode==='table'" class="tabela-ativos">
@@ -65,84 +95,64 @@
       </table>
     </div>
   </div>
-
-  <!-- Criar Receita -->
-  <div *ngIf="isLoggedIn && vetApproved" class="card receita-card">
-    <h2>Criar Receita Digital</h2>
-    <form #f="ngForm" (ngSubmit)="criarReceita(f)">
-      <div class="form-group">
-        <label>Ativo</label>
-        <select name="ativoId" ngModel required>
-          <option value="">Selecione um ativo</option>
-          <option *ngFor="let ativo of ativos" [value]="ativo.id">{{ ativo.nome }}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Peso do Animal (kg)</label>
-        <input type="number" name="peso" ngModel required />
-      </div>
-      <div class="form-group">
-        <label>Nome do Paciente</label>
-        <input type="text" name="paciente" ngModel required />
-      </div>
-      <button type="submit" class="btn">Gerar Receita</button>
-    </form>
+  <!-- Referências -->
+  <div class="rodape">
+    <button class="btn btn-sec" (click)="abrirModalReferencias()">Referências</button>
   </div>
 
-  <!-- Pendente -->
-  <div *ngIf="isLoggedIn && !vetApproved" class="card pendente">
-    <h2>Aguardando Aprovação</h2>
-    <p>Seu cadastro foi enviado e está em análise pela farmácia.</p>
-  </div>
+  <!-- MODAIS -->
+  <ng-container *ngIf="modalLoginAberto">
+    <div class="modal-overlay" (click)="fecharModalLogin()"></div>
+    <div class="modal-content"><app-login-vet (close)="fecharModalLogin()"></app-login-vet></div>
+  </ng-container>
 
-<!-- Botão para abrir -->
-<div class="rodape">
-  <button class="btn btn-sec" (click)="abrirModal()">Referências</button>
-</div>
+  <ng-container *ngIf="modalCadastroAberto">
+    <div class="modal-overlay" (click)="fecharModalCadastro()"></div>
+    <div class="modal-content"><app-crie-sua-conta (close)="fecharModalCadastro()"></app-crie-sua-conta></div>
+  </ng-container>
 
-<!-- Modal -->
-<div class="modal-overlay" *ngIf="modalAberto" (click)="fecharModal()"></div>
-<div class="modal-content" *ngIf="modalAberto">
-  <h2>Referências</h2>
-  <ul class="referencias">
-    <li>ANDRADE, S.F. Manual de Terapêutica Veterinária. São Paulo: Ed. Roca, 2002.</li>
-    <li>ÁVILA, L. ITV: Índice Terapêutico Veterinário. 4 ed. Petrópolis, RJ: EPUB, 2010.</li>
-    <li>BAGGOT, J. D., et al. Clinical pharmacokinetics of amikacin in dogs. Am J Vet Res. V. 46, n. 8, p.1793-1796, 1985.</li>
-    <li>BATISTUZZO, J. A. O; ITAYA, M; ETO, Y. Formulário Médico Farmacêutico. São Paulo: Ed. Pharmabooks, 2006.</li>
-    <li>BISHOP, Y. The Veterinary Formulary. London: Ed. Pharmaceutical Press, 2005.</li>
-    <li>CENTER, S.A., et al. The effects of S-adenosylmethionine on clinical pathology and redox potential in the red blood cell, liver, and bile of clinically normal cats. J Vet Intern Med., v. 19, n.3, p.303-314, 2005.</li>
-    <li>CORDAS, T. A; BARRETO, O. C. O. Interações Medicamentosas. São Paulo: Ed. Lemos, 1998.</li>
-    <li>DAUGSCHIES, A; et al. Toltrazuril treatment of cystoisosporosis in dogs under experimental and field conditions. Parasitol Res, v.86, n. 10, p. 797-799, 2000.</li>
-    <li>DETHIOUX, F. A dermatite atópica canina, um desafio para o clínico. Focus, edição especial, 5-53, 2006.</li>
-    <li>DOMOSLAWSKA, A., et al. Oral folic acid supplementation decreases palate and/or lip cleft occurrence in Pug and Chihuahua puppies and elevates folic acid blood levels in pregnant bitches. Pol J Vet Sci., v. 16, n.1, p.33-37, 2013.</li>
-    <li>FIECHTER, R., et al. Control of Giardia infections with ronidazole and intensive hygienemanagement in a dog kennel. Veterinary Parasitology, v. 187, n.1-2, p. 93-98, 2012.</li>
-    <li>GAGNE J.W; et al. Effects of a synbiotic on fecal quality, short-chain fatty acid concentrations, and the microbiome of healthy sled dogs. BMC Veterinary Research. N. 9, p.246, 2013.</li>
-    <li>GRZESKOWIAK, L; et al. Microbiota na probiotics in canine and feline welfare. Anaerobe, n. 34, p. 14-23, 2005.</li>
-    <li>GRIESHOP, C.M; et al. Gastrointestinal and immunological responses of senior dogs to chicory and mannan-oligosaccharides. Archives of Animal Nutrition, v.58, p. 483-493, 2004.</li>
-    <li>HANSON, P; et al. Efficacy and safety of firocoxib in the management of canine osteoarthritis under field conditions. Vet. Therap. V.7, n.2, p.127-140, 2006.</li>
-    <li>KOLLÁR, R; et al. Architecture of the yeast cell 74 wall: Beta(1-&gt;6)-glucan interconnects mannoprotein, Beta(1-&gt;3)-glucan and chitin. The Journal of Biological Chemistry, v. 272, n.3, p. 1170-1178, 1995.</li>
-    <li>MARSELLA, R., OLIVRY, T. The ACVD task force on canine atopic dermatitis (XXII). Nonsteroidal antiinflamatory pharmacotherapy. Veterinary Immunology and Immunopathology, 8, 2001.</li>
-    <li>MEYER, D; et al. Use of ursodeoxycholic acids in a dog with chronic hepatitis: effects on serum hepatic tests and endogenous bile acid composition. Journal of Veterinary Internal Medicine, v. 11, n. 3, p. 195-197, 1997.</li>
-    <li>NICHOLSON, B. T; et al. Effects of oral ursodeoxycholic acid in healthy cats on clinicopathological parameters, serum bile acids and light microscopic and ultrastructural features of the liver. Res. Vte. Sci, v. 61, n. 3, p. 258-262, 1996.</li>
-    <li>NOGUEIRA, S.P.; et al. Dermatose responsiva à biotina em cão. Ciência Rural, 40, 682-685, 2010.</li>
-    <li>OLIVRY, T., MULLER, R. S. Evidence-based veterinary dermatology: a systematic review of the pharmacotherapy of canine atopic dermatitis. Veterinary Dermatology, 14, 121-146, 2003.</li>
-    <li>PAPICH, M. G. Manual Saunders de Terapia Veterinária: pequenos e grandes animais. 3 ed. Rio de Janeiro: Elsevier, 2012.</li>
-    <li>PLUMB, D. C. Veterinary Drug Handbook. Ames: Ed. Lowa State Press, 2002.</li>
-    <li>ROBSON, D. C; BURTON, G. G. Review - Cyclosporine: applications in small animal dermatology. Veterinary Dermatology, V. 14, n. 1, p. 1-9, 2003.</li>
-    <li>ROUDEBUSH, P,; KEENE, B. W. Cardiovascular disease. In: HAND, M. S., et al. (Ed.) Small animal clinical nutrition, 5 ed. Topeka: Mark Morris Institute, 2010. p. 733-763.</li>
-    <li>SCOTT, A. B., et al. Effects of the angiotensin converting enzyme inhibitor benazepril in cats with induced renal insufficiency. American Journal of Veterinary Research, v. 62, n.3, p.375-383, 2001.</li>
-    <li>SCWARTZ, S. Canine and Feline Behavior Problems New York: Mosby, 1996.</li>
-    <li>SILVA, L. P.; NÖRNBERG, J.L. Prebióticos na nutrição de não ruminantes. Ciência Rural, v.33, n.5, p.983-990, 2003.</li>
-    <li>SPINOSA, H. S; et al. Farmacologia aplicada à medicina veterinária. 5 ed. Rio de Janeiro: Guanabara Koogan, 2015.</li>
-    <li>SWANSON, K. S; et al. Supplemental fructooligosaccharides and mannanoligosaccharides influence immune function, ileal and total tract nutrient digestibilities, microbial populations and concentrations of protein catabolites in the large bowel of dogs. Journal of Nutrition, v. 132, p.980-989, 2002.</li>
-    <li>VIANA, F.A.B. Guia Terapêutico Veterinário. 2 ed. Belo Horizonte: Gráfica e Editora CEM Ltda, 2003.</li>
-    <li>VIEIRA, F. C; PINHEIRO, V. A. Formulário Veterinário Farmacêutico. São Paulo: Ed. Pharmabooks, 2004.</li>
-    <li>WEBB, C. B; et al. S-adenosylmethionine (SAMe) in a feline acetaminophen model of oxidative injury. Journal of Feline Medicine and Surgery, V.5, p.69-75, 2003.</li>
-    <li>WYNN, S. G; FOUGERE, B. Veterinary Herbal Medicine. Sydney: Elsevier, 2007.</li>
-    <li>YAZBEK, A. V. B; LARSSON, C. E. Evaluation of the clinical efficacy of cyclosporine in atopic dogs treatment. Braz J. Vet, v. 49, n.5, p.360-366, 2012.</li>
-  </ul>
-  <button class="btn" (click)="fecharModal()">Fechar</button>
-</div>
-
-
+  <ng-container *ngIf="modalReferenciasAberto">
+    <div class="modal-overlay" (click)="fecharModalReferencias()"></div>
+    <div class="modal-content">
+      <h2>Referências</h2>
+        <ul class="referencias">
+          <li>ANDRADE, S.F. Manual de Terapêutica Veterinária. São Paulo: Ed. Roca, 2002.</li>
+          <li>ÁVILA, L. ITV: Índice Terapêutico Veterinário. 4 ed. Petrópolis, RJ: EPUB, 2010.</li>
+          <li>BAGGOT, J. D., et al. Clinical pharmacokinetics of amikacin in dogs. Am J Vet Res. V. 46, n. 8, p.1793-1796, 1985.</li>
+          <li>BATISTUZZO, J. A. O; ITAYA, M; ETO, Y. Formulário Médico Farmacêutico. São Paulo: Ed. Pharmabooks, 2006.</li>
+          <li>BISHOP, Y. The Veterinary Formulary. London: Ed. Pharmaceutical Press, 2005.</li>
+          <li>CENTER, S.A., et al. The effects of S-adenosylmethionine on clinical pathology and redox potential in the red blood cell, liver, and bile of clinically normal cats. J Vet Intern Med., v. 19, n.3, p.303-314, 2005.</li>
+          <li>CORDAS, T. A; BARRETO, O. C. O. Interações Medicamentosas. São Paulo: Ed. Lemos, 1998.</li>
+          <li>DAUGSCHIES, A; et al. Toltrazuril treatment of cystoisosporosis in dogs under experimental and field conditions. Parasitol Res, v.86, n. 10, p. 797-799, 2000.</li>
+          <li>DETHIOUX, F. A dermatite atópica canina, um desafio para o clínico. Focus, edição especial, 5-53, 2006.</li>
+          <li>DOMOSLAWSKA, A., et al. Oral folic acid supplementation decreases palate and/or lip cleft occurrence in Pug and Chihuahua puppies and elevates folic acid blood levels in pregnant bitches. Pol J Vet Sci., v. 16, n.1, p.33-37, 2013.</li>
+          <li>FIECHTER, R., et al. Control of Giardia infections with ronidazole and intensive hygienemanagement in a dog kennel. Veterinary Parasitology, v. 187, n.1-2, p. 93-98, 2012.</li>
+          <li>GAGNE J.W; et al. Effects of a synbiotic on fecal quality, short-chain fatty acid concentrations, and the microbiome of healthy sled dogs. BMC Veterinary Research. N. 9, p.246, 2013.</li>
+          <li>GRZESKOWIAK, L; et al. Microbiota na probiotics in canine and feline welfare. Anaerobe, n. 34, p. 14-23, 2005.</li>
+          <li>GRIESHOP, C.M; et al. Gastrointestinal and immunological responses of senior dogs to chicory and mannan-oligosaccharides. Archives of Animal Nutrition, v.58, p. 483-493, 2004.</li>
+          <li>HANSON, P; et al. Efficacy and safety of firocoxib in the management of canine osteoarthritis under field conditions. Vet. Therap. V.7, n.2, p.127-140, 2006.</li>
+          <li>KOLLÁR, R; et al. Architecture of the yeast cell 74 wall: Beta(1-&gt;6)-glucan interconnects mannoprotein, Beta(1-&gt;3)-glucan and chitin. The Journal of Biological Chemistry, v. 272, n.3, p. 1170-1178, 1995.</li>
+          <li>MARSELLA, R., OLIVRY, T. The ACVD task force on canine atopic dermatitis (XXII). Nonsteroidal antiinflamatory pharmacotherapy. Veterinary Immunology and Immunopathology, 8, 2001.</li>
+          <li>MEYER, D; et al. Use of ursodeoxycholic acids in a dog with chronic hepatitis: effects on serum hepatic tests and endogenous bile acid composition. Journal of Veterinary Internal Medicine, v. 11, n. 3, p. 195-197, 1997.</li>
+          <li>NICHOLSON, B. T; et al. Effects of oral ursodeoxycholic acid in healthy cats on clinicopathological parameters, serum bile acids and light microscopic and ultrastructural features of the liver. Res. Vte. Sci, v. 61, n. 3, p. 258-262, 1996.</li>
+          <li>NOGUEIRA, S.P.; et al. Dermatose responsiva à biotina em cão. Ciência Rural, 40, 682-685, 2010.</li>
+          <li>OLIVRY, T., MULLER, R. S. Evidence-based veterinary dermatology: a systematic review of the pharmacotherapy of canine atopic dermatitis. Veterinary Dermatology, 14, 121-146, 2003.</li>
+          <li>PAPICH, M. G. Manual Saunders de Terapia Veterinária: pequenos e grandes animais. 3 ed. Rio de Janeiro: Elsevier, 2012.</li>
+          <li>PLUMB, D. C. Veterinary Drug Handbook. Ames: Ed. Lowa State Press, 2002.</li>
+          <li>ROBSON, D. C; BURTON, G. G. Review - Cyclosporine: applications in small animal dermatology. Veterinary Dermatology, V. 14, n. 1, p. 1-9, 2003.</li>
+          <li>ROUDEBUSH, P,; KEENE, B. W. Cardiovascular disease. In: HAND, M. S., et al. (Ed.) Small animal clinical nutrition, 5 ed. Topeka: Mark Morris Institute, 2010. p. 733-763.</li>
+          <li>SCOTT, A. B., et al. Effects of the angiotensin converting enzyme inhibitor benazepril in cats with induced renal insufficiency. American Journal of Veterinary Research, v. 62, n.3, p.375-383, 2001.</li>
+          <li>SCWARTZ, S. Canine and Feline Behavior Problems New York: Mosby, 1996.</li>
+          <li>SILVA, L. P.; NÖRNBERG, J.L. Prebióticos na nutrição de não ruminantes. Ciência Rural, v.33, n.5, p.983-990, 2003.</li>
+          <li>SPINOSA, H. S; et al. Farmacologia aplicada à medicina veterinária. 5 ed. Rio de Janeiro: Guanabara Koogan, 2015.</li>
+          <li>SWANSON, K. S; et al. Supplemental fructooligosaccharides and mannanoligosaccharides influence immune function, ileal and total tract nutrient digestibilities, microbial populations and concentrations of protein catabolites in the large bowel of dogs. Journal of Nutrition, v. 132, p.980-989, 2002.</li>
+          <li>VIANA, F.A.B. Guia Terapêutico Veterinário. 2 ed. Belo Horizonte: Gráfica e Editora CEM Ltda, 2003.</li>
+          <li>VIEIRA, F. C; PINHEIRO, V. A. Formulário Veterinário Farmacêutico. São Paulo: Ed. Pharmabooks, 2004.</li>
+          <li>WEBB, C. B; et al. S-adenosylmethionine (SAMe) in a feline acetaminophen model of oxidative injury. Journal of Feline Medicine and Surgery, V.5, p.69-75, 2003.</li>
+          <li>WYNN, S. G; FOUGERE, B. Veterinary Herbal Medicine. Sydney: Elsevier, 2007.</li>
+          <li>YAZBEK, A. V. B; LARSSON, C. E. Evaluation of the clinical efficacy of cyclosporine in atopic dogs treatment. Braz J. Vet, v. 49, n.5, p.360-366, 2012.</li>
+        </ul>
+      <button class="btn" (click)="fecharModalReferencias()">Fechar</button>
+    </div>
+  </ng-container>
 </div>

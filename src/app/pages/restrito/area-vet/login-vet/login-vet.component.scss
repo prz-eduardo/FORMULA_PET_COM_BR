@@ -1,0 +1,72 @@
+.modal-login-wrapper {
+  padding: 20px;
+  width: 320px;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+
+    input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+  }
+
+  .senha-wrapper {
+    position: relative;
+    .olho {
+      position: absolute;
+      right: 10px;
+      top: 24px;
+      cursor: pointer;
+    }
+  }
+
+  .acoes-sec {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .btn, .btn-sec, .btn-google-toggle, .btn-google-form {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    background-color: #004658;
+    color: white;
+  }
+
+  .btn-sec {
+    background-color: #ccc;
+    color: #333;
+  }
+
+  .btn-google-toggle, .btn-google-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: #aca6a5;
+    color: white;
+  }
+
+  .error-message {
+    color: red;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+}
+
+.g-img{max-width: 35px;}

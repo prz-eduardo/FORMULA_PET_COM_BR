@@ -1,58 +1,82 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { getCollectionItems, addCollectionItem } from '../../restrito/admin/firebase-helpers';
-import { isPlatformBrowser } from '@angular/common';
-import { Inject, PLATFORM_ID } from '@angular/core';
-
+import { AuthService } from '../../../services/auth.service';
+import { LoginVetComponent } from './login-vet/login-vet.component';
+import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component';
 @Component({
   selector: 'app-area-vet',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, LoginVetComponent, CrieSuaContaComponent],
   templateUrl: './area-vet.component.html',
   styleUrls: ['./area-vet.component.scss']
 })
 export class AreaVetComponent implements OnInit, AfterViewInit {
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private authService: AuthService
+  ) {}
 
   ativos: any[] = [];
   filtro: string = '';
   isLoggedIn = false;
   vetApproved = false;
+  vetData: any = null;
 
   viewMode: 'cards' | 'table' = 'cards';
-
   alfabetico: { letra: string, ativos: any[] }[] = [];
 
-  ngOnInit() {}
+  modalLoginAberto = false;
+  modalCadastroAberto = false;
+  modalReferenciasAberto = false;
 
-  
+  async ngOnInit() {
+    this.authService.user$.subscribe(async (user) => {
+      if (user) {
+        this.isLoggedIn = true;
+        this.vetData = await this.authService.getVet(user.uid);
+        this.vetApproved = this.vetData?.approved || false;
+      } else {
+        this.isLoggedIn = false;
+        this.vetData = null;
+        this.vetApproved = false;
+      }
+    });
+
+        if (this.authService.getCurrentUser()) {
+        this.isLoggedIn = true;
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser) {
+          this.isLoggedIn = true;
+          this.vetData = await this.authService.getVet(currentUser.uid);
+          this.vetApproved = this.vetData?.approved || false;
+        }
+        this.vetApproved = this.vetData?.approved || false;
+      }
+  }
 
   async ngAfterViewInit() {
-    // this.ativos = await getCollectionItems("ativos");
-    // this.organizarAtivos();
     if (isPlatformBrowser(this.platformId)) {
       this.loadAtivos();
     }
   }
 
   async loadAtivos() {
-  this.ativos = await getCollectionItems("ativos");
-  this.organizarAtivos();
-}
+    this.ativos = await getCollectionItems("ativos");
+    this.organizarAtivos();
+  }
 
   organizarAtivos() {
-    const ativosOrdenados = [...this.ativos].sort((a,b) => a.nome.localeCompare(b.nome));
+    const ativosOrdenados = [...this.ativos].sort((a, b) => a.nome.localeCompare(b.nome));
     const map = new Map<string, any[]>();
-
     ativosOrdenados.forEach(a => {
       const letra = a.nome[0].toUpperCase();
       if (!map.has(letra)) map.set(letra, []);
       map.get(letra)?.push(a);
     });
-
     this.alfabetico = Array.from(map, ([letra, ativos]) => ({ letra, ativos }));
   }
 
@@ -68,7 +92,6 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
   async criarReceita(form: any) {
     const receita = {
       ativoId: form.value.ativoId,
-      especie: form.value.especie,
       peso: form.value.peso,
       paciente: form.value.paciente,
       dosagemCalculada: this.calcularDosagem(form.value.ativoId, form.value.peso),
@@ -88,24 +111,13 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
     return item.id;
   }
 
-    get ativosFiltrados() {
-    if (!this.filtro) return this.ativos;
-    const termo = this.filtro.toLowerCase();
-    return this.ativos.filter(a =>
-      a.nome?.toLowerCase().includes(termo) ||
-      a.descricao?.toLowerCase().includes(termo)
-    );
-  } 
+  abrirModalLogin() { this.modalLoginAberto = true; }
+  fecharModalLogin() { this.modalLoginAberto = false; }
 
-  modalAberto = false;
+  abrirModalCadastro() { this.modalCadastroAberto = true; }
+  fecharModalCadastro() { this.modalCadastroAberto = false; }
 
-abrirModal() {
-  this.modalAberto = true;
-}
-
-fecharModal() {
-  this.modalAberto = false;
-}
-
+  abrirModalReferencias() { this.modalReferenciasAberto = true; }
+  fecharModalReferencias() { this.modalReferenciasAberto = false; }
 
 }

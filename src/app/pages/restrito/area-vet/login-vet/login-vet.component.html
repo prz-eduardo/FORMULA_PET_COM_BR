@@ -1,0 +1,42 @@
+<div class="modal-login-wrapper">
+  <h2>Login Veterinário</h2>
+
+  <p class="error-message" *ngIf="mensagemErro">{{ mensagemErro }}</p>
+
+  <!-- Formulário email/senha -->
+  <form *ngIf="!iniciadoGoogle" #f="ngForm" (ngSubmit)="loginEmail(f)">
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" ngModel required placeholder="seu@email.com" />
+    </div>
+    <div class="form-group senha-wrapper">
+      <label>Senha</label>
+      <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" ngModel required placeholder="********" />
+      <span class="olho" (click)="mostrarSenha = !mostrarSenha">{{ mostrarSenha ? '🙈' : '👁️' }}</span>
+    </div>
+    <div class="acoes-sec">
+      <button type="button" class="btn-sec" (click)="resetSenha(f.value.email)">Esqueci minha senha</button>
+    </div>
+    <button class="btn" type="submit" [disabled]="f.invalid || carregando">Login</button>
+  </form>
+
+  <hr />
+
+  <!-- Botão Google -->
+  <button class="btn-google-toggle" (click)="toggleIniciarGoogle()" *ngIf="!iniciadoGoogle">
+    <img src="/imagens/google.png" alt="Google" class="g-img"> Entrar com Google
+  </button>
+
+  <!-- Form Google -->
+  <div class="google-form-wrapper" *ngIf="iniciadoGoogle">
+    <p>Login com Google</p>
+    <button class="btn-google-form" (click)="loginGoogle()" [disabled]="carregando">
+      <img src="/imagens/google.png" alt="Google" class="g-img"> Continuar
+    </button>
+    <button class="btn-sec" (click)="toggleIniciarGoogle()">↩️ Voltar</button>
+  </div>
+
+  <div class="acoes-sec">
+    <button class="btn-sec" (click)="close.emit()">Fechar</button>
+  </div>
+</div>
