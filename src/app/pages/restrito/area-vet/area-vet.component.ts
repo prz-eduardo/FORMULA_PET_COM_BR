@@ -9,6 +9,7 @@ import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component
 
 
 
+
 @Component({
   selector: 'app-area-vet',
   standalone: true,
