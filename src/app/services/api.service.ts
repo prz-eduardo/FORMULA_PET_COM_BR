@@ -29,5 +29,4 @@ export class ApiService {
     return this.http.get<Vet>(`${this.baseUrl}/vets/${id}`);
   }
 
-  // Qualquer outro endpoint que você criar
 }

@@ -13,6 +13,7 @@ import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component
   selector: 'app-area-vet',
   standalone: true,
   imports: [CommonModule, FormsModule, LoginVetComponent, CrieSuaContaComponent],
+  providers: [ApiService],
   templateUrl: './area-vet.component.html',
   styleUrls: ['./area-vet.component.scss']
 })
