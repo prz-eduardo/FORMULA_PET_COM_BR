@@ -2,42 +2,48 @@ import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID } from '@angular/
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { getCollectionItems, addCollectionItem } from '../../restrito/admin/firebase-helpers';
 import { AuthService } from '../../../services/auth.service';
+import { ApiService, Ativo } from '../../../services/api.service';
 import { LoginVetComponent } from './login-vet/login-vet.component';
 import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component';
+
+
+
 @Component({
   selector: 'app-area-vet',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, LoginVetComponent, CrieSuaContaComponent],
+  imports: [CommonModule, FormsModule, LoginVetComponent, CrieSuaContaComponent],
   templateUrl: './area-vet.component.html',
   styleUrls: ['./area-vet.component.scss']
 })
 export class AreaVetComponent implements OnInit, AfterViewInit {
 
-  constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private authService: AuthService
-  ) {}
+  
 
-  ativos: any[] = [];
+  ativos: any;
   filtro: string = '';
   isLoggedIn = false;
   vetApproved = false;
   vetData: any = null;
 
   viewMode: 'cards' | 'table' = 'cards';
-  alfabetico: { letra: string, ativos: any[] }[] = [];
+  alfabetico: { letra: string, ativos: Ativo[] }[] = [];
 
   modalLoginAberto = false;
   modalCadastroAberto = false;
   modalReferenciasAberto = false;
 
-  async ngOnInit() {
-    this.authService.user$.subscribe(async (user) => {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private authService: AuthService,
+    private apiService: ApiService
+  ) {}
+
+  ngOnInit() {
+    this.authService.user$.subscribe(async user => {
       if (user) {
         this.isLoggedIn = true;
-        this.vetData = await this.authService.getVet(user.uid);
+        this.vetData = await this.apiService.getVet(user.uid).toPromise();
         this.vetApproved = this.vetData?.approved || false;
       } else {
         this.isLoggedIn = false;
@@ -46,32 +52,34 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
       }
     });
 
-        if (this.authService.getCurrentUser()) {
-        this.isLoggedIn = true;
-        const currentUser = this.authService.getCurrentUser();
-        if (currentUser) {
-          this.isLoggedIn = true;
-          this.vetData = await this.authService.getVet(currentUser.uid);
-          this.vetApproved = this.vetData?.approved || false;
-        }
-        this.vetApproved = this.vetData?.approved || false;
-      }
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      this.isLoggedIn = true;
+      this.apiService.getVet(currentUser.uid).subscribe(vet => {
+        this.vetData = vet;
+        this.vetApproved = vet?.approved || false;
+      });
+    }
   }
 
-  async ngAfterViewInit() {
+  ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
       this.loadAtivos();
     }
   }
 
   async loadAtivos() {
-    this.ativos = await getCollectionItems("ativos");
-    this.organizarAtivos();
+    try {
+      this.ativos = await this.apiService.getAtivos().toPromise();
+      this.organizarAtivos();
+    } catch (err) {
+      console.error('Erro ao carregar ativos:', err);
+    }
   }
 
   organizarAtivos() {
     const ativosOrdenados = [...this.ativos].sort((a, b) => a.nome.localeCompare(b.nome));
-    const map = new Map<string, any[]>();
+    const map = new Map<string, Ativo[]>();
     ativosOrdenados.forEach(a => {
       const letra = a.nome[0].toUpperCase();
       if (!map.has(letra)) map.set(letra, []);
@@ -97,15 +105,20 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
       dosagemCalculada: this.calcularDosagem(form.value.ativoId, form.value.peso),
       assinaturaGov: "TODO-integrar"
     };
-    await addCollectionItem("receitas", receita);
-    alert("Receita criada com sucesso!");
+    try {
+      await this.apiService.criarReceita(receita).toPromise();
+      alert("Receita criada com sucesso!");
+    } catch (err) {
+      console.error('Erro ao criar receita:', err);
+      alert("Erro ao criar receita. Veja o console.");
+    }
   }
 
-  calcularDosagem(ativoId: string, peso: number): string {
-    const ativo = this.ativos.find(a => a.id === ativoId);
-    if (!ativo) return "";
-    return `${peso * 10} mg`;
-  }
+calcularDosagem(ativoId: any, peso: number): any {
+  const ativo: Ativo | undefined = this.ativos.find((a: Ativo) => a.id === ativoId);
+  if (!ativo) return "";
+  return `${peso * 10} mg`;
+}
 
   trackById(index: number, item: any) {
     return item.id;
