@@ -3,8 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { ApiService } from '../../../../services/api.service';
-import { debounce } from 'lodash-es';
+import { debounce, slice } from 'lodash-es';
 import jsPDF from 'jspdf';
+import { jwtDecode } from "jwt-decode";
+import html2canvas from 'html2canvas';
+
+
 
 
 
@@ -37,6 +41,15 @@ interface Ativo {
   letra?: string;
 }
 
+interface Veterinario {
+  id: string;
+  nome: string;
+  cpf: string;
+  email: string;
+  crmv: string;
+}
+
+
 @Component({
   selector: 'app-gerar-receita',
   standalone: true,
@@ -46,6 +59,7 @@ interface Ativo {
   styleUrls: ['./gerar-receita.component.scss']
 })
 export class GerarReceitaComponent implements OnInit, AfterViewInit {
+  @ViewChild('pdfContent') pdfContent!: ElementRef;
   cpf = '';
   tutorEncontrado: Tutor | null = null;
   cadastroManualTutor = false;
@@ -54,6 +68,7 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   petSelecionado: Pet | null = null;
   novosDadosPet: Pet = { nome: '', idade: 0, peso: 0, raca: '', sexo: 'Macho', alergias: '', especie:'' };
   observacoes = '';
+  veterinario: any;
 
   ativos: Ativo[] = [];
   alfabetico: { letra: string; ativos: Ativo[] }[] = [];
@@ -79,7 +94,30 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
     this.debouncedFiltrarAtivos = debounce(this.filtrarAtivos.bind(this), 250);
   }
 
-  ngOnInit(): void { this.loadAtivos(); }
+  ngOnInit(): void { 
+    this.loadAtivos(); 
+    this.carregarVeterinario();
+  }
+
+  async carregarVeterinario() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Token não encontrado no localStorage');
+      return;
+    }
+
+    try {
+      console.log('get vet')
+      const decoded: any = jwtDecode(token)
+      const vetId = decoded.id; // vem do payload do JWT
+      const response = await this.apiService.getVeterinario(vetId, token).toPromise();
+      console.log('response',response);
+      this.veterinario = response;
+    } catch (error) {
+      console.error('Erro ao buscar dados do veterinário:', error);
+    }
+  }
+
 
   onCpfInput() { if (this.cpf.replace(/\D/g, '').length === 11) this.buscarTutor(); }
 
@@ -239,36 +277,164 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   return ativo ? ativo.nome : '';
 }
 
+// gerarPdf() {
+//   const doc = new jsPDF();
+//   const margin = 20;
+//   let y = 30;
+
+//   // ===========================
+//   // Cabeçalho
+//   // ===========================
+//   doc.setFont("times", "bold");
+//   doc.setFontSize(20);
+//   doc.text("RECEITA VETERINÁRIA", 105, y, { align: "center" });
+//   y += 15;
+//   doc.setDrawColor(0);
+//   doc.line(margin, y, 210 - margin, y);
+//   y += 20;
+
+//   // ===========================
+//   // Dados do Veterinário
+//   // ===========================
+//   doc.setFontSize(14).setFont("times", "bold");
+//   doc.text("Dados do Veterinário", margin, y);
+//   y += 10;
+//   doc.setFont("times", "normal").setFontSize(12);
+//   doc.text(`Nome: ${this.veterinario?.nome || "-"}`, margin, y); y += 7;
+//   doc.text(`CPF: ${this.veterinario?.cpf || "-"}`, margin, y); y += 7;
+//   doc.text(`CRMV: ${this.veterinario?.crmv || "-"}`, margin, y); y += 7;
+//   doc.text(`Email: ${this.veterinario?.email || "-"}`, margin, y); y += 7;
+//   doc.text(`Telefone: ${this.veterinario?.telefone || "-"}`, margin, y); y += 15;
+
+//   // ===========================
+//   // Dados do Tutor
+//   // ===========================
+//   doc.setFont("times", "bold").setFontSize(14);
+//   doc.text("Dados do Tutor", margin, y);
+//   y += 10;
+//   const tutor = this.tutorEncontrado ?? this.novoTutor;
+//   doc.setFont("times", "normal").setFontSize(12);
+//   doc.text(`Nome: ${tutor?.nome || "-"}`, margin, y); y += 7;
+//   doc.text(`CPF: ${tutor?.cpf || "-"}`, margin, y); y += 7;
+//   doc.text(`Telefone: ${tutor?.telefone || "-"}`, margin, y); y += 7;
+//   doc.text(`Email: ${tutor?.email || "-"}`, margin, y); y += 7;
+//   doc.text(`Endereço: ${tutor?.endereco || "-"}`, margin, y); y += 15;
+
+//   // ===========================
+//   // Dados do Pet
+//   // ===========================
+//   doc.setFont("times", "bold").setFontSize(14);
+//   doc.text("Dados do Pet", margin, y);
+//   y += 10;
+//   const pet = this.petSelecionado ?? this.novosDadosPet;
+//   doc.setFont("times", "normal").setFontSize(12);
+//   doc.text(`Nome: ${pet?.nome || "-"}`, margin, y); y += 7;
+//   doc.text(`Espécie: ${pet?.especie || "-"}`, margin, y); y += 7;
+//   doc.text(`Raça: ${pet?.raca || "-"}`, margin, y); y += 7;
+//   doc.text(`Idade: ${pet?.idade || "-"} anos`, margin, y); y += 7;
+//   doc.text(`Peso: ${pet?.peso || "-"} kg`, margin, y); y += 7;
+//   doc.text(`Sexo: ${pet?.sexo || "-"}`, margin, y); y += 7;
+//   doc.text(`Alergias: ${pet?.alergias || "Nenhuma"}`, margin, y); y += 15;
+
+//   // ===========================
+//   // Ativos em tabela
+//   // ===========================
+//   doc.setFont("times", "bold").setFontSize(14);
+//   doc.text("Prescrição", margin, y);
+//   y += 10;
+
+//   if (this.ativosSelecionados.length) {
+//     doc.setFontSize(11).setFont("times", "normal");
+//     // Cabeçalho da tabela
+//     doc.setFillColor('230');
+//     doc.rect(margin, y, 170, 8, "F");
+//     doc.text("Medicamento", margin + 2, y + 6);
+//     doc.text("Dose Cães", margin + 90, y + 6);
+//     doc.text("Dose Gatos", margin + 130, y + 6);
+//     y += 12;
+
+//     this.ativosSelecionados.forEach((id) => {
+//       const ativo = this.ativos.find((a) => a.id === id);
+//       if (ativo) {
+//         doc.text(ativo.nome, margin + 2, y);
+//         doc.text(ativo.doseCaes || "-", margin + 90, y);
+//         doc.text(ativo.doseGatos || "-", margin + 130, y);
+//         y += 8;
+//       }
+//     });
+//   } else {
+//     doc.setFont("times", "normal").setFontSize(12);
+//     doc.text("Nenhum ativo selecionado.", margin, y);
+//     y += 10;
+//   }
+//   y += 15;
+
+//   // ===========================
+//   // Observações
+//   // ===========================
+//   doc.setFont("times", "bold").setFontSize(14);
+//   doc.text("Observações", margin, y);
+//   y += 10;
+//   doc.setFont("times", "normal").setFontSize(12);
+//   const splitObs = doc.splitTextToSize(this.observacoes || "-", 170);
+//   doc.text(splitObs, margin, y);
+//   y += splitObs.length * 7 + 20;
+
+//   // ===========================
+//   // Assinatura
+//   // ===========================
+//   doc.setFont("times", "bold").setFontSize(14);
+//   doc.text("Assinatura", 105, y, { align: "center" });
+//   y += 15;
+
+//   const canvas = this.canvasRef?.nativeElement;
+//   const emptyCanvas =
+//     canvas &&
+//     this.ctx &&
+//     this.ctx.getImageData(0, 0, canvas.width, canvas.height).data.every((p) => p === 0);
+
+//   if (!emptyCanvas && canvas) {
+//     const imgData = canvas.toDataURL("image/png");
+//     doc.addImage(imgData, "PNG", 70, y, 70, 35);
+//     y += 45;
+//   } else {
+//     doc.setFont("courier", "italic").setFontSize(16);
+//     doc.text(this.veterinario?.nome || "____________________", 105, y, { align: "center" });
+//     y += 20;
+//   }
+
+//   doc.setFont("times", "normal").setFontSize(10);
+//   doc.text("Documento gerado digitalmente - Fórmula Pet", 105, 820, { align: "center" });
+
+//   // ===========================
+//   // Salvar
+//   // ===========================
+//   doc.save(`receita_${pet?.nome || "pet"}.pdf`);
+// }
+
 gerarPdf() {
-  const doc = new jsPDF();
+  const element = this.pdfContent.nativeElement as HTMLElement;
 
-  // Título
-  doc.setFontSize(18);
-  doc.text('Receita Veterinária', 105, 20, { align: 'center' });
+  html2canvas(element, { scale: 2 }).then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-  // Tutor
-  doc.setFontSize(12);
-  doc.text(`Nome do Tutor: ${this.tutorEncontrado?.nome || this.novoTutor.nome}`, 20, 40);
-  doc.text(`CPF: ${this.tutorEncontrado?.cpf || this.novoTutor.cpf}`, 20, 50);
-  doc.text(`Telefone: ${this.tutorEncontrado?.telefone || this.novoTutor.telefone}`, 20, 60);
-  doc.text(`Email: ${this.tutorEncontrado?.email || this.novoTutor.email}`, 20, 70);
-  doc.text(`Endereço: ${this.tutorEncontrado?.endereco || this.novoTutor.endereco}`, 20, 80);
-
-  // Pet
-  doc.text('--- Pet ---', 20, 95);
-  doc.text(`Nome: ${this.novosDadosPet.nome}`, 20, 105);
-  doc.text(`Espécie: ${this.novosDadosPet.especie}`, 20, 115);
-  doc.text(`Raça: ${this.novosDadosPet.raca}`, 20, 125);
-  doc.text(`Idade: ${this.novosDadosPet.idade} anos`, 20, 135);
-  doc.text(`Peso: ${this.novosDadosPet.peso} kg`, 20, 145);
-  doc.text(`Sexo: ${this.novosDadosPet.sexo}`, 20, 155);
-  doc.text(`Alergias: ${this.novosDadosPet.alergias || 'Nenhuma'}`, 20, 165);
-
-  // Observações
-  doc.text('--- Observações ---', 20, 180);
-  doc.text(this.observacoes || '-', 20, 190);
-
-  // Gerar arquivo
-  doc.save(`receita_${this.novosDadosPet.nome || 'pet'}.pdf`);
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`receita_${this.petSelecionado?.nome || 'pet'}.pdf`);
+  });
 }
+
+getDoseCaes(id: string): string {
+  const ativo = this.ativos.find(a => a.id === id);
+  return ativo?.doseCaes || '-';
+}
+
+getDoseGatos(id: string): string {
+  const ativo = this.ativos.find(a => a.id === id);
+  return ativo?.doseGatos || '-';
+}
+
+
 }

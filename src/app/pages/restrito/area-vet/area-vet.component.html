@@ -22,9 +22,11 @@
         </button>
         <button class="btn-logout" (click)="logout()">Logout</button>
       </div>
-    </div>
-    <p *ngIf="!vetApproved" style="color:red">Aguardando aprovação do admin</p>
+    </div>  
   </div>
+      <div *ngIf="isLoggedIn" class="vetApproved-div">
+        <p *ngIf="!vetApproved" class="vetApproved" style="color:red">Aguardando aprovação do admin</p>
+      </div>
 
   <div class="menu-wrapper" *ngIf="isLoggedIn" [ngClass]="{'bloqueado': !vetApproved}">
     <div class="menu-cards-wrapper">

@@ -175,4 +175,111 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   font-size: 13px;
   font-weight: 500;
   color: #1abc9c;
+}.pdf-container {
+  width: 210mm;
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1c1c1c;
+  background-color: #fff;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.pdf-header {
+  text-align: center;
+  margin-bottom: 20px;
+  h1 {
+    font-size: 22px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #2a2a2a;
+    border-bottom: 2px solid #888;
+    padding-bottom: 5px;
+  }
+}
+
+.pdf-box {
+  border: 1px solid #ccc;
+  box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
+  padding: 12px 18px;
+  margin-bottom: 18px;
+  border-radius: 6px;
+  background-color: #fafafa;
+
+  h2 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #444;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 3px;
+  }
+
+  p {
+    margin: 4px 0;
+    word-break: break-word;
+    color: #333;
+  }
+}
+
+// Duas colunas para Tutor + Pet
+.pdf-box-two-columns {
+  display: flex;
+  gap: 20px;
+
+  .col {
+    flex: 1;
+  }
+}
+
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+
+  th, td {
+    border: 1px solid #bbb;
+    padding: 6px 8px;
+    font-size: 11px;
+    word-break: break-word;
+    vertical-align: top;
+  }
+
+  th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    text-align: left;
+    color: #222;
+  }
+
+  tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+}
+
+.pdf-signature {
+  text-align: center;
+  margin-top: 15px;
+
+  img {
+    width: 90px;
+    height: auto;
+    border-bottom: 1px solid #333;
+    display: inline-block;
+  }
+
+  p {
+    margin-top: 5px;
+    font-style: italic;
+    color: #555;
+  }
+}
+
+.pdf-footer {
+  text-align: center;
+  font-size: 10px;
+  color: #777;
+  margin-top: 20px;
+  border-top: 1px dashed #ccc;
+  padding-top: 5px;
 }

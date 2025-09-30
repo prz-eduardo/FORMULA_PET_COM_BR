@@ -1,4 +1,4 @@
-import { environment } from './../../environments/environment';
+import { environment } from '../../enviroments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -10,6 +10,17 @@ export interface Ativo {
   doseCaes: string;
   doseGatos: string;
   open?: boolean; // adiciona aqui para controlar o acordeon
+}
+
+export interface Veterinario {
+  id: string;
+  nome: string;
+  cpf: string;
+  crmv: string;
+  email: string;
+  telefone?: string;
+  tipo: string;
+  approved: boolean;
 }
 
 
@@ -73,5 +84,13 @@ export class ApiService {
   loginVet(payload: { email?: string; senha?: string; idToken?: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/vets/login-vet`, payload);
   }
+
+  getVeterinario(id: string, token: string) {
+    return this.http.get<Veterinario>(`${this.baseUrl}/vets/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+
 
 }

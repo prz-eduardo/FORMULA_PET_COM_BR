@@ -566,3 +566,13 @@
     }
   }
 }
+
+.vetApproved-div{
+    display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1f2a38;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+}
