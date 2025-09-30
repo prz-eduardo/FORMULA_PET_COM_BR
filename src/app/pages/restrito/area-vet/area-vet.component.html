@@ -11,62 +11,104 @@
     </div>
   </div>
 
-  <!-- Dados Vet -->
-  <div *ngIf="isLoggedIn">
-    <p><strong>Nome:</strong> {{ vetData?.nome }}</p>
-    <p><strong>Email:</strong> {{ vetData?.email }}</p>
+  <!-- Painel do Vet -->
+  <div *ngIf="isLoggedIn" class="vet-panel">
+    <div class="vet-info">
+      <img *ngIf="vetData?.photoURL" [src]="vetData.photoURL" class="vet-photo" />
+      <span class="vet-nome">{{ vetData?.nome }}</span>
+      <div class="vet-actions">
+        <button class="btn-gear" routerLink="/editar-perfil">
+          ⚙️
+        </button>
+        <button class="btn-logout" (click)="logout()">Logout</button>
+      </div>
+    </div>
     <p *ngIf="!vetApproved" style="color:red">Aguardando aprovação do admin</p>
   </div>
 
+  <div class="menu-wrapper" *ngIf="isLoggedIn" [ngClass]="{'bloqueado': !vetApproved}">
+    <div class="menu-cards-wrapper">
+      <div class="menu-card" routerLink="/gerar-receita">
+        <div class="card-icon">💊</div>
+        <div class="card-title">Gerar Receita</div>
+      </div>
+      <div class="menu-card" routerLink="/historico-receitas">
+        <div class="card-icon">📜</div>
+        <div class="card-title">Histórico</div>
+      </div>
+      <div class="menu-card" routerLink="/pacientes">
+        <div class="card-icon">🐶🐱</div>
+        <div class="card-title">Pacientes</div>
+      </div>
+      <div class="menu-card pro" title="Disponível apenas no modo PRO">
+        <div class="card-icon">📅</div>
+        <div class="card-title">Calendário</div>
+        <div class="pro-badge">PRO</div>
+      </div>
+      <div class="menu-card pro" title="Disponível apenas no modo PRO">
+        <div class="card-icon">🎥</div>
+        <div class="card-title">Video Chamada</div>
+        <div class="pro-badge">PRO</div>
+      </div>
+      <div class="menu-card" routerLink="/produtos">
+        <div class="card-icon">🏪</div>
+        <div class="card-title">Produtos</div>
+      </div>
+    </div>
 
-
-  <!-- Criar Receita -->
-  <div *ngIf="isLoggedIn && vetApproved" class="card receita-card">
-    <h2>Criar Receita Digital</h2>
-    <form #f="ngForm" (ngSubmit)="criarReceita(f)">
-      <div class="form-group">
-        <label>Ativo</label>
-        <select name="ativoId" ngModel required>
-          <option value="">Selecione um ativo</option>
-          <option *ngFor="let ativo of ativos" [value]="ativo.id">{{ ativo.nome }}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Peso do Animal (kg)</label>
-        <input type="number" name="peso" ngModel required />
-      </div>
-      <div class="form-group">
-        <label>Nome do Paciente</label>
-        <input type="text" name="paciente" ngModel required />
-      </div>
-      <button type="submit" class="btn">Gerar Receita</button>
-    </form>
+    <!-- vidro real -->
+    <div *ngIf="!vetApproved" class="overlay-vidro-real"></div>
   </div>
 
-    <!-- Guia de Ativos -->
-  <div  class="card guia-ativos">
+  <!-- Guia de Ativos -->
+  <div class="card guia-ativos">
     <div class="top-bar">
       <h2>Guia de Ativos</h2>
-      <input type="text" placeholder="Buscar ativo..." [(ngModel)]="filtro" class="input-busca" />
+      <input
+        type="text"
+        placeholder="Buscar ativo..."
+        [(ngModel)]="filtro"
+        (ngModelChange)="onFiltroChange()"
+        class="input-busca"
+      />
+
       <div class="view-toggle">
         <button (click)="viewMode='cards'" [class.active]="viewMode==='cards'">Cards</button>
         <button (click)="viewMode='table'" [class.active]="viewMode==='table'">Tabela</button>
       </div>
     </div>
 
-    <!-- CARDS -->
-    <div *ngIf="viewMode==='cards'" class="lista-ativos">
-      <ng-container *ngFor="let letra of alfabetico">
-        <h3 class="indice-letra">{{ letra.letra }}</h3>
-        <div class="cards-da-letra">
-          <div class="ativo-item" *ngFor="let ativo of ativosFiltradosPorLetra(letra.letra); trackBy: trackById">
-            <h4>{{ ativo.nome }}</h4>
-            <p>{{ ativo.descricao }}</p>
-            <p><strong>Dose Cães:</strong> {{ ativo.doseCaes }}</p>
-            <p><strong>Dose Gatos:</strong> {{ ativo.doseGatos }}</p>
-          </div>
-        </div>
+    <!-- CARDS DE ATIVOS -->
+    <div *ngIf="viewMode==='cards'">
+      <ng-container *ngIf="temAtivos(); else semAtivos">
+        <ng-container *ngFor="let letra of alfabetico">
+          <ng-container *ngIf="(ativosFiltrados[letra.letra] || []).length > 0">
+            <h3 class="indice-letra">{{ letra.letra }}</h3>
+            <div class="cards-da-letra">
+              <div 
+                class="ativo-item" 
+                *ngFor="let ativo of ativosFiltrados[letra.letra]; trackBy: trackById"
+                (click)="expandirAtivo(ativo)">
+                
+                <div class="ativo-header">
+                  <h4>{{ ativo.nome }}</h4>
+                  <span class="chevron" [class.open]="ativo.open">▼</span>
+                </div>
+
+                <div class="ativo-details" *ngIf="ativo.open">
+                  <p>{{ ativo.descricao }}</p>
+                  <p><strong>Dose Cães:</strong> {{ ativo.doseCaes }}</p>
+                  <p><strong>Dose Gatos:</strong> {{ ativo.doseGatos }}</p>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
       </ng-container>
+
+      <ng-template #semAtivos>
+        <p style="text-align:center; color:red;">Nenhum ativo encontrado ):</p>
+      </ng-template>
     </div>
 
     <!-- TABELA -->
@@ -94,10 +136,6 @@
         </tbody>
       </table>
     </div>
-  </div>
-  <!-- Referências -->
-  <div class="rodape">
-    <button class="btn btn-sec" (click)="abrirModalReferencias()">Referências</button>
   </div>
 
   <!-- MODAIS -->
@@ -156,3 +194,13 @@
     </div>
   </ng-container>
 </div>
+
+<!-- Modal de aviso -->
+<div class="modal-aviso" *ngIf="modalAvisoAberto">
+  <div class="modal-content">
+    <h3>Sessão expirada</h3>
+    <p>Seu token expirou ou é inválido. Você será deslogado.</p>
+    <button (click)="dismissLogout()">OK</button>
+  </div>
+</div>
+

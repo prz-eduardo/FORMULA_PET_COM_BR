@@ -7,20 +7,15 @@ import { ApiService, Ativo } from '../../../services/api.service';
 import { LoginVetComponent } from './login-vet/login-vet.component';
 import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component';
 
-
-
-
 @Component({
   selector: 'app-area-vet',
   standalone: true,
-  imports: [CommonModule, FormsModule, LoginVetComponent, CrieSuaContaComponent],
+  imports: [CommonModule, FormsModule, LoginVetComponent, CrieSuaContaComponent, RouterLink],
   providers: [ApiService],
   templateUrl: './area-vet.component.html',
   styleUrls: ['./area-vet.component.scss']
 })
-export class AreaVetComponent implements OnInit, AfterViewInit {
-
-  
+export class AreaVetComponent implements OnInit, AfterViewInit { 
 
   ativos: any;
   filtro: string = '';
@@ -34,6 +29,9 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
   modalLoginAberto = false;
   modalCadastroAberto = false;
   modalReferenciasAberto = false;
+  modalAvisoAberto = false;
+
+  acordeonAtivo = true; // toggle de acordeon
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -41,28 +39,42 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
     private apiService: ApiService
   ) {}
 
-  ngOnInit() {
-    this.authService.user$.subscribe(async user => {
-      if (user) {
-        this.isLoggedIn = true;
-        this.vetData = await this.apiService.getVet(user.uid).toPromise();
-        this.vetApproved = this.vetData?.approved || false;
-      } else {
-        this.isLoggedIn = false;
-        this.vetData = null;
-        this.vetApproved = false;
-      }
-    });
+ngOnInit() {
+  this.authService.isLoggedIn$.subscribe(logged => {
+    this.isLoggedIn = logged;
 
-    const currentUser = this.authService.getCurrentUser();
-    if (currentUser) {
-      this.isLoggedIn = true;
-      this.apiService.getVet(currentUser.uid).subscribe(vet => {
-        this.vetData = vet;
-        this.vetApproved = vet?.approved || false;
-      });
+    if (logged) {
+      const token = this.authService.getToken();
+      if (!token) return;
+      const payload: any = JSON.parse(atob(token.split('.')[1]));
+      this.carregarVet(payload.id);
+      this.modalLoginAberto = false;
+      this.modalCadastroAberto = false;
+    } else {
+      this.vetData = null;
     }
-  }
+  });
+}
+
+
+// função de carregar vet
+carregarVet(vetId: string) {
+  const token: string | undefined = localStorage.getItem('token') || undefined;
+
+  this.apiService.getVet(vetId, token).toPromise()
+    .then(vet => {
+      console.log('_________________',vet);
+      this.vetData = vet;
+      this.vetApproved = vet?.approved || false;
+    })
+    .catch(err => {
+      console.error('Erro ao buscar vet:', err);
+      this.logout();
+    });
+}
+
+
+
 
   ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
@@ -70,14 +82,10 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
     }
   }
 
-  async loadAtivos() {
-    try {
-      this.ativos = await this.apiService.getAtivos().toPromise();
-      this.organizarAtivos();
-    } catch (err) {
-      console.error('Erro ao carregar ativos:', err);
-    }
+  temAtivos(): boolean {
+    return this.alfabetico.some(l => (this.ativosFiltrados[l.letra] || []).length > 0);
   }
+
 
   organizarAtivos() {
     const ativosOrdenados = [...this.ativos].sort((a, b) => a.nome.localeCompare(b.nome));
@@ -91,15 +99,46 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
   }
 
   ativosFiltradosPorLetra(letra: string) {
-    if (!this.filtro) return this.alfabetico.find(l => l.letra === letra)?.ativos || [];
+    this.ativos.forEach((a: Ativo) => a.open = false); // <--- tipo declarado
+    const lista = this.alfabetico.find(l => l.letra === letra)?.ativos || [];
+    if (!this.filtro) return lista;
     const termo = this.filtro.toLowerCase();
-    return (this.alfabetico.find(l => l.letra === letra)?.ativos || []).filter(a =>
+    return lista.filter((a: Ativo) =>
       a.nome?.toLowerCase().includes(termo) ||
       a.descricao?.toLowerCase().includes(termo)
     );
   }
 
-  async criarReceita(form: any) {
+
+  toggleAcordeon() {
+    this.acordeonAtivo = !this.acordeonAtivo;
+  }
+
+  trackById(index: number, item: any) {
+    return item.id;
+  }
+
+  abrirModalLogin() { this.modalLoginAberto = true; }
+  fecharModalLogin() { this.modalLoginAberto = false; }
+
+  abrirModalCadastro() { this.modalCadastroAberto = true; }
+  fecharModalCadastro() { this.modalCadastroAberto = false; }
+
+  abrirModalReferencias() { this.modalReferenciasAberto = true; }
+  fecharModalReferencias() { this.modalReferenciasAberto = false; }
+
+  logout() {
+    // this.modalAvisoAberto = false;
+    this.authService.logout();
+    this.isLoggedIn = false;
+    this.vetData = null;
+  }
+
+  dismissLogout(){
+    this.modalAvisoAberto = false;
+  }
+
+  public async criarReceita(form: any) {
     const receita = {
       ativoId: form.value.ativoId,
       peso: form.value.peso,
@@ -116,23 +155,53 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
     }
   }
 
-calcularDosagem(ativoId: any, peso: number): any {
-  const ativo: Ativo | undefined = this.ativos.find((a: Ativo) => a.id === ativoId);
-  if (!ativo) return "";
-  return `${peso * 10} mg`;
-}
-
-  trackById(index: number, item: any) {
-    return item.id;
+  calcularDosagem(id:any,peso:any){
+    console.log('ainda não implementado');
   }
 
-  abrirModalLogin() { this.modalLoginAberto = true; }
-  fecharModalLogin() { this.modalLoginAberto = false; }
+  expandirAtivo(ativo: Ativo) {
+    console.log('chamoooou');
+    // Fecha todos os cards
+    this.alfabetico.forEach(l => l.ativos.forEach(a => a.open = false));
 
-  abrirModalCadastro() { this.modalCadastroAberto = true; }
-  fecharModalCadastro() { this.modalCadastroAberto = false; }
+    // Desmarca toggle do acordeon
+    this.acordeonAtivo = false;
 
-  abrirModalReferencias() { this.modalReferenciasAberto = true; }
-  fecharModalReferencias() { this.modalReferenciasAberto = false; }
+    // Expande o card clicado
+    ativo.open = true;
+  }
+
+  ativosFiltrados: { [letra: string]: Ativo[] } = {};
+
+loadAtivos() {
+  this.apiService.getAtivos().toPromise().then(ativos => {
+    this.ativos = ativos;
+    this.organizarAtivos();
+    this.filtrarAtivos(); // inicializa o filtro
+  });
+}
+
+filtrarAtivos() {
+  const termo = this.filtro?.toLowerCase() || '';
+  this.alfabetico.forEach(l => {
+    this.ativosFiltrados[l.letra] = l.ativos.filter(a =>
+      !termo || a.nome.toLowerCase().includes(termo) || a.descricao.toLowerCase().includes(termo)
+    );
+  });
+}
+
+onFiltroChange() {
+  this.filtrarAtivos();
+}
+
+onLogin() {
+  const token = localStorage.getItem('token') || undefined;
+  if (!token) return;
+  const payload: any = JSON.parse(atob(token.split('.')[1]));
+  this.isLoggedIn = true;
+  this.modalLoginAberto = false;
+  this.modalCadastroAberto = false;
+  this.carregarVet(payload.id);
+}
 
 }

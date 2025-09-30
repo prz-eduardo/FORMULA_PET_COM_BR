@@ -5,88 +5,86 @@ import {
   signInWithPopup, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged,
-  User 
+  User
 } from 'firebase/auth';
-import { setDoc, doc, getDoc } from 'firebase/firestore';
-import { collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { BehaviorSubject } from 'rxjs';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
+  private loggedInSubject = new BehaviorSubject<boolean>(!!localStorage.getItem('token'));
+  isLoggedIn$ = this.loggedInSubject.asObservable();
 
-  private userSubject = new BehaviorSubject<User | null>(null);
-  user$ = this.userSubject.asObservable();
+  public user$ = new BehaviorSubject<User | null>(null);
 
-    constructor() {
-    onAuthStateChanged(auth, (user) => {
-      this.userSubject.next(user);
+  constructor() {
+    onAuthStateChanged(auth, user => {
+      this.user$.next(user);
     });
   }
 
-  getCurrentUser() {
+  // Retorna usuário atual
+  getCurrentUser(): User | null {
     return auth.currentUser;
   }
 
+  // Cadastro com email/senha
+  async registerEmail(email: string, senha: string) {
+    return await createUserWithEmailAndPassword(auth, email, senha);
+  }
+
+  // Login com email/senha
   async loginEmail(email: string, senha: string) {
     return await signInWithEmailAndPassword(auth, email, senha);
   }
 
+  // Login com Google
   async loginGoogle() {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+    return await signInWithPopup(auth, provider);
   }
 
-  async registerVet(email: string, senha: string, nome: string, cpf: string, crmv: string, telefone: string) {
-    let user;
-
-    if (senha === 'firebase-google') {
-      // cadastro via Google
-      user = auth.currentUser;
-      if (!user) throw new Error('Usuário Google não autenticado');
-    } else {
-      // cadastro normal
-      const cred = await createUserWithEmailAndPassword(auth, email, senha);
-      user = cred.user;
-    }
-
-    // cria documento no Firestore somente se não existir
-    const docRef = doc(db, 'vets', user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      await setDoc(docRef, {
-        uid: user.uid,
-        nome,
-        email,
-        cpf,
-        crmv,
-        telefone,
-        approved: false,
-        authType: senha === 'firebase-google' ? 'google' : 'email',
-        criadoEm: new Date()
-      });
-    }
-
-    return user;
+    login(token: string) {
+    localStorage.setItem('token', token);
+    this.loggedInSubject.next(true);
   }
 
-  async getVet(uid: string) {
-    const snap = await getDoc(doc(db, 'vets', uid));
+  // Reset de senha
+  async sendPasswordReset(email: string) {
+    return await sendPasswordResetEmail(auth, email);
+  }
+
+  // Pegar ID Token JWT do usuário logado
+  async getIdToken(): Promise<string> {
+    if (!auth.currentUser) {
+      throw new Error('Usuário não logado');
+    }
+    return await auth.currentUser.getIdToken();
+  }
+
+  // Registrar Vet no Firestore (se ainda quiser manter dados extras)
+  async registerVetFirestore(uid: string, data: any) {
+    const ref = doc(db, 'vets', uid);
+    await setDoc(ref, data);
+  }
+
+  async getVetFirestore(uid: string) {
+    const ref = doc(db, 'vets', uid);
+    const snap = await getDoc(ref);
     return snap.exists() ? snap.data() : null;
   }
 
-  async verificarVetPorCrmvCpf(crmv: string, cpf: string): Promise<boolean> {
-    const vetsCol = collection(db, 'vets');
-    const vetsSnap = await getDocs(vetsCol);
-    const vets: { crmv: string; cpf: string }[] = vetsSnap.docs.map(d => d.data() as any);
-    return vets.some(v => v.crmv === crmv || v.cpf === cpf);
+  // AuthService
+  logout() {
+    localStorage.removeItem('token');
+    this.loggedInSubject.next(false);
   }
 
-    async sendPasswordReset(email: string) {
-    // return await auth.sendPasswordResetEmail(auth, email);
-    }
-
+  getToken(): string | undefined {
+    return localStorage.getItem('token') || undefined;
+  }
 }
-

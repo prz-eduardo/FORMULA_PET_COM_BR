@@ -23,20 +23,11 @@
   <hr />
 
   <!-- Botão Google -->
-  <button class="btn-google-toggle" (click)="toggleIniciarGoogle()" *ngIf="!iniciadoGoogle">
+  <button class="btn-google-toggle" (click)="loginGoogle()" *ngIf="!iniciadoGoogle">
     <img src="/imagens/google.png" alt="Google" class="g-img"> Entrar com Google
   </button>
 
-  <!-- Form Google -->
-  <div class="google-form-wrapper" *ngIf="iniciadoGoogle">
-    <p>Login com Google</p>
-    <button class="btn-google-form" (click)="loginGoogle()" [disabled]="carregando">
-      <img src="/imagens/google.png" alt="Google" class="g-img"> Continuar
-    </button>
-    <button class="btn-sec" (click)="toggleIniciarGoogle()">↩️ Voltar</button>
-  </div>
-
   <div class="acoes-sec">
-    <button class="btn-sec" (click)="close.emit()">Fechar</button>
+    <!-- <button class="btn-sec" (click)="close.emit()">Fechar</button> -->
   </div>
 </div>

@@ -2,6 +2,8 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService } from '../../../../services/auth.service';
+import { ApiService } from '../../../../services/api.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-login-vet',
@@ -11,14 +13,18 @@ import { AuthService } from '../../../../services/auth.service';
   styleUrls: ['./login-vet.component.scss']
 })
 export class LoginVetComponent {
-
   @Output() close = new EventEmitter<void>();
+  @Output() loggedIn = new EventEmitter<void>();
+
   carregando = false;
-  mensagemErro: string = '';
+  mensagemErro = '';
   mostrarSenha = false;
   iniciadoGoogle = false;
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private apiService: ApiService
+  ) {}
 
   async loginEmail(form: NgForm) {
     if (!form.valid) return;
@@ -27,16 +33,21 @@ export class LoginVetComponent {
     this.mensagemErro = '';
 
     try {
+      // Login Firebase apenas pra criar sessão local
       await this.authService.loginEmail(email, senha);
+
+      // Envia pro backend email + senha, não idToken
+      const data = await firstValueFrom(
+        this.apiService.loginVet({ email, senha }) // <-- payload correto
+      );
+
+      localStorage.setItem('userType', data.tipo);
+      localStorage.setItem('token', data.token);
+      this.loggedIn.emit();
+      this.authService.login(data.token);
       this.close.emit();
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found') {
-        this.mensagemErro = 'Usuário não encontrado.';
-      } else if (err.code === 'auth/wrong-password') {
-        this.mensagemErro = 'Senha incorreta.';
-      } else {
-        this.mensagemErro = 'Erro: ' + err.message;
-      }
+      this.mensagemErro = err.message || 'Erro ao fazer login.';
     } finally {
       this.carregando = false;
     }
@@ -44,21 +55,30 @@ export class LoginVetComponent {
 
   async loginGoogle() {
     this.carregando = true;
-    this.mensagemErro = '';
+    this.mensagemErro = ''; 
     try {
-      const user = await this.authService.loginGoogle();
-      // caso o documento do vet não exista ainda
-      const existe = await this.authService.getVet(user.uid);
-      if (!existe) {
-        alert('Conta não encontrada no sistema. Complete o cadastro.');
-      } else {
-        alert('Login realizado com sucesso!');
-        this.close.emit();
+      await this.authService.loginGoogle();
+      const idToken = await this.authService.getIdToken();
+
+      // Envia pro backend email + idToken
+      const currentUser = this.authService.getCurrentUser();
+      const email = currentUser?.email;
+      if (!email) {
+        this.mensagemErro = 'Erro: email do usuário não encontrado.';
+        this.carregando = false;
+        return;
       }
+      const data = await firstValueFrom(
+        this.apiService.loginVet({ email: currentUser?.email, idToken }) // <-- payload correto
+      );
+
+      localStorage.setItem('userType', data.tipo);
+      localStorage.setItem('token', data.token);
+      this.loggedIn.emit();
+      this.authService.login(data.token);
+      this.close.emit();
     } catch (err: any) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        this.mensagemErro = 'Erro: ' + err.message;
-      }
+      this.mensagemErro = err.message || 'Erro ao autenticar com Google.';
     } finally {
       this.carregando = false;
     }
@@ -70,12 +90,11 @@ export class LoginVetComponent {
       return;
     }
     this.carregando = true;
-    this.mensagemErro = '';
     try {
       await this.authService.sendPasswordReset(email);
       alert('Email de recuperação enviado!');
     } catch (err: any) {
-      this.mensagemErro = 'Erro: ' + err.message;
+      this.mensagemErro = err.message || 'Erro ao enviar email de recuperação.';
     } finally {
       this.carregando = false;
     }
@@ -83,7 +102,5 @@ export class LoginVetComponent {
 
   toggleIniciarGoogle() {
     this.iniciadoGoogle = !this.iniciadoGoogle;
-    this.mensagemErro = '';
   }
-
 }
