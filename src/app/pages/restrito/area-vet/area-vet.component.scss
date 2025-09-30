@@ -205,6 +205,8 @@
 }
 
 .modal-content {
+      display: flex;
+    justify-content: space-around;
   position: fixed;
   top: 50%;
   left: 50%;
