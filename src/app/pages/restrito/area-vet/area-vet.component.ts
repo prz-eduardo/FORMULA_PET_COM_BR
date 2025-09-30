@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID,Injectable } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ApiService, Ativo } from '../../../services/api.service';
 import { LoginVetComponent } from './login-vet/login-vet.component';
 import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-area-vet',
@@ -40,6 +41,15 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
   ) {}
 
 ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+    const token = localStorage.getItem('token') || undefined;
+    if (!token) return;
+    const payload: any = JSON.parse(atob(token.split('.')[1]));
+    this.isLoggedIn = true;
+    this.modalLoginAberto = false;
+    this.modalCadastroAberto = false;
+    this.carregarVet(payload.id);
+  }
   this.authService.isLoggedIn$.subscribe(logged => {
     this.isLoggedIn = logged;
 
@@ -59,11 +69,11 @@ ngOnInit() {
 
 // função de carregar vet
 carregarVet(vetId: string) {
-  const token: string | undefined = localStorage.getItem('token') || undefined;
+  const token: string | undefined =
+    isPlatformBrowser(this.platformId) ? localStorage.getItem('token') || undefined : undefined;
 
   this.apiService.getVet(vetId, token).toPromise()
     .then(vet => {
-      console.log('_________________',vet);
       this.vetData = vet;
       this.vetApproved = vet?.approved || false;
     })

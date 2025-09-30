@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { auth, db } from '../firebase-config';
 import { 
   GoogleAuthProvider, 
@@ -11,17 +11,33 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { BehaviorSubject } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private loggedInSubject = new BehaviorSubject<boolean>(!!localStorage.getItem('token'));
-  isLoggedIn$ = this.loggedInSubject.asObservable();
+  private isBrowser: boolean;
+  private tokenKey = 'token';
+  private loggedIn = new BehaviorSubject<boolean>(false);
+  public isLoggedIn$ = this.loggedIn.asObservable();
+  private loggedInSubject: BehaviorSubject<boolean>;
 
   public user$ = new BehaviorSubject<User | null>(null);
 
-  constructor() {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+
+    // inicializa o loggedInSubject de forma segura
+    if (this.isBrowser) {
+      const hasToken = !!localStorage.getItem(this.tokenKey);
+      this.loggedInSubject = new BehaviorSubject<boolean>(hasToken);
+      this.loggedIn.next(hasToken);
+    } else {
+      this.loggedInSubject = new BehaviorSubject<boolean>(false);
+    }
+
     onAuthStateChanged(auth, user => {
       this.user$.next(user);
     });
@@ -48,9 +64,11 @@ export class AuthService {
     return await signInWithPopup(auth, provider);
   }
 
-    login(token: string) {
-    localStorage.setItem('token', token);
-    this.loggedInSubject.next(true);
+  login(token: string) {
+    if (this.isBrowser) {
+      localStorage.setItem(this.tokenKey, token);
+      this.loggedInSubject.next(true);
+    }
   }
 
   // Reset de senha
@@ -66,7 +84,7 @@ export class AuthService {
     return await auth.currentUser.getIdToken();
   }
 
-  // Registrar Vet no Firestore (se ainda quiser manter dados extras)
+  // Registrar Vet no Firestore
   async registerVetFirestore(uid: string, data: any) {
     const ref = doc(db, 'vets', uid);
     await setDoc(ref, data);
@@ -78,13 +96,24 @@ export class AuthService {
     return snap.exists() ? snap.data() : null;
   }
 
-  // AuthService
-  logout() {
-    localStorage.removeItem('token');
-    this.loggedInSubject.next(false);
+  getToken(): string | null {
+    if (!this.isBrowser) return null;
+    return localStorage.getItem(this.tokenKey);
   }
 
-  getToken(): string | undefined {
-    return localStorage.getItem('token') || undefined;
+  setToken(token: string) {
+    if (this.isBrowser) {
+      localStorage.setItem(this.tokenKey, token);
+      this.loggedIn.next(true);
+      this.loggedInSubject.next(true);
+    }
+  }
+
+  logout() {
+    if (this.isBrowser) {
+      localStorage.removeItem(this.tokenKey);
+      this.loggedIn.next(false);
+      this.loggedInSubject.next(false);
+    }
   }
 }
