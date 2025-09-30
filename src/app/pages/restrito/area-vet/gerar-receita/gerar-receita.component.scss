@@ -1,0 +1,178 @@
+.area-vet-wrapper {
+  font-family: 'Inter', sans-serif;
+  color: #ecf0f5;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0d151f, #1a2230);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.titulo {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--primary, #1abc9c);
+}
+
+/* cards */
+.card.receita-card {
+  background: #1f2a38;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+  color: #ecf0f5;
+}
+
+.input-busca {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+  background: #222a38;
+  color: #ecf0f5;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* row util */
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.row button { min-width: 120px; }
+
+/* tutor grid */
+.tutor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+}
+.tutor-grid .full { grid-column: 1 / -1; }
+
+/* pets (cards) */
+.cards-da-letra {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.pet-card {
+  background: #16202a;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .2s ease;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.pet-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+}
+.pet-card.selected {
+  border: 2px solid rgba(26, 188, 156, 0.5);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+}
+
+/* ativos */
+.grupo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  cursor: pointer;
+}
+.btn-toggle {
+  background: #2a364a;
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ativo-item {
+  background: #16202a;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: all .18s;
+}
+.ativo-item.selected {
+  outline: 3px solid rgba(26, 188, 156, 0.3);
+  transform: translateY(-2px);
+}
+
+/* badges ativos */
+.ativos-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.badge {
+  background: #1abc9c;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.badge-remove {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* assinatura */
+.assinatura-row { display: flex; gap: 18px; align-items: flex-start; margin-top: 8px; flex-wrap: wrap; }
+.assinatura-col { flex: 1 1 320px; min-width: 280px; }
+.canvas-wrap { background: #fff; border-radius: 8px; padding: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); }
+.assinatura-canvas { width: 100%; height: 140px; display: block; touch-action: none; background: #fff; border-radius: 6px; }
+
+.muted { color: #9aa3ad; }
+.small { font-size: 12px; }
+.subtitulo { margin-top: 12px; margin-bottom: 8px; color: var(--primary, #1abc9c); }
+
+/* botões */
+button.btn {
+  background: var(--primary, #1abc9c);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s ease;
+}
+button.btn:hover { background: #16a085; }
+
+/* grid pet inputs */
+.grid-pet {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
+
+/* responsividade */
+@media (max-width: 900px) {
+  .tutor-grid { grid-template-columns: 1fr; }
+  .assinatura-row { flex-direction: column; }
+  .row { flex-direction: column; align-items: stretch; }
+  .row button { width: 100%; }
+  .cards-da-letra { grid-template-columns: 1fr; }
+}
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.input-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1abc9c;
+}

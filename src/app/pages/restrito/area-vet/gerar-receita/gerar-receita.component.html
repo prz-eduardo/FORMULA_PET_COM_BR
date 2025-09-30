@@ -1,0 +1,198 @@
+<div class="area-vet-wrapper">
+  <h1 class="titulo">Gerar Receita</h1>
+
+  <!-- CPF -->
+  <div class="card receita-card">
+    <h3>CPF do Tutor</h3>
+    <div class="row">
+      <input
+        type="text"
+        name="cpf"
+        [(ngModel)]="cpf"
+        placeholder="000.000.000-00"
+        mask="000.000.000-00"
+        class="input-busca"
+        (input)="onCpfInput()"
+      />
+      <button class="btn" (click)="buscarTutor()" [disabled]="carregandoTutor">Buscar</button>
+    </div>
+    <p *ngIf="carregandoTutor" class="muted">Buscando tutor...</p>
+  </div>
+
+  <!-- Tutor encontrado -->
+  <div *ngIf="tutorEncontrado" class="card receita-card">
+    <h3>Dados do Tutor</h3>
+    <div class="tutor-grid">
+      <div><b>Nome:</b> {{ tutorEncontrado.nome }}</div>
+      <div><b>CPF:</b> {{ tutorEncontrado.cpf }}</div>
+      <div><b>Telefone:</b> {{ tutorEncontrado.telefone }}</div>
+      <div><b>Email:</b> {{ tutorEncontrado.email }}</div>
+      <div class="full"><b>Endereço:</b> {{ tutorEncontrado.endereco }}</div>
+    </div>
+
+    <!-- Pets -->
+    <h4 class="subtitulo">Pets Cadastrados</h4>
+    <div class="cards-da-letra">
+      <div
+        *ngFor="let pet of tutorEncontrado.pets; trackBy: trackByPet"
+        class="pet-card"
+        [class.selected]="petSelecionado?.id === pet.id"
+        (click)="selecionarPet(pet)"
+      >
+        <div class="ativo-header">{{ pet.nome }} <small class="muted">({{ pet.sexo }})</small></div>
+        <div class="ativo-details">
+          Idade: {{ pet.idade }} anos<br />
+          Peso: {{ pet.peso }} kg<br />
+          Raça: {{ pet.raca }}<br />
+          Alergias: {{ pet.alergias || 'Nenhuma' }}<br />
+          Espécie: {{ pet.especie}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cadastro manual do tutor -->
+  <div *ngIf="cadastroManualTutor" class="card receita-card">
+    <h3>Cadastro Manual do Tutor</h3>
+    <div class="grid-pet">
+      <input [(ngModel)]="novoTutor.nome" placeholder="Nome completo" class="input-busca" />
+      <input [(ngModel)]="novoTutor.telefone" placeholder="Telefone" class="input-busca" />
+      <input [(ngModel)]="novoTutor.email" placeholder="E-mail" class="input-busca" />
+      <input [(ngModel)]="novoTutor.endereco" placeholder="Endereço" class="input-busca" />
+    </div>
+  </div>
+
+<!-- Novo Pet -->
+    <div class="card receita-card">
+    <h3>Dados do Pet (selecionado / manual)</h3>
+    <div class="grid-pet">
+        <div class="input-group">
+        <label>Nome do Pet</label>
+        <input [(ngModel)]="novosDadosPet.nome" placeholder="Nome do Pet" class="input-busca" />
+        </div>
+
+        <div class="input-group">
+        <label>Idade (anos)</label>
+        <input [(ngModel)]="novosDadosPet.idade" placeholder="Idade" type="number" class="input-busca" />
+        </div>
+
+        <div class="input-group">
+        <label>Peso (kg)</label>
+        <input [(ngModel)]="novosDadosPet.peso" placeholder="Peso" type="number" class="input-busca" />
+        </div>
+
+        <div class="input-group">
+        <label>Raça</label>
+        <input [(ngModel)]="novosDadosPet.raca" placeholder="Raça" class="input-busca" />
+        </div>
+
+        <div class="input-group">
+        <label>Espécie</label>
+        <input [(ngModel)]="novosDadosPet.especie" placeholder="Ex: Cachorro, Gato" class="input-busca" />
+        </div>
+
+        <div class="input-group">
+        <label>Sexo</label>
+        <select [(ngModel)]="novosDadosPet.sexo" class="input-busca">
+            <option value="Macho">Macho</option>
+            <option value="Fêmea">Fêmea</option>
+        </select>
+        </div>
+
+        <div class="input-group">
+        <label>Alergias</label>
+        <input [(ngModel)]="novosDadosPet.alergias" placeholder="Alergias" class="input-busca" />
+        </div>
+    </div>
+
+    </div>
+
+
+  <!-- Observações -->
+  <div class="card receita-card">
+    <h3>Observações</h3>
+    <textarea [(ngModel)]="observacoes" placeholder="Digite aqui observações da receita..." class="input-busca"></textarea>
+  </div>
+
+  <!-- Ativos -->
+  <div class="card receita-card">
+    <h3>Selecionar Ativos</h3>
+    <div class="ativos-controls">
+      <input type="text" [(ngModel)]="ativosSearch" (ngModelChange)="onAtivosSearchChange()" placeholder="Pesquisar ativo..." class="input-busca" />
+      <div class="muted small">Total: {{ ativos.length }}</div>
+      <button class="btn-toggle" (click)="toggleTodosAtivos()">{{ ativosColapsados ? 'Abrir todos' : 'Colapsar todos' }}</button>
+    </div>
+
+    <div class="ativos-badges" *ngIf="ativosSelecionados.length">
+      <span class="badge" *ngFor="let id of ativosSelecionados">
+        {{ getNomeAtivo(id) }}
+        <button class="badge-remove" (click)="toggleAtivo(id)">x</button>
+      </span>
+    </div>
+
+    <div *ngFor="let grupo of alfabetico">
+      <div *ngIf="!isGrupoColapsado(grupo.letra)">
+        <div class="grupo-header" (click)="toggleGrupo(grupo.letra)">
+          <h4 class="indice-letra">{{ grupo.letra }}</h4>
+        </div>
+
+        <div class="cards-da-letra">
+          <div
+            class="ativo-item"
+            *ngFor="let ativo of grupo.ativos; trackBy: trackByAtivo"
+            (click)="toggleAtivo(ativo.id)"
+            [class.selected]="ativosSelecionados.includes(ativo.id)"
+          >
+            <div class="ativo-header">
+              {{ ativo.nome }} <span *ngIf="ativosSelecionados.includes(ativo.id)">✅</span>
+            </div>
+            <div class="ativo-details">
+              {{ ativo.descricao }}<br />
+              <b>Dose cães:</b> {{ ativo.doseCaes }}<br />
+              <b>Dose gatos:</b> {{ ativo.doseGatos }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assinatura -->
+  <div class="card receita-card">
+    <h3>Assinatura</h3>
+    <div class="assinatura-row">
+      <div class="assinatura-col">
+        <label>Assinatura digitada</label>
+        <input [(ngModel)]="assinaturaManual" placeholder="Digite sua assinatura" class="input-busca" />
+        <button class="btn" (click)="gerarAssinaturaCursiva(tutorEncontrado?.nome || novoTutor.nome || 'Veterinário')">Gerar assinatura cursiva</button>
+      </div>
+      <div class="assinatura-col">
+        <label>Desenhar assinatura</label>
+        <div class="canvas-wrap">
+          <canvas
+            #canvas
+            class="assinatura-canvas"
+            width="600"
+            height="150"
+            (pointerdown)="canvasPointerDown($event)"
+            (pointermove)="canvasPointerMove($event)"
+            (pointerup)="canvasPointerUp()"
+            (pointerleave)="canvasPointerUp()"
+            (pointercancel)="canvasPointerUp()"
+          ></canvas>
+        </div>
+        <div class="assinatura-actions">
+          <button class="btn" (click)="limparAssinaturaCanvas()">Limpar</button>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="assinaturaICP" class="muted small">Mock ICP: {{ assinaturaICP }}</div>
+  </div>
+
+  <!-- Salvar -->
+  <div class="rodape">
+    <button class="btn" (click)="salvarReceita()">Salvar Receita</button>
+    
+    <button class="btn" (click)="gerarPdf()">Gerar PDF</button>
+  </div>
+</div>
