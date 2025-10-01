@@ -6,12 +6,13 @@ import { AuthService } from '../../../services/auth.service';
 import { ApiService, Ativo } from '../../../services/api.service';
 import { LoginVetComponent } from './login-vet/login-vet.component';
 import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component';
+import { NavmenuComponent } from '../../../navmenu/navmenu.component';
 import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-area-vet',
   standalone: true,
-  imports: [CommonModule, FormsModule, LoginVetComponent, CrieSuaContaComponent, RouterLink],
+  imports: [CommonModule, FormsModule, LoginVetComponent, CrieSuaContaComponent, RouterLink,NavmenuComponent],
   providers: [ApiService],
   templateUrl: './area-vet.component.html',
   styleUrls: ['./area-vet.component.scss']
@@ -23,7 +24,6 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
   isLoggedIn = false;
   vetApproved = false;
   vetData: any = null;
-
   viewMode: 'cards' | 'table' = 'cards';
   alfabetico: { letra: string, ativos: Ativo[] }[] = [];
 

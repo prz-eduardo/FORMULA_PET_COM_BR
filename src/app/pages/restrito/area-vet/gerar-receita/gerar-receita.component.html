@@ -1,6 +1,6 @@
 <div class="area-vet-wrapper">
+  <app-navmenu></app-navmenu>
   <h1 class="titulo">Gerar Receita</h1>
-
   <!-- CPF -->
   <div class="card receita-card">
     <h3>CPF do Tutor</h3>
@@ -120,7 +120,7 @@
     <div class="ativos-controls">
       <input type="text" [(ngModel)]="ativosSearch" (ngModelChange)="onAtivosSearchChange()" placeholder="Pesquisar ativo..." class="input-busca" />
       <div class="muted small">Total: {{ ativos.length }}</div>
-      <button class="btn-toggle" (click)="toggleTodosAtivos()">{{ ativosColapsados ? 'Abrir todos' : 'Colapsar todos' }}</button>
+      <button class="btn-toggle" (click)="toggleTodosAtivos()">{{ ativosColapsados ? 'Exibir medicamentos' : 'Ocultar medicamentos' }}</button>
     </div>
 
     <div class="ativos-badges" *ngIf="ativosSelecionados.length">
@@ -161,30 +161,24 @@
   <div class="card receita-card">
     <h3>Assinatura</h3>
     <div class="assinatura-row">
-      <!-- <div class="assinatura-col">
-        <label>Assinatura digitada</label>
-        <input [(ngModel)]="assinaturaManual" placeholder="Digite sua assinatura" class="input-busca" />
-
-      </div> -->
-      <!-- Dados do Veterinário -->
-<div *ngIf="veterinario" class="card receita-card">
-  <h3>Dados do Veterinário</h3>
-  <div class="tutor-grid">
-    <div><b>Nome:</b> {{ veterinario.nome }}</div>
-    <div><b>CPF:</b> {{ veterinario.cpf }}</div>
-    <div><b>CRMV:</b> {{ veterinario.crmv }}</div>
-    <div><b>Email:</b> {{ veterinario.email }}</div>
-    <div><b>Telefone:</b> {{ veterinario.telefone }}</div>
-  </div>
-</div>
+      <div *ngIf="veterinario" class="card receita-card">
+        <h3>Dados do Veterinário</h3>
+        <div class="tutor-grid">
+          <div><b>Nome:</b> {{ veterinario.nome }}</div>
+          <div><b>CPF:</b> {{ veterinario.cpf }}</div>
+          <div><b>CRMV:</b> {{ veterinario.crmv }}</div>
+          <div><b>Email:</b> {{ veterinario.email }}</div>
+          <div><b>Telefone:</b> {{ veterinario.telefone }}</div>
+        </div>
+      </div>
       <div class="assinatura-col">
         <label>Desenhar assinatura</label>
         <div class="canvas-wrap">
-          <canvas
+          <canvas *ngIf="isBrowser"
             #canvas
             class="assinatura-canvas"
             width="600"
-            height="150"
+            height="200"
             (pointerdown)="canvasPointerDown($event)"
             (pointermove)="canvasPointerMove($event)"
             (pointerup)="canvasPointerUp()"
@@ -196,7 +190,7 @@
           <button class="btn" (click)="limparAssinaturaCanvas()">Limpar</button>
         </div>
 
-                <button class="btn" (click)="gerarAssinaturaCursiva(tutorEncontrado?.nome || novoTutor.nome || 'Veterinário')">Gerar assinatura cursiva</button>
+                <!-- <button class="btn" (click)="gerarAssinaturaCursiva(veterinario.nome)">Gerar assinatura cursiva</button> -->
       </div>
     </div>
     <div *ngIf="assinaturaICP" class="muted small">Mock ICP: {{ assinaturaICP }}</div>
@@ -210,84 +204,17 @@
   </div>
 </div>
 
+<div #pdfContent class="pdf-container pdf-watermark" style="position: absolute; left: -9999px; top: -9999px;">
 
-<!-- <div #pdfContent class="pdf-container">
   <header class="pdf-header">
-    <h1>RECEITA VETERINÁRIA</h1>
+    <img src="imagens/logo-farmacia.png" alt="Logo Fórmula Pet" class="pdf-logo" />
+    <h1>Receita Veterinária</h1>
   </header>
 
+  <!-- Tutor -->
   <section class="pdf-box">
-    <h2>Dados do Veterinário</h2>
-    <p><strong>Nome:</strong> {{ veterinario?.nome || '-' }}</p>
-    <p><strong>CPF:</strong> {{ veterinario?.cpf || '-' }}</p>
-    <p><strong>CRMV:</strong> {{ veterinario?.crmv || '-' }}</p>
-    <p><strong>Email:</strong> {{ veterinario?.email || '-' }}</p>
-    <p><strong>Telefone:</strong> {{ veterinario?.telefone || '-' }}</p>
-  </section>
 
-  <section class="pdf-box">
-    <h2>Dados do Tutor</h2>
-    <p><strong>Nome:</strong> {{ tutorEncontrado?.nome || novoTutor.nome }}</p>
-    <p><strong>CPF:</strong> {{ tutorEncontrado?.cpf || novoTutor.cpf }}</p>
-    <p><strong>Telefone:</strong> {{ tutorEncontrado?.telefone || novoTutor.telefone }}</p>
-    <p><strong>Email:</strong> {{ tutorEncontrado?.email || novoTutor.email }}</p>
-    <p><strong>Endereço:</strong> {{ tutorEncontrado?.endereco || novoTutor.endereco }}</p>
-  </section>
-
-  <section class="pdf-box">
-    <h2>Dados do Pet</h2>
-    <p><strong>Nome:</strong> {{ petSelecionado?.nome || novosDadosPet.nome }}</p>
-    <p><strong>Espécie:</strong> {{ petSelecionado?.especie || novosDadosPet.especie }}</p>
-    <p><strong>Raça:</strong> {{ petSelecionado?.raca || novosDadosPet.raca }}</p>
-    <p><strong>Idade:</strong> {{ petSelecionado?.idade || novosDadosPet.idade }} anos</p>
-    <p><strong>Peso:</strong> {{ petSelecionado?.peso || novosDadosPet.peso }} kg</p>
-    <p><strong>Sexo:</strong> {{ petSelecionado?.sexo || novosDadosPet.sexo }}</p>
-    <p><strong>Alergias:</strong> {{ petSelecionado?.alergias || 'Nenhuma' }}</p>
-  </section>
-
-  <section class="pdf-box">
-    <h2>Prescrição</h2>
-    <table class="pdf-table">
-      <thead>
-        <tr>
-          <th>Medicamento</th>
-          <th>Dose Cães</th>
-          <th>Dose Gatos</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let id of ativosSelecionados">
-          <td>{{ getNomeAtivo(id) }}</td>
-            <td>{{ getDoseCaes(id) }}</td>
-            <td>{{ getDoseGatos(id) }}</td>
-
-        </tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section class="pdf-box">
-    <h2>Observações</h2>
-    <p>{{ observacoes || '-' }}</p>
-  </section>
-
-  <section class="pdf-signature">
-    <h2>Assinatura</h2>
-    <img *ngIf="canvasRef?.nativeElement" [src]="canvasRef.nativeElement.toDataURL()" alt="Assinatura" />
-    <p *ngIf="!canvasRef?.nativeElement">__________________________</p>
-  </section>
-
-  <footer class="pdf-footer">
-    Documento gerado digitalmente - Fórmula Pet
-  </footer>
-</div> -->
-<div #pdfContent class="pdf-container" style="position: absolute; left: -9999px; top: -9999px;">
-  <header class="pdf-header">
-    <h1>RECEITA VETERINÁRIA</h1>
-  </header>
-
-  <section class="pdf-box pdf-box-two-columns">
-    <div class="col">
+    <div>      
       <h2>Dados do Tutor</h2>
       <p><strong>Nome:</strong> {{ tutorEncontrado?.nome || novoTutor.nome }}</p>
       <p><strong>CPF:</strong> {{ tutorEncontrado?.cpf || novoTutor.cpf }}</p>
@@ -295,18 +222,32 @@
       <p><strong>Email:</strong> {{ tutorEncontrado?.email || novoTutor.email }}</p>
       <p><strong>Endereço:</strong> {{ tutorEncontrado?.endereco || novoTutor.endereco }}</p>
     </div>
-    <div class="col">
-      <h2>Dados do Pet</h2>
-      <p><strong>Nome:</strong> {{ petSelecionado?.nome || novosDadosPet.nome }}</p>
-      <p><strong>Espécie:</strong> {{ petSelecionado?.especie || novosDadosPet.especie }}</p>
-      <p><strong>Raça:</strong> {{ petSelecionado?.raca || novosDadosPet.raca }}</p>
-      <p><strong>Idade:</strong> {{ petSelecionado?.idade || novosDadosPet.idade }} anos</p>
-      <p><strong>Peso:</strong> {{ petSelecionado?.peso || novosDadosPet.peso }} kg</p>
-      <p><strong>Sexo:</strong> {{ petSelecionado?.sexo || novosDadosPet.sexo }}</p>
-      <p><strong>Alergias:</strong> {{ petSelecionado?.alergias || 'Nenhuma' }}</p>
+    
+    <div>
+      <h2>{{ petSelecionado?.nome || novosDadosPet.nome }}</h2>
+      <p class="pet-basic">
+        {{ petSelecionado?.especie || novosDadosPet.especie }}
+        ({{ petSelecionado?.raca || novosDadosPet.raca }})
+        <span class="pet-gender" 
+        [ngClass]="{'male': (petSelecionado?.sexo || novosDadosPet.sexo) === 'Macho', 
+                        'female': (petSelecionado?.sexo || novosDadosPet.sexo) === 'Fêmea'}">
+        {{ (petSelecionado?.sexo || novosDadosPet.sexo) === 'Macho' ? '♂' : '♀' }}
+      </span>
+      - {{ petSelecionado?.peso || novosDadosPet.peso }}kg
+      - {{ petSelecionado?.idade || novosDadosPet.idade }} anos
+    </p>
+  </div>
+
+  </section>
+
+  <!-- Pet -->
+  <section class="pdf-box pdf-pet-info" *ngIf="(petSelecionado?.alergias || novosDadosPet.alergias)">
+    <div  class="pet-allergies">
+      <strong>Alergias:</strong> {{ petSelecionado?.alergias || novosDadosPet.alergias }}
     </div>
   </section>
 
+  <!-- Prescrição -->
   <section class="pdf-box">
     <h2>Prescrição</h2>
     <table class="pdf-table">
@@ -327,27 +268,32 @@
     </table>
   </section>
 
+  <!-- Observações -->
   <section class="pdf-box">
     <h2>Observações</h2>
     <p style="white-space: pre-wrap;">{{ observacoes || '-' }}</p>
   </section>
 
-  <section class="pdf-box">
-    <h2>Dados do Veterinário</h2>
-    <p><strong>Nome:</strong> {{ veterinario?.nome || '-' }}</p>
-    <p><strong>CPF:</strong> {{ veterinario?.cpf || '-' }}</p>
-    <p><strong>CRMV:</strong> {{ veterinario?.crmv || '-' }}</p>
-    <p><strong>Email:</strong> {{ veterinario?.email || '-' }}</p>
-    <p><strong>Telefone:</strong> {{ veterinario?.telefone || '-' }}</p>
-
-    <section class="pdf-signature">
+  <!-- Veterinário + Assinatura -->
+  <section class="pdf-box pdf-vet-signature">
+    <div class="vet-info">
+      <h2>Dados do Veterinário</h2>
+      <p><strong>Nome:</strong> {{ veterinario?.nome || '-' }}</p>
+      <p><strong>CPF:</strong> {{ veterinario?.cpf || '-' }} - <strong>CRMV:</strong> {{ veterinario?.crmv || '-' }}</p>
+      <p><strong>Email:</strong> {{ veterinario?.email || '-' }} | <strong>Tel:</strong> {{ veterinario?.telefone || '-' }}</p>
+    </div>
+    <div class="signature-box">
       <h2>Assinatura</h2>
       <img *ngIf="canvasRef?.nativeElement" [src]="canvasRef.nativeElement.toDataURL()" alt="Assinatura" />
       <p *ngIf="!canvasRef?.nativeElement">__________________________</p>
-    </section>
+      <p>{{ veterinario?.nome || '-' }}</p>
+    </div>
   </section>
 
   <footer class="pdf-footer">
-    Documento gerado digitalmente - Fórmula Pet
+    <img src="imagens/image.png" alt="" class="pdf-logo-footer">
+    <p>Documento gerado digitalmente - Fórmula Pet</p>
   </footer>
 </div>
+
+

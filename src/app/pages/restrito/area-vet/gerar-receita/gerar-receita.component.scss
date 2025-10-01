@@ -175,7 +175,9 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   font-size: 13px;
   font-weight: 500;
   color: #1abc9c;
-}.pdf-container {
+}
+
+.pdf-container {
   width: 210mm;
   font-family: 'Georgia', serif;
   font-size: 12px;
@@ -186,9 +188,23 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   box-sizing: border-box;
 }
 
+.pdf-container {
+  font-family: 'Arial', sans-serif;
+  font-size: 12px;
+  color: #333;
+  position: relative;
+  padding: 10px 20px;
+}
+
 .pdf-header {
   text-align: center;
   margin-bottom: 20px;
+
+  .pdf-logo {
+    height: 50px;
+    margin-bottom: 5px;
+  }
+
   h1 {
     font-size: 22px;
     text-transform: uppercase;
@@ -199,9 +215,44 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   }
 }
 
+// Pet info customizada
+.pdf-pet-info {
+  text-align: center;
+
+  h2 {
+    font-size: 18px;
+    margin-bottom: 5px;
+    color: #2a2a2a;
+    font-weight: bold;
+  }
+
+  .pet-basic {
+    font-size: 14px;
+    margin-bottom: 5px;
+
+    .pet-gender {
+      margin-left: 5px;
+      font-weight: bold;
+      &.male { color: #3498db; }
+      &.female { color: #e91e63; }
+    }
+  }
+
+  .pet-allergies {
+    background-color: #ffe6e6;
+    border: 1px solid #ffcccc;
+    padding: 5px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+}
+
 .pdf-box {
+  flex-direction: row;
   border: 1px solid #ccc;
-  box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
+  box-shadow: 1px 1px 6px rgba(0,0,0,0.05);
   padding: 12px 18px;
   margin-bottom: 18px;
   border-radius: 6px;
@@ -222,16 +273,6 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   }
 }
 
-// Duas colunas para Tutor + Pet
-.pdf-box-two-columns {
-  display: flex;
-  gap: 20px;
-
-  .col {
-    flex: 1;
-  }
-}
-
 .pdf-table {
   width: 100%;
   border-collapse: collapse;
@@ -240,16 +281,15 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   th, td {
     border: 1px solid #bbb;
     padding: 6px 8px;
-    font-size: 11px;
-    word-break: break-word;
+    font-size: 8px;
     vertical-align: top;
+    word-break: break-word;
   }
 
   th {
     background-color: #f0f0f0;
     font-weight: bold;
     text-align: left;
-    color: #222;
   }
 
   tr:nth-child(even) {
@@ -257,21 +297,30 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   }
 }
 
-.pdf-signature {
-  text-align: center;
-  margin-top: 15px;
+.pdf-vet-signature {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
 
-  img {
-    width: 90px;
-    height: auto;
-    border-bottom: 1px solid #333;
-    display: inline-block;
-  }
+  .vet-info { flex: 1 1 200px; }
 
-  p {
-    margin-top: 5px;
-    font-style: italic;
-    color: #555;
+  .signature-box {
+    flex: 1 1 200px;
+    text-align: center;
+
+    img {
+      width: 70%;
+      max-height: 80px;
+      border-bottom: 1px solid #333;
+      display: inline-block;
+    }
+
+    p {
+      margin-top: 5px;
+      font-style: italic;
+      color: #555;
+    }
   }
 }
 
@@ -282,4 +331,28 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   margin-top: 20px;
   border-top: 1px dashed #ccc;
   padding-top: 5px;
+
+  .pdf-logo-footer { height: 30px; margin-bottom: 5px; }
+}
+.pdf-container.pdf-watermark {
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 2000px; height: 2000px;
+    background-image: url('../../../../../../public/imagens/image.png');
+    background-repeat: repeat;
+    background-size: 150px 150px;
+    opacity: 0.05;
+    z-index: 0; // atrás de todo conteúdo
+    pointer-events: none;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1; // conteúdo acima da marca d'água
+  }
 }

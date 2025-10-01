@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
+import { NavmenuComponent } from '../../../navmenu/navmenu.component';
 interface Pet {
   id: string;
   nome: string;
@@ -13,7 +13,7 @@ interface Pet {
 @Component({
   selector: 'app-area-cliente',
   standalone: true, // <-- importante
-  imports: [CommonModule, FormsModule, RouterModule], // <-- importa o que usa no template
+  imports: [CommonModule, FormsModule, RouterModule,NavmenuComponent], // <-- importa o que usa no template
   templateUrl: './area-cliente.component.html',
   styleUrls: ['./area-cliente.component.scss']
 })

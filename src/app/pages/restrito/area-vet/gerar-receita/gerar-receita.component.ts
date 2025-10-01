@@ -7,6 +7,10 @@ import { debounce, slice } from 'lodash-es';
 import jsPDF from 'jspdf';
 import { jwtDecode } from "jwt-decode";
 import html2canvas from 'html2canvas';
+import { isPlatformBrowser } from '@angular/common';
+import { Inject, PLATFORM_ID } from '@angular/core'
+import { ChangeDetectorRef } from '@angular/core'
+import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 
 
 
@@ -53,7 +57,7 @@ interface Veterinario {
 @Component({
   selector: 'app-gerar-receita',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxMaskDirective],
+  imports: [CommonModule, FormsModule, NgxMaskDirective,NavmenuComponent],
   providers: [provideNgxMask()],
   templateUrl: './gerar-receita.component.html',
   styleUrls: ['./gerar-receita.component.scss']
@@ -69,7 +73,7 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   novosDadosPet: Pet = { nome: '', idade: 0, peso: 0, raca: '', sexo: 'Macho', alergias: '', especie:'' };
   observacoes = '';
   veterinario: any;
-
+isBrowser: any;
   ativos: Ativo[] = [];
   alfabetico: { letra: string; ativos: Ativo[] }[] = [];
   ativosSelecionados: string[] = [];
@@ -90,16 +94,26 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   carregandoTutor = false;
   private debouncedFiltrarAtivos: () => void;
 
-  constructor(private apiService: ApiService, private ngZone: NgZone) {
+  constructor(
+    private apiService: ApiService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object
+    ) {
     this.debouncedFiltrarAtivos = debounce(this.filtrarAtivos.bind(this), 250);
   }
 
   ngOnInit(): void { 
-    this.loadAtivos(); 
-    this.carregarVeterinario();
+    this.isBrowser = isPlatformBrowser(this.platformId);
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadAtivos();
+      this.carregarVeterinario();
+    }
   }
 
   async carregarVeterinario() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Token não encontrado no localStorage');
@@ -107,17 +121,19 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
     }
 
     try {
-      console.log('get vet')
-      const decoded: any = jwtDecode(token)
-      const vetId = decoded.id; // vem do payload do JWT
+      const decoded: any = jwtDecode(token);
+      const vetId = decoded.id;
       const response = await this.apiService.getVeterinario(vetId, token).toPromise();
-      console.log('response',response);
       this.veterinario = response;
     } catch (error) {
-      console.error('Erro ao buscar dados do veterinário:', error);
+      console.error(error);
     }
   }
 
+  getPetSexoAbreviado(pet: Pet | null) {
+    if (!pet) return '';
+    return pet.sexo === 'Macho' ? 'M' : pet.sexo === 'Fêmea' ? 'F' : '';
+  }
 
   onCpfInput() { if (this.cpf.replace(/\D/g, '').length === 11) this.buscarTutor(); }
 
@@ -143,6 +159,7 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
             ]
           };
         });
+        this.cdr.detectChanges();
       } else {
         this.ngZone.run(() => {
           this.cadastroManualTutor = true;
@@ -211,9 +228,14 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   trackByPet(index: number, pet: Pet) { return pet.id ?? pet.nome ?? `${index}`; }
   trackByAtivo(index: number, ativo: Ativo) { return ativo.id; }
 
-  ngAfterViewInit() { this.initCanvas(); }
+  ngAfterViewInit() { 
+    if (isPlatformBrowser(this.platformId)) {
+      this.initCanvas();
+    }
+  }
 
   initCanvas() {
+    if (!isPlatformBrowser(this.platformId)) return;
     const canvas = this.canvasRef.nativeElement;
     this.ctx = canvas.getContext('2d');
     const ratio = window.devicePixelRatio || 1;
@@ -267,7 +289,9 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   salvarReceita() {
     const tutor = this.tutorEncontrado ?? this.novoTutor;
     const pet = this.petSelecionado ?? this.novosDadosPet;
-    const assinaturaImg = this.canvasRef?.nativeElement.toDataURL() ?? null;
+    const assinaturaImg = isPlatformBrowser(this.platformId)
+    ? this.canvasRef?.nativeElement.toDataURL()
+    : null;
     console.log({ tutor, pet, ativos: this.ativosSelecionados, observacoes: this.observacoes, assinaturaManual: this.assinaturaManual, assinaturaCursiva: this.assinaturaCursiva, assinaturaImg, assinaturaICP: this.assinaturaICP });
     alert('Receita gerada! Veja console.');
   }
