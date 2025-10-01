@@ -22,11 +22,9 @@
         </button>
         <button class="btn-logout" (click)="logout()">Logout</button>
       </div>
-    </div>  
+    </div>
+    <p *ngIf="!vetApproved" style="color:red">Aguardando aprovação do admin</p>
   </div>
-      <div *ngIf="isLoggedIn" class="vetApproved-div">
-        <p *ngIf="!vetApproved" class="vetApproved" style="color:red">Aguardando aprovação do admin</p>
-      </div>
 
   <div class="menu-wrapper" *ngIf="isLoggedIn" [ngClass]="{'bloqueado': !vetApproved}">
     <div class="menu-cards-wrapper">
@@ -143,7 +141,7 @@
   <!-- MODAIS -->
   <ng-container *ngIf="modalLoginAberto">
     <div class="modal-overlay" (click)="fecharModalLogin()"></div>
-    <div class="modal-content"><app-login-vet (close)="fecharModalLogin()"></app-login-vet></div>
+    <div class="modal-content"><app-login-vet (close)="fecharModalLogin()" (loggedIn)="onLogin()"></app-login-vet></div>
   </ng-container>
 
   <ng-container *ngIf="modalCadastroAberto">

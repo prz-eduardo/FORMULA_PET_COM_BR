@@ -50,6 +50,9 @@ ngOnInit() {
     this.modalCadastroAberto = false;
     this.carregarVet(payload.id);
   }
+      this.authService.isLoggedIn$.subscribe((status) => {
+      this.isLoggedIn = status;
+    });
   this.authService.isLoggedIn$.subscribe(logged => {
     this.isLoggedIn = logged;
 

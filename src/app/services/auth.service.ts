@@ -67,7 +67,7 @@ export class AuthService {
   login(token: string) {
     if (this.isBrowser) {
       localStorage.setItem(this.tokenKey, token);
-      this.loggedInSubject.next(true);
+      this.loggedIn.next(true);   // aqui já dispara pros componentes
     }
   }
 

@@ -12,9 +12,10 @@ $bg-04: #73a5b5;
 */
 
 $bg-01: #f3f7b0; // mais claro
-$bg-02: #e6f06a; // claro
-$bg-03: #d9ea24; // intermediário
-$bg-04: #c4d600; // cor principal
+$bg-02: #f5a700; // claro
+$bg-03: #e3ff43; // intermediário
+$bg-04: #bbff4d; // cor principal
+$bg-05: #c4d600; // cor principal
 
 // Mixins
 @mixin md {
@@ -320,6 +321,10 @@ nav {
           background-color: $bg-04;
           animation-duration: 1.2s;
         }
+        &:nth-child(5) {
+          background-color: $bg-05;
+          animation-duration: 1.7s;
+        }
 
         // Texto do Main Link
         .text-item {
@@ -619,10 +624,77 @@ article {
   }
 }
 
-// Outras classes utilitárias
-.imagem-navbar {
-  max-width: 100px;
+$logo-color: #c4d600;
+
+@mixin splash-layer($size, $z, $duration, $delay: 0s) {
+  width: $size;
+  height: $size;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: $logo-color;
+  border: 1px solid rgba(0,0,0,0.5);
+  z-index: $z;
+  clip-path: polygon(
+    50% 0%, 60% 5%, 70% 15%, 80% 35%, 70% 55%, 50% 65%, 35% 55%, 20% 45%, 10% 30%, 20% 15%, 35% 5%
+  );
+  animation: splash-#{$z} $duration infinite alternate;
+  animation-delay: $delay;
 }
+
+// Logo container
+.logo-container {
+  position: relative;
+  width: 60px;
+  height: 60px;
+
+  .imagem-navbar {
+    position: relative;
+    z-index: 10;
+    width: 55px;
+    height: auto;
+  }
+
+  // 7 Layers
+  @for $i from 1 through 7 {
+    .layer#{$i} {
+      @include splash-layer(60px - $i*3, $i, 5s + $i*0.3s, $i*0.2s);
+    }
+  }
+}
+
+// Keyframes para cada layer com deformação orgânica
+@for $i from 1 through 7 {
+  @keyframes splash-#{$i} {
+    0% {
+      clip-path: polygon(
+        50% 0%, 60% 5%, 70% 15%, 80% 35%, 70% 55%, 50% 65%, 35% 55%, 20% 45%, 10% 30%, 20% 15%, 35% 5%
+      );
+    }
+    25% {
+      clip-path: polygon(
+        52% 2%, 62% 8%, 72% 18%, 78% 32%, 68% 50%, 50% 63%, 33% 53%, 18% 42%, 12% 28%, 22% 12%, 38% 6%
+      );
+    }
+    50% {
+      clip-path: polygon(
+        48% 1%, 58% 6%, 68% 12%, 82% 38%, 72% 52%, 50% 66%, 34% 58%, 22% 46%, 12% 32%, 18% 10%, 32% 8%
+      );
+    }
+    75% {
+      clip-path: polygon(
+        51% -1%, 61% 4%, 71% 14%, 79% 33%, 69% 53%, 50% 64%, 36% 54%, 21% 44%, 11% 29%, 21% 14%, 33% 5%
+      );
+    }
+    100% {
+      clip-path: polygon(
+        50% 0%, 60% 5%, 70% 15%, 80% 35%, 70% 55%, 50% 65%, 35% 55%, 20% 45%, 10% 30%, 20% 15%, 35% 5%
+      );
+    }
+  }
+}
+
 
 .icones-menu {
   max-height: 30px;
