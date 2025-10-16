@@ -33,7 +33,7 @@ interface Pet {
   peso: number;
   raca: string;
   sexo: 'Macho' | 'Fêmea';
-  alergias?: string;
+  alergias?: string[];
 }
 
 interface Ativo {
@@ -70,7 +70,7 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   novoTutor: Tutor = { nome: '', cpf: '', telefone: '', email: '', endereco: '', pets: [] };
 
   petSelecionado: Pet | null = null;
-  novosDadosPet: Pet = { nome: '', idade: 0, peso: 0, raca: '', sexo: 'Macho', alergias: '', especie:'' };
+  novosDadosPet: Pet = { nome: '', idade: 0, peso: 0, raca: '', sexo: 'Macho', alergias: [], especie:'' };
   observacoes = '';
   veterinario: any;
 isBrowser: any;
@@ -90,6 +90,7 @@ isBrowser: any;
   private isDrawing = false;
   private lastX = 0;
   private lastY = 0;
+  alergiaInput: string = '';
 
   carregandoTutor = false;
   private debouncedFiltrarAtivos: () => void;
@@ -153,9 +154,9 @@ isBrowser: any;
             email: 'maria@exemplo.com',
             endereco: 'Rua das Flores, 123 - São Paulo/SP',
             pets: [
-              { id: 'pet-1', nome: 'Rex', idade: 5, peso: 20, raca: 'Labrador', sexo: 'Macho', alergias: 'Nenhuma', especie: 'Cachorro' },
-              { id: 'pet-2', nome: 'Mimi', idade: 3, peso: 4, raca: 'Persa', sexo: 'Fêmea', alergias: 'Pólen' , especie: 'Cachorro'},
-              { id: 'pet-3', nome: 'Bolt', idade: 2, peso: 15, raca: 'Border Collie', sexo: 'Macho', alergias: 'Carne bovina' , especie: 'Cachorro'}
+              { id: 'pet-1', nome: 'Rex', idade: 5, peso: 20, raca: 'Labrador', sexo: 'Macho', alergias: [], especie: 'Cachorro' },
+              { id: 'pet-2', nome: 'Mimi', idade: 3, peso: 4, raca: 'Persa', sexo: 'Fêmea', alergias: ['Pólen'] , especie: 'Cachorro'},
+              { id: 'pet-3', nome: 'Bolt', idade: 2, peso: 15, raca: 'Border Collie', sexo: 'Macho', alergias: ['Carne bovina'] , especie: 'Cachorro'}
             ]
           };
         });
@@ -169,7 +170,10 @@ isBrowser: any;
     } finally { this.carregandoTutor = false; }
   }
 
-  selecionarPet(pet: Pet) { this.petSelecionado = pet; this.novosDadosPet = { ...pet }; }
+  selecionarPet(pet: Pet) {
+    this.petSelecionado = pet;
+    this.novosDadosPet = { ...pet, alergias: [...(pet.alergias || [])] };
+  }
 
   async loadAtivos() {
     this.carregandoAtivos = true;
@@ -265,6 +269,33 @@ isBrowser: any;
     this.ctx.stroke();
     this.lastX = x;
     this.lastY = y;
+  }
+
+  // --- Alergias como badges (chips) ---
+  alergiasList(): string[] {
+    const src = this.petSelecionado?.alergias ?? this.novosDadosPet.alergias ?? [];
+    return (src as string[]).map(s => String(s).trim()).filter(Boolean);
+  }
+
+  addAlergiaChip() {
+    const val = (this.alergiaInput || '').trim();
+    if (!val) return;
+    const list = this.alergiasList();
+    if (!list.includes(val)) list.push(val);
+    this.setAlergiasFromList(list);
+    this.alergiaInput = '';
+  }
+
+  removeAlergiaChip(idx: number) {
+    const list = this.alergiasList();
+    list.splice(idx, 1);
+    this.setAlergiasFromList(list);
+  }
+
+  private setAlergiasFromList(list: string[]) {
+    const arr = [...list];
+    if (this.petSelecionado) this.petSelecionado.alergias = arr;
+    this.novosDadosPet.alergias = arr;
   }
 
   limparAssinaturaCanvas() {

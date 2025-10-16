@@ -142,5 +142,26 @@ export class ApiService {
     return this.http.get<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(codigo)}`, { headers });
   }
 
+  // Criar Pet para um cliente
+  createPet(clienteId: number, data: FormData, token: string) {
+    return this.http.post<any>(`${this.baseUrl}/clientes/${clienteId}/pets`, data, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  // Atualizar Pet (PUT)
+  updatePet(clienteId: number, petId: string | number, data: FormData, token: string) {
+    return this.http.put<any>(`${this.baseUrl}/clientes/${clienteId}/pets/${petId}`, data, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  // Atualizar Cliente (PUT)
+  updateCliente(clienteId: number, body: any, token: string) {
+    return this.http.put<any>(`${this.baseUrl}/clientes/${clienteId}`, body, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
 
 }

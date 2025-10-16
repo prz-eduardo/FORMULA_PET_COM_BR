@@ -1,0 +1,42 @@
+<app-navmenu></app-navmenu>
+
+<div class="meus-pets-wrapper">
+  <main class="container">
+    <div class="top-actions">
+      <button class="btn btn-sec" routerLink="/area-cliente">← Voltar</button>
+    </div>
+    <h1 class="titulo">Meus Pets</h1>
+
+    <div *ngIf="carregando" class="card">Carregando...</div>
+
+    <div *ngIf="!carregando && pets.length === 0" class="card vazio">
+      <p>Você ainda não cadastrou nenhum pet.</p>
+      <a class="btn" routerLink="/novo-pet">Cadastrar Pet</a>
+    </div>
+
+    <div *ngIf="!carregando && pets.length" class="grid">
+      <article class="pet-card" *ngFor="let p of pets">
+        <img [src]="p.photoURL || '/assets/default-pet.png'" alt="Foto do pet" />
+        <div class="info">
+          <h3>{{ p.nome }}</h3>
+          <div class="muted">{{ p.especie }}<span *ngIf="p.raca"> • {{ p.raca }}</span></div>
+          <div class="tags">
+            <span class="tag" *ngIf="p.sexo">{{ p.sexo }}</span>
+            <span class="tag" *ngIf="p.pesoKg">{{ p.pesoKg }} kg</span>
+            <span class="tag" *ngIf="p.idadeAnos">{{ p.idadeAnos }} anos</span>
+          </div>
+          <div class="alergias" *ngIf="(p.alergias?.length)">
+            <span class="chip" *ngFor="let a of p.alergias">{{ a }}</span>
+          </div>
+          <div class="card-actions">
+            <a class="btn btn-mini" [class.disabled]="!p.id" [routerLink]="p.id ? ['/editar-pet', p.id] : null">Editar</a>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="acoes">
+      <a class="btn" routerLink="/novo-pet">+ Novo Pet</a>
+    </div>
+  </main>
+</div>

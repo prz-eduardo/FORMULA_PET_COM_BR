@@ -1,0 +1,80 @@
+<app-navmenu></app-navmenu>
+
+<div class="novo-pet-wrapper">
+  <main class="container">
+    <h1 class="titulo">Cadastrar novo Pet</h1>
+
+    <div class="form-card">
+      <div class="grid">
+        <div class="field">
+          <label>Nome *</label>
+          <input type="text" [(ngModel)]="nome" placeholder="Ex: Rex" />
+        </div>
+        <div class="field">
+          <label>Espécie *</label>
+          <select [(ngModel)]="especie">
+            <option value="" disabled selected>Selecione</option>
+            <option *ngFor="let e of especies" [value]="e">{{ e }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Raça</label>
+          <input type="text" [(ngModel)]="raca" placeholder="Ex: Labrador" />
+        </div>
+        <div class="field">
+          <label>Sexo *</label>
+          <select [(ngModel)]="sexo">
+            <option value="" disabled selected>Selecione</option>
+            <option *ngFor="let s of sexos" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Peso (kg)</label>
+          <input type="number" step="0.1" min="0" [(ngModel)]="pesoKg" placeholder="Ex: 12.5" />
+        </div>
+        <div class="field">
+          <label>Idade (anos)</label>
+          <input type="number" min="0" [(ngModel)]="idadeAnos" placeholder="Ex: 5" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observações</label>
+        <textarea [(ngModel)]="observacoes" rows="3" placeholder="Alergias, comportamento, preferências..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Alergias</label>
+        <div class="alergias-row">
+          <input type="text" [(ngModel)]="alergiaInput" placeholder="Ex: Pólen" (keyup.enter)="addAlergia()" />
+          <button type="button" class="btn" (click)="addAlergia()">+</button>
+        </div>
+        <div class="alergias-badges" *ngIf="alergias.length">
+          <span class="chip" *ngFor="let a of alergias; let i = index">
+            {{ a }}
+            <button type="button" class="x" (click)="removeAlergia(i)">x</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="foto-upload">
+        <div class="preview" *ngIf="fotoPreview; else noFoto">
+          <img [src]="fotoPreview" alt="Prévia da foto do pet" />
+          <button type="button" class="btn btn-sec" (click)="removerFoto()">Remover</button>
+        </div>
+        <ng-template #noFoto>
+          <div class="placeholder">Sem foto</div>
+        </ng-template>
+        <label class="btn">
+          <input type="file" accept="image/*" (change)="onFileChange($event)" hidden />
+          Enviar foto
+        </label>
+      </div>
+
+      <div class="acoes">
+        <button class="btn btn-sec" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
+        <button class="btn" (click)="salvar()" [disabled]="carregando">{{ carregando ? 'Salvando...' : 'Salvar' }}</button>
+      </div>
+    </div>
+  </main>
+</div>

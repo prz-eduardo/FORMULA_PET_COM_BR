@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
 import { AuthService } from '../../../../services/auth.service';
 import { ToastService } from '../../../../services/toast.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-consultar-pedidos',
@@ -60,7 +60,10 @@ import { Router } from '@angular/router';
             <p><strong>Peso:</strong> {{ pedido.pet?.pesoKg }} kg</p>
             <p><strong>Idade:</strong> {{ pedido.pet?.idadeAnos }} anos</p>
             <p><strong>Sexo:</strong> {{ pedido.pet?.sexo }}</p>
-            <p *ngIf="pedido.pet?.alergias"><strong>Alergias:</strong> {{ pedido.pet?.alergias }}</p>
+            <div *ngIf="alergiasToList(pedido.pet?.alergias).length" class="pet-allergies-badge">
+              <span class="label">Alergias:</span>
+              <span class="chip" *ngFor="let a of alergiasToList(pedido.pet?.alergias)">{{ a }}</span>
+            </div>
           </div>
 
           <div class="card">
@@ -115,21 +118,23 @@ import { Router } from '@angular/router';
     </div>
   `,
   styles: `
-    :host{ font-family: 'Inter', sans-serif; }
+    :host{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; }
+    *, *::before, *::after{ box-sizing: border-box }
     .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.6); animation:fadeIn .12s ease; z-index: 999; }
     .modal-content{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#1f2a38; color:#ecf0f5; width:92%; max-width:720px; padding:22px; border-radius:14px; box-shadow:0 12px 28px rgba(0,0,0,.5); animation:popIn .12s ease; z-index: 1000; max-height:85vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-    .modal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px }
+  .modal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px }
+  .modal-header h2{ font-size:20px; font-weight:700; margin:0; }
     .btn-close{ background:#2a364a; color:#fff; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:6px 10px; cursor:pointer }
-    .form{ display:flex; gap:12px; align-items:end; margin-bottom:18px }
+  .form{ display:flex; gap:12px; align-items:end; margin-bottom:18px; max-width:100% }
     .field{ flex:1 }
     label{ display:block; font-weight:600; margin-bottom:6px }
-    input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:#142033; color:#ecf0f5 }
+  input{ display:block; width:100%; max-width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:#142033; color:#ecf0f5 }
     button[type=submit]{ padding:10px 16px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-weight:700; cursor:pointer }
     .resultado{ background:#182439; border-radius:12px; padding:14px; box-shadow:0 6px 12px rgba(0,0,0,.35) }
     .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px }
     .pedido-id{ display:flex; gap:10px; align-items:center }
-    .codigo{ font-weight:800; font-size:16px; color:#fff }
-    .badge{ padding:4px 8px; border-radius:999px; font-weight:700; font-size:12px; background:#2a364a; color:#cde4ff }
+  .codigo{ font-weight:800; font-size:16px; color:#fff }
+  .badge{ padding:3px 10px; border-radius:999px; font-weight:700; font-size:12px; background:#2a364a; color:#cde4ff; white-space:nowrap }
     .badge.em-manipulacao{ background:#2b3446; color:#9bd0ff }
     .badge.recebido{ background:#20323e; color:#bfe3ff }
     .badge.pronto{ background:#284133; color:#aff0c8 }
@@ -140,18 +145,21 @@ import { Router } from '@angular/router';
     .step{ display:flex; flex-direction:column; align-items:center; min-width:120px; color:#aeb6c2 }
     .step .dot{ width:10px; height:10px; border-radius:50%; background:#5a6b82; margin-bottom:6px }
     .step.done .dot{ background:#31c48d }
-    .step .name{ font-weight:600; color:#d5dbe5; margin-bottom:2px; text-align:center }
-    .step .date{ font-size:12px; opacity:.9 }
+  .step .name{ font-weight:600; color:#d5dbe5; margin-bottom:2px; text-align:center; font-size:14px }
+  .step .date{ font-size:12px; opacity:.9 }
     .grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:10px; margin:10px 0 }
-    .card{ background:#142033; border-radius:10px; padding:12px; border:1px solid rgba(255,255,255,.06) }
-    .card h3{ margin:0 0 8px; color:var(--primary) }
+  .card{ background:#142033; border-radius:10px; padding:12px; border:1px solid rgba(255,255,255,.06) }
+  .pet-allergies-badge{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px }
+  .pet-allergies-badge .label{ font-weight:700; color:#ffcccc }
+  .pet-allergies-badge .chip{ background:#ffe6e6; color:#8a1f1f; border:1px solid #ffcccc; padding:3px 8px; border-radius:999px; font-size:12px; }
+  .card h3{ margin:0 0 8px; color:var(--primary); font-size:16px }
     .itens{ margin-top:12px }
-    .itens h3{ margin:0 0 8px; color:var(--primary) }
+  .itens h3{ margin:0 0 8px; color:var(--primary); font-size:16px }
     .item{ background:#142033; border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:10px; margin-bottom:10px }
     .item .head{ display:flex; justify-content:space-between; gap:12px; margin-bottom:6px }
-    .item .nome{ font-weight:800; color:#fff }
-    .item .forma{ color:#aeb6c2 }
-    .linhas{ display:flex; flex-wrap:wrap; gap:10px; color:#dbe2ee; margin-bottom:6px }
+  .item .nome{ font-weight:800; color:#fff; font-size:15px }
+  .item .forma{ color:#aeb6c2; font-size:13px }
+  .linhas{ display:flex; flex-wrap:wrap; gap:10px; color:#dbe2ee; margin-bottom:6px; font-size:13px }
     .comp-title{ font-weight:700; margin:6px 0 }
     .comp ul{ list-style:none; padding:0; margin:0 }
     .comp li{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.06) }
@@ -162,8 +170,10 @@ import { Router } from '@angular/router';
     @keyframes popIn{ from{opacity:0; transform:translate(-50%,-52%) scale(.98)} to{opacity:1; transform:translate(-50%,-50%) scale(1)} }
 
     @media (max-width: 560px){
-      .modal-content{ width:96%; padding:16px; }
+  .modal-content{ width:96%; padding:16px; }
       .form{ flex-direction:column; align-items:stretch; gap:8px }
+  .field{ width:100% }
+  input{ width:100%; max-width:100%; }
       button[type=submit]{ width:100%; }
       .top{ flex-direction:column; align-items:flex-start; gap:8px }
       /* Timeline: vertical layout on mobile (no horizontal scroll) */
@@ -198,13 +208,13 @@ import { Router } from '@angular/router';
 
       /* Header compaction */
       .pedido-id{ flex-direction:column; align-items:flex-start; gap:6px }
-      .codigo{ font-size:15px }
-      .badge{ font-size:11px; padding:3px 8px; }
+  .codigo{ font-size:15px }
+  .badge{ font-size:11px; padding:3px 8px; }
       .datas{ font-size:12px }
 
       /* Items typography tweaks */
-      .item .nome{ font-size:15px }
-      .item .forma{ font-size:12px }
+  .item .nome{ font-size:15px }
+  .item .forma{ font-size:12px }
     }
   `
 })
@@ -219,6 +229,7 @@ export class ConsultarPedidosComponent {
     private auth: AuthService,
     private toast: ToastService,
     private router: Router,
+    private route: ActivatedRoute,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -254,7 +265,32 @@ export class ConsultarPedidosComponent {
   }
 
   fechar(){
-    this.router.navigateByUrl('/area-cliente');
+    // Fecha o named outlet 'modal' relativo à rota pai (funciona tanto em /area-cliente quanto em /meus-pedidos)
+    if (this.route && this.route.parent) {
+      this.router.navigate([{ outlets: { modal: null } }], { relativeTo: this.route.parent });
+    } else {
+      // Fallback: volta para área do cliente
+      this.router.navigateByUrl('/area-cliente');
+    }
+  }
+
+  ngOnInit(){
+    // Se vier via query param (?codigo=FP-12345), preencher e auto-consultar
+    const qp = this.route.snapshot.queryParamMap;
+    const codigo = (qp.get('codigo') || '').trim();
+    if (codigo) {
+      this.codigo = codigo;
+      // pequeno defer para garantir render antes de consultar
+      setTimeout(() => this.consultar());
+    }
+  }
+
+  alergiasToList(value: any): string[] {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.map(v => String(v).trim()).filter(Boolean);
+    }
+    return String(value).split(/[;,]/).map(s => s.trim()).filter(Boolean);
   }
 
   private buildMockPedido(codigo: string) {

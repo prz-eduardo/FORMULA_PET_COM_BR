@@ -1,0 +1,169 @@
+<app-navmenu></app-navmenu>
+
+<div class="perfil-wrapper">
+  <main class="container">
+    <div class="top-actions">
+      <a class="btn btn-sec" routerLink="/area-cliente">← Voltar</a>
+    </div>
+    <h1 class="titulo">Meu Perfil</h1>
+
+    <div *ngIf="carregando" class="card">Carregando...</div>
+
+    <div class="grid" *ngIf="!carregando">
+      <section class="card">
+        <h2>Dados do usuário</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label>Nome</label>
+            <input [(ngModel)]="nome" />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input [(ngModel)]="email" type="email" />
+            <div class="error" *ngIf="!emailValido">Email inválido</div>
+          </div>
+          <div class="field">
+            <label>Telefone</label>
+            <input [(ngModel)]="telefone" mask="(00) 00000-0000" />
+          </div>
+          <div class="field">
+            <label>Telefone secundário</label>
+            <input [(ngModel)]="telefoneSecundario" mask="(00) 00000-0000" />
+          </div>
+          <div class="field">
+            <label>CPF</label>
+            <input [(ngModel)]="cpf" mask="000.000.000-00" disabled />
+          </div>
+          <div class="field">
+            <label>RG</label>
+            <input [(ngModel)]="rg" />
+          </div>
+          <div class="field">
+            <label>Data de Nascimento</label>
+            <input [(ngModel)]="dataNascimento" type="date" />
+          </div>
+          <div class="field">
+            <label>Gênero</label>
+            <select [(ngModel)]="genero">
+              <option value="">Selecione</option>
+              <option>Masculino</option>
+              <option>Feminino</option>
+              <option>Outro</option>
+              <option>Prefiro não dizer</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Estado civil</label>
+            <select [(ngModel)]="estadoCivil">
+              <option value="">Selecione</option>
+              <option>Solteiro(a)</option>
+              <option>Casado(a)</option>
+              <option>Divorciado(a)</option>
+              <option>Viúvo(a)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Profissão</label>
+            <input [(ngModel)]="profissao" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Endereço</h2>
+        <div class="form-grid">
+          <div class="field small">
+            <label>CEP</label>
+            <input [(ngModel)]="endereco.cep" mask="00000-000" (ngModelChange)="onCepInput()" />
+            <div class="muted" *ngIf="cepCarregando">Consultando CEP...</div>
+          </div>
+          <div class="field large">
+            <label>Logradouro</label>
+            <input [(ngModel)]="endereco.logradouro" />
+          </div>
+          <div class="field small">
+            <label>Número</label>
+            <input [(ngModel)]="endereco.numero" />
+          </div>
+          <div class="field">
+            <label>Complemento</label>
+            <input [(ngModel)]="endereco.complemento" />
+          </div>
+          <div class="field">
+            <label>Bairro</label>
+            <input [(ngModel)]="endereco.bairro" />
+          </div>
+          <div class="field">
+            <label>Cidade</label>
+            <input [(ngModel)]="endereco.cidade" />
+          </div>
+          <div class="field small">
+            <label>UF</label>
+            <input [(ngModel)]="endereco.estado" maxlength="2" (ngModelChange)="onUfInput()" />
+          </div>
+          <div class="field">
+            <label>Referência</label>
+            <input [(ngModel)]="endereco.referencia" />
+          </div>
+          <div class="field">
+            <label>Tipo de endereço</label>
+            <select [(ngModel)]="endereco.tipo">
+              <option value="">Selecione</option>
+              <option value="residencial">Residencial</option>
+              <option value="comercial">Comercial</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Preferências</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label>Método de contato preferido</label>
+            <select [(ngModel)]="contatoPreferido">
+              <option value="">Selecione</option>
+              <option value="email">Email</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="telefone">Telefone</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Horário preferido</label>
+            <select [(ngModel)]="horarioPreferido">
+              <option value="">Selecione</option>
+              <option value="manhã">Manhã</option>
+              <option value="tarde">Tarde</option>
+              <option value="noite">Noite</option>
+            </select>
+          </div>
+        </div>
+        <div class="prefs">
+          <label><input type="checkbox" [(ngModel)]="prefEmail" /> Receber comunicações por email</label>
+          <label><input type="checkbox" [(ngModel)]="prefWhats" /> Receber mensagens por WhatsApp</label>
+          <label><input type="checkbox" [(ngModel)]="prefMarketing" /> Receber ofertas e novidades</label>
+          <label><input type="checkbox" [(ngModel)]="prefNotificarPedidos" /> Notificar atualizações de pedidos</label>
+          <label><input type="checkbox" [(ngModel)]="prefNotificarReceitas" /> Notificar novas receitas</label>
+          <label><input type="checkbox" [(ngModel)]="prefLembrarVacinas" /> Lembrar vacinas dos pets</label>
+          <label><input type="checkbox" [(ngModel)]="prefLembrarConsultas" /> Lembrar consultas agendadas</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Observações</h2>
+        <div class="form-grid">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Notas gerais sobre você e seus pets</label>
+            <textarea [(ngModel)]="observacoes" rows="4"></textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="acoes" *ngIf="!carregando">
+      <a class="btn btn-sec" routerLink="/area-cliente">Cancelar</a>
+      <button class="btn" (click)="salvar()" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+    </div>
+  </main>
+</div>

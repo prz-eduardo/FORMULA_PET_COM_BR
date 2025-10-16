@@ -44,7 +44,11 @@
           Idade: {{ pet.idade }} anos<br />
           Peso: {{ pet.peso }} kg<br />
           Raça: {{ pet.raca }}<br />
-          Alergias: {{ pet.alergias || 'Nenhuma' }}<br />
+          <div *ngIf="pet.alergias?.length" class="pet-allergies">
+            <strong>Alergias:</strong>
+            <span class="badge" *ngFor="let a of pet.alergias">{{ a }}</span>
+          </div>
+          <div *ngIf="!pet.alergias">Alergias: Nenhuma</div>
           Espécie: {{ pet.especie}}
         </div>
       </div>
@@ -101,7 +105,16 @@
 
         <div class="input-group">
         <label>Alergias</label>
-        <input [(ngModel)]="novosDadosPet.alergias" placeholder="Alergias" class="input-busca" />
+        <div class="row" style="align-items: stretch; gap:8px; flex-wrap: wrap;">
+          <input [(ngModel)]="alergiaInput" placeholder="Ex: Pólen" class="input-busca" (keyup.enter)="addAlergiaChip()" />
+          <button class="btn" type="button" (click)="addAlergiaChip()">Adicionar</button>
+          <div class="ativos-badges" *ngIf="alergiasList().length" style="flex:1 1 100%">
+            <span class="badge" *ngFor="let a of alergiasList(); let i = index">
+              {{ a }}
+              <button class="badge-remove" type="button" (click)="removeAlergiaChip(i)">x</button>
+            </span>
+          </div>
+        </div>
         </div>
     </div>
 
