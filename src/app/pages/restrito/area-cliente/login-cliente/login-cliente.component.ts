@@ -7,13 +7,13 @@ import { ToastService } from '../../../../services/toast.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
-  selector: 'app-login-vet',
+  selector: 'app-login-cliente',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './login-vet.component.html',
-  styleUrls: ['./login-vet.component.scss']
+  templateUrl: './login-cliente.component.html',
+  styleUrl: './login-cliente.component.scss'
 })
-export class LoginVetComponent {
+export class LoginClienteComponent {
   @Output() close = new EventEmitter<void>();
   @Output() loggedIn = new EventEmitter<void>();
 
@@ -21,6 +21,7 @@ export class LoginVetComponent {
   mensagemErro = '';
   mostrarSenha = false;
   iniciadoGoogle = false;
+  manterLogin = true; // default: manter login (persistente)
 
   constructor(
     private authService: AuthService,
@@ -38,21 +39,47 @@ export class LoginVetComponent {
       // Login Firebase apenas pra criar sessão local
       await this.authService.loginEmail(email, senha);
 
-      // Envia pro backend email + senha, não idToken
+      // Envia pro backend email + senha (cliente)
       const data = await firstValueFrom(
-        this.apiService.loginVet({ email, senha }) // <-- payload correto
+        this.apiService.loginCliente({ email, senha })
       );
 
-      localStorage.setItem('userType', data.tipo);
-  if (data.token) localStorage.setItem('token', data.token);
+      // AuthService.login cuidará de persistência (localStorage vs sessionStorage)
+      this.authService.login(data.token, this.manterLogin);
+      // Guardar tipo de usuário em storage persistente (localStorage) se o usuário optar por manter o login,
+      // caso contrário armazenamos em sessionStorage para a sessão atual.
+      if (this.manterLogin) {
+        localStorage.setItem('userType', data.tipo);
+      } else {
+        sessionStorage.setItem('userType', data.tipo);
+      }
       this.loggedIn.emit();
-      this.authService.login(data.token);
       this.close.emit();
     } catch (err: any) {
-      this.mensagemErro = err.message || 'Erro ao fazer login.';
+      const parsed = this.parseErrorLocal(err) || 'Erro ao fazer login.';
+      this.mensagemErro = parsed;
+      this.toastService.error(parsed, 'Erro no login');
     } finally {
       this.carregando = false;
     }
+  }
+
+  // Extrai mensagem de erro de formatos comuns (HttpErrorResponse, fetch, string)
+  private parseErrorLocal(err: any): string | null {
+    if (!err) return null;
+    // Angular HttpErrorResponse
+    if (err.error) {
+      if (typeof err.error === 'string') {
+        try { const p = JSON.parse(err.error); if (p && p.message) return p.message; } catch(e) { return err.error; }
+      }
+      if (typeof err.error === 'object') {
+        if (err.error.message) return err.error.message;
+        if (err.error.error) return err.error.error;
+      }
+    }
+    if (err.message) return err.message;
+    if (err.status && err.statusText) return `${err.status} ${err.statusText}`;
+    return null;
   }
 
   async loginGoogle() {
@@ -62,7 +89,6 @@ export class LoginVetComponent {
       await this.authService.loginGoogle();
       const idToken = await this.authService.getIdToken();
 
-      // Envia pro backend email + idToken
       const currentUser = this.authService.getCurrentUser();
       const email = currentUser?.email;
       if (!email) {
@@ -71,16 +97,21 @@ export class LoginVetComponent {
         return;
       }
       const data = await firstValueFrom(
-        this.apiService.loginVet({ email: currentUser?.email, idToken }) // <-- payload correto
+        this.apiService.loginCliente({ email: currentUser?.email, idToken })
       );
 
-      localStorage.setItem('userType', data.tipo);
-    if (data.token) localStorage.setItem('token', data.token);
+      this.authService.login(data.token, this.manterLogin);
+      if (this.manterLogin) {
+        localStorage.setItem('userType', data.tipo);
+      } else {
+        sessionStorage.setItem('userType', data.tipo);
+      }
       this.loggedIn.emit();
-      this.authService.login(data.token);
       this.close.emit();
     } catch (err: any) {
-      this.mensagemErro = err.message || 'Erro ao autenticar com Google.';
+      const parsed = this.parseErrorLocal(err) || 'Erro ao autenticar com Google.';
+      this.mensagemErro = parsed;
+      this.toastService.error(parsed, 'Erro no login');
     } finally {
       this.carregando = false;
     }
@@ -96,7 +127,9 @@ export class LoginVetComponent {
   await this.authService.sendPasswordReset(email);
   this.toastService.success('Email de recuperação enviado!', 'Sucesso');
     } catch (err: any) {
-      this.mensagemErro = err.message || 'Erro ao enviar email de recuperação.';
+      const parsed = this.parseErrorLocal(err) || 'Erro ao enviar email de recuperação.';
+      this.mensagemErro = parsed;
+      this.toastService.error(parsed, 'Erro');
     } finally {
       this.carregando = false;
     }
@@ -105,4 +138,5 @@ export class LoginVetComponent {
   toggleIniciarGoogle() {
     this.iniciadoGoogle = !this.iniciadoGoogle;
   }
+
 }

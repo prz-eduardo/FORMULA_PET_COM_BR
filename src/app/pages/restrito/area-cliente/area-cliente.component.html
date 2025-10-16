@@ -1,10 +1,10 @@
 <app-navmenu></app-navmenu>
 
-<div class="area-cliente-wrapper">
+<div class="area-cliente-wrapper" *ngIf="ready; else carregandoEstado">
   <h1 class="titulo">Área do Cliente 🐾</h1>
 
   <!-- Login / Criar Conta -->
-  <div *ngIf="!isLoggedIn" class="card login-card">
+  <div *ngIf="!hasAuth" class="card login-card">
     <h2>Bem-vindo(a)!</h2>
     <p>Faça login ou crie sua conta para acessar os recursos.</p>
     <div class="acoes">
@@ -14,19 +14,22 @@
   </div>
 
   <!-- Painel Cliente -->
-  <div *ngIf="!isLoggedIn" class="cliente-panel">
+  <div *ngIf="hasAuth" class="cliente-panel">
     <div class="cliente-info">
       <img *ngIf="clienteData?.photoURL" [src]="clienteData.photoURL" class="cliente-photo" />
-      <span class="cliente-nome">{{ clienteData?.nome }} Eduardo</span>
-      <div class="cliente-actions">
-        <button class="btn-gear" routerLink="/editar-perfil">⚙️</button>
-        <button class="btn-logout" (click)="logout()">Logout</button>
+      <span class="cliente-nome">{{ clienteData?.nome }}</span>
+    </div>
+    <div class="cliente-actions" (click)="$event.stopPropagation()">
+      <button class="btn-gear" (click)="toggleMenu($event)" aria-haspopup="true" [attr.aria-expanded]="menuAberto ? 'true' : 'false'" aria-label="Abrir menu do usuário">⚙️</button>
+      <div class="popover" *ngIf="menuAberto" role="menu">
+        <a class="popover-item profile" routerLink="/editar-perfil" role="menuitem" (click)="fecharMenu()">Perfil</a>
+        <button class="popover-item danger" role="menuitem" (click)="logout(); fecharMenu()">Logout</button>
       </div>
     </div>
   </div>
 
   <!-- Widgets do Cliente -->
-  <div class="menu-wrapper" *ngIf="!isLoggedIn">
+  <div class="menu-wrapper" *ngIf="hasAuth">
     <div class="menu-cards-wrapper">
       <div class="menu-card" routerLink="/meus-pedidos">
         <div class="card-icon">🛒</div>
@@ -59,7 +62,7 @@
   </div>
 
   <!-- Cards de Pets -->
-  <div *ngIf="isLoggedIn && pets.length > 0" class="card pets-wrapper">
+  <div *ngIf="hasAuth && pets.length > 0" class="card pets-wrapper">
     <h2>Seus Pets</h2>
     <div class="pets-cards">
       <div class="pet-card" *ngFor="let pet of pets">
@@ -71,7 +74,7 @@
     </div>
   </div>
 
-  <div *ngIf="isLoggedIn && pets.length === 0" class="card sem-pets">
+  <div *ngIf="hasAuth && pets.length === 0" class="card sem-pets">
     <h2>Você ainda não cadastrou nenhum pet</h2>
     <button class="btn" (click)="abrirCadastroPet()">Cadastrar Pet</button>
   </div>
@@ -80,14 +83,25 @@
   <ng-container *ngIf="modalLoginAberto">
     <div class="modal-overlay" (click)="fecharModalLogin()"></div>
     <div class="modal-content">
-      <!-- <app-login-cliente (close)="fecharModalLogin()" (loggedIn)="onLogin()"></app-login-cliente> -->
+      <div (click)="$event.stopPropagation()">
+        <app-login-cliente (close)="fecharModalLogin()" (loggedIn)="onLogin()"></app-login-cliente>
+      </div>
     </div>
   </ng-container>
 
   <ng-container *ngIf="modalCadastroAberto">
     <div class="modal-overlay" (click)="fecharModalCadastro()"></div>
     <div class="modal-content">
-      <!-- <app-crie-sua-conta-cliente (close)="fecharModalCadastro()"></app-crie-sua-conta-cliente> -->
+      <div (click)="$event.stopPropagation()">
+  <app-crie-sua-conta-cliente (close)="fecharModalCadastro()" (loggedIn)="onLogin()"></app-crie-sua-conta-cliente>
+      </div>
     </div>
   </ng-container>
 </div>
+
+<ng-template #carregandoEstado>
+  <div class="area-cliente-wrapper">
+    <h1 class="titulo">Área do Cliente 🐾</h1>
+    <div class="card login-card">Inicializando...</div>
+  </div>
+</ng-template>

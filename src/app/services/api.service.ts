@@ -38,6 +38,21 @@ export interface AuthResponse {
   user?: Vet;
 }
 
+export interface Cliente {
+  id: number;
+  nome: string;
+  email: string;
+  cpf: string;
+  telefone?: string;
+  tipo: string;
+  created_at?: string;
+}
+
+export interface ClienteMeResponse {
+  user: Cliente;
+  tokenExp?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -80,9 +95,40 @@ export class ApiService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/vets`, vet);
   }
 
+  // Cadastro de cliente
+  cadastrarCliente(cliente: {
+    nome: string;
+    email: string;
+    senha?: string;
+    cpf: string;
+    telefone: string;
+    tipo: string;
+    idToken?: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/clientes`, cliente);
+  }
+
   // front
   loginVet(payload: { email?: string; senha?: string; idToken?: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/vets/login-vet`, payload);
+  }
+
+  // Login cliente
+  loginCliente(payload: { email?: string; senha?: string; idToken?: string }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/clientes/login-cliente`, payload);
+  }
+
+  // Pega perfil do cliente autenticado
+  getClienteMe(token: string) {
+    return this.http.get<ClienteMeResponse>(`${this.baseUrl}/clientes/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  getPetsByCliente(id: number, token: string) {
+    return this.http.get<any[]>(`${this.baseUrl}/clientes/${id}/pets`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
   }
 
   getVeterinario(id: string, token: string) {

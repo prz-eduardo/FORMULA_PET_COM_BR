@@ -8,6 +8,7 @@ import { FooterComponent } from './footer/footer.component';
 import { AboutComponent } from './about/about.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
 import { ProductPreviewComponent } from './product-preview/product-preview.component';
+import { ToastContainerComponent } from './shared/toast/toast-container.component';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -16,13 +17,8 @@ import { register } from 'swiper/element/bundle';
   imports: [
     CommonModule,
     RouterOutlet,
-    NavmenuComponent,
-    SwiperTopoComponent,
-    HeroComponent,
-    FooterComponent,
-    AboutComponent,
-    TestimonialsComponent,
-    ProductPreviewComponent,
+    RouterOutlet,
+    ToastContainerComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

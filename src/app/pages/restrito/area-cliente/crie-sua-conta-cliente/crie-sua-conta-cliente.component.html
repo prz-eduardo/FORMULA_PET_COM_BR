@@ -1,0 +1,72 @@
+<div class="modal-content">
+	<h2>Criar Conta Cliente</h2>
+
+	<!-- Mensagem de erro -->
+	<p class="error-message" *ngIf="mensagemErro">{{ mensagemErro }}</p>
+
+	<form *ngIf="!etapaGoogle && !iniciadoGoogle" #f="ngForm" (ngSubmit)="cadastrar(f)">
+		<div class="form-group">
+			<label>Nome</label>
+			<input type="text" name="nome" ngModel required placeholder="Seu nome completo" />
+		</div>
+
+		<div class="form-group">
+			<label>Email</label>
+			<input type="email" name="email" ngModel required email placeholder="seu@email.com" />
+		</div>
+
+		<div class="form-group senha-wrapper">
+			<label>Senha</label>
+			<input [type]="mostrarSenha ? 'text' : 'password'" name="senha" ngModel required minlength="6" placeholder="********" />
+			<span class="olho" (click)="mostrarSenha = !mostrarSenha">{{ mostrarSenha ? '🙈' : '👁️' }}</span>
+		</div>
+
+		<div class="form-group senha-wrapper">
+			<label>Repetir Senha</label>
+			<input [type]="mostrarSenha2 ? 'text' : 'password'" name="senha2" ngModel required placeholder="********" />
+			<span class="olho" (click)="mostrarSenha2 = !mostrarSenha2">{{ mostrarSenha2 ? '🙈' : '👁️' }}</span>
+		</div>
+
+		<div class="form-group">
+			<label>CPF</label>
+			<input type="text" name="cpf" ngModel required placeholder="000.000.000-00" mask="000.000.000-00" />
+		</div>
+
+		<div class="form-group">
+			<label>Telefone</label>
+			<input type="text" name="telefone" ngModel required placeholder="(00) 90000-0000" mask="(00) 00000-0000" />
+		</div>
+
+		<button class="btn" type="submit" [disabled]="carregando">Criar Conta</button>
+	</form>
+
+	<hr />
+
+	<button class="btn-google-toggle" (click)="toggleIniciarGoogle()" *ngIf="!iniciadoGoogle">
+		<img src="/imagens/google.png" alt=""> Cadastrar com Google
+	</button>
+
+	<button class="btn-google-toggle-voltar" (click)="toggleIniciarGoogle()" *ngIf="iniciadoGoogle">
+		 ↩️ Voltar
+	</button>
+
+	<div class="google-form-wrapper" [class.active]="iniciadoGoogle">
+		<form #g="ngForm" (ngSubmit)="iniciarGoogle(g)" class="google-form">
+			<p>Complete seus dados para continuar com Google</p>
+
+			<div class="form-group">
+				<label>CPF</label>
+				<input type="text" name="cpf" ngModel required placeholder="000.000.000-00" mask="000.000.000-00" />
+			</div>
+
+			<div class="form-group">
+				<label>Telefone</label>
+				<input type="text" name="telefone" ngModel required placeholder="(00) 90000-0000" mask="(00) 00000-0000" />
+			</div>
+
+			<button class="btn-google-form" type="submit" [disabled]="g.invalid || carregando">
+				<img src="/imagens/google.png" alt=""> Continuar com Google
+			</button>
+		</form>
+	</div>
+</div>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { AuthService } from '../../../../services/auth.service';
 import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../services/toast.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -29,6 +30,7 @@ export class CrieSuaContaComponent {
   constructor(
     private authService: AuthService,
     private apiService: ApiService
+    , private toastService: ToastService
   ) {}
 
   abrir() { this.aberto = true; }
@@ -89,9 +91,9 @@ export class CrieSuaContaComponent {
         })
       );
 
-      localStorage.setItem('userType', data.tipo);
-      localStorage.setItem('token', data.token);
-      alert('Conta criada com sucesso!');
+  localStorage.setItem('userType', data.tipo);
+  if (data.token) localStorage.setItem('token', data.token);
+  this.toastService.success('Conta criada com sucesso!', 'Sucesso');
       this.fechar();
     } catch (err: any) {
       this.mensagemErro = err.message || 'Erro ao cadastrar';
@@ -125,17 +127,17 @@ async iniciarGoogle(form: any) {
     })
   );
   localStorage.setItem('userType', data.tipo);
-  localStorage.setItem('token', data.token);
-  alert('Conta criada com sucesso via Google!');
+  if (data.token) localStorage.setItem('token', data.token);
+  this.toastService.success('Conta criada com sucesso via Google!', 'Sucesso');
 } catch (err: any) {
   if (err.message === 'Vet já cadastrado!') {
     // Tenta login automaticamente
     const loginData = await firstValueFrom(
       this.apiService.loginVet({ email, idToken })
     );
-    localStorage.setItem('userType', loginData.tipo);
-    localStorage.setItem('token', loginData.token);
-    alert('Login via Google realizado com sucesso!');
+  localStorage.setItem('userType', loginData.tipo);
+  if (loginData.token) localStorage.setItem('token', loginData.token);
+  this.toastService.success('Login via Google realizado com sucesso!', 'Sucesso');
   } else {
     this.mensagemErro = err.message || 'Erro no cadastro/login com Google';
   }
