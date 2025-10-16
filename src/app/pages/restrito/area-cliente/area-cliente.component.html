@@ -35,7 +35,7 @@
         <div class="card-icon">🛒</div>
         <div class="card-title">Meus Pedidos</div>
       </div>
-      <div class="menu-card" routerLink="/consultar-pedidos">
+      <div class="menu-card" [routerLink]="[{ outlets: { modal: ['consultar-pedidos'] } }]">
         <div class="card-icon">🔍</div>
         <div class="card-title">Status do Pedido</div>
       </div>
@@ -97,6 +97,9 @@
       </div>
     </div>
   </ng-container>
+  
+  <!-- Outlet para modais filhos (status do pedido, etc.) -->
+  <router-outlet name="modal"></router-outlet>
 </div>
 
 <ng-template #carregandoEstado>

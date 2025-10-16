@@ -137,6 +137,10 @@ export class ApiService {
     });
   }
 
+  consultarPedido(codigo: string, token?: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(codigo)}`, { headers });
+  }
 
 
 }
