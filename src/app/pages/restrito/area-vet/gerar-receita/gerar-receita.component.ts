@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../services/toast.service';
 import { debounce, slice } from 'lodash-es';
 import jsPDF from 'jspdf';
 import { jwtDecode } from "jwt-decode";
@@ -97,6 +98,7 @@ isBrowser: any;
 
   constructor(
     private apiService: ApiService,
+    private toastService: ToastService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -144,30 +146,82 @@ isBrowser: any;
     this.petSelecionado = null;
     this.cadastroManualTutor = false;
 
+    // Validação básica de CPF
+    const cpfLimpo = this.cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+      this.carregandoTutor = false;
+      this.toastService.error('CPF inválido. Deve conter 11 dígitos.', 'Erro de Validação');
+      return;
+    }
+
     try {
-      if (this.cpf === '11111111111') {
+      // Obter token do localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        this.toastService.error('Token de autenticação não encontrado. Faça login novamente.', 'Erro de Autenticação');
+        this.carregandoTutor = false;
+        return;
+      }
+
+      // Buscar cliente e pets no backend
+      const response = await this.apiService.buscarClienteComPets(cpfLimpo, token).toPromise();
+      
+      if (response && response.cliente) {
         this.ngZone.run(() => {
+          // Mapear os dados do backend para o formato esperado
           this.tutorEncontrado = {
-            nome: 'Maria Oliveira',
-            cpf: '111.111.111-11',
-            telefone: '(11) 98888-7777',
-            email: 'maria@exemplo.com',
-            endereco: 'Rua das Flores, 123 - São Paulo/SP',
-            pets: [
-              { id: 'pet-1', nome: 'Rex', idade: 5, peso: 20, raca: 'Labrador', sexo: 'Macho', alergias: [], especie: 'Cachorro' },
-              { id: 'pet-2', nome: 'Mimi', idade: 3, peso: 4, raca: 'Persa', sexo: 'Fêmea', alergias: ['Pólen'] , especie: 'Cachorro'},
-              { id: 'pet-3', nome: 'Bolt', idade: 2, peso: 15, raca: 'Border Collie', sexo: 'Macho', alergias: ['Carne bovina'] , especie: 'Cachorro'}
-            ]
+            nome: response.cliente.nome || '',
+            cpf: this.formatarCpf(response.cliente.cpf) || this.cpf,
+            telefone: response.cliente.telefone || '',
+            email: response.cliente.email || '',
+            endereco: response.cliente.endereco || '',
+            pets: (response.pets || []).map((pet: any) => ({
+              id: pet.id?.toString() || '',
+              nome: pet.nome || '',
+              especie: pet.especie || '',
+              idade: pet.idade || 0,
+              peso: pet.peso || 0,
+              raca: pet.raca || '',
+              sexo: pet.sexo || 'Macho',
+              alergias: pet.alergias || []
+            }))
           };
         });
+        this.toastService.success(`Cliente ${response.cliente.nome} encontrado com sucesso!`, 'Sucesso');
         this.cdr.detectChanges();
       } else {
+        // Cliente não encontrado - habilitar cadastro manual
         this.ngZone.run(() => {
           this.cadastroManualTutor = true;
           this.novoTutor.cpf = this.cpf;
         });
+        this.toastService.info('Cliente não encontrado. Por favor, preencha os dados manualmente.', 'Cliente não cadastrado');
       }
-    } finally { this.carregandoTutor = false; }
+    } catch (error: any) {
+      console.error('Erro ao buscar cliente:', error);
+      
+      // Se for erro 404, habilitar cadastro manual
+      if (error.status === 404) {
+        this.ngZone.run(() => {
+          this.cadastroManualTutor = true;
+          this.novoTutor.cpf = this.cpf;
+        });
+        this.toastService.info('Cliente não encontrado. Por favor, preencha os dados manualmente.', 'Cliente não cadastrado');
+      } else {
+        const errorMessage = error.error?.message || error.message || 'Erro desconhecido ao buscar cliente';
+        this.toastService.error(errorMessage, 'Erro ao buscar cliente');
+      }
+    } finally { 
+      this.carregandoTutor = false; 
+    }
+  }
+
+  // Método auxiliar para formatar CPF
+  formatarCpf(cpf: string): string {
+    if (!cpf) return '';
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) return cpf;
+    return cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   }
 
   selecionarPet(pet: Pet) {

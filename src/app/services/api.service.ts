@@ -163,5 +163,21 @@ export class ApiService {
     });
   }
 
+  // Buscar cliente por CPF (para veterinários)
+  buscarClientePorCpf(cpf: string, token: string): Observable<any> {
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    return this.http.get<any>(`${this.baseUrl}/clientes/cpf/${cpfLimpo}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  // Buscar cliente com pets incluídos
+  buscarClienteComPets(cpf: string, token: string): Observable<any> {
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    return this.http.get<any>(`${this.baseUrl}/clientes/cpf/${cpfLimpo}?include=pets`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
 
 }
