@@ -15,12 +15,18 @@
       <option value="name">Nome (A-Z)</option>
     </select>
     <div class="cta">
+      <button class="btn light fav-toggle" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" title="Mostrar apenas favoritos">
+        ❤️ Favoritos
+      </button>
       <div class="perfil">
         <button #profileBtn class="btn light" (click)="toggleLogin($event)" aria-haspopup="dialog" [attr.aria-expanded]="showLogin">
           {{ me ? '👤 ' + (me?.nome || 'Cliente') : '👤 Entrar' }}
         </button>
       </div>
-      <a #cartBtn routerLink="/carrinho" class="btn cart-link" title="Ir para o carrinho">🛒 Carrinho</a>
+      <a #cartBtn routerLink="/carrinho" class="btn cart-link with-badge" title="Ir para o carrinho">
+        🛒 Carrinho
+        <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
+      </a>
     </div>
   </div>
 

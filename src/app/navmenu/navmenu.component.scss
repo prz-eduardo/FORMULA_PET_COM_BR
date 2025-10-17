@@ -125,6 +125,8 @@ nav {
     // Icons
     .icons {
       display: flex;
+      align-items: center;
+      height: 100%;
 
       // Icon Menu Hamburguer
       .icon-menu {
@@ -232,6 +234,8 @@ nav {
       .secondary-icons {
         display: flex;
         flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
 
         .icon-second {
           width: 30px;
@@ -266,6 +270,25 @@ nav {
               opacity: 1;
             }
           }
+        }
+
+        a.cart-link, a.badge-link {
+          position: relative;
+        }
+        .cart-badge {
+          position: absolute;
+          top: -6px;
+          right: 0px;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 5px;
+          border-radius: 999px;
+          background: #ef4444;
+          color: #fff;
+          font-size: 11px;
+          line-height: 18px;
+          text-align: center;
+          box-shadow: 0 0 0 2px #fff;
         }
       }
     }

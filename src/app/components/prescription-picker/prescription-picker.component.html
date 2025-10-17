@@ -1,0 +1,51 @@
+<div class="rx-picker" [class.disabled]="disabled">
+  <div class="tabs" role="tablist" aria-label="Associação de receita">
+    <button class="tab" role="tab" [attr.aria-selected]="view==='list'" (click)="view='list'">Selecionar</button>
+    <button class="tab" *ngIf="allowUpload" role="tab" [attr.aria-selected]="view==='upload'" (click)="view='upload'">PDF</button>
+  </div>
+
+  <div class="pane" *ngIf="view==='list'">
+    <div class="search">
+      <input class="input" type="text" placeholder="Buscar por #ID, pet ou tutor" [(ngModel)]="filter" aria-label="Filtrar receitas" />
+    </div>
+    <div class="state" *ngIf="loading">Carregando receitas…</div>
+    <div class="state" *ngIf="!loading && prescriptions?.length===0">Nenhuma receita disponível.</div>
+    <ul class="list" *ngIf="!loading && prescriptions?.length">
+      <li class="card" *ngFor="let rx of filtered">
+        <label class="row">
+          <input type="radio" name="rx" [checked]="isSelected(rx)" (change)="onPick(rx)" [disabled]="disabled" [attr.aria-label]="'Selecionar receita #' + rx.id" />
+          <div class="meta">
+            <div class="top">
+              <span class="id">#{{ rx.id }}</span>
+              <span class="date">{{ rx.created_at | date:'dd/MM/yyyy' }}</span>
+              <span class="badge danger" *ngIf="rx.alerta_alergia">alergia</span>
+            </div>
+            <div class="pet">
+              {{ rx.nome_pet || rx.pet_nome || 'Pet' }}
+              <span class="muted">• {{ rx.cliente_nome || 'Cliente' }}</span>
+            </div>
+            <div class="acoes">
+              <button type="button" class="link" (click)="onToggleExpand(rx.id)">{{ expanded===rx.id ? 'Ocultar' : 'Detalhes' }}</button>
+            </div>
+          </div>
+        </label>
+        <div class="details" *ngIf="expanded===rx.id">
+          <div class="itens" *ngIf="rx.itens?.length">
+            <div class="item" *ngFor="let it of rx.itens">• {{ it.nome_ativo }}</div>
+          </div>
+          <div class="obs" *ngIf="rx.observacoes">Obs: {{ rx.observacoes }}</div>
+          <img *ngIf="rx.assinatura_imagem" class="assinatura" [src]="rx.assinatura_imagem" alt="Assinatura" />
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="pane" *ngIf="view==='upload'">
+    <label class="label">Enviar PDF da receita</label>
+    <div class="upload">
+      <input id="rx-pdf" type="file" accept="application/pdf" (change)="onFile($event)" [disabled]="disabled" />
+      <label for="rx-pdf" class="btn primary" role="button">Selecionar arquivo PDF</label>
+    </div>
+    <p class="muted">O time conferirá a receita anexada.</p>
+  </div>
+</div>

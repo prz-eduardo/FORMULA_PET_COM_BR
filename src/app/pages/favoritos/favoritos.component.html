@@ -1,0 +1,19 @@
+<div class="favoritos-wrap">
+  <app-navmenu></app-navmenu>
+  <h1 class="titulo">Favoritos</h1>
+
+  <div class="grid" *ngIf="produtos.length; else vazio">
+    <div class="card" *ngFor="let p of produtos" [hidden]="!isFav(p)">
+  <img [src]="p.image" alt="{{ p.name }}" title="{{ p.name }}" />
+      <div class="info">
+        <div class="nome">{{ p.name }}</div>
+        <div class="preco">{{ p.price | currency:'BRL' }}</div>
+        <a [routerLink]="'/loja'" class="btn">Ver na loja</a>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #vazio>
+    <div class="card vazio">Você ainda não favoritou nenhum produto.</div>
+  </ng-template>
+</div>

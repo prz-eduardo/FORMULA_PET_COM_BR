@@ -1,13 +1,14 @@
 import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
+import { StoreService } from '../services/store.service';
 
 @Component({
   selector: 'app-navmenu',
   standalone: true,
-  imports: [RouterLink], // precisa pro [routerLink]
+  imports: [RouterLink, CommonModule], // precisa pro [routerLink] e *ngIf
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })
@@ -15,8 +16,9 @@ export class NavmenuComponent implements AfterViewInit {
   previousScroll: number = 0;
   isVisible = true;
   currentRoute: string = '';
+  cartCount = 0;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService) {}
 
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -40,6 +42,11 @@ export class NavmenuComponent implements AfterViewInit {
           el.addEventListener('click', this.openSubmenu);
         });
       }
+
+      // Subscribe to cart to update count badge
+      this.store.cart$.subscribe(items => {
+        this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
+      });
     }
   }
 

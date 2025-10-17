@@ -431,5 +431,32 @@
       "scent": ["Melaleuca", "Alecrim"]
       }
     }
+  ,
+    {
+      "id": 31,
+      "name": "Controle para Dor - Caninos",
+      "description": "Medicamento controlado para dor intensa em cães. Requer receita.",
+      "price": 89.90,
+      "image": "https://mppharma.com.br/wp-content/uploads/2019/06/medicamentos-manipulados-mp-pharma.png",
+      "category": "Controlados",
+      "customizations": {
+        "dosage": ["5mg", "10mg"],
+        "packaging": ["Vidro"]
+      },
+      "requiresPrescription": true
+    },
+    {
+      "id": 32,
+      "name": "Sedativo Veterinário - Felinos",
+      "description": "Uso controlado para procedimentos. Requer receita.",
+      "price": 129.90,
+      "image": "https://solutudo-cdn.s3-sa-east-1.amazonaws.com/prod/adv_files/58417738-d688-433a-9d42-2f49ac1f1875/69e4f9f6-d556-43d1-a883-419c3edba6b2.jpg",
+      "category": "Controlados",
+      "customizations": {
+        "dosage": ["2mg", "5mg"],
+        "packaging": ["Plástico"]
+      },
+      "requiresPrescription": true
+    }
   ]
   

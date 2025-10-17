@@ -18,11 +18,15 @@ export interface ShopProduct {
   stock?: number;
   tags?: string[];
   weight?: string;
+  requiresPrescription?: boolean;
 }
 
 export interface CartItem {
   product: ShopProduct;
   quantity: number;
+  // If the product requires prescription, these fields help enforce the flow
+  prescriptionId?: string; // ID of a generated prescription from the system
+  prescriptionFileName?: string; // Uploaded PDF name
 }
 
 @Injectable({ providedIn: 'root' })
@@ -196,5 +200,25 @@ export class StoreService {
 
   private persistCart(cart: CartItem[]) {
     localStorage.setItem('cart', JSON.stringify(cart));
+  }
+
+  // Prescription helpers
+  setItemPrescriptionById(productId: number, data: { prescriptionId?: string; prescriptionFileName?: string }) {
+    const cart = this.cartSubject.value.map(ci =>
+      ci.product.id === productId ? { ...ci, ...data } : ci
+    );
+    this.cartSubject.next(cart);
+    this.persistCart(cart);
+  }
+
+  /**
+   * Returns true if all items that require prescription have either a linked
+   * system prescription (prescriptionId) or an uploaded PDF (prescriptionFileName)
+   */
+  isCheckoutAllowed(): boolean {
+    return this.cartSubject.value.every(ci => {
+      if (!ci.product.requiresPrescription) return true;
+      return Boolean(ci.prescriptionId || ci.prescriptionFileName);
+    });
   }
 }

@@ -39,17 +39,25 @@
 
       <div class="icons">
         <div class="secondary-icons">
-          <a href="https://www.google.com/maps/search/?api=1&query=Rua+Treze+de+Maio,+506,+Conjunto+04,+São+Francisco,+Curitiba,+PR,+CEP+80510-030" title="Como chegar">
-        <i class="icon-second"><img src="/icones/mapa-pata.png" class="icones-menu" alt="Mapa"></i>
+          <!-- Mapa (Google Maps) -->
+          <a href="https://www.google.com/maps/search/?api=1&query=Rua+Treze+de+Maio,+506,+Conjunto+04,+São+Francisco,+Curitiba,+PR,+CEP+80510-030" target="_blank" rel="noopener" title="Abrir no Google Maps" aria-label="Abrir no Google Maps">
+            <i class="icon-second"><img src="/icones/mapa-pata.png" class="icones-menu" width="24" height="24" alt="Mapa"></i>
           </a>
-          <a [routerLink]="'/loja'" title="Ir para a loja">
-        <i class="icon-second"><img src="/icones/telefone-pata.png" class="icones-menu" alt="Loja"></i>
+          <!-- Telefone (liga para a loja) -->
+          <a href="tel:+554132051910" title="Ligar" aria-label="Ligar para a Fórmula Pet">
+            <i class="icon-second"><img src="/icones/telefone-pata.png" class="icones-menu" width="20" height="20" alt="Telefone"></i>
           </a>
-          <a [routerLink]="'/carrinho'" title="Ir para o carrinho">
-        <i class="icon-second"><img src="/icones/receita-pata.png" class="icones-menu" alt="Carrinho"></i>
+          <!-- Loja -->
+          <a [routerLink]="'/loja'" title="Ir para a loja" aria-label="Ir para a loja">
+            <i class="icon-second"><img src="/icones/loja.png" class="icones-menu" width="22" height="22" alt="Loja"></i>
+          </a>
+          <!-- Carrinho (com badge) -->
+          <a [routerLink]="'/carrinho'" class="cart-link" title="Ir para o carrinho" aria-label="Ir para o carrinho">
+            <i class="icon-second"><img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho"></i>
+            <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
           </a>
         </div>
-        <i class="icon-menu"><span></span></i>
+  <i class="icon-menu"><span></span></i>
       </div>
     </div>
     <ul class="menu">
@@ -68,7 +76,14 @@
           <li class="sub-item"><a href="#0">Higiene</a></li>
         </ul>
       </li>
-      <li class="menu-link"><a [routerLink]="'/loja'" class="text-item">Loja</a></li>
+      <li class="menu-link sub">
+        <a href="#0" class="text-item">Lorem Ipsun<span class="icon"></span></a>
+        <ul class="submenu">
+          <li class="sub-item"><a href="#0" class="font">Loren</a></li>
+          <li class="sub-item"><a href="#0">Loren ipsum</a></li>
+          <li class="sub-item"><a href="#0">Mobile App Development</a></li>
+        </ul>
+      </li>
       <li class="menu-link"><a href="area-vet" class="text-item">Área vet 🐾</a></li>
       <li class="menu-link"><a href="area-cliente" class="text-item">Área cliente</a></li>
     </ul>

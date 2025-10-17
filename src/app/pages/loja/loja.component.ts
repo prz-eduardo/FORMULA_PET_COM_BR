@@ -1,7 +1,7 @@
 import { Component, OnInit, ElementRef, ViewChild, Renderer2 } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { StoreService, ShopProduct } from '../../services/store.service';
 import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
@@ -22,6 +22,7 @@ export class LojaComponent implements OnInit {
   filtro = '';
   categoria = '';
   sort: 'relevance' | 'price-asc' | 'price-desc' | 'name' = 'relevance';
+  onlyFavorites = false;
   // Auth UI
   showLogin = false;
   email = '';
@@ -29,11 +30,12 @@ export class LojaComponent implements OnInit {
   me: any = null;
   popoverTop = 0;
   popoverLeft = 0;
+  private pendingProduct: ShopProduct | null = null;
 
   @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLAnchorElement>;
   @ViewChild('profileBtn') profileBtn?: ElementRef<HTMLButtonElement>;
 
-  constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute) {}
+  constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
 
   async ngOnInit() {
     await this.store.loadProducts();
@@ -46,19 +48,22 @@ export class LojaComponent implements OnInit {
       const q = params.get('q');
       const cat = params.get('cat');
       const login = params.get('login');
+      const fav = params.get('fav');
       if (q !== null) this.filtro = q;
       if (cat !== null) this.categoria = cat;
       if (login === '1') this.openLoginNearProfile();
+      this.onlyFavorites = fav === '1';
     });
   }
 
   get filtered(): ShopProduct[] {
     const f = this.filtro.trim().toLowerCase();
     const cat = this.categoria;
-    const base = this.produtos.filter(p =>
+    let base = this.produtos.filter(p =>
       (!cat || p.category === cat) &&
       (!f || p.name.toLowerCase().includes(f) || p.description.toLowerCase().includes(f))
     );
+    if (this.onlyFavorites) base = base.filter(p => this.isFav(p));
 
     switch (this.sort) {
       case 'price-asc':
@@ -79,14 +84,30 @@ export class LojaComponent implements OnInit {
   }
   async addToCart(p: ShopProduct): Promise<boolean> {
     const ok = await this.store.addToCart(p, 1);
-    if (!ok) this.openLoginNearProfile();
+    if (!ok) {
+      this.pendingProduct = p;
+      this.openLoginNearProfile();
+    }
     return ok;
   }
   price(p: ShopProduct) { return this.store.getPriceWithDiscount(p); }
 
+  // Exibe a quantidade total de itens no carrinho no botão do topo
+  get cartCount(): number {
+    return this.store.getCartTotals().count;
+  }
+
   async onAddToCart(p: ShopProduct, ev: MouseEvent) {
     const ok = await this.addToCart(p);
     if (ok) this.flyToCart(ev);
+  }
+
+  toggleFavoritesOnly() {
+    this.onlyFavorites = !this.onlyFavorites;
+    // reflect in query params without reloading component
+    const queryParams: any = { ...this.route.snapshot.queryParams };
+    if (this.onlyFavorites) queryParams.fav = '1'; else delete queryParams.fav;
+    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
   }
 
   private flyToCart(ev: MouseEvent) {
@@ -194,6 +215,10 @@ export class LojaComponent implements OnInit {
         this.senha = '';
         this.store.resetClienteGate();
         await this.fetchMe();
+        if (this.pendingProduct) {
+          await this.store.addToCart(this.pendingProduct, 1);
+          this.pendingProduct = null;
+        }
       } else {
         this.toast.error('Não foi possível fazer login');
       }
@@ -222,6 +247,10 @@ export class LojaComponent implements OnInit {
         this.showLogin = false;
         this.store.resetClienteGate();
         await this.fetchMe();
+        if (this.pendingProduct) {
+          await this.store.addToCart(this.pendingProduct, 1);
+          this.pendingProduct = null;
+        }
       } else {
         this.toast.error('Não foi possível logar com Google');
       }

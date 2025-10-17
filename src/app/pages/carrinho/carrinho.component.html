@@ -14,8 +14,20 @@
           <span>{{ it.quantity }}</span>
           <button (click)="inc(it.product.id)">+</button>
         </div>
+        <!-- Prescription requirement UI -->
+        <div class="prescription" *ngIf="it.product.requiresPrescription">
+          <div class="warn">Este produto exige receita.</div>
+          <app-prescription-picker
+            [prescriptions]="receitasDisponiveis"
+            [selectedId]="it.prescriptionId"
+            [loading]="carregandoReceitas"
+            (select)="onSelectPrescription(it.product.id, $event)"
+            (upload)="onUploadPrescriptionFileDirect(it.product.id, $event)"
+          ></app-prescription-picker>
+          <div class="file" *ngIf="it.prescriptionFileName">Arquivo: {{ it.prescriptionFileName }}</div>
+        </div>
       </div>
-      <button class="remove" (click)="remove(it.product.id)">Remover</button>
+      <button class="remove" (click)="remove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
       </div>
     </div>
 
@@ -37,7 +49,7 @@
         </div>
         <div class="acoes">
           <button class="btn" (click)="clear()">Limpar carrinho</button>
-          <button class="btn primary">Finalizar compra</button>
+          <button class="btn primary" [disabled]="!store.isCheckoutAllowed()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar compra</button>
         </div>
       </div>
     </div>
@@ -51,7 +63,7 @@
         <span>{{ total().total | currency:'BRL' }}</span>
         <small class="count">{{ total().count }} itens</small>
       </div>
-      <button class="btn primary" aria-label="Finalizar compra">Finalizar</button>
+      <button class="btn primary" aria-label="Finalizar compra" [disabled]="!store.isCheckoutAllowed()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar</button>
     </div>
   </div>
 

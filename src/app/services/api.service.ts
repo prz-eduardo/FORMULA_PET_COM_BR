@@ -319,6 +319,8 @@ export class ApiService {
     from?: string;
     to?: string;
     q?: string;
+    availableOnly?: boolean; // somente receitas não usadas (ex.: carrinho)
+    context?: string;        // contexto do uso (ex.: 'carrinho')
   }): Observable<PagedReceitasResponse> {
     const search = new URLSearchParams();
     if (params) {
@@ -330,6 +332,8 @@ export class ApiService {
       if (params.from) search.set('from', params.from);
       if (params.to) search.set('to', params.to);
       if (params.q) search.set('q', params.q);
+      if (params.availableOnly) search.set('availableOnly', '1');
+      if (params.context) search.set('context', params.context);
     }
     const qp = search.toString();
     const url = `${this.baseUrl}/receitas${qp ? `?${qp}` : ''}`;

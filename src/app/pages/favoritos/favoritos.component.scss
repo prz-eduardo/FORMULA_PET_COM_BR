@@ -1,0 +1,10 @@
+.favoritos-wrap { padding: 16px; font-family: 'Inter', sans-serif; }
+.titulo { margin: 0 0 16px; padding-top: 72px; font-size: 28px; font-weight: 800; color: var(--primary, #0ea5e9); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; }
+.card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; }
+.card img { width: 100%; height: 140px; object-fit: cover; }
+.info { padding: 10px; display: grid; gap: 6px; }
+.nome { font-weight: 700; color: #111827; font-size: 14px; }
+.preco { font-weight: 800; color: #111827; font-size: 15px; }
+.btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); text-decoration: none; text-align: center; }
+.vazio { text-align: center; padding: 20px; }
