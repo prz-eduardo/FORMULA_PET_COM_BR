@@ -53,6 +53,12 @@ export interface ClienteMeResponse {
   tokenExp?: number;
 }
 
+export interface AlergiaLookup {
+  alergia_id: string | number;
+  ativo_id?: string | number;
+  nome: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -67,8 +73,9 @@ export class ApiService {
   }
 
   // Receitas
-  criarReceita(receita: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/receitas`, receita);
+  criarReceita(receita: any, token?: string): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post(`${this.baseUrl}/receitas`, receita, { headers });
   }
 
   getVet(id: string, token?: string): Observable<Vet> {
@@ -175,6 +182,14 @@ export class ApiService {
   buscarClienteComPets(cpf: string, token: string): Observable<any> {
     const cpfLimpo = cpf.replace(/\D/g, '');
     return this.http.get<any>(`${this.baseUrl}/clientes/cpf/${cpfLimpo}?include=pets`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  // Lista predefinida de alergias
+  getListaAlergias(token: string, q?: string): Observable<AlergiaLookup[]> {
+    const query = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return this.http.get<AlergiaLookup[]>(`${this.baseUrl}/get_lista_alergias${query}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
   }

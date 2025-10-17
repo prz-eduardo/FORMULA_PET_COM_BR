@@ -23,8 +23,15 @@ export class NovoPetComponent {
   pesoKg: number | null = null;
   idadeAnos: number | null = null;
   observacoes = '';
-  alergiaInput = '';
-  alergias: string[] = [];
+  // alergias livres removidas em favor do search-select
+  // Predefinidas (get_lista_alergias)
+  listaAlergias: { nome: string; alergia_id: string | number; ativo_id?: string | number }[] = [];
+  alergiasSelecionadas: Array<{ nome: string; alergia_id: string | number; ativo_id?: string | number }> = [];
+  alergiaBusca = '';
+  sugestoes: Array<{ nome: string; alergia_id: string | number; ativo_id?: string | number }> = [];
+  showSugestoes = false;
+  // Item predefinido "Outras" (carregado do backend)
+  outraPredefinida: { nome: string; alergia_id: string | number; ativo_id?: string | number } | null = null;
 
   // photo
   fotoFile: File | null = null;
@@ -76,9 +83,12 @@ export class NovoPetComponent {
               const rawIdade = (pet.idadeAnos ?? pet.idade);
               this.idadeAnos = rawIdade != null && rawIdade !== '' ? Number(rawIdade) : null;
               this.observacoes = pet.observacoes || '';
-              this.alergias = Array.isArray(pet.alergias)
+              // Se backend retornar alergias por nome, tente mapear para lista predefinida depois de carregar a lista
+              const livres = Array.isArray(pet.alergias)
                 ? pet.alergias
                 : (pet.alergias ? String(pet.alergias).split(/[;,]/).map((s:string)=>s.trim()).filter(Boolean) : []);
+              // armazena provisoriamente e mapeia após carregar lista
+              setTimeout(() => this.mapearAlergiasLivres(livres), 0);
             }
           }
         });
@@ -92,6 +102,66 @@ export class NovoPetComponent {
         setTimeout(() => clearInterval(int), 4000);
       }
     }
+
+    // Carregar lista predefinida de alergias (get_lista_alergias)
+    this.carregarListaAlergias();
+    // Buscar item predefinido "Outras" para mapear legados
+    this.buscarOutrasPredefinida();
+  }
+
+  carregarListaAlergias() {
+    if (!this.token) return;
+    // Inicialmente não carrega sem termo; sugestões só aparecem quando digitar
+  }
+
+  private buscarOutrasPredefinida() {
+    if (!this.token) return;
+    this.api.getListaAlergias(this.token, 'outras').subscribe({
+      next: (lista) => {
+        if (Array.isArray(lista)) {
+          const found = lista.find(i => String(i.nome).trim().toLowerCase() === 'outras');
+          if (found) this.outraPredefinida = found;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  filtrarSugestoes() {
+    const termo = (this.alergiaBusca || '').trim();
+    const lower = termo.toLowerCase();
+    const jaSelecionados = new Set(this.alergiasSelecionadas.map(a => `${a.alergia_id}|${a.ativo_id ?? ''}`));
+
+    if (!termo) {
+      this.sugestoes = [];
+      this.showSugestoes = false;
+      return;
+    }
+
+    // Buscar do backend com ?q=...
+    if (this.token) {
+      this.api.getListaAlergias(this.token, termo).subscribe({
+        next: (lista) => {
+          // Remove os já selecionados
+          const base = (lista || []).filter(a => !jaSelecionados.has(`${a.alergia_id}|${a.ativo_id ?? ''}`));
+          // Filtro defensivo caso backend não aplique corretamente
+          this.sugestoes = base.filter(a => a.nome?.toLowerCase().includes(lower)).slice(0, 20);
+          this.showSugestoes = this.sugestoes.length > 0;
+        },
+        error: () => {
+          this.sugestoes = [];
+          this.showSugestoes = false;
+        }
+      });
+    }
+  }
+
+  adicionarSugestao(item: { nome: string; alergia_id: string | number; ativo_id?: string | number }) {
+    const key = `${item.alergia_id}|${item.ativo_id ?? ''}`;
+    const exists = this.alergiasSelecionadas.some(a => `${a.alergia_id}|${a.ativo_id ?? ''}` === key);
+    if (!exists) this.alergiasSelecionadas.push({ ...item });
+    this.alergiaBusca = '';
+    this.filtrarSugestoes();
   }
 
   onFileChange(ev: Event) {
@@ -119,15 +189,27 @@ export class NovoPetComponent {
     this.fotoPreview = null;
   }
 
-  addAlergia(){
-    const v = (this.alergiaInput || '').trim();
-    if (!v) return;
-    if (!this.alergias.includes(v)) this.alergias.push(v);
-    this.alergiaInput = '';
-  }
-
-  removeAlergia(i: number){
-    this.alergias.splice(i, 1);
+  // Mapeia nomes livres vindos do backend para a lista predefinida quando possível
+  private mapearAlergiasLivres(livres: string[]) {
+    if (!Array.isArray(livres) || !livres.length) return;
+    const idx = new Map(this.listaAlergias.map(a => [a.nome.toLowerCase(), a] as const));
+    let outrasJaAdicionada = this.alergiasSelecionadas.some(a => String(a.nome).trim().toLowerCase() === 'outras');
+    livres.forEach(n => {
+      const key = String(n).trim().toLowerCase();
+      const hit = idx.get(key);
+      if (hit) {
+        const exists = this.alergiasSelecionadas.some(a => `${a.alergia_id}|${a.ativo_id ?? ''}` === `${hit.alergia_id}|${hit.ativo_id ?? ''}`);
+        if (!exists) this.alergiasSelecionadas.push({ ...hit });
+      } else if (!outrasJaAdicionada && this.outraPredefinida) {
+        // Para nomes livres sem correspondência, agrega em "Outras" (predefinida)
+        const already = this.alergiasSelecionadas.some(a => `${a.alergia_id}|${a.ativo_id ?? ''}` === `${this.outraPredefinida!.alergia_id}|${this.outraPredefinida!.ativo_id ?? ''}`);
+        if (!already) {
+          this.alergiasSelecionadas.push({ ...this.outraPredefinida });
+          outrasJaAdicionada = true;
+        }
+      }
+    });
+    this.filtrarSugestoes();
   }
 
   salvar(){
@@ -147,7 +229,10 @@ export class NovoPetComponent {
     if (this.pesoKg != null) fd.append('pesoKg', String(this.pesoKg));
     if (this.idadeAnos != null) fd.append('idadeAnos', String(this.idadeAnos));
     if (this.observacoes) fd.append('observacoes', this.observacoes.trim());
-  if (this.alergias.length) fd.append('alergias', JSON.stringify(this.alergias));
+    // Enviar alergias predefinidas completas (nome, alergia_id, ativo_id)
+    if (this.alergiasSelecionadas.length) {
+      fd.append('alergias_predefinidas', JSON.stringify(this.alergiasSelecionadas));
+    }
     if (this.fotoFile) fd.append('foto', this.fotoFile);
 
     this.carregando = true;

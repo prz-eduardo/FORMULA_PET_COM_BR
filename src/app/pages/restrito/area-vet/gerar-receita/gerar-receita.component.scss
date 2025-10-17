@@ -10,14 +10,23 @@
 }
 
 .titulo {
-  font-size: 32px;
+  font-size: 60px;
   font-weight: 700;
   text-align: center;
   color: var(--primary, #1abc9c);
+  font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif;
+  line-height: 1.1;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.5);
+  /* puxar o título um pouco para cima e remover margens default do h1 */
+  margin: 0;
+  margin-top: -10px;
 }
 
 /* cards */
 .card.receita-card {
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto; /* centraliza no desktop */
   background: #1f2a38;
   padding: 20px;
   border-radius: 12px;
@@ -79,6 +88,10 @@
   box-shadow: 0 6px 14px rgba(0,0,0,0.45);
 }
 
+/* alergias no cartão do pet herdam o mesmo estilo de .ativos-badges/.badge */
+.alergias-wrapper { margin-top: 6px; }
+.alergias-label { margin-bottom: 4px; }
+
 /* ativos */
 .grupo-header {
   display: flex;
@@ -103,6 +116,7 @@
   cursor: pointer;
   transition: all .18s;
 }
+.ativo-item mark { background: #ffd54f; color: #000; padding: 0 2px; border-radius: 2px; }
 .ativo-item.selected {
   outline: 3px solid rgba(26, 188, 156, 0.3);
   transform: translateY(-2px);
@@ -127,9 +141,15 @@
   cursor: pointer;
 }
 
+/* Dropdown de alergias (vet) */
+.dropdown{ margin-top:6px; background:#0f1828; border:1px solid rgba(255,255,255,.08); border-radius:10px; max-height:220px; overflow:auto }
+.option{ padding:8px 10px; cursor:pointer; color:#dbe6fb }
+.option:hover{ background:#162437 }
+
 /* assinatura */
-.assinatura-row { display: flex; gap: 18px; align-items: flex-start; margin-top: 8px; flex-wrap: wrap; }
-.assinatura-col { flex: 1 1 320px; min-width: 280px; }
+.assinatura-row { display: flex; gap: 18px; align-items: flex-start; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+.assinatura-col { flex: 1 1 320px; min-width: 280px; max-width: 720px; margin-left: auto; margin-right: auto; }
+.assinatura-actions { display: flex; gap: 10px; justify-content: center; }
 .canvas-wrap { background: #fff; border-radius: 8px; padding: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); }
 .assinatura-canvas { width: 100%; height: 140px; display: block; touch-action: none; background: #fff; border-radius: 6px; }
 
@@ -150,6 +170,22 @@ button.btn {
 }
 button.btn:hover { background: #16a085; }
 
+/* Botão com indicador de rotação (sair do FS gira 90°) */
+button.btn.btn-rotate { display: inline-flex; align-items: center; gap: 8px; }
+button.btn.btn-rotate .rotate-indicator { display:inline-block; transform: rotate(90deg); font-size: 16px; line-height: 1; opacity: .9; }
+button.btn.btn-rotate:hover .rotate-indicator { transform: rotate(90deg) scale(1.05); }
+
+button.btn-sec {
+  background: #2a364a;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  font-weight: 600;
+}
+button.btn-sec:hover { background: #324058; }
+
 /* grid pet inputs */
 .grid-pet {
   display: grid;
@@ -158,6 +194,54 @@ button.btn:hover { background: #16a085; }
 }
 select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
 
+.acoes-row { display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; flex-wrap: wrap; }
+.btn-help {
+  width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff; font-weight: 800; font-size: 18px; line-height: 1; display:flex; align-items:center; justify-content:center;
+  backdrop-filter: blur(4px);
+}
+.btn-help:hover { background: rgba(255,255,255,0.16); }
+.btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,.2); color: #fff; padding: 8px 12px; border-radius: 8px; }
+.btn-ghost:hover { background: rgba(255,255,255,.08); }
+
+/* modal - escolha de ação do pet */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
+}
+.modal-card {
+  position: fixed; left: 50%; top: 20vh; transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px));
+  background: #1f2a38; color: #ecf0f5; border-radius: 12px; padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+.modal-card h3 { margin: 0 0 6px; }
+.modal-card .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top: 12px; flex-wrap: wrap; }
+
+/* Alert modal variant */
+.modal-card.modal-alert { border: 1px solid rgba(255,0,0,.25); background: #2a1f21; }
+.modal-card.modal-alert h3 { color: #ffb4b4; }
+.modal-card.modal-alert .muted { color: #ffd2d2; }
+.alert-row { display:flex; gap:12px; align-items:flex-start; }
+.alert-icon { width:36px; height:36px; border-radius:50%; background:#e74c3c; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800 }
+
+/* Mobile friendliness */
+@media (max-width: 560px) {
+  .modal-card { left: 50%; top: 10vh; width: calc(100% - 16px); padding: 14px; border-radius: 10px; }
+  .modal-card .modal-actions { flex-direction: column; align-items: stretch; }
+  .modal-card .modal-actions .btn, .modal-card .modal-actions .btn-sec { width: 100%; }
+}
+  /* Assinatura: botão de exibir deve ocupar 100% */
+  .assinatura-col .btn-toggle { width: 100%; }
+  /* Centraliza assinatura no mobile também */
+  .assinatura-col { max-width: 100%; }
+
+/* pequeno badge para status do pet */
+.pet-status {
+  display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; margin-left: 6px;
+  background: #8e44ad; color: #fff; border: 1px solid rgba(255,255,255,.12);
+}
+
 /* responsividade */
 @media (max-width: 900px) {
   .tutor-grid { grid-template-columns: 1fr; }
@@ -165,6 +249,18 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
   .row { flex-direction: column; align-items: stretch; }
   .row button { width: 100%; }
   .cards-da-letra { grid-template-columns: 1fr; }
+}
+.vet-card .tutor-grid div { word-break: break-word; }
+.vet-card h3 { margin-bottom: 8px; }
+.rodape { display:flex; justify-content:center; margin-top: 10px; }
+.rodape #salvarReceitaBtn { min-width: 240px; }
+
+/* Fazer o rodapé acompanhar a largura dos cards e ficar centralizado */
+.rodape {
+  width: 90%;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .input-group {
   display: flex;
@@ -355,4 +451,68 @@ select.input-busca { -webkit-appearance: none; appearance: none; width: 100%; }
     position: relative;
     z-index: 1; // conteúdo acima da marca d'água
   }
+}
+
+/* --- Guided tour styles --- */
+.tour-highlight {
+  position: fixed;
+  border: 2px solid rgba(26, 188, 156, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 18px rgba(26, 188, 156, 0.6);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Fullscreen signature */
+.fs-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 11000;
+}
+.fs-panel {
+  position: fixed; inset: 0; display:flex; flex-direction: row; z-index: 11001;
+  background: #0f1621;
+  max-width: 100vw; max-height: 100dvh; overflow: hidden;
+}
+.fs-canvas-wrap { flex: 1; padding: 10px; overflow: hidden; }
+.fs-canvas { width: 100%; height: 100%; max-width: 100%; max-height: 100%; background: #fff; border-radius: 8px; touch-action: none; display:block; }
+
+/* Lateral com botões girados */
+.fs-sidebar {
+  width: 64px;
+  background: #1f2a38;
+  border-left: 1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:center;
+}
+.fs-side-inner { display:flex; flex-direction: column; align-items:center; gap: 12px; transform: rotate(90deg); }
+.fs-title { font-weight: 700; color: #1abc9c; font-size: 14px; }
+.fs-actions { display:flex; gap: 8px; }
+.fs-sidebar .btn, .fs-sidebar .btn-sec { padding: 8px 12px; }
+
+@media (max-width: 768px) {
+  .fs-canvas-wrap { padding: 8px; }
+  .fs-sidebar { width: 56px; }
+  .rodape { padding: 0 12px 10px; }
+  .rodape #salvarReceitaBtn { width: 100%; font-size: 18px; padding: 14px 18px; }
+}
+.tour-popover {
+  position: fixed;
+  background: #1f2a38;
+  color: #ecf0f5;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.45);
+  z-index: 10001;
+}
+.tour-title { font-weight: 700; margin-bottom: 6px; color: #1abc9c; font-family: inherit; }
+.tour-text { font-size: 13px; color: #d6dee9; font-family: inherit; }
+.tour-actions { display:flex; gap: 10px; align-items:center; margin-top: 12px; }
+.tour-actions .spacer { flex: 1; }
+.tour-step-indicator { margin-top: 6px; font-size: 11px; color: #9aa3ad; }
+
+.tour-popover .tour-arrow { display:none; }
+.tour-scrim {
+  position: fixed;
+  inset: 0;
+  background: transparent; /* a atenuação vem da sombra do highlight */
+  z-index: 10000; /* acima do highlight para capturar cliques fora */
 }

@@ -1,11 +1,16 @@
 <div class="area-vet-wrapper">
   <app-navmenu></app-navmenu>
+    <div class="acoes-row" style="justify-content: end; padding-top: 5px;">
+    <button id="btnTutorialReceita" class="btn-help" type="button" (click)="startTour()" aria-label="Como funciona?">?</button>
+  </div>
   <h1 class="titulo">Gerar Receita</h1>
+
   <!-- CPF -->
   <div class="card receita-card">
     <h3>CPF do Tutor</h3>
     <div class="row">
       <input
+        id="cpfInput"
         type="text"
         name="cpf"
         [(ngModel)]="cpf"
@@ -14,13 +19,13 @@
         class="input-busca"
         (input)="onCpfInput()"
       />
-      <button class="btn" (click)="buscarTutor()" [disabled]="carregandoTutor">Buscar</button>
+      <button id="buscarBtn" class="btn" (click)="buscarTutor()" [disabled]="carregandoTutor">Buscar</button>
     </div>
     <p *ngIf="carregandoTutor" class="muted">Buscando tutor...</p>
   </div>
 
   <!-- Tutor encontrado -->
-  <div *ngIf="tutorEncontrado" class="card receita-card">
+  <div *ngIf="tutorEncontrado" class="card receita-card" id="dadosTutor">
     <h3>Dados do Tutor</h3>
     <div class="tutor-grid">
       <div><b>Nome:</b> {{ tutorEncontrado.nome }}</div>
@@ -32,27 +37,34 @@
 
     <!-- Pets -->
     <h4 class="subtitulo">Pets Cadastrados</h4>
-    <div class="cards-da-letra">
+  <div class="cards-da-letra" id="listaPets" *ngIf="tutorEncontrado.pets?.length; else semPets">
       <div
         *ngFor="let pet of tutorEncontrado.pets; trackBy: trackByPet"
         class="pet-card"
         [class.selected]="petSelecionado?.id === pet.id"
         (click)="selecionarPet(pet)"
       >
-        <div class="ativo-header">{{ pet.nome }} <small class="muted">({{ pet.sexo }})</small></div>
+        <div class="ativo-header">{{ pet.nome }} <small class="muted">({{ pet.sexo }})</small>
+          <span class="pet-status" *ngIf="isPetPendente(pet)">Pendente de aceitação</span>
+        </div>
         <div class="ativo-details">
           Idade: {{ pet.idade }} anos<br />
           Peso: {{ pet.peso }} kg<br />
           Raça: {{ pet.raca }}<br />
-          <div *ngIf="pet.alergias?.length" class="pet-allergies">
-            <strong>Alergias:</strong>
-            <span class="badge" *ngFor="let a of pet.alergias">{{ a }}</span>
+          <div *ngIf="pet.alergias?.length" class="alergias-wrapper">
+            <div class="alergias-label"><strong>Alergias:</strong></div>
+            <div class="ativos-badges">
+              <span class="badge" *ngFor="let a of pet.alergias">{{ a }}</span>
+            </div>
           </div>
-          <div *ngIf="!pet.alergias">Alergias: Nenhuma</div>
+          <div *ngIf="pet.alergias && !pet.alergias.length">Alergias: Nenhuma</div>
           Espécie: {{ pet.especie}}
         </div>
       </div>
     </div>
+    <ng-template #semPets>
+      <div class="muted">Nenhum pet encontrado para este tutor.</div>
+    </ng-template>
   </div>
 
   <!-- Cadastro manual do tutor -->
@@ -67,57 +79,58 @@
   </div>
 
 <!-- Novo Pet -->
-    <div class="card receita-card">
-    <h3>Dados do Pet (selecionado / manual)</h3>
+  <div class="card receita-card" id="dadosPet">
+    <h3>Dados do Pet</h3>
     <div class="grid-pet">
         <div class="input-group">
         <label>Nome do Pet</label>
-        <input [(ngModel)]="novosDadosPet.nome" placeholder="Nome do Pet" class="input-busca" />
+  <input [(ngModel)]="novosDadosPet.nome" (ngModelChange)="onPetFieldChange()" placeholder="Nome do Pet" class="input-busca" />
         </div>
 
         <div class="input-group">
         <label>Idade (anos)</label>
-        <input [(ngModel)]="novosDadosPet.idade" placeholder="Idade" type="number" class="input-busca" />
+  <input [(ngModel)]="novosDadosPet.idade" (ngModelChange)="onPetFieldChange()" placeholder="Idade" type="number" class="input-busca" />
         </div>
 
         <div class="input-group">
         <label>Peso (kg)</label>
-        <input [(ngModel)]="novosDadosPet.peso" placeholder="Peso" type="number" class="input-busca" />
+  <input [(ngModel)]="novosDadosPet.peso" (ngModelChange)="onPetFieldChange()" placeholder="Peso" type="number" class="input-busca" />
         </div>
 
         <div class="input-group">
         <label>Raça</label>
-        <input [(ngModel)]="novosDadosPet.raca" placeholder="Raça" class="input-busca" />
+  <input [(ngModel)]="novosDadosPet.raca" (ngModelChange)="onPetFieldChange()" placeholder="Raça" class="input-busca" />
         </div>
 
         <div class="input-group">
         <label>Espécie</label>
-        <input [(ngModel)]="novosDadosPet.especie" placeholder="Ex: Cachorro, Gato" class="input-busca" />
+  <input [(ngModel)]="novosDadosPet.especie" (ngModelChange)="onPetFieldChange()" placeholder="Ex: Cachorro, Gato" class="input-busca" />
         </div>
 
         <div class="input-group">
         <label>Sexo</label>
-        <select [(ngModel)]="novosDadosPet.sexo" class="input-busca">
+  <select [(ngModel)]="novosDadosPet.sexo" (ngModelChange)="onPetFieldChange()" class="input-busca">
             <option value="Macho">Macho</option>
             <option value="Fêmea">Fêmea</option>
         </select>
         </div>
 
         <div class="input-group">
-        <label>Alergias</label>
-        <div class="row" style="align-items: stretch; gap:8px; flex-wrap: wrap;">
-          <input [(ngModel)]="alergiaInput" placeholder="Ex: Pólen" class="input-busca" (keyup.enter)="addAlergiaChip()" />
-          <button class="btn" type="button" (click)="addAlergiaChip()">Adicionar</button>
-          <div class="ativos-badges" *ngIf="alergiasList().length" style="flex:1 1 100%">
-            <span class="badge" *ngFor="let a of alergiasList(); let i = index">
-              {{ a }}
-              <button class="badge-remove" type="button" (click)="removeAlergiaChip(i)">x</button>
+          <label>Alergias</label>
+          <div class="row" style="align-items: stretch; gap:8px; flex-wrap: wrap;">
+            <input id="alergiasVet" [(ngModel)]="alergiaBuscaVet" (input)="filtrarSugestoesVet()" placeholder="Busque e selecione..." class="input-busca" />
+          </div>
+          <div class="dropdown" *ngIf="showSugestoesVet">
+            <div class="option" *ngFor="let s of sugestoesVet" (click)="adicionarSugestaoVet(s)">{{ s.nome }}</div>
+          </div>
+          <div class="ativos-badges" *ngIf="alergiasSelecionadasVet.length">
+            <span class="badge" *ngFor="let sel of alergiasSelecionadasVet; let i = index">
+              {{ sel.nome }}
+              <button class="badge-remove" type="button" (click)="removerAlergiaVet(i)">x</button>
             </span>
           </div>
         </div>
-        </div>
     </div>
-
     </div>
 
 
@@ -128,12 +141,12 @@
   </div>
 
   <!-- Ativos -->
-  <div class="card receita-card">
+  <div class="card receita-card" id="ativosCard">
     <h3>Selecionar Ativos</h3>
     <div class="ativos-controls">
-      <input type="text" [(ngModel)]="ativosSearch" (ngModelChange)="onAtivosSearchChange()" placeholder="Pesquisar ativo..." class="input-busca" />
+      <input id="ativosSearch" type="text" [(ngModel)]="ativosSearch" (ngModelChange)="onAtivosSearchChange()" placeholder="Pesquisar ativo..." class="input-busca" />
       <div class="muted small">Total: {{ ativos.length }}</div>
-      <button class="btn-toggle" (click)="toggleTodosAtivos()">{{ ativosColapsados ? 'Exibir medicamentos' : 'Ocultar medicamentos' }}</button>
+      <button id="btnExibirTodosAtivos" class="btn-toggle" (click)="toggleTodosAtivos()">{{ showAllAtivos ? 'Ocultar medicamentos' : 'Exibir todos' }}</button>
     </div>
 
     <div class="ativos-badges" *ngIf="ativosSelecionados.length">
@@ -142,8 +155,9 @@
         <button class="badge-remove" (click)="toggleAtivo(id)">x</button>
       </span>
     </div>
+    <div class="muted small" *ngIf="alerta_alergia">Alerta de alergia confirmado para pelo menos um ativo selecionado.</div>
 
-    <div *ngFor="let grupo of alfabetico">
+  <div id="listaAtivos" *ngFor="let grupo of alfabetico">
       <div *ngIf="!isGrupoColapsado(grupo.letra)">
         <div class="grupo-header" (click)="toggleGrupo(grupo.letra)">
           <h4 class="indice-letra">{{ grupo.letra }}</h4>
@@ -157,10 +171,10 @@
             [class.selected]="ativosSelecionados.includes(ativo.id)"
           >
             <div class="ativo-header">
-              {{ ativo.nome }} <span *ngIf="ativosSelecionados.includes(ativo.id)">✅</span>
+              <span [innerHTML]="highlight(ativo.nome)"></span> <span *ngIf="ativosSelecionados.includes(ativo.id)">✅</span>
             </div>
             <div class="ativo-details">
-              {{ ativo.descricao }}<br />
+              <span [innerHTML]="highlight(ativo.descricao)"></span><br />
               <b>Dose cães:</b> {{ ativo.doseCaes }}<br />
               <b>Dose gatos:</b> {{ ativo.doseGatos }}
             </div>
@@ -171,10 +185,10 @@
   </div>
 
   <!-- Assinatura -->
-  <div class="card receita-card">
+  <div class="card receita-card" id="assinaturaSec">
     <h3>Assinatura</h3>
     <div class="assinatura-row">
-      <div *ngIf="veterinario" class="card receita-card">
+      <div *ngIf="veterinario" class="card receita-card vet-card">
         <h3>Dados do Veterinário</h3>
         <div class="tutor-grid">
           <div><b>Nome:</b> {{ veterinario.nome }}</div>
@@ -185,8 +199,14 @@
         </div>
       </div>
       <div class="assinatura-col">
-        <label>Desenhar assinatura</label>
-        <div class="canvas-wrap">
+        <div class="row" style="justify-content: space-between; align-items: center; gap: 12px;">
+          <label>Desenhar assinatura</label>
+          <button type="button" class="btn-toggle" (click)="toggleSignatureCanvas()">
+            {{ showSignatureCanvas ? 'Ocultar' : 'Mostrar' }}
+          </button>
+          <button *ngIf="isMobile" type="button" class="btn-ghost" (click)="abrirAssinaturaFullscreen()">Tela cheia</button>
+        </div>
+        <div class="canvas-wrap" *ngIf="showSignatureCanvas">
           <canvas *ngIf="isBrowser"
             #canvas
             class="assinatura-canvas"
@@ -199,7 +219,7 @@
             (pointercancel)="canvasPointerUp()"
           ></canvas>
         </div>
-        <div class="assinatura-actions">
+        <div class="assinatura-actions" *ngIf="showSignatureCanvas">
           <button class="btn" (click)="limparAssinaturaCanvas()">Limpar</button>
         </div>
 
@@ -211,9 +231,34 @@
 
   <!-- Salvar -->
   <div class="rodape">
-    <button class="btn" (click)="salvarReceita()">Salvar Receita</button>
-    
-    <button class="btn" (click)="gerarPdf()">Gerar PDF</button>
+    <button id="salvarReceitaBtn" class="btn" (click)="salvarReceita()">Salvar Receita</button>
+  </div>
+
+  <!-- Modal: Escolha de ação para edição do pet -->
+  <div class="modal-backdrop" *ngIf="showPetEditModal" (click)="fecharModalEditarPet()"></div>
+  <div class="modal-card" *ngIf="showPetEditModal" (click)="$event.stopPropagation()">
+    <h3>Como deseja salvar as alterações do pet?</h3>
+     <div class="modal-actions">
+      <button class="btn" (click)="onEscolhaEdicaoPet('novo')">Cadastrar novo pet</button>
+      <button class="btn" (click)="onEscolhaEdicaoPet('editar')" [disabled]="!petSelecionado?.id">Editar pet existente</button>
+      <button class="btn-sec" (click)="onEscolhaEdicaoPet('cancelar')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Modal: Alerta de alergia ao incluir ativo -->
+  <div class="modal-backdrop" *ngIf="showAlergiaModal" (click)="cancelarAlergiaAtivo()"></div>
+  <div class="modal-card modal-alert" *ngIf="showAlergiaModal" (click)="$event.stopPropagation()">
+    <div class="alert-row">
+      <div class="alert-icon">!</div>
+      <div>
+        <h3>Esse pet é alérgico a esse medicamento.</h3>
+        <p class="muted">Tem certeza que deseja incluir o ativo mesmo assim?</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" (click)="confirmarAlergiaAtivo()">Incluir mesmo assim</button>
+      <button class="btn-sec" (click)="cancelarAlergiaAtivo()">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -307,6 +352,51 @@
     <img src="imagens/image.png" alt="" class="pdf-logo-footer">
     <p>Documento gerado digitalmente - Fórmula Pet</p>
   </footer>
+</div>
+
+<!-- Assinatura em Tela Cheia -->
+<div class="fs-backdrop" *ngIf="showSignatureFullscreen && isMobile" (click)="cancelarAssinaturaFullscreen()"></div>
+<div class="fs-panel" *ngIf="showSignatureFullscreen && isMobile" (click)="$event.stopPropagation()">
+  <div class="fs-canvas-wrap">
+    <canvas *ngIf="isBrowser"
+      #fsCanvas
+      class="fs-canvas"
+      (pointerdown)="fsPointerDown($event)"
+      (pointermove)="fsPointerMove($event)"
+      (pointerup)="fsPointerUp()"
+      (pointerleave)="fsPointerUp()"
+      (pointercancel)="fsPointerUp()"
+    ></canvas>
+  </div>
+  <div class="fs-sidebar">
+    <div class="fs-side-inner">
+      <div class="fs-actions">
+        <button class="btn-sec" (click)="limparFsCanvas()">Limpar</button>
+        <button class="btn-sec" (click)="cancelarAssinaturaFullscreen()">Cancelar</button>
+        <button class="btn btn-rotate" (click)="confirmarAssinaturaFullscreen()">
+          <span class="rotate-label">Concluir</span>
+          <span class="rotate-indicator" aria-hidden="true">↻</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Guided Tour overlays -->
+<div *ngIf="showTour" class="tour-highlight" [ngStyle]="tourHighlightStyle"></div>
+<!-- Scrim blocks interactions but does not close the tour on outside click -->
+<div *ngIf="showTour" class="tour-scrim" (click)="$event.stopPropagation()"></div>
+<div *ngIf="showTour" class="tour-popover" [ngStyle]="tourPopoverStyle" (click)="$event.stopPropagation()">
+  <div class="tour-title">{{ tourSteps[tourIndex]?.title }}</div>
+  <div class="tour-text">{{ tourSteps[tourIndex]?.text }}</div>
+  <div class="tour-actions">
+    <button type="button" class="btn-sec" (click)="prevTour()" [disabled]="tourIndex===0">Voltar</button>
+    <div class="spacer"></div>
+    <button type="button" class="btn-sec" (click)="endTour()">Fechar</button>
+    <button type="button" class="btn" (click)="nextTour()">{{ tourIndex === tourSteps.length - 1 ? 'Concluir' : 'Próximo' }}</button>
+  </div>
+  <div class="tour-step-indicator">Passo {{ tourIndex + 1 }} de {{ tourSteps.length }}</div>
+  <div class="tour-arrow"></div>
 </div>
 
 

@@ -44,15 +44,17 @@
       </div>
 
       <div class="field">
-        <label>Alergias</label>
+        <label>Alergias (pré-definidas)</label>
         <div class="alergias-row">
-          <input type="text" [(ngModel)]="alergiaInput" placeholder="Ex: Pólen" (keyup.enter)="addAlergia()" />
-          <button type="button" class="btn" (click)="addAlergia()">+</button>
+          <input type="text" [(ngModel)]="alergiaBusca" (input)="filtrarSugestoes()" placeholder="Busque e selecione..." />
         </div>
-        <div class="alergias-badges" *ngIf="alergias.length">
-          <span class="chip" *ngFor="let a of alergias; let i = index">
-            {{ a }}
-            <button type="button" class="x" (click)="removeAlergia(i)">x</button>
+        <div class="dropdown" *ngIf="showSugestoes">
+          <div class="option" *ngFor="let s of sugestoes" (click)="adicionarSugestao(s)">{{ s.nome }}</div>
+        </div>
+        <div class="ativos-badges" *ngIf="alergiasSelecionadas.length">
+          <span class="badge" *ngFor="let sel of alergiasSelecionadas; let i = index">
+            {{ sel.nome }}
+            <button type="button" class="badge-remove" (click)="alergiasSelecionadas.splice(i,1)">x</button>
           </span>
         </div>
       </div>

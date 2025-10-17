@@ -1,7 +1,7 @@
 .novo-pet-wrapper{ min-height:100vh; background: linear-gradient(135deg, #0d151f, #1a2230); color:#ecf0f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; padding: 72px 0 40px }
 .novo-pet-wrapper *, .novo-pet-wrapper *::before, .novo-pet-wrapper *::after{ box-sizing: border-box }
 .container{ max-width:1080px; margin:0 auto; padding:0 16px }
-.titulo{ font-size:34px; font-weight:700; color:var(--primary); margin: 8px 0 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5) }
+.titulo{ font-size:36px; font-weight:700; color:var(--primary); margin: 8px 0 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5); font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif }
 .form-card{ background:#182439; border-radius:12px; padding:16px; box-shadow:0 6px 12px rgba(0,0,0,.35) }
 .grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px }
 .field label{ display:block; font-weight:600; margin-bottom:6px }
@@ -15,9 +15,15 @@
 .btn-sec{ background:#2a364a; color:#fff; border:1px solid rgba(255,255,255,.08) }
 .alergias-row{ display:flex; gap:8px; align-items:center; margin-top:6px }
 .alergias-row input{ flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:#142033; color:#ecf0f5 }
-.alergias-badges{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px }
-.chip{ display:inline-flex; align-items:center; gap:6px; background:#ffe6e6; color:#8a1f1f; border:1px solid #ffcccc; padding:4px 8px; border-radius:999px; font-size:12px }
-.chip .x{ background:transparent; border:none; color:#8a1f1f; cursor:pointer; font-weight:700 }
+.ativos-badges{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px }
+.badge{ background:#1abc9c; color:#fff; padding:4px 10px; border-radius:8px; display:flex; align-items:center; gap:6px; font-size:13px }
+.badge-remove{ background:transparent; border:none; color:#fff; cursor:pointer }
+
+/* Search-select dropdown */
+.dropdown{ margin-top:6px; background:#0f1828; border:1px solid rgba(255,255,255,.08); border-radius:10px; max-height:220px; overflow:auto }
+.option{ padding:8px 10px; cursor:pointer; color:#dbe6fb }
+.option:hover{ background:#162437 }
+.option.outra{ color:#bde7ff }
 
 @media (max-width:560px){
   .grid{ grid-template-columns: 1fr }

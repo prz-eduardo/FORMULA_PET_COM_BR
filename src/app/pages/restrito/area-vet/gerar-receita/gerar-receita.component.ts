@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef, NgZone, AfterViewInit } from 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
-import { ApiService } from '../../../../services/api.service';
+import { ApiService, AlergiaLookup } from '../../../../services/api.service';
 import { ToastService } from '../../../../services/toast.service';
 import { debounce, slice } from 'lodash-es';
 import jsPDF from 'jspdf';
@@ -12,6 +12,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Inject, PLATFORM_ID } from '@angular/core'
 import { ChangeDetectorRef } from '@angular/core'
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 
 
@@ -35,6 +36,7 @@ interface Pet {
   raca: string;
   sexo: 'Macho' | 'Fêmea';
   alergias?: string[];
+  alergias_predefinidas?: Array<{ nome: string; alergia_id: number | null; ativo_id: number | null; observacoes?: string | null }>;
 }
 
 interface Ativo {
@@ -72,6 +74,7 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
 
   petSelecionado: Pet | null = null;
   novosDadosPet: Pet = { nome: '', idade: 0, peso: 0, raca: '', sexo: 'Macho', alergias: [], especie:'' };
+  private originalPetSnapshot: Pet | null = null;
   observacoes = '';
   veterinario: any;
 isBrowser: any;
@@ -82,26 +85,81 @@ isBrowser: any;
   ativosSearch = '';
   carregandoAtivos = false;
   gruposColapsados = new Set<string>();
+  showAllAtivos = false;
+  private highlightTerm = '';
+  // Sinaliza se houve confirmação de inclusão de ativo com alergia
+  alerta_alergia = false;
+  // Modal de alerta de alergia
+  showAlergiaModal = false;
+  private pendingAtivoId: string | null = null;
 
   assinaturaManual = '';
   assinaturaCursiva = '';
   assinaturaICP = '';
   @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('fsCanvas') fsCanvasRef!: ElementRef<HTMLCanvasElement>;
   private ctx?: CanvasRenderingContext2D | null;
+  private fsCtx?: CanvasRenderingContext2D | null;
+  private fsSnapshotUrl: string | null = null;
   private isDrawing = false;
   private lastX = 0;
   private lastY = 0;
+  // Show/hide controle para o canvas de assinatura
+  showSignatureCanvas = false;
+  showSignatureFullscreen = false;
+  isMobile = false;
   alergiaInput: string = '';
+
+  // Guided Tour (balões flutuantes)
+  showTour = false;
+  tourIndex = 0;
+  tourPopoverStyle: any = {};
+  tourHighlightStyle: any = {};
+  tourSteps: Array<{ id: string; title: string; text: string; position?: 'top'|'right'|'bottom'|'left' }>= [
+    { id: 'cpfInput', title: 'CPF do Tutor', text: 'Digite o CPF do tutor e clique em Buscar para carregar os dados.', position: 'bottom' },
+    { id: 'buscarBtn', title: 'Buscar Tutor', text: 'Use este botão para buscar o tutor pelo CPF informado.', position: 'right' },
+    { id: 'dadosTutor', title: 'Dados do Tutor', text: 'Aqui aparecem os dados do tutor quando encontrados.', position: 'bottom' },
+    { id: 'listaPets', title: 'Pets do Tutor', text: 'Selecione um pet existente para preencher os dados automaticamente.', position: 'bottom' },
+    { id: 'dadosPet', title: 'Dados do Pet', text: 'Edite os dados do pet ou cadastre um novo preenchendo estes campos.', position: 'bottom' },
+    { id: 'alergiasVet', title: 'Alergias do Pet', text: 'Busque e selecione alergias pré-definidas para este pet.', position: 'bottom' },
+    { id: 'ativosCard', title: 'Selecionar Ativos', text: 'Pesquise e selecione os medicamentos (ativos) para a receita.', position: 'top' },
+    { id: 'btnExibirTodosAtivos', title: 'Listar medicamentos', text: 'Você pode exibir todos os medicamentos ou pesquisar por nome.', position: 'left' },
+    { id: 'assinaturaSec', title: 'Assinatura', text: 'Desenhe a assinatura do(a) veterinário(a) para constar na receita.', position: 'top' },
+    { id: 'salvarReceitaBtn', title: 'Salvar Receita', text: 'Por fim, clique aqui para salvar a receita com os dados preenchidos.', position: 'top' },
+  ];
 
   carregandoTutor = false;
   private debouncedFiltrarAtivos: () => void;
+  // Scroll lock state for guided tour
+  private bodyScrollY = 0;
+  // Handlers to prevent user-initiated scrolling while allowing programmatic scrollIntoView
+  private _preventScroll = (ev: Event) => { try { ev.preventDefault(); } catch {} };
+  private _preventKeyScroll = (ev: KeyboardEvent) => {
+    const keys = new Set([' ', 'Spacebar', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown']);
+    if (keys.has(ev.key)) { try { ev.preventDefault(); } catch {} }
+  };
+  // Item predefinido "Outras" para mapeamento de legados
+  private outraPredefinida: AlergiaLookup | null = null;
+  // Vet-side alergias search-select state
+  alergiaBuscaVet: string = '';
+  sugestoesVet: AlergiaLookup[] = [];
+  showSugestoesVet = false;
+  alergiasSelecionadasVet: AlergiaLookup[] = [];
+
+  // Controle de cliente/pet
+  clienteIdSelecionado: number | null = null;
+  showPetEditModal = false;
+  petSavePlan: 'novo' | 'editar' | null = null;
+  // Exibe o modal de decisão apenas uma vez por sessão de edição/seleção
+  private petEditPromptShown = false;
 
   constructor(
     private apiService: ApiService,
     private toastService: ToastService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
-    @Inject(PLATFORM_ID) private platformId: Object
+  @Inject(PLATFORM_ID) private platformId: Object,
+  private sanitizer: DomSanitizer
     ) {
     this.debouncedFiltrarAtivos = debounce(this.filtrarAtivos.bind(this), 250);
   }
@@ -109,9 +167,18 @@ isBrowser: any;
   ngOnInit(): void { 
     this.isBrowser = isPlatformBrowser(this.platformId);
     if (isPlatformBrowser(this.platformId)) {
+      // Detecta mobile por largura (heurística simples) logo no início
+      this.isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+      // Atualiza em redimensionamento
+      window.addEventListener('resize', this._onResizeUpdateMobile);
       this.loadAtivos();
       this.carregarVeterinario();
     }
+  }
+
+  private _onResizeUpdateMobile = () => {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
   }
 
   async carregarVeterinario() {
@@ -164,29 +231,36 @@ isBrowser: any;
       }
 
       // Buscar cliente e pets no backend
-      const response = await this.apiService.buscarClienteComPets(cpfLimpo, token).toPromise();
+  const response = await this.apiService.buscarClienteComPets(cpfLimpo, token).toPromise();
       
       if (response && response.cliente) {
         this.ngZone.run(() => {
+          const enderecoStr = this.formatarEndereco(response.endereco ?? response.cliente?.endereco);
           // Mapear os dados do backend para o formato esperado
           this.tutorEncontrado = {
             nome: response.cliente.nome || '',
             cpf: this.formatarCpf(response.cliente.cpf) || this.cpf,
             telefone: response.cliente.telefone || '',
             email: response.cliente.email || '',
-            endereco: response.cliente.endereco || '',
+            endereco: enderecoStr,
             pets: (response.pets || []).map((pet: any) => ({
               id: pet.id?.toString() || '',
               nome: pet.nome || '',
-              especie: pet.especie || '',
-              idade: pet.idade || 0,
-              peso: pet.peso || 0,
+              especie: pet.especie || pet.tipo || '',
+              idade: this.normalizeIdade(pet),
+              peso: this.normalizePeso(pet),
               raca: pet.raca || '',
               sexo: pet.sexo || 'Macho',
-              alergias: pet.alergias || []
+              alergias: this.extractAlergiasToStrings(pet),
+              alergias_predefinidas: Array.isArray(pet.alergias_predefinidas) ? pet.alergias_predefinidas : []
             }))
           };
+          this.clienteIdSelecionado = Number(response.cliente.id) || null;
         });
+        // Fallback: também preenche o campo de endereço do cadastro manual
+  const teAddr = (this.tutorEncontrado as Tutor | null)?.endereco || '';
+  this.novoTutor.endereco = teAddr;
+        // Não auto-seleciona pet; usuário escolhe manualmente
         this.toastService.success(`Cliente ${response.cliente.nome} encontrado com sucesso!`, 'Sucesso');
         this.cdr.detectChanges();
       } else {
@@ -224,9 +298,178 @@ isBrowser: any;
     return cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   }
 
+  // Método auxiliar para formatar endereço vindo do backend
+  private formatarEndereco(end: any): string {
+    if (!end) return '';
+    if (typeof end === 'string') return end;
+    // objeto: montar com as partes disponíveis (hífen entre blocos)
+    const p: string[] = [];
+    const log = end.logradouro || '';
+    const num = end.numero ? `${end.numero}` : '';
+    const comp = end.complemento || '';
+    const bairro = end.bairro || '';
+    const cidade = end.cidade || '';
+    const uf = (end.estado || end.uf || '') ? String(end.estado || end.uf).toUpperCase() : '';
+    const cep = end.cep ? `CEP: ${String(end.cep)}` : '';
+
+    const linha1 = [log, num].filter(Boolean).join(', ');
+    if (linha1) p.push(linha1);
+    if (comp) p.push(comp);
+    if (bairro) p.push(bairro);
+    const cidadeUf = [cidade, uf].filter(Boolean).join(' - ');
+    if (cidadeUf) p.push(cidadeUf);
+    if (cep) p.push(cep);
+    return p.join(' - ');
+  }
+
+  // Normalizadores de dados de pets (peso/idade/alergias)
+  private normalizePeso(pet: any): number {
+    const v = pet?.pesoKg ?? pet?.peso_kg ?? pet?.peso;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private normalizeIdade(pet: any): number {
+    const v = pet?.idade ?? pet?.idadeAnos ?? pet?.idade_anos;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private normalizeAlergias(al: any): string[] {
+    // Legacy helper: keeps ability to parse a plain field into string[] if needed
+    if (!al) return [];
+    if (Array.isArray(al)) {
+      // could be array of strings or array of objects
+      return al
+        .map((x: any) => typeof x === 'object' && x && 'nome' in x ? String(x.nome) : String(x))
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+    const s = String(al).trim();
+    if (!s) return [];
+    return s.includes(',') ? s.split(',').map(x => x.trim()).filter(Boolean) : [s];
+  }
+
+  private extractAlergiasToStrings(pet: any): string[] {
+    // Prefer predefined array when present
+    const pre = pet?.alergias_predefinidas;
+    if (Array.isArray(pre) && pre.length) {
+      return pre
+        .map((x: any) => (x && typeof x === 'object' ? x.nome : x))
+        .map((s: any) => String(s).trim())
+        .filter(Boolean);
+    }
+    // Fallback to legacy field
+    return this.normalizeAlergias(pet?.alergias);
+  }
+
+  isPetPendente(p: any): boolean {
+    return p && (p.statusTutor === 'pendente' || p.cadastradoPorVet === true);
+  }
+
+  // --- Fluxo de salvar alterações do pet ---
+  hasPetChanges(): boolean {
+    if (!this.originalPetSnapshot) return false;
+    const a = this.originalPetSnapshot;
+    const b = this.novosDadosPet;
+    const sameArr = (x?: string[], y?: string[]) => JSON.stringify((x||[]).slice().sort()) === JSON.stringify((y||[]).slice().sort());
+    return (
+      a.nome !== b.nome ||
+      a.especie !== b.especie ||
+      a.idade !== b.idade ||
+      a.peso !== b.peso ||
+      a.raca !== b.raca ||
+      a.sexo !== b.sexo ||
+      !sameArr(a.alergias, b.alergias)
+    );
+  }
+
+  onPetFieldChange(){
+    if (!this.petEditPromptShown && this.hasPetChanges()) {
+      this.showPetEditModal = true;
+      this.petEditPromptShown = true;
+    }
+  }
+
+  abrirModalEditarPet(){
+    if (!this.petSelecionado) return;
+    if (!this.hasPetChanges()) { this.toastService.info('Nenhuma alteração no pet para salvar.'); return; }
+    this.showPetEditModal = true;
+  }
+
+  fecharModalEditarPet(){ this.showPetEditModal = false; this.petEditPromptShown = true; }
+
+  cancelarAlteracoesPet(){
+    if (this.originalPetSnapshot) {
+      this.novosDadosPet = JSON.parse(JSON.stringify(this.originalPetSnapshot));
+    }
+    this.showPetEditModal = false;
+    // Como voltamos ao estado original, uma próxima edição deve reabrir o modal na primeira mudança
+    this.petEditPromptShown = false;
+  }
+
+  async onEscolhaEdicaoPet(acao: 'novo'|'editar'|'cancelar'){
+    if (acao === 'cancelar') { this.showPetEditModal = false; return; }
+    // Apenas marca o plano; não chama a API agora
+    if (acao === 'novo') this.petSavePlan = 'novo';
+    if (acao === 'editar') this.petSavePlan = 'editar';
+    this.toastService.info('As alterações do pet serão salvas ao salvar a receita.');
+    this.showPetEditModal = false;
+    this.cdr.detectChanges();
+  }
+
+  private buildPetFormData(pet: Pet, cadastradoPorVet: boolean){
+    const fd = new FormData();
+    fd.append('nome', pet.nome || '');
+    fd.append('especie', pet.especie || '');
+    fd.append('raca', pet.raca || '');
+    fd.append('sexo', pet.sexo || 'Macho');
+    fd.append('idade', String(pet.idade ?? 0));
+    // backend espera pesoKg
+    fd.append('pesoKg', String(pet.peso ?? 0));
+    // Flags para identificar operação iniciada pelo veterinário
+    fd.append('salvamento_pet_pelo_vet', 'true');
+    if (this.clienteIdSelecionado != null) {
+      fd.append('tutor_id', String(this.clienteIdSelecionado));
+    }
+    if (this.veterinario?.id) {
+      fd.append('salvo_vet_id', String(this.veterinario.id));
+    }
+    // Tutor ainda não aceitou estas alterações
+    fd.append('aceito_tutor', '0');
+    // alergias_predefinidas será anexado no momento da chamada (create/update), após resolver as strings
+    // Flags de controle para o backend implementar aceitação do tutor
+    fd.append('cadastradoPorVet', String(!!cadastradoPorVet));
+    if (cadastradoPorVet) {
+      fd.append('statusTutor', 'pendente');
+    } else {
+      // Edição feita pelo vet
+      fd.append('editadoPorVet', 'true');
+      fd.append('statusTutor', 'pendente');
+    }
+    return fd;
+  }
+
   selecionarPet(pet: Pet) {
     this.petSelecionado = pet;
-    this.novosDadosPet = { ...pet, alergias: [...(pet.alergias || [])] };
+    // guarda snapshot para poder cancelar
+    this.originalPetSnapshot = JSON.parse(JSON.stringify(pet));
+    this.novosDadosPet = JSON.parse(JSON.stringify(pet));
+    // Inicializa o search-select com as predefinidas atuais do pet (se houver)
+    this.alergiasSelecionadasVet = Array.isArray(pet.alergias_predefinidas)
+      ? pet.alergias_predefinidas.map((x: any) => ({
+          nome: String(x?.nome ?? '').trim(),
+          alergia_id: x?.alergia_id ?? null,
+          ativo_id: x?.ativo_id ?? null
+        }))
+        .filter(x => x.nome)
+      : [];
+    // Mantém a lista de nomes em sincronismo para exibição rápida
+    this.novosDadosPet.alergias = this.alergiasSelecionadasVet.map(x => x.nome);
+    // Nova sessão de edição para este pet: permitir que o modal apareça na primeira mudança
+    this.petEditPromptShown = false;
+    // Resetar plano pendente ao trocar de pet
+    this.petSavePlan = null;
   }
 
   async loadAtivos() {
@@ -240,7 +483,11 @@ isBrowser: any;
         { id: '2', nome: 'Ivermectina', descricao: 'Antiparasitário', doseCaes: '0,2mg/kg', doseGatos: '—' },
         { id: '3', nome: 'Doxiciclina', descricao: 'Antibiótico', doseCaes: '5mg/kg', doseGatos: '5mg/kg' }
       ];
-    } finally { this.organizarAtivos(); this.carregandoAtivos = false; }
+    } finally {
+      // Respeita a regra: lista oculta até pesquisar, a menos que o usuário opte por exibir todos
+      this.filtrarAtivos();
+      this.carregandoAtivos = false;
+    }
   }
 
   organizarAtivos() {
@@ -256,7 +503,14 @@ isBrowser: any;
 
   filtrarAtivos() {
     const termo = this.ativosSearch.trim().toLowerCase();
-    if (!termo) return this.organizarAtivos();
+    this.highlightTerm = termo;
+    if (!termo) {
+      if (!this.showAllAtivos) {
+        this.alfabetico = [];
+        return;
+      }
+      return this.organizarAtivos();
+    }
     const res = this.ativos.filter(a => a.nome.toLowerCase().includes(termo) || a.descricao.toLowerCase().includes(termo));
     const grupos: Record<string, Ativo[]> = {};
     res.forEach(a => {
@@ -273,33 +527,210 @@ isBrowser: any;
   isGrupoColapsado(letra: string) { return this.gruposColapsados.has(letra); }
 
   toggleTodosAtivos() {
-    if (this.ativosColapsados) { this.gruposColapsados.clear(); this.ativosColapsados = false; }
-    else { this.alfabetico.forEach(g => this.gruposColapsados.add(g.letra)); this.ativosColapsados = true; }
+    this.showAllAtivos = !this.showAllAtivos;
+    if (this.showAllAtivos) {
+      this.organizarAtivos();
+    } else {
+      if (!this.ativosSearch.trim()) this.alfabetico = [];
+    }
   }
 
   toggleAtivo(id: string) {
-    this.ativosSelecionados.includes(id)
-      ? this.ativosSelecionados = this.ativosSelecionados.filter(x => x !== id)
-      : this.ativosSelecionados.push(id);
+    const jaSelecionado = this.ativosSelecionados.includes(id);
+    if (jaSelecionado) {
+      this.ativosSelecionados = this.ativosSelecionados.filter(x => x !== id);
+      return;
+    }
+    // Se não está selecionado, verifica alergias do pet
+    if (this.isAtivoAlergenoParaPet(id)) {
+      // Abre modal in-page para confirmar inclusão
+      this.pendingAtivoId = id;
+      this.showAlergiaModal = true;
+      return;
+    }
+    this.ativosSelecionados.push(id);
   }
 
   trackByPet(index: number, pet: Pet) { return pet.id ?? pet.nome ?? `${index}`; }
   trackByAtivo(index: number, ativo: Ativo) { return ativo.id; }
 
   ngAfterViewInit() { 
-    if (isPlatformBrowser(this.platformId)) {
+    if (isPlatformBrowser(this.platformId) && this.showSignatureCanvas) {
       this.initCanvas();
     }
   }
 
+  // --- Guided Tour methods ---
+  startTour() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.showTour = true;
+    this.tourIndex = 0;
+    // Bind listeners to keep popover aligned
+    window.addEventListener('resize', this._onRescroll);
+    window.addEventListener('scroll', this._onRescroll, true);
+    // Kick off layout after a tick
+    setTimeout(() => { this._focusCurrentStep(); this._lockScroll(); });
+  }
+
+  nextTour() {
+    if (!this.showTour) return;
+    const i = this.tourIndex + 1;
+    if (i >= this.tourSteps.length) { this.endTour(); return; }
+    this.tourIndex = i;
+    this._focusCurrentStep();
+  }
+
+  prevTour() {
+    if (!this.showTour) return;
+    const i = this.tourIndex - 1;
+    this.tourIndex = Math.max(0, i);
+    this._focusCurrentStep();
+  }
+
+  endTour() {
+    this.showTour = false;
+    this.tourIndex = 0;
+    this.tourPopoverStyle = {};
+    this.tourHighlightStyle = {};
+    window.removeEventListener('resize', this._onRescroll);
+    window.removeEventListener('scroll', this._onRescroll, true);
+    this._unlockScroll();
+  }
+
+  private _onRescroll = () => {
+    if (!this.showTour) return;
+    this._positionCurrentStep(false);
+  }
+
+  private _focusCurrentStep() {
+    const step = this.tourSteps[this.tourIndex];
+    if (!step) return;
+    const el = document.getElementById(step.id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+    setTimeout(() => this._positionCurrentStep(!!el), 250);
+  }
+
+  private _positionCurrentStep(withHighlight: boolean) {
+    const step = this.tourSteps[this.tourIndex];
+    if (!step) return;
+    const el = document.getElementById(step.id);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const maxWidth = Math.min(340, vw - 24);
+    if (!el) {
+      // Fallback: centraliza o popover e esconde o highlight
+      this.tourHighlightStyle = { display: 'none' } as any;
+      // Tenta medir o tamanho real do popover para centralizar exatamente em mobile
+      const pop = document.querySelector('.tour-popover') as HTMLElement | null;
+      const popW = Math.min(pop?.offsetWidth || maxWidth, maxWidth);
+      const popH = pop?.offsetHeight || 180;
+      const left = Math.max(12, Math.round((vw - popW) / 2));
+      const top = Math.max(12, Math.round((vh - popH) / 2));
+      this.tourPopoverStyle = { top: `${top}px`, left: `${left}px`, maxWidth: `${maxWidth}px` };
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    const margin = 6;
+    // Highlight box (position: fixed)
+    if (withHighlight) {
+      this.tourHighlightStyle = {
+        top: `${Math.max(8, rect.top - margin)}px`,
+        left: `${Math.max(8, rect.left - margin)}px`,
+        width: `${Math.max(0, rect.width + margin * 2)}px`,
+        height: `${Math.max(0, rect.height + margin * 2)}px`,
+      };
+    }
+
+    // Popover placement with viewport fit
+    const pop = document.querySelector('.tour-popover') as HTMLElement | null;
+    const popW = Math.min(pop?.offsetWidth || maxWidth, maxWidth);
+    const popH = pop?.offsetHeight || 180;
+    const gap = 10;
+    const marginOuter = 12;
+    const prefer = step.position || 'bottom';
+    const orders: Record<string, Array<'bottom'|'top'|'right'|'left'>> = {
+      bottom: ['bottom', 'top', 'right', 'left'],
+      top: ['top', 'bottom', 'right', 'left'],
+      right: ['right', 'bottom', 'top', 'left'],
+      left: ['left', 'bottom', 'top', 'right']
+    };
+  const tryOrder = orders[prefer] || orders['bottom'];
+
+    let finalTop = 0;
+    let finalLeft = 0;
+    let placed = false;
+
+    for (const pos of tryOrder) {
+      let top = 0, left = 0;
+      if (pos === 'bottom') { top = rect.bottom + gap; left = rect.left; }
+      if (pos === 'top') { top = rect.top - gap - popH; left = rect.left; }
+      if (pos === 'right') { top = rect.top; left = rect.right + gap; }
+      if (pos === 'left') { top = rect.top; left = rect.left - gap - popW; }
+
+      // Clamp horizontally within viewport margins
+      left = Math.min(Math.max(marginOuter, left), vw - popW - marginOuter);
+      // Clamp vertically within viewport margins
+      top = Math.min(Math.max(marginOuter, top), vh - popH - marginOuter);
+
+      // Check fit
+      const fitsH = left >= marginOuter && left + popW <= vw - marginOuter;
+      const fitsV = top >= marginOuter && top + popH <= vh - marginOuter;
+      if (fitsH && fitsV) {
+        finalTop = top; finalLeft = left; placed = true; break;
+      }
+    }
+
+    if (!placed) {
+      // As a last resort, anchor below and clamp
+      finalLeft = Math.min(Math.max(marginOuter, rect.left), vw - popW - marginOuter);
+      finalTop = Math.min(Math.max(marginOuter, rect.bottom + gap), vh - popH - marginOuter);
+    }
+
+    this.tourPopoverStyle = {
+      top: `${finalTop}px`,
+      left: `${finalLeft}px`,
+      maxWidth: `${maxWidth}px`,
+    };
+  }
+
+  private _lockScroll() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      // Prevent user-initiated scrolling (wheel/touch/keys) but allow programmatic scrollIntoView
+      document.addEventListener('wheel', this._preventScroll, { passive: false, capture: true } as any);
+      document.addEventListener('touchmove', this._preventScroll, { passive: false, capture: true } as any);
+      document.addEventListener('keydown', this._preventKeyScroll, { passive: false, capture: true } as any);
+    } catch {}
+  }
+
+  private _unlockScroll() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      document.removeEventListener('wheel', this._preventScroll, true);
+      document.removeEventListener('touchmove', this._preventScroll, true);
+      document.removeEventListener('keydown', this._preventKeyScroll, true);
+    } catch {}
+  }
+
   initCanvas() {
     if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.canvasRef || !this.canvasRef.nativeElement) return;
     const canvas = this.canvasRef.nativeElement;
     this.ctx = canvas.getContext('2d');
     const ratio = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * ratio;
     canvas.height = canvas.clientHeight * ratio;
     if (this.ctx) { this.ctx.scale(ratio, ratio); this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.lineWidth = 2.4; this.ctx.strokeStyle = '#000'; this.ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  }
+
+  toggleSignatureCanvas() {
+    this.showSignatureCanvas = !this.showSignatureCanvas;
+    if (this.showSignatureCanvas) {
+      // Aguarda renderização do canvas antes de inicializar
+      setTimeout(() => this.initCanvas());
+    }
   }
 
   canvasPointerDown(ev: PointerEvent) { this.isDrawing = true; this.setLast(ev); }
@@ -325,18 +756,170 @@ isBrowser: any;
     this.lastY = y;
   }
 
+  // --- Assinatura em tela cheia ---
+  abrirAssinaturaFullscreen() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isMobile) return; // fullscreen apenas no celular
+    // Captura a assinatura atual (se existir) para popular o FS
+    try { this.fsSnapshotUrl = this.canvasRef?.nativeElement?.toDataURL('image/png') || null; } catch { this.fsSnapshotUrl = null; }
+    this.showSignatureFullscreen = true;
+    window.addEventListener('resize', this._onFsResize, { passive: true } as any);
+    setTimeout(() => this.initFsCanvas(), 0);
+  }
+
+  private initFsCanvas() {
+    if (!this.fsCanvasRef) return;
+    const canvas = this.fsCanvasRef.nativeElement;
+    this.fsCtx = canvas.getContext('2d');
+    // Ajusta o canvas para ocupar quase toda a tela, respeitando padding do container
+    const ratio = window.devicePixelRatio || 1;
+    const parent = canvas.parentElement as HTMLElement;
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    if (this.fsCtx) {
+      this.fsCtx.scale(ratio, ratio);
+      this.fsCtx.lineCap = 'round';
+      this.fsCtx.lineJoin = 'round';
+      this.fsCtx.lineWidth = 2.8;
+      this.fsCtx.strokeStyle = '#000';
+      this.fsCtx.clearRect(0, 0, canvas.width, canvas.height);
+      // Se há uma assinatura prévia, desenha no FS sem rotação (letterbox)
+      if (this.fsSnapshotUrl) {
+        const img = new Image();
+        img.onload = () => {
+          const ctx = this.fsCtx!;
+          const targetW = canvas.clientWidth;
+          const targetH = canvas.clientHeight;
+          const srcW = img.width;
+          const srcH = img.height;
+          const srcRatio = srcW / srcH;
+          const dstRatio = targetW / targetH;
+          let drawW = targetW, drawH = targetH;
+          if (srcRatio > dstRatio) { drawW = targetW; drawH = Math.round(targetW / srcRatio); }
+          else { drawH = targetH; drawW = Math.round(targetH * srcRatio); }
+          const dx = Math.round((targetW - drawW) / 2);
+          const dy = Math.round((targetH - drawH) / 2);
+          ctx.clearRect(0, 0, targetW, targetH);
+          ctx.drawImage(img, dx, dy, drawW, drawH);
+        };
+        img.src = this.fsSnapshotUrl;
+      }
+    }
+  }
+
+  fsPointerDown(ev: PointerEvent) { this.isDrawing = true; this.setFsLast(ev); }
+  fsPointerMove(ev: PointerEvent) { if (this.isDrawing) this.drawFs(ev); }
+  fsPointerUp() { this.isDrawing = false; }
+
+  private setFsLast(ev: PointerEvent) {
+    const rect = this.fsCanvasRef.nativeElement.getBoundingClientRect();
+    this.lastX = ev.clientX - rect.left;
+    this.lastY = ev.clientY - rect.top;
+  }
+  private drawFs(ev: PointerEvent) {
+    const rect = this.fsCanvasRef.nativeElement.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    if (!this.fsCtx) return;
+    this.fsCtx.beginPath();
+    this.fsCtx.moveTo(this.lastX, this.lastY);
+    this.fsCtx.lineTo(x, y);
+    this.fsCtx.stroke();
+    this.lastX = x;
+    this.lastY = y;
+  }
+
+  limparFsCanvas() {
+    if (!this.fsCtx || !this.fsCanvasRef) return;
+    const canvas = this.fsCanvasRef.nativeElement;
+    this.fsCtx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  cancelarAssinaturaFullscreen() {
+    this.showSignatureFullscreen = false;
+    window.removeEventListener('resize', this._onFsResize as any);
+    this.fsSnapshotUrl = null;
+  }
+
+  confirmarAssinaturaFullscreen() {
+    // Copia o desenho do fullscreen para o canvas principal
+    if (!isPlatformBrowser(this.platformId)) { this.showSignatureFullscreen = false; return; }
+    const fsCanvas = this.fsCanvasRef?.nativeElement;
+    if (!fsCanvas) { this.showSignatureFullscreen = false; return; }
+    if (!this.showSignatureCanvas) this.showSignatureCanvas = true;
+    setTimeout(() => {
+      this.initCanvas();
+      const mainCanvas = this.canvasRef?.nativeElement;
+      if (!mainCanvas || !this.ctx) { this.showSignatureFullscreen = false; return; }
+      // Transfere do canvas fullscreen rotacionando 90° para caber no campo vertical, preservando aspecto
+      const ctx = this.ctx!;
+      const ratio = window.devicePixelRatio || 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(ratio, ratio);
+      ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+      const targetW = mainCanvas.clientWidth;
+      const targetH = mainCanvas.clientHeight;
+      // Trabalhar em CSS px para consistência com layout
+      const srcCssW = fsCanvas.clientWidth || (fsCanvas.width / ratio);
+      const srcCssH = fsCanvas.clientHeight || (fsCanvas.height / ratio);
+      // Após rotacionar 90°, o conteúdo terá largura=srcCssH*s e altura=srcCssW*s
+      const scaleX = targetH / srcCssW;
+      const scaleY = targetW / srcCssH;
+      const s = Math.min(scaleX, scaleY);
+      const drawW = srcCssW * s; // largura antes da rotação
+      const drawH = srcCssH * s; // altura antes da rotação
+      // Centralização após rotação: ocupa drawH x drawW
+      const offsetX = (targetW - drawH) / 2;
+      const offsetY = (targetH - drawW) / 2;
+
+      ctx.save();
+      // Translada para o centro do retângulo onde a imagem rotacionada ficará
+      ctx.translate(offsetX + drawH / 2, offsetY + drawW / 2);
+      // Rotaciona 90 graus sentido horário
+      ctx.rotate(Math.PI / 2);
+      // Desenha o fsCanvas centralizado considerando o tamanho antes da rotação
+      ctx.drawImage(fsCanvas, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+      this.showSignatureFullscreen = false;
+      window.removeEventListener('resize', this._onFsResize as any);
+      this.fsSnapshotUrl = null;
+    }, 0);
+  }
+
+  private _onFsResize = () => {
+    if (this.showSignatureFullscreen) {
+      this.initFsCanvas();
+    }
+  }
+
   // --- Alergias como badges (chips) ---
   alergiasList(): string[] {
-    const src = this.petSelecionado?.alergias ?? this.novosDadosPet.alergias ?? [];
+    // Exibir sempre o estado em edição (novosDadosPet), para refletir alterações imediatamente
+    const src = this.novosDadosPet.alergias ?? [];
     return (src as string[]).map(s => String(s).trim()).filter(Boolean);
   }
 
   addAlergiaChip() {
-    const val = (this.alergiaInput || '').trim();
-    if (!val) return;
-    const list = this.alergiasList();
-    if (!list.includes(val)) list.push(val);
-    this.setAlergiasFromList(list);
+    const raw = (this.alergiaInput || '').trim();
+    if (!raw) return;
+    // Suporta múltiplas separadas por vírgula
+    const incoming = raw.split(',').map(s => s.trim()).filter(Boolean);
+    const current = this.alergiasList();
+    const existingLc = new Set(current.map(s => s.toLowerCase()));
+    const merged = [...current];
+    incoming.forEach(item => {
+      const lc = item.toLowerCase();
+      if (!existingLc.has(lc)) {
+        merged.push(item);
+        existingLc.add(lc);
+      }
+    });
+    this.setAlergiasFromList(merged);
     this.alergiaInput = '';
   }
 
@@ -348,8 +931,8 @@ isBrowser: any;
 
   private setAlergiasFromList(list: string[]) {
     const arr = [...list];
-    if (this.petSelecionado) this.petSelecionado.alergias = arr;
     this.novosDadosPet.alergias = arr;
+    this.onPetFieldChange();
   }
 
   limparAssinaturaCanvas() {
@@ -371,155 +954,217 @@ isBrowser: any;
     this.assinaturaICP = `icp-mock-${Date.now()}`;
   }
 
-  salvarReceita() {
+  async salvarReceita() {
     const tutor = this.tutorEncontrado ?? this.novoTutor;
-    const pet = this.petSelecionado ?? this.novosDadosPet;
     const assinaturaImg = isPlatformBrowser(this.platformId)
-    ? this.canvasRef?.nativeElement.toDataURL()
-    : null;
-    console.log({ tutor, pet, ativos: this.ativosSelecionados, observacoes: this.observacoes, assinaturaManual: this.assinaturaManual, assinaturaCursiva: this.assinaturaCursiva, assinaturaImg, assinaturaICP: this.assinaturaICP });
-    alert('Receita gerada! Veja console.');
+      ? this.canvasRef?.nativeElement.toDataURL()
+      : null;
+
+    // Persistir alterações de pet se necessário
+    let petUsado: Pet | null = this.petSelecionado ? { ...this.petSelecionado } : null;
+    const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') : null;
+    try {
+      if (this.petSavePlan && !this.clienteIdSelecionado) {
+        this.toastService.error('Não é possível salvar o pet sem um cliente. Busque o CPF novamente.');
+        return;
+      }
+
+      if (this.petSavePlan === 'novo' && this.clienteIdSelecionado && token) {
+        const fd = this.buildPetFormData(this.novosDadosPet, true);
+        // Preferir a seleção direta do vet (predefinidas); fallback para resolução por nome
+        let alergiasPre = this.alergiasSelecionadasVet?.length ? this.alergiasSelecionadasVet : [];
+        if (!alergiasPre.length) {
+          const alergiasStr = this.alergiasList();
+          alergiasPre = await this.resolveAlergiasPredefinidas(alergiasStr, token);
+        }
+        fd.append('alergias_predefinidas', JSON.stringify(alergiasPre));
+        const created = await this.apiService.createPet(this.clienteIdSelecionado, fd, token).toPromise();
+        const novoId = String(created?.id ?? created?.pet?.id ?? `tmp-${Date.now()}`);
+        // Refetch para garantir estado final do backend
+  let novoPet: Pet | null = null;
+        try {
+          const lista = await this.apiService.getPetsByCliente(this.clienteIdSelecionado, token).toPromise();
+          const p = (Array.isArray(lista) ? lista : []).find((x: any) => String(x.id) === String(novoId));
+          if (p) {
+            novoPet = {
+              id: String(p.id),
+              nome: p.nome || '',
+              especie: p.especie || p.tipo || '',
+              idade: this.normalizeIdade(p),
+              peso: this.normalizePeso(p),
+              raca: p.raca || '',
+              sexo: p.sexo || 'Macho',
+              alergias: this.extractAlergiasToStrings(p),
+              alergias_predefinidas: Array.isArray(p.alergias_predefinidas) ? p.alergias_predefinidas : []
+            };
+          }
+        } catch {}
+        if (!novoPet) {
+          novoPet = { ...this.novosDadosPet, id: novoId, alergias: (alergiasPre || []).map(x => x.nome), alergias_predefinidas: alergiasPre as any } as any;
+        }
+        const novoPetSeguro: Pet = novoPet as Pet;
+        if (this.tutorEncontrado) {
+          const others = (this.tutorEncontrado.pets || []).filter((p: any) => String(p.id) !== String(novoId));
+          this.tutorEncontrado.pets = [...others, novoPetSeguro];
+        }
+        this.selecionarPet(novoPetSeguro);
+        petUsado = novoPetSeguro;
+        this.toastService.success('Novo pet cadastrado (pendente de aceitação do tutor).');
+      }
+
+      if (this.petSavePlan === 'editar' && this.clienteIdSelecionado && token && this.petSelecionado?.id != null) {
+        const fd = this.buildPetFormData(this.novosDadosPet, false);
+        let alergiasPre = this.alergiasSelecionadasVet?.length ? this.alergiasSelecionadasVet : [];
+        if (!alergiasPre.length) {
+          const alergiasStr = this.alergiasList();
+          alergiasPre = await this.resolveAlergiasPredefinidas(alergiasStr, token);
+        }
+        fd.append('alergias_predefinidas', JSON.stringify(alergiasPre));
+        await this.apiService.updatePet(this.clienteIdSelecionado, this.petSelecionado.id!, fd, token).toPromise();
+        // Refetch do pet para estado atualizado
+        try {
+          const lista = await this.apiService.getPetsByCliente(this.clienteIdSelecionado, token).toPromise();
+          const p = (Array.isArray(lista) ? lista : []).find((x: any) => String(x.id) === String(this.petSelecionado!.id));
+          if (p) {
+            const atualizado: Pet = {
+              id: String(p.id),
+              nome: p.nome || '',
+              especie: p.especie || p.tipo || '',
+              idade: this.normalizeIdade(p),
+              peso: this.normalizePeso(p),
+              raca: p.raca || '',
+              sexo: p.sexo || 'Macho',
+              alergias: this.extractAlergiasToStrings(p),
+              alergias_predefinidas: Array.isArray(p.alergias_predefinidas) ? p.alergias_predefinidas : []
+            };
+            if (this.tutorEncontrado) {
+              this.tutorEncontrado.pets = (this.tutorEncontrado.pets || []).map((orig: any) => String(orig.id) === String(atualizado.id) ? atualizado : orig);
+            }
+            this.selecionarPet(atualizado);
+            petUsado = { ...atualizado };
+          } else {
+            Object.assign(this.petSelecionado, this.novosDadosPet, { alergias_predefinidas: alergiasPre as any });
+            petUsado = { ...this.petSelecionado };
+          }
+        } catch {
+          Object.assign(this.petSelecionado, this.novosDadosPet, { alergias_predefinidas: alergiasPre as any });
+          petUsado = { ...this.petSelecionado };
+        }
+        this.toastService.success('Pet atualizado com sucesso.');
+      }
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'Erro ao persistir alterações do pet';
+      this.toastService.error(msg, 'Erro');
+      return;
+    } finally {
+      this.petSavePlan = null;
+    }
+
+    // Monta alergias somente como strings (predefinidas) para a receita
+    const alergiasStrings = (this.alergiasSelecionadasVet && this.alergiasSelecionadasVet.length)
+      ? this.alergiasSelecionadasVet.map(a => String(a.nome).trim()).filter(Boolean)
+      : ((petUsado?.alergias ?? this.novosDadosPet.alergias) || []).map(s => String(s).trim()).filter(Boolean);
+
+    // Garante que não enviamos alergias_predefinidas no payload da receita
+    const basePet = petUsado ?? this.novosDadosPet;
+    const petParaReceita = {
+      id: (basePet as any)?.id ?? undefined,
+      nome: basePet?.nome || '',
+      especie: basePet?.especie || '',
+      raca: basePet?.raca || '',
+      sexo: basePet?.sexo || 'Macho',
+      idade: basePet?.idade ?? 0,
+      peso: basePet?.peso ?? 0,
+      alergias: alergiasStrings
+    };
+
+    // Define alerta de alergia no momento do salvamento (há algum ativo selecionado que conflita?)
+    const alertaAlergiaNoMomento = this.ativosSelecionados.some(id => this.isAtivoAlergenoParaPet(id));
+
+    const receitaPayload = {
+      tutor: {
+        nome: tutor?.nome || '',
+        cpf: tutor?.cpf || '',
+        telefone: tutor?.telefone || '',
+        email: tutor?.email || '',
+        endereco: tutor?.endereco || ''
+      },
+      pet: petParaReceita,
+      ativosSelecionados: this.ativosSelecionados,
+      alerta_alergia: alertaAlergiaNoMomento,
+      observacoes: this.observacoes,
+      assinatura: {
+        manual: this.assinaturaManual,
+        cursiva: this.assinaturaCursiva,
+        imagem: assinaturaImg,
+        icp: this.assinaturaICP
+      }
+    };
+
+    try {
+      const tokenReceita = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') || undefined : undefined;
+      await this.apiService.criarReceita(receitaPayload, tokenReceita).toPromise();
+      this.toastService.success('Receita salva com sucesso.');
+      // Evita carregar o alerta de alergia para a próxima receita
+      this.alerta_alergia = false;
+    } catch (e: any) {
+      if (e?.status === 401) {
+        this.toastService.error('Sessão expirada ou não autenticado. Faça login novamente para salvar a receita.', 'Não autorizado');
+      } else {
+        const msg = e?.error?.message || e?.message || 'Falha ao salvar receita';
+        this.toastService.error(msg, 'Erro');
+      }
+    }
+  }
+
+  // --- Resolução de alergias pré-definidas ---
+  private async resolveAlergiasPredefinidas(strings: string[], token: string): Promise<AlergiaLookup[]> {
+    const termos = Array.from(new Set((strings || []).map(s => String(s).trim()).filter(Boolean)));
+    const resultado: AlergiaLookup[] = [];
+    const chave = (i: AlergiaLookup) => `${i.alergia_id ?? ''}|${i.ativo_id ?? ''}`;
+    const jaTem = new Set<string>();
+    const naoCorrespondidas: string[] = [];
+
+    for (const termo of termos) {
+      try {
+        const lista = await this.apiService.getListaAlergias(token, termo).toPromise();
+        const hit = (lista || []).find(i => String(i.nome).trim().toLowerCase() === termo.toLowerCase());
+        if (hit) {
+          const ck = chave(hit);
+          if (!jaTem.has(ck)) { resultado.push(hit); jaTem.add(ck); }
+        } else {
+          naoCorrespondidas.push(termo);
+        }
+      } catch {
+        naoCorrespondidas.push(termo);
+      }
+    }
+
+    if (naoCorrespondidas.length) {
+      const outras = await this.getOutrasPredefinida(token);
+      if (outras) {
+        const ck = chave(outras);
+        if (!jaTem.has(ck)) { resultado.push(outras); jaTem.add(ck); }
+      }
+    }
+
+    return resultado;
+  }
+
+  private async getOutrasPredefinida(token: string): Promise<AlergiaLookup | null> {
+    if (this.outraPredefinida) return this.outraPredefinida;
+    try {
+      const lista = await this.apiService.getListaAlergias(token, 'outras').toPromise();
+      const found = (lista || []).find(i => String(i.nome).trim().toLowerCase() === 'outras');
+      this.outraPredefinida = found || null;
+      return this.outraPredefinida;
+    } catch { return null; }
   }
 
   getNomeAtivo(id: string): string {
   const ativo = this.ativos.find(a => a.id === id);
   return ativo ? ativo.nome : '';
 }
-
-// gerarPdf() {
-//   const doc = new jsPDF();
-//   const margin = 20;
-//   let y = 30;
-
-//   // ===========================
-//   // Cabeçalho
-//   // ===========================
-//   doc.setFont("times", "bold");
-//   doc.setFontSize(20);
-//   doc.text("RECEITA VETERINÁRIA", 105, y, { align: "center" });
-//   y += 15;
-//   doc.setDrawColor(0);
-//   doc.line(margin, y, 210 - margin, y);
-//   y += 20;
-
-//   // ===========================
-//   // Dados do Veterinário
-//   // ===========================
-//   doc.setFontSize(14).setFont("times", "bold");
-//   doc.text("Dados do Veterinário", margin, y);
-//   y += 10;
-//   doc.setFont("times", "normal").setFontSize(12);
-//   doc.text(`Nome: ${this.veterinario?.nome || "-"}`, margin, y); y += 7;
-//   doc.text(`CPF: ${this.veterinario?.cpf || "-"}`, margin, y); y += 7;
-//   doc.text(`CRMV: ${this.veterinario?.crmv || "-"}`, margin, y); y += 7;
-//   doc.text(`Email: ${this.veterinario?.email || "-"}`, margin, y); y += 7;
-//   doc.text(`Telefone: ${this.veterinario?.telefone || "-"}`, margin, y); y += 15;
-
-//   // ===========================
-//   // Dados do Tutor
-//   // ===========================
-//   doc.setFont("times", "bold").setFontSize(14);
-//   doc.text("Dados do Tutor", margin, y);
-//   y += 10;
-//   const tutor = this.tutorEncontrado ?? this.novoTutor;
-//   doc.setFont("times", "normal").setFontSize(12);
-//   doc.text(`Nome: ${tutor?.nome || "-"}`, margin, y); y += 7;
-//   doc.text(`CPF: ${tutor?.cpf || "-"}`, margin, y); y += 7;
-//   doc.text(`Telefone: ${tutor?.telefone || "-"}`, margin, y); y += 7;
-//   doc.text(`Email: ${tutor?.email || "-"}`, margin, y); y += 7;
-//   doc.text(`Endereço: ${tutor?.endereco || "-"}`, margin, y); y += 15;
-
-//   // ===========================
-//   // Dados do Pet
-//   // ===========================
-//   doc.setFont("times", "bold").setFontSize(14);
-//   doc.text("Dados do Pet", margin, y);
-//   y += 10;
-//   const pet = this.petSelecionado ?? this.novosDadosPet;
-//   doc.setFont("times", "normal").setFontSize(12);
-//   doc.text(`Nome: ${pet?.nome || "-"}`, margin, y); y += 7;
-//   doc.text(`Espécie: ${pet?.especie || "-"}`, margin, y); y += 7;
-//   doc.text(`Raça: ${pet?.raca || "-"}`, margin, y); y += 7;
-//   doc.text(`Idade: ${pet?.idade || "-"} anos`, margin, y); y += 7;
-//   doc.text(`Peso: ${pet?.peso || "-"} kg`, margin, y); y += 7;
-//   doc.text(`Sexo: ${pet?.sexo || "-"}`, margin, y); y += 7;
-//   doc.text(`Alergias: ${pet?.alergias || "Nenhuma"}`, margin, y); y += 15;
-
-//   // ===========================
-//   // Ativos em tabela
-//   // ===========================
-//   doc.setFont("times", "bold").setFontSize(14);
-//   doc.text("Prescrição", margin, y);
-//   y += 10;
-
-//   if (this.ativosSelecionados.length) {
-//     doc.setFontSize(11).setFont("times", "normal");
-//     // Cabeçalho da tabela
-//     doc.setFillColor('230');
-//     doc.rect(margin, y, 170, 8, "F");
-//     doc.text("Medicamento", margin + 2, y + 6);
-//     doc.text("Dose Cães", margin + 90, y + 6);
-//     doc.text("Dose Gatos", margin + 130, y + 6);
-//     y += 12;
-
-//     this.ativosSelecionados.forEach((id) => {
-//       const ativo = this.ativos.find((a) => a.id === id);
-//       if (ativo) {
-//         doc.text(ativo.nome, margin + 2, y);
-//         doc.text(ativo.doseCaes || "-", margin + 90, y);
-//         doc.text(ativo.doseGatos || "-", margin + 130, y);
-//         y += 8;
-//       }
-//     });
-//   } else {
-//     doc.setFont("times", "normal").setFontSize(12);
-//     doc.text("Nenhum ativo selecionado.", margin, y);
-//     y += 10;
-//   }
-//   y += 15;
-
-//   // ===========================
-//   // Observações
-//   // ===========================
-//   doc.setFont("times", "bold").setFontSize(14);
-//   doc.text("Observações", margin, y);
-//   y += 10;
-//   doc.setFont("times", "normal").setFontSize(12);
-//   const splitObs = doc.splitTextToSize(this.observacoes || "-", 170);
-//   doc.text(splitObs, margin, y);
-//   y += splitObs.length * 7 + 20;
-
-//   // ===========================
-//   // Assinatura
-//   // ===========================
-//   doc.setFont("times", "bold").setFontSize(14);
-//   doc.text("Assinatura", 105, y, { align: "center" });
-//   y += 15;
-
-//   const canvas = this.canvasRef?.nativeElement;
-//   const emptyCanvas =
-//     canvas &&
-//     this.ctx &&
-//     this.ctx.getImageData(0, 0, canvas.width, canvas.height).data.every((p) => p === 0);
-
-//   if (!emptyCanvas && canvas) {
-//     const imgData = canvas.toDataURL("image/png");
-//     doc.addImage(imgData, "PNG", 70, y, 70, 35);
-//     y += 45;
-//   } else {
-//     doc.setFont("courier", "italic").setFontSize(16);
-//     doc.text(this.veterinario?.nome || "____________________", 105, y, { align: "center" });
-//     y += 20;
-//   }
-
-//   doc.setFont("times", "normal").setFontSize(10);
-//   doc.text("Documento gerado digitalmente - Fórmula Pet", 105, 820, { align: "center" });
-
-//   // ===========================
-//   // Salvar
-//   // ===========================
-//   doc.save(`receita_${pet?.nome || "pet"}.pdf`);
-// }
 
 gerarPdf() {
   const element = this.pdfContent.nativeElement as HTMLElement;
@@ -544,6 +1189,77 @@ getDoseGatos(id: string): string {
   const ativo = this.ativos.find(a => a.id === id);
   return ativo?.doseGatos || '-';
 }
+
+  highlight(text: string): SafeHtml {
+    if (!text) return '' as any;
+    if (!this.highlightTerm) return text as any;
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(${esc(this.highlightTerm)})`, 'ig');
+    const html = text.replace(re, '<mark>$1</mark>');
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  private isAtivoAlergenoParaPet(ativoId: string): boolean {
+    // Prioriza o que o vet selecionou no editor
+    const lista = (this.alergiasSelecionadasVet && this.alergiasSelecionadasVet.length)
+      ? this.alergiasSelecionadasVet
+      : (this.petSelecionado?.alergias_predefinidas || []);
+    if (!lista || !lista.length) return false;
+    return !!lista.find((a: any) => a && a.ativo_id != null && String(a.ativo_id) === String(ativoId));
+  }
+
+  confirmarAlergiaAtivo() {
+    if (this.pendingAtivoId && !this.ativosSelecionados.includes(this.pendingAtivoId)) {
+      this.ativosSelecionados.push(this.pendingAtivoId);
+      this.alerta_alergia = true;
+    }
+    this.pendingAtivoId = null;
+    this.showAlergiaModal = false;
+  }
+
+  cancelarAlergiaAtivo() {
+    this.pendingAtivoId = null;
+    this.showAlergiaModal = false;
+  }
+
+  // --- Vet alergias search-select methods ---
+  filtrarSugestoesVet() {
+    const termo = (this.alergiaBuscaVet || '').trim();
+    this.showSugestoesVet = false;
+    this.sugestoesVet = [];
+    if (!termo) return;
+    const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') : null;
+    if (!token) return;
+    const jaSelecionados = new Set(this.alergiasSelecionadasVet.map(a => `${a.alergia_id ?? ''}|${a.ativo_id ?? ''}`));
+    this.apiService.getListaAlergias(token, termo).subscribe({
+      next: (lista) => {
+        const base = (lista || []).filter(i => !jaSelecionados.has(`${i.alergia_id ?? ''}|${i.ativo_id ?? ''}`));
+        const lower = termo.toLowerCase();
+        this.sugestoesVet = base.filter(i => i.nome?.toLowerCase().includes(lower)).slice(0, 20);
+        this.showSugestoesVet = this.sugestoesVet.length > 0;
+      },
+      error: () => { this.sugestoesVet = []; this.showSugestoesVet = false; }
+    });
+  }
+
+  adicionarSugestaoVet(item: AlergiaLookup) {
+    const key = `${item.alergia_id ?? ''}|${item.ativo_id ?? ''}`;
+    const exists = this.alergiasSelecionadasVet.some(a => `${a.alergia_id ?? ''}|${a.ativo_id ?? ''}` === key);
+    if (!exists) {
+      this.alergiasSelecionadasVet.push(item);
+      // Reflete nomes no modelo de edição para visual imediato
+      this.novosDadosPet.alergias = this.alergiasSelecionadasVet.map(x => x.nome);
+      this.onPetFieldChange();
+    }
+    this.alergiaBuscaVet = '';
+    this.filtrarSugestoesVet();
+  }
+
+  removerAlergiaVet(idx: number) {
+    this.alergiasSelecionadasVet.splice(idx, 1);
+    this.novosDadosPet.alergias = this.alergiasSelecionadasVet.map(x => x.nome);
+    this.onPetFieldChange();
+  }
 
 
 }
