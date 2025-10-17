@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { CrieSuaContaClienteComponent } from './crie-sua-conta-cliente/crie-sua-
 import { ToastService } from '../../../services/toast.service';
 import { AuthService } from '../../../services/auth.service';
 import { ApiService } from '../../../services/api.service';
+import { StoreService } from '../../../services/store.service';
 import { Subscription } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 interface Pet {
@@ -35,6 +36,10 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   modalLoginAberto = false;
   modalCadastroAberto = false;
   menuAberto = false;
+  popoverTop = 0;
+  popoverLeft = 0;
+
+  @ViewChild('gearBtn') gearBtn?: ElementRef<HTMLButtonElement>;
 
   abrirModalLogin() { this.modalLoginAberto = true; }
   fecharModalLogin() { this.modalLoginAberto = false; }
@@ -44,6 +49,9 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   toggleMenu(event?: Event) {
     if (event) event.stopPropagation();
     this.menuAberto = !this.menuAberto;
+    if (this.menuAberto) {
+      this.positionPopover();
+    }
   }
   fecharMenu() {
     this.menuAberto = false;
@@ -63,6 +71,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       localStorage.removeItem('userType');
       sessionStorage.removeItem('userType');
     }
+    // Limpa a sacola ao sair
+    try { this.store.clearCart(); } catch {}
   }
 
   private onDocClick = (_e: MouseEvent) => {
@@ -74,10 +84,31 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     public auth: AuthService,
     private api: ApiService,
     private route: ActivatedRoute,
+    private el: ElementRef,
+    private store: StoreService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     if (isPlatformBrowser(this.platformId)) {
       document.addEventListener('click', this.onDocClick);
+    }
+  }
+
+  private positionPopover() {
+    try {
+      const btn = this.gearBtn?.nativeElement;
+      if (!btn) { this.popoverTop = 100; this.popoverLeft = 100; return; }
+      const rect = btn.getBoundingClientRect();
+      // valores aproximados; o container tem padding e pode crescer, usamos clamp no CSS e aqui
+      const popW = 240;
+      const popH = 160;
+      let top = rect.bottom + window.scrollY + 8;
+      let left = rect.right + window.scrollX - popW; // alinhar à direita do botão
+      const maxLeft = window.scrollX + window.innerWidth - popW - 8;
+      const maxTop = window.scrollY + window.innerHeight - popH - 8;
+      this.popoverLeft = Math.max(window.scrollX + 8, Math.min(left, maxLeft));
+      this.popoverTop = Math.max(window.scrollY + 8, Math.min(top, maxTop));
+    } catch {
+      this.popoverTop = 100; this.popoverLeft = 100;
     }
   }
 

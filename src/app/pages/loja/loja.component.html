@@ -74,11 +74,19 @@
       <div *ngIf="!me">Entrar</div>
       <div *ngIf="me">Olá, {{ me?.nome?.split(' ')[0] || 'cliente' }} 👋</div>
     </div>
-    <div class="popover-body" *ngIf="!me">
+    <div class="popover-body" *ngIf="!me && !showEmailLogin">
+      
+      <button class="btn google" (click)="doLoginGoogle()"><img src="imagens/google.png" alt="Google" class="g-img">Entrar com Google</button>
+      <button class="btn light full" (click)="toggleEmailLogin()">Entrar com e‑mail e senha</button>
+      <a class="link" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
+    </div>
+    <div class="popover-body" *ngIf="!me && showEmailLogin">
       <input class="input" type="email" [(ngModel)]="email" placeholder="E-mail" aria-label="E-mail" />
       <input class="input" type="password" [(ngModel)]="senha" placeholder="Senha" aria-label="Senha" />
       <button class="btn primary" (click)="doLogin()">Entrar</button>
-      <button class="btn google" (click)="doLoginGoogle()">Entrar com Google</button>
+      
+      <button class="btn light" (click)="resetSenha()">Esqueci minha senha</button>
+      <button class="btn light full" (click)="toggleEmailLogin()">Login com Google</button>
       <a class="link" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
     </div>
     <div class="popover-body" *ngIf="me">

@@ -17,6 +17,7 @@ export class NavmenuComponent implements AfterViewInit {
   isVisible = true;
   currentRoute: string = '';
   cartCount = 0;
+  menuOpen = false;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService) {}
 
@@ -64,11 +65,41 @@ export class NavmenuComponent implements AfterViewInit {
     if (menu.classList.contains('open')) {
       menu.classList.add('close');
       iconMenu.classList.remove('icon-closed');
+      this.menuOpen = false;
+      try { document.body.style.overflow = ''; } catch {}
+      // Clear any inline randomized durations/opacities
+      const linksClose: NodeListOf<HTMLElement> = menu.querySelectorAll('.menu-link');
+      linksClose.forEach(l => {
+        l.style.removeProperty('animation-duration');
+        l.style.removeProperty('opacity');
+        l.style.removeProperty('transition');
+      });
       setTimeout(() => menu.classList.remove('open'), 1300);
     } else {
       menu.classList.remove('close');
       menu.classList.add('open');
       iconMenu.classList.add('icon-closed');
+      this.menuOpen = true;
+      try { document.body.style.overflow = 'hidden'; } catch {}
+      // Randomization (all devices): duration and opacity fade from 0 to 1
+      const linksOpen: NodeListOf<HTMLElement> = menu.querySelectorAll('.menu-link');
+      const min = 1.2; // slower min
+      const max = 2.4; // slower max
+      linksOpen.forEach(l => {
+        const dur = (min + Math.random() * (max - min)).toFixed(2);
+        l.style.animationDuration = `${dur}s`;
+        l.style.opacity = '0';
+        l.style.transition = `opacity ${dur}s ease`;
+        requestAnimationFrame(() => { l.style.opacity = '1'; });
+      });
+    }
+  }
+
+  closeMenu(): void {
+    const menu: HTMLElement | null = document.querySelector('.menu');
+    const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
+    if (menu && iconMenu && menu.classList.contains('open')) {
+      this.openMenu(menu, iconMenu);
     }
   }
 

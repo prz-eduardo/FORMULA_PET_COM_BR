@@ -21,6 +21,7 @@
   
   
   <nav>
+    <div *ngIf="menuOpen" class="nav-overlay" (click)="closeMenu()" aria-hidden="true"></div>
     <div class="menubar">
 <a href="#0" class="home">
   <div class="logo-container">
@@ -68,24 +69,18 @@
       </a>
     </li>
 
-      <li class="menu-link sub">
-        <a href="#0" class="text-item">Serviços<span class="icon"></span></a>
+      <!-- Hidden example submenu kept for reference -->
+      <li class="menu-link sub" *ngIf="false">
+        <a href="#0" class="text-item">Exemplo de Submenu<span class="icon"></span></a>
         <ul class="submenu">
-          <li class="sub-item"><a href="#0">Medicamentos Manipulados</a></li>
-          <li class="sub-item"><a href="#0">Suplementos</a></li>
-          <li class="sub-item"><a href="#0">Higiene</a></li>
-        </ul>
-      </li>
-      <li class="menu-link sub">
-        <a href="#0" class="text-item">Lorem Ipsun<span class="icon"></span></a>
-        <ul class="submenu">
-          <li class="sub-item"><a href="#0" class="font">Loren</a></li>
-          <li class="sub-item"><a href="#0">Loren ipsum</a></li>
-          <li class="sub-item"><a href="#0">Mobile App Development</a></li>
+          <li class="sub-item"><a href="#0">Item A</a></li>
+          <li class="sub-item"><a href="#0">Item B</a></li>
+          <li class="sub-item"><a href="#0">Item C</a></li>
         </ul>
       </li>
       <li class="menu-link"><a href="area-vet" class="text-item">Área vet 🐾</a></li>
       <li class="menu-link"><a href="area-cliente" class="text-item">Área cliente</a></li>
+      <li class="menu-link"><a [routerLink]="'/loja'" class="text-item">Loja</a></li>
     </ul>
   </nav>
 </div>

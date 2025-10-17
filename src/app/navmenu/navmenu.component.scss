@@ -81,6 +81,15 @@ nav {
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 2;
+    backdrop-filter: blur(1px);
+    animation: overlayIn 2s ease forwards;
+  }
+
   &.hidden {
     transform: translateY(-120%);
     &.menu {
@@ -190,7 +199,7 @@ nav {
           justify-content: center;
 
           span {
-            background-color: white;
+            background-color: #000; // X preto quando aberto
             justify-content: center;
             width: 0px;
             right: initial;
@@ -200,7 +209,7 @@ nav {
             &:before,
             &:after {
               width: 30px;
-              background-color: white;
+              background-color: #000; // linhas do X pretas
             }
 
             &:before {
@@ -617,6 +626,17 @@ nav {
         }
       }
     }
+  }
+}
+
+@keyframes overlayIn {
+  0% {
+    background: rgba(0,0,0,0);
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(1.5px);
   }
 }
 

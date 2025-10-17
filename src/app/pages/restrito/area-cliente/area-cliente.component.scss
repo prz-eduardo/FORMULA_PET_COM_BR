@@ -108,16 +108,17 @@
     }
 
     .popover {
-      position: absolute;
-      top: 48px;
-      right: 0;
+      position: fixed; /* fixado na viewport para evitar extrapolar containers */
       background: rgba(35, 48, 70, 0.9);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
       box-shadow: 0 12px 28px rgba(0,0,0,0.5);
       min-width: 200px;
+      max-width: calc(100vw - 16px);
+      max-height: calc(100vh - 16px);
+      overflow: auto;
       padding: 8px;
-      z-index: 20;
+      z-index: 2000;
       backdrop-filter: blur(8px) saturate(110%);
       transform-origin: top right;
       animation: popIn .12s ease-out;

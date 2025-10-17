@@ -20,8 +20,8 @@
       <span class="cliente-nome">{{ clienteData?.nome }}</span>
     </div>
     <div class="cliente-actions" (click)="$event.stopPropagation()">
-      <button class="btn-gear" (click)="toggleMenu($event)" aria-haspopup="true" [attr.aria-expanded]="menuAberto ? 'true' : 'false'" aria-label="Abrir menu do usuário">⚙️</button>
-      <div class="popover" *ngIf="menuAberto" role="menu">
+      <button #gearBtn class="btn-gear" (click)="toggleMenu($event)" aria-haspopup="true" [attr.aria-expanded]="menuAberto ? 'true' : 'false'" aria-label="Abrir menu do usuário">⚙️</button>
+      <div class="popover cliente-popover" *ngIf="menuAberto" role="menu" [ngStyle]="{ top: popoverTop + 'px', left: popoverLeft + 'px' }">
         <a class="popover-item profile" routerLink="/editar-perfil" role="menuitem" (click)="fecharMenu()">Perfil</a>
         <button class="popover-item danger" role="menuitem" (click)="logout(); fecharMenu()">Logout</button>
       </div>

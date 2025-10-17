@@ -25,6 +25,7 @@ export class LojaComponent implements OnInit {
   onlyFavorites = false;
   // Auth UI
   showLogin = false;
+  showEmailLogin = false;
   email = '';
   senha = '';
   me: any = null;
@@ -175,8 +176,15 @@ export class LojaComponent implements OnInit {
 
   toggleLogin(ev?: MouseEvent) {
     this.showLogin = !this.showLogin;
+    if (!this.showLogin) this.showEmailLogin = false; // reset when closing
     if (this.showLogin) this.positionPopover();
     ev?.stopPropagation();
+  }
+
+  toggleEmailLogin() {
+    this.showEmailLogin = !this.showEmailLogin;
+    // Ensure popover stays within viewport when content height changes
+    this.positionPopover();
   }
 
   private positionPopover() {
@@ -184,15 +192,26 @@ export class LojaComponent implements OnInit {
       const btn = this.profileBtn?.nativeElement;
       if (!btn) { this.popoverTop = 100; this.popoverLeft = 100; return; }
       const rect = btn.getBoundingClientRect();
-      const popW = 300; // approx width incl. padding
-      const popH = 230; // approx height initial
+      // initial estimate
       let top = rect.bottom + window.scrollY + 8;
       let left = rect.left + window.scrollX;
-      // clamp inside viewport
-      const maxLeft = window.scrollX + window.innerWidth - popW - 8;
-      const maxTop = window.scrollY + window.innerHeight - popH - 8;
-      this.popoverLeft = Math.max(window.scrollX + 8, Math.min(left, maxLeft));
-      this.popoverTop = Math.max(window.scrollY + 8, Math.min(top, maxTop));
+      // First clamp with rough size, then refine after render using actual element size
+      const roughW = 300; const roughH = 260;
+      const clamp = (w: number, h: number) => {
+        const maxLeft = window.scrollX + window.innerWidth - w - 8;
+        const maxTop = window.scrollY + window.innerHeight - h - 8;
+        this.popoverLeft = Math.max(window.scrollX + 8, Math.min(left, maxLeft));
+        this.popoverTop = Math.max(window.scrollY + 8, Math.min(top, maxTop));
+      };
+      clamp(roughW, roughH);
+      // next tick: measure and re-clamp
+      setTimeout(() => {
+        const el = document.querySelector('.login-popover') as HTMLElement | null;
+        if (!el) return;
+        const w = el.offsetWidth || roughW;
+        const h = el.offsetHeight || roughH;
+        clamp(w, h);
+      }, 0);
     } catch { this.popoverTop = 100; this.popoverLeft = 100; }
   }
 
@@ -230,8 +249,20 @@ export class LojaComponent implements OnInit {
   logout() {
     localStorage.removeItem('token');
     this.me = null;
+    this.store.clearCart();
     this.store.resetClienteGate();
     this.toast.info('Você saiu da conta');
+  }
+
+  async resetSenha() {
+    try {
+      const email = this.email?.trim();
+      if (!email) { this.toast.info('Informe seu e-mail para recuperar a senha'); return; }
+      await this.auth.sendPasswordReset(email);
+      this.toast.success('Enviamos um e-mail para redefinir sua senha.');
+    } catch (e: any) {
+      this.toast.error(e?.error?.message || 'Não foi possível enviar o e-mail de redefinição');
+    }
   }
 
   async doLoginGoogle() {
