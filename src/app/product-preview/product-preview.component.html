@@ -51,11 +51,13 @@
         [weight]="produto && produto.weightValue !== undefined && produto.weightValue !== null ? produto.weightValue.toString() : undefined"
         [isFavourite]="produto.isFavourite"
         [isAddedToCart]="produto.isAddedToCart"
-        [discount]="produto.discount ?? undefined">
+        [discount]="produto.discount ?? undefined"
+        [shopMode]="true"
+        (buy)="handleBuy($event)">
       </app-product-card>
 
     </swiper-slide>
   </ng-container>
 </swiper-container>
 
-<div style="padding-bottom: 24px;"></div>
+<div class="preview-spacer"></div>

@@ -1,0 +1,87 @@
+<div class="loja-wrap">
+  <app-navmenu></app-navmenu>
+  <h1 class="titulo">Loja</h1>
+
+  <div class="filtros card">
+    <input class="input" placeholder="Buscar produtos..." [(ngModel)]="filtro" aria-label="Buscar produtos" />
+    <select class="input" [(ngModel)]="categoria" aria-label="Filtrar por categoria">
+      <option value="">Todas categorias</option>
+      <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+    </select>
+    <select class="input" [(ngModel)]="sort" aria-label="Ordenar">
+      <option value="relevance">Mais relevantes</option>
+      <option value="price-asc">Menor preço</option>
+      <option value="price-desc">Maior preço</option>
+      <option value="name">Nome (A-Z)</option>
+    </select>
+    <div class="cta">
+      <div class="perfil">
+        <button #profileBtn class="btn light" (click)="toggleLogin($event)" aria-haspopup="dialog" [attr.aria-expanded]="showLogin">
+          {{ me ? '👤 ' + (me?.nome || 'Cliente') : '👤 Entrar' }}
+        </button>
+      </div>
+      <a #cartBtn routerLink="/carrinho" class="btn cart-link" title="Ir para o carrinho">🛒 Carrinho</a>
+    </div>
+  </div>
+
+  <div class="cats" *ngIf="categorias.length">
+    <button class="chip" [class.active]="!categoria" (click)="categoria=''">Todas</button>
+    <button class="chip" *ngFor="let c of categorias" [class.active]="categoria===c" (click)="categoria=c">{{ c }}</button>
+  </div>
+
+  <div class="meta" aria-live="polite">{{ filtered.length }} itens</div>
+
+  <section class="catalogo">
+    <h2 class="sec-title">Produtos</h2>
+    <div class="grid">
+      <div class="card produto" *ngFor="let p of filtered">
+        <div class="img-box">
+          <img [src]="p.image" width="320" height="200" alt="" role="presentation" />
+          <div class="badge" *ngIf="p.discount">{{ p.discount }}% OFF</div>
+          <button class="fav" (click)="toggleFav(p)" [attr.aria-pressed]="isFav(p)">
+            {{ isFav(p) ? '❤️' : '🤍' }}
+          </button>
+          <button class="add-fab" (click)="onAddToCart(p, $event)" title="Adicionar ao carrinho">🛒</button>
+        </div>
+        <div class="info">
+          <div class="top">
+            <h3 class="nome">{{ p.name }}</h3>
+            <div class="categoria">{{ p.category }}</div>
+            <p class="desc">{{ p.description }}</p>
+          </div>
+          <div class="bottom">
+            <div class="preco">
+              <span class="atual">{{ price(p) | currency:'BRL' }}</span>
+              <span *ngIf="p.discount" class="old">{{ p.price | currency:'BRL' }}</span>
+            </div>
+            <div class="acoes"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login Overlay & Popover (fixed, acima de tudo) -->
+  <div class="login-overlay" *ngIf="showLogin" (click)="closeLogin()"></div>
+  <div class="login-popover" *ngIf="showLogin" [ngStyle]="{ top: popoverTop + 'px', left: popoverLeft + 'px' }" (click)="$event.stopPropagation()" role="dialog" aria-label="Login do cliente">
+    <div class="popover-header">
+      <div *ngIf="!me">Entrar</div>
+      <div *ngIf="me">Olá, {{ me?.nome?.split(' ')[0] || 'cliente' }} 👋</div>
+    </div>
+    <div class="popover-body" *ngIf="!me">
+      <input class="input" type="email" [(ngModel)]="email" placeholder="E-mail" aria-label="E-mail" />
+      <input class="input" type="password" [(ngModel)]="senha" placeholder="Senha" aria-label="Senha" />
+      <button class="btn primary" (click)="doLogin()">Entrar</button>
+      <button class="btn google" (click)="doLoginGoogle()">Entrar com Google</button>
+      <a class="link" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
+    </div>
+    <div class="popover-body" *ngIf="me">
+      <div class="welcome">Bem-vindo, {{ me?.nome?.split(' ')[0] }}!</div>
+      <div class="divider"></div>
+      <a class="btn light full" routerLink="/area-cliente">Ir para Área do Cliente</a>
+      <button class="btn" (click)="logout()">Sair</button>
+    </div>
+  </div>
+
+  <app-footer></app-footer>
+</div>

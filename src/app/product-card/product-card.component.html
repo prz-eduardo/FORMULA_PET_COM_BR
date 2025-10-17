@@ -1,7 +1,7 @@
 <div class="card">
   <!-- Imagem -->
   <div class="card-img-container">
-    <img *ngIf="image" [src]="image" [alt]="name" class="card-img-top" />
+  <img *ngIf="image" [src]="image" alt="{{ name || 'Produto' }}" title="{{ name || 'Produto' }}" class="card-img-top" />
 
     <!-- Desconto -->
     <div *ngIf="discount && discount > 0" class="discount-badge">
@@ -17,7 +17,7 @@
   <!-- Conteúdo -->
   <div class="card-body">
     <h5 class="card-title">{{ name }}</h5>
-    <p class="card-text" style="max-height: 80px; overflow-y: auto;">
+    <p class="card-text card-text-scroll">
       {{ description }}
     </p>
 
@@ -77,8 +77,12 @@
 
     <!-- Ação -->
     <div class="card-action">
-      <button type="button" class="btn-action" (click)="enviarMsgWhatsApp()">
-        {{ isAddedToCart ? 'Adicionado' : 'Comprar' }}
+      <button
+        type="button"
+        class="btn-action"
+        [attr.aria-label]="shopMode ? 'Comprar na loja' : 'Falar no WhatsApp'"
+        (click)="shopMode ? onBuy() : enviarMsgWhatsApp()">
+        {{ shopMode ? 'Comprar' : 'WhatsApp' }}
       </button>
     </div>
   </div>

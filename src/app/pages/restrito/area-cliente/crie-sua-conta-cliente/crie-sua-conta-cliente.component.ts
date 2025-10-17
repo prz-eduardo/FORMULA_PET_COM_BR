@@ -20,7 +20,8 @@ export class CrieSuaContaClienteComponent {
   @Output() loggedIn = new EventEmitter<void>();
   aberto = false;
   carregando = false;
-  iniciadoGoogle = false;
+  iniciadoGoogle = true;
+  showEmailForm = false;
 
   etapaGoogle = false;
   mostrarSenha = false;
@@ -198,8 +199,5 @@ export class CrieSuaContaClienteComponent {
     return null;
   }
 
-  toggleIniciarGoogle() {
-    this.iniciadoGoogle = !this.iniciadoGoogle;
-    this.mensagemErro = '';
-  }
+  toggleEmailForm() { this.showEmailForm = !this.showEmailForm; this.mensagemErro = ''; }
 }

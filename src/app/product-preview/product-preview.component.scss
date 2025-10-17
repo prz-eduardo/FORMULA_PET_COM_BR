@@ -32,8 +32,8 @@
   position: relative;
   text-align: center;
   text-decoration: none;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   touch-action: manipulation;
   transition: background-color 0.2s ease-out, border-color 0.2s ease-out;
 }
@@ -77,4 +77,8 @@
 
 .swiper-categorias{
   margin-left: 10px;
+}
+
+.preview-spacer {
+  padding-bottom: 24px;
 }

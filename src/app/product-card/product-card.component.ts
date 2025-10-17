@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface Produto {
@@ -45,6 +45,9 @@ export class ProductCardComponent implements OnInit {
   @Input() isFavourite?: boolean;
   @Input() isAddedToCart?: boolean;
   @Input() discount?: number;
+  // When true, clicking the action button emits a buy event instead of opening WhatsApp
+  @Input() shopMode: boolean = false;
+  @Output() buy = new EventEmitter<Produto>();
 
   constructor() {}
 
@@ -91,6 +94,27 @@ enviarMsgWhatsApp() {
 
   const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
   window.open(url, '_blank');
+}
+
+onBuy() {
+  // Emit a simplified product payload for the parent to handle (navigate/add-to-cart)
+  const produto: Produto = {
+    id: this.id,
+    category: this.category,
+    customizations: this.customizations || { dosage: [], packaging: [] },
+    description: this.description,
+    image: this.image,
+    name: this.name,
+    price: this.price,
+    rating: this.rating,
+    stock: this.stock,
+    tags: this.tags,
+    weight: this.weight,
+    isFavourite: this.isFavourite,
+    isAddedToCart: this.isAddedToCart,
+    discount: this.discount,
+  };
+  this.buy.emit(produto);
 }
 
 

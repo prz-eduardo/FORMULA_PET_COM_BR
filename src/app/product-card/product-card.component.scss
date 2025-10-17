@@ -80,6 +80,11 @@
   line-height: 1.4;
 }
 
+.card-text-scroll {
+  max-height: 80px;
+  overflow-y: auto;
+}
+
 .card-details {
   display: flex;
   justify-content: space-between;

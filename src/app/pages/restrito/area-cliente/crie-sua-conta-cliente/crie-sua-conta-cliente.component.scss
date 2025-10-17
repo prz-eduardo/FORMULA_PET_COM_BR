@@ -14,6 +14,23 @@
 	}
 }
 
+.separador {
+	text-align: center;
+	color: #6b7280;
+	margin: 12px 0;
+	position: relative;
+}
+.separador::before, .separador::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	width: 40%;
+	height: 1px;
+	background: #e5e7eb;
+}
+.separador::before { left: 0; }
+.separador::after { right: 0; }
+
 .form-group {
 	display: flex;
 	flex-direction: column;

@@ -2,20 +2,20 @@
   <app-navmenu></app-navmenu>
 </section>
 
-<div style="padding: 1vh;"></div>
+<div class="spacer-1vh"></div>
 
   <!-- Seção de Banner -->
   <section id="swiper-topo" class="swiper-topo">
     <!-- <app-swiper-topo app-swiper-topo></app-swiper-topo> -->
   <section class="info-section">
     <div class="info-content">
-      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem;">
-        <h2 class="info-title" style="text-align: center; font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif; font-size: 2.8rem;">
+      <div class="intro-top">
+        <h2 class="info-title title-splash">
           Fórmula Pet
         </h2>
-        <div class="info-card" style="max-width: 600px; margin: 0 auto; align-items: center;">
-          <h3 class="card-title" style="text-align: center;">Especialistas em Manipulação Veterinária</h3>
-          <p class="card-text" style="text-align: center;">
+        <div class="info-card info-card-center">
+          <h3 class="card-title text-center">Especialistas em Manipulação Veterinária</h3>
+          <p class="card-text text-center">
             A Fórmula Pet é uma farmácia de manipulação dedicada exclusivamente à saúde animal. Oferecemos soluções personalizadas para cães, gatos e pets exóticos, com fórmulas adaptadas às necessidades de cada paciente.
           </p>
           <a
@@ -23,6 +23,7 @@
             target="_blank"
             rel="noopener"
             class="cta-whatsapp-btn"
+            title="Fale pelo WhatsApp"
             Fale pelo WhatsApp>
             <i class="fa-brands fa-whatsapp"></i>
           </a>
@@ -153,12 +154,28 @@
     <!-- Seção de Produtos em Destaque (Preview) -->
 <section id="products-preview">
   <app-product-preview ></app-product-preview> 
-  <!-- Componente para mostrar alguns produtos destacados -->
+  <!-- Lista rápida com ação de compra -->
+  <div class="home-products" *ngIf="(store.products$ | async) as prods">
+    <h3 class="hp-title">Em destaque</h3>
+    <div class="hp-grid">
+      <div class="hp-card" *ngFor="let p of prods | slice:0:6">
+        <img [src]="p.image" alt="{{p.name}}" />
+        <div class="hp-info">
+          <div class="hp-name">{{ p.name }}</div>
+          <div class="hp-price">{{ (p.price - (p.price * (p.discount || 0) / 100)) | currency:'BRL' }}</div>
+        </div>
+        <div class="hp-actions">
+          <a routerLink="/loja" class="btn light">Ver na loja</a>
+          <button class="btn" (click)="store.addToCart(p, 1)">Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
   <!-- Elfsight Google Reviews | Untitled Google Reviews -->
 <!-- <script src="https://static.elfsight.com/platform/platform.js" async></script> -->
-<div class="elfsight-app-6e8ba19c-83e8-4246-becd-66280eb4e77b" data-elfsight-app-lazy style="padding-left: 2vw; padding-right: 2vw;"></div>
+<div class="elfsight-app-6e8ba19c-83e8-4246-becd-66280eb4e77b elfsight-pad" data-elfsight-app-lazy></div>
   
   <!-- Seção de Visão Geral -->
   <section id="hero" >
@@ -196,13 +213,35 @@
 
   <!-- about -->
   <div class="about">
-    <a class="bg_links social whatsapp" href="wa.me/message/GLVXCNM7IBKUI1" target="_blank">
+  <a class="bg_links social whatsapp" href="wa.me/message/GLVXCNM7IBKUI1" target="_blank" title="WhatsApp">
       <span class="icon"></span>
     </a>
-    <a class="bg_links social Instagram" rel="noopener noreferrer" href="https://www.instagram.com/farmaformulapet/" target="_blank">
+  <a class="bg_links social Instagram" rel="noopener noreferrer" href="https://www.instagram.com/farmaformulapet/" target="_blank" title="Instagram">
       <span class="icon"></span>
     </a>
     <a class="bg_links logo"></a>
     
   </div>
   <!-- end about -->
+
+<style>
+  .spacer-1vh { padding: 1vh; }
+  .intro-top { display:flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem; }
+  .title-splash { text-align: center; font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif; font-size: 2.8rem; }
+  .info-card-center { max-width: 600px; margin: 0 auto; align-items: center; }
+  .text-center { text-align: center; }
+</style>
+
+<style>
+  .home-products { padding: 8px 16px; }
+  .hp-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; }
+  .hp-card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; }
+  .hp-card img { width: 100%; height: 140px; object-fit: cover; }
+  .hp-info { padding: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .hp-name { font-weight: 700; color: #111827; font-size: 14px; }
+  .hp-price { font-weight: 800; color: #111827; font-size: 15px; }
+  .hp-actions { display: flex; gap: 8px; padding: 10px; margin-top: auto; }
+  .btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); text-decoration: none; text-align: center; }
+  .btn.light { background: #e5e7eb; color: #111827; }
+  @media (max-width:640px){ .hp-card img{ height: 120px;} }
+</style>

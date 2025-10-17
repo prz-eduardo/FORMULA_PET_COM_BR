@@ -1,4 +1,5 @@
 import { Component, OnInit, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { Swiper } from 'swiper/bundle';
 import { register } from 'swiper/element/bundle';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -49,7 +50,7 @@ export class ProductPreviewComponent implements OnInit, AfterViewInit {
   selectedCategory: string = '';
   categories: string[] = [];
 
-  constructor(@Inject(PLATFORM_ID) private platformId: any) {
+  constructor(@Inject(PLATFORM_ID) private platformId: any, private router: Router) {
     register();
   }
 
@@ -134,5 +135,13 @@ export class ProductPreviewComponent implements OnInit, AfterViewInit {
   extractCategories() {
     const categoriesSet = new Set(this.produtos.map(produto => produto.category));
     this.categories = Array.from(categoriesSet);
+  }
+
+  async handleBuy(produto: { name?: string; category?: string }) {
+    // Navigate to Loja with query params to prefilter by name/category
+    const queryParams: any = {};
+    if (produto.name) queryParams.q = produto.name;
+    if (produto.category) queryParams.cat = produto.category;
+    await this.router.navigate(['/loja'], { queryParams });
   }
 }

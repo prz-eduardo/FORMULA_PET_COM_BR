@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NavmenuComponent } from '../../../navmenu/navmenu.component';
 import { LoginClienteComponent } from './login-cliente/login-cliente.component';
 import { CrieSuaContaClienteComponent } from './crie-sua-conta-cliente/crie-sua-conta-cliente.component';
@@ -73,6 +73,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     private toast: ToastService,
     public auth: AuthService,
     private api: ApiService,
+    private route: ActivatedRoute,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     if (isPlatformBrowser(this.platformId)) {
@@ -93,6 +94,21 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.ready = true;
     if (this.hasAuth && token) {
       this.loadProfile(token);
+    }
+
+    // Abrir modais conforme query params
+    if (this.isBrowser) {
+      this.route.queryParamMap.subscribe(pm => {
+        const cadastro = pm.get('cadastro');
+        const login = pm.get('login');
+        if (cadastro === '1') {
+          this.modalCadastroAberto = true;
+          this.modalLoginAberto = false;
+        } else if (login === '1') {
+          this.modalLoginAberto = true;
+          this.modalCadastroAberto = false;
+        }
+      });
     }
   }
   private get isBrowser(): boolean { return isPlatformBrowser(this.platformId); }

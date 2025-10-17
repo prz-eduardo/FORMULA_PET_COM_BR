@@ -10,3 +10,17 @@
     text-decoration: none; 
     transition: background 0.2s;
 }
+
+/* Home products quick grid */
+.hp-title { padding: 8px 16px; font-weight: 800; color: #111827; margin: 0 0 8px; }
+.home-products .btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); text-decoration: none; text-align: center; }
+.home-products .btn.light { background: #e5e7eb; color: #111827; }
+.elfsight-pad { padding-left: 2vw; padding-right: 2vw; }
+.home-products .hp-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; }
+.home-products .hp-card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; }
+.home-products .hp-card img { width: 100%; height: 140px; object-fit: cover; }
+.home-products .hp-info { padding: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.home-products .hp-name { font-weight: 700; color: #111827; font-size: 14px; }
+.home-products .hp-price { font-weight: 800; color: #111827; font-size: 15px; }
+.home-products .hp-actions { display: flex; gap: 8px; padding: 10px; margin-top: auto; }
+@media (max-width:640px){ .home-products .hp-card img{ height: 120px;} }

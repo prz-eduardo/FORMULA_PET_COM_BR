@@ -1,0 +1,61 @@
+<div class="carrinho-wrap">
+  <app-navmenu></app-navmenu>
+  <h1 class="titulo">Seu Carrinho</h1>
+
+  <div class="layout" *ngIf="(store.cart$ | async)?.length; else vazio">
+    <div class="card itens">
+      <div class="item" *ngFor="let it of (store.cart$ | async)">
+      <img [src]="it.product.image" alt="{{ it.product.name }}" />
+      <div class="info">
+        <div class="nome">{{ it.product.name }}</div>
+        <div class="preco">{{ store.getPriceWithDiscount(it.product) | currency:'BRL' }}</div>
+        <div class="qtd">
+          <button (click)="dec(it.product.id)">-</button>
+          <span>{{ it.quantity }}</span>
+          <button (click)="inc(it.product.id)">+</button>
+        </div>
+      </div>
+      <button class="remove" (click)="remove(it.product.id)">Remover</button>
+      </div>
+    </div>
+
+    <div class="aside">
+      <div class="card frete">
+        <h3>Calcular frete</h3>
+        <div class="linha">
+          <input type="text" class="input" placeholder="CEP" aria-label="CEP" />
+          <button class="btn">Calcular</button>
+        </div>
+        <p class="muted">Entrega: valores e prazos serão exibidos aqui.</p>
+      </div>
+      <div class="card resumo">
+        <h3>Resumo</h3>
+        <div class="totais">
+          <div>Itens: {{ total().count }}</div>
+          <div>Subtotal: {{ total().subtotal | currency:'BRL' }}</div>
+          <div class="grand">Total: {{ total().total | currency:'BRL' }}</div>
+        </div>
+        <div class="acoes">
+          <button class="btn" (click)="clear()">Limpar carrinho</button>
+          <button class="btn primary">Finalizar compra</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky checkout bar (mobile only) -->
+  <div class="checkout-bar mobile-only" *ngIf="(store.cart$ | async)?.length">
+    <div class="bar-content">
+      <div class="bar-total">
+        <strong>Total</strong>
+        <span>{{ total().total | currency:'BRL' }}</span>
+        <small class="count">{{ total().count }} itens</small>
+      </div>
+      <button class="btn primary" aria-label="Finalizar compra">Finalizar</button>
+    </div>
+  </div>
+
+  <ng-template #vazio>
+    <div class="card vazio">Seu carrinho está vazio.</div>
+  </ng-template>
+</div>
