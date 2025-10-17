@@ -1,0 +1,35 @@
+.area-vet-wrapper{padding:20px;min-height:100vh;background:linear-gradient(135deg,#0d151f,#1a2230);color:#ecf0f5;font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif}
+.titulo{font-size:36px;text-align:center;color:#1abc9c;margin:10px 0 20px;padding-top:24px}
+.card{background:#1f2a38;border-radius:12px;padding:16px;margin:10px auto;box-shadow:0 6px 12px rgba(0,0,0,.35);max-width:1000px;width:90%}
+.blocos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:960px){.blocos{grid-template-columns:1fr}}
+.bloco{background:#16202a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px}
+.label{font-size:12px;color:#a8b3bf;margin-bottom:6px}
+.valor{font-size:16px;color:#ecf0f5}
+.valor.grande{font-size:18px;font-weight:700}
+.sub{font-size:12px;color:#a8b3bf;margin-top:4px}
+.secao{margin-top:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#1f2a38;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 8px;font-size:12px;color:#dbe7ff}
+.chip.alerta{border-color:#ff6b6b;background:#2a1f22;color:#ffd6d6}
+.observacoes{background:#16202a;border:1px dashed rgba(255,255,255,.15);border-radius:8px;padding:10px;color:#cfd8e3}
+.receitas{display:grid;gap:8px}
+.rec{background:#16202a;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px}
+.top{display:flex;justify-content:space-between;color:#a8b3bf;font-size:12px;margin-bottom:6px}
+.flags{margin-bottom:6px}
+.flag{display:inline-block;background:#2a1f22;color:#ffb3b3;border:1px solid rgba(255,0,0,.3);border-radius:6px;padding:2px 6px;font-size:11px}
+.badge{display:inline-flex;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.08);background:#1f2a38;color:#dbe7ff;margin:2px}
+.obs{margin-top:6px;color:#b8c3ce;font-size:12px}
+.assinatura{margin-top:8px}
+.assinatura img{max-height:80px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:#0e141d}
+.vazio{text-align:center;color:#9aa3ad;padding:8px}
+
+/* Responsividade */
+@media (max-width:760px){
+	.titulo{font-size:30px}
+	.card{padding:12px}
+	.valor{font-size:15px}
+}
+@media (max-width:480px){
+	.titulo{font-size:26px}
+}

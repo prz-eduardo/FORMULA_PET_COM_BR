@@ -196,11 +196,12 @@
           <div><b>CRMV:</b> {{ veterinario.crmv }}</div>
           <div><b>Email:</b> {{ veterinario.email }}</div>
           <div><b>Telefone:</b> {{ veterinario.telefone }}</div>
+          <div><b>Assinatura gerada digitalmente - Certificado ICP-Brasil </b></div>
         </div>
       </div>
       <div class="assinatura-col">
         <div class="row" style="justify-content: space-between; align-items: center; gap: 12px;">
-          <label>Desenhar assinatura</label>
+          <label>Desenhar assinatura (Opcional)</label>
           <button type="button" class="btn-toggle" (click)="toggleSignatureCanvas()">
             {{ showSignatureCanvas ? 'Ocultar' : 'Mostrar' }}
           </button>

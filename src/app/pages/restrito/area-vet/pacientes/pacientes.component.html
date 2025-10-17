@@ -1,0 +1,38 @@
+<app-navmenu></app-navmenu>
+<div class="area-vet-wrapper">
+  <h1 class="titulo">Pacientes</h1>
+
+  <div class="card filtros" style="width: 90%;">
+    <input [(ngModel)]="q" class="input" placeholder="Buscar por pet, tutor ou CPF" />
+    <button class="btn" (click)="page=1; load()">Buscar</button>
+    <button class="btn-sec" (click)="resetar()">Limpar</button>
+  </div>
+
+  <div class="card" *ngIf="carregando">Carregando...</div>
+  <div class="card erro" *ngIf="erro">{{ erro }}</div>
+
+  <div class="lista-cartoes" *ngIf="!carregando && !erro">
+    <div class="vazio" *ngIf="!pacientes?.length">Nenhum paciente encontrado.</div>
+    <div class="cartao" *ngFor="let p of pacientes" (click)="abrir(p)">
+      <div class="topo">
+        <div class="pet">{{ p.pet_nome }}</div>
+        <div class="qtd">{{ p.total_atendimentos }} atendimento(s)</div>
+      </div>
+      <div class="linha sub">{{ p.especie || '-' }} • {{ p.raca || '-' }} • {{ p.sexo || '-' }}</div>
+      <div class="linha tutor">Tutor: {{ p.cliente_nome }} (CPF {{ p.cliente_cpf || '-' }})</div>
+      <div class="linha datas">Primeiro: {{ p.primeiro_atendimento | date:'short' }} • Último: {{ p.ultimo_atendimento | date:'short' }}</div>
+      <div class="linha ativos" *ngIf="p.top_ativos?.length">
+        <span class="badge" *ngFor="let a of p.top_ativos">{{ a.nome }} • {{ a.usos }}</span>
+      </div>
+      <div class="acoes" (click)="$event.stopPropagation()">
+        <button class="btn-mini" (click)="abrir(p)">Detalhes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="paginacao" *ngIf="totalPages > 1">
+    <button class="btn-sec" [disabled]="page<=1" (click)="paginaAnterior()">Anterior</button>
+    <span>Página {{ page }} de {{ totalPages }} ({{ total }} pacientes)</span>
+    <button class="btn-sec" [disabled]="page>=totalPages" (click)="proximaPagina()">Próxima</button>
+  </div>
+</div>

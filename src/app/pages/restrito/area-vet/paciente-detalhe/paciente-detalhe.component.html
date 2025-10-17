@@ -1,0 +1,74 @@
+<app-navmenu></app-navmenu>
+<div class="area-vet-wrapper">
+  <h1 class="titulo">Paciente</h1>
+
+  <div class="card" *ngIf="carregando">Carregando...</div>
+  <div class="card erro" *ngIf="erro">{{ erro }}</div>
+
+  <div class="card" *ngIf="!carregando && !erro && data as d">
+    <div class="blocos">
+      <div class="bloco">
+        <div class="label">Pet</div>
+        <div class="valor grande">{{ d.pet.nome }}</div>
+        <div class="sub">{{ d.pet.especie || '-' }} • {{ d.pet.raca || '-' }} • {{ d.pet.sexo || '-' }}</div>
+        <div class="sub" *ngIf="d.pet.idade || d.pet.pesoKg">Idade: {{ d.pet.idade ?? '-' }} • Peso: {{ d.pet.pesoKg ?? '-' }}kg</div>
+      </div>
+      <div class="bloco">
+        <div class="label">Tutor</div>
+        <div class="valor">{{ d.cliente?.nome || d.pet.cliente_nome }}</div>
+        <div class="sub">CPF {{ d.cliente?.cpf || d.pet.cliente_cpf || '-' }}</div>
+      </div>
+      <div class="bloco">
+        <div class="label">Resumo</div>
+        <div class="valor">{{ d.resumo.total_atendimentos }} atendimento(s)</div>
+        <div class="sub">Primeiro: {{ d.resumo.primeiro_atendimento | date:'short' }}</div>
+        <div class="sub">Último: {{ d.resumo.ultimo_atendimento | date:'short' }}</div>
+      </div>
+    </div>
+
+    <div class="secao" *ngIf="d.pet.observacoes">
+      <h3>Observações do pet</h3>
+      <div class="observacoes">{{ d.pet.observacoes }}</div>
+    </div>
+
+    <div class="secao">
+      <h3>Alergias</h3>
+      <div class="chips">
+        <span class="chip alerta" *ngFor="let al of d.pet.alergias">{{ al }}</span>
+        <span class="chip alerta" *ngFor="let ap of (d.pet.alergias_predefinidas || [])">{{ ap.nome }}</span>
+        <div class="vazio" *ngIf="!(d.pet.alergias?.length) && !(d.pet.alergias_predefinidas?.length)">Sem alergias registradas</div>
+      </div>
+    </div>
+
+    <div class="secao">
+      <h3>Ativos mais usados</h3>
+      <div class="chips">
+        <span class="chip" *ngFor="let a of d.ativos_mais_usados">{{ a.nome }} • {{ a.usos }}</span>
+        <div class="vazio" *ngIf="!d.ativos_mais_usados?.length">Sem dados</div>
+      </div>
+    </div>
+
+    <div class="secao">
+      <h3>Últimas receitas</h3>
+      <div class="receitas">
+        <div class="rec" *ngFor="let r of d.ultimas_receitas">
+          <div class="top">
+            <span class="id">#{{ r.id }}</span>
+            <span class="dt">{{ r.created_at | date:'short' }}</span>
+          </div>
+          <div class="flags">
+            <span class="flag alergia" *ngIf="r.alerta_alergia === true || r.alerta_alergia === 1">Alerta de alergia</span>
+          </div>
+          <div class="itens">
+            <span class="badge" *ngFor="let it of r.itens">{{ it.nome_ativo }}</span>
+          </div>
+          <div class="obs" *ngIf="r.observacoes">{{ r.observacoes }}</div>
+          <div class="assinatura" *ngIf="r.assinatura_imagem">
+            <img [src]="r.assinatura_imagem" alt="Assinatura" />
+          </div>
+        </div>
+        <div class="vazio" *ngIf="!d.ultimas_receitas?.length">Sem receitas</div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,60 @@
+<app-navmenu></app-navmenu>
+<div class="area-vet-wrapper">
+  <h1 class="titulo">Histórico de Receitas</h1>
+
+  <div class="card filtros" style="width: 90%;">
+    <div class="row">
+      <input [(ngModel)]="q" class="input" placeholder="Buscar (pet, cliente, endereço, obs, ativo)" />
+      <input [(ngModel)]="from" class="input" type="date" />
+      <input [(ngModel)]="to" class="input" type="date" />
+      <button class="btn" (click)="page=1; load()">Filtrar</button>
+      <button class="btn-sec" (click)="resetarFiltros()">Limpar</button>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="carregando">Carregando...</div>
+  <div class="card erro" *ngIf="erro">{{ erro }}</div>
+
+  <div class="lista-cartoes" *ngIf="!carregando && !erro">
+    <ng-container *ngIf="receitas?.length && receitas.length > 0; else vazioTpl">
+      <div class="cartao" *ngFor="let r of receitas" (click)="abrirReceita(r)">
+        <div class="cartao-topo">
+          <div class="id">#{{ r.id }}</div>
+          <div class="data">{{ r.created_at | date:'short' }}</div>
+        </div>
+        <div class="cartao-corpo">
+          <div class="thumb" *ngIf="r.assinatura_imagem">
+            <img [src]="r.assinatura_imagem" alt="Assinatura" />
+          </div>
+          <div class="info">
+            <div class="linha principal">
+              <span class="pet">{{ r.pet_nome || r.nome_pet || '-' }}</span>
+              <span class="cliente">• {{ r.cliente_nome || '-' }}</span>
+            </div>
+            <div class="linha secundario" *ngIf="r.endereco_text">{{ r.endereco_text }}</div>
+            <div class="linha chips">
+              <span class="badge alerta" *ngIf="r.alerta_alergia === true || r.alerta_alergia === 1">Alerta de alergia</span>
+              <ng-container *ngIf="r.itens?.length">
+                <span class="badge item" *ngFor="let it of r.itens | slice:0:4">{{ it.nome_ativo }}</span>
+                <span class="badge mais" *ngIf="(r.itens?.length||0) > 4">+{{ (r.itens?.length||0) - 4 }}</span>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+        <div class="cartao-acoes" (click)="$event.stopPropagation()">
+          <button class="btn-mini" (click)="abrirReceita(r)">Ver</button>
+          <button class="btn-mini ghost" (click)="copyId(r, $event)">Copiar ID</button>
+        </div>
+      </div>
+    </ng-container>
+    <ng-template #vazioTpl>
+      <div class="vazio">Nenhuma receita encontrada.</div>
+    </ng-template>
+  </div>
+
+  <div class="paginacao" *ngIf="totalPages > 1">
+    <button class="btn-sec" [disabled]="page<=1" (click)="paginaAnterior()">Anterior</button>
+    <span>Página {{ page }} de {{ totalPages }} ({{ total }} itens)</span>
+    <button class="btn-sec" [disabled]="page>=totalPages" (click)="proximaPagina()">Próxima</button>
+  </div>
+</div>

@@ -59,6 +59,121 @@ export interface AlergiaLookup {
   nome: string;
 }
 
+export interface ReceitaItem {
+  id: number;
+  ativo_id: number;
+  nome_ativo: string;
+  ordem: number;
+  created_at?: string;
+}
+
+export interface Receita {
+  id: number;
+  vet_id?: number;
+  cliente_id: number;
+  pet_id: number;
+  // Names and display helpers
+  pet_nome?: string;
+  nome_pet?: string; // sometimes API returns this alias
+  cliente_nome?: string;
+  endereco_text?: string;
+  observacoes?: string;
+  alerta_alergia?: boolean | 0 | 1;
+  created_at?: string;
+  itens?: ReceitaItem[];
+  // Signature variants and thumbnail
+  assinatura_imagem?: string | null;
+  assinatura_manual?: string | null;
+  assinatura_cursiva?: string | null;
+  assinatura_icp?: string | null;
+  // Pet details snapshot
+  especie?: string;
+  raca?: string;
+  sexo?: string;
+  idade?: number;
+  peso?: string | number;
+  // Allergies snapshot
+  alergias?: string[];
+  // Full raw payload (for debugging/auditing)
+  dados_raw?: any;
+}
+
+export interface PagedReceitasResponse {
+  data: Receita[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+// Pacientes (pets atendidos)
+export interface TopAtivoUso { nome: string; usos: number; ativo_id?: number; }
+
+export interface PacienteSummary {
+  pet_id: number;
+  pet_nome: string;
+  especie?: string;
+  raca?: string;
+  sexo?: string;
+  cliente_id: number;
+  cliente_nome: string;
+  cliente_cpf?: string;
+  total_atendimentos: number;
+  primeiro_atendimento?: string;
+  ultimo_atendimento?: string;
+  top_ativos?: TopAtivoUso[]; // até 5
+}
+
+export interface PagedPacientesResponse {
+  data: PacienteSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PacienteDetail {
+  pet: {
+    id: number;
+    nome: string;
+    especie?: string;
+    raca?: string;
+    sexo?: string;
+    // Campos extras que podem vir no payload real
+    cliente_id?: number;
+    cliente_nome?: string;
+    cliente_cpf?: string;
+    tipo?: string | null;
+    photoURL?: string | null;
+    created_at?: string;
+    pesoKg?: string | number | null;
+    idade?: number | null;
+    aceito_tutor?: number | boolean | null;
+    salvo_vet_id?: number | null;
+    observacoes?: string | null;
+      alergias?: string[] | null;
+      alergias_predefinidas?: Array<{
+        nome: string;
+        alergia_id?: number | null;
+        ativo_id?: number | null;
+      }> | null;
+  };
+  cliente?: {
+    id: number;
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+  };
+  resumo: {
+    total_atendimentos: number;
+    primeiro_atendimento?: string;
+    ultimo_atendimento?: string;
+  };
+  ativos_mais_usados: TopAtivoUso[]; // top 10
+  ultimas_receitas: Receita[]; // até 5 últimas com itens
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -192,6 +307,52 @@ export class ApiService {
     return this.http.get<AlergiaLookup[]>(`${this.baseUrl}/get_lista_alergias${query}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+  }
+
+  // Receitas - histórico do vet autenticado
+  getReceitas(token: string, params?: {
+    page?: number;
+    pageSize?: number;
+    pet_id?: number | string;
+    cliente_id?: number | string;
+    ativo_id?: number | string;
+    from?: string;
+    to?: string;
+    q?: string;
+  }): Observable<PagedReceitasResponse> {
+    const search = new URLSearchParams();
+    if (params) {
+      if (params.page) search.set('page', String(params.page));
+      if (params.pageSize) search.set('pageSize', String(params.pageSize));
+      if (params.pet_id) search.set('pet_id', String(params.pet_id));
+      if (params.cliente_id) search.set('cliente_id', String(params.cliente_id));
+      if (params.ativo_id) search.set('ativo_id', String(params.ativo_id));
+      if (params.from) search.set('from', params.from);
+      if (params.to) search.set('to', params.to);
+      if (params.q) search.set('q', params.q);
+    }
+    const qp = search.toString();
+    const url = `${this.baseUrl}/receitas${qp ? `?${qp}` : ''}`;
+    return this.http.get<PagedReceitasResponse>(url, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  getReceitaById(token: string, id: number | string): Observable<Receita> {
+    return this.http.get<Receita>(`${this.baseUrl}/receitas/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  // Pacientes
+  getPacientes(token: string, params?: { page?: number; pageSize?: number; q?: string }): Observable<PagedPacientesResponse> {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    if (params?.q) search.set('q', params.q);
+    const qp = search.toString();
+    const url = `${this.baseUrl}/pacientes${qp ? `?${qp}` : ''}`;
+    return this.http.get<PagedPacientesResponse>(url, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  getPacienteById(token: string, petId: number | string): Observable<PacienteDetail> {
+    return this.http.get<PacienteDetail>(`${this.baseUrl}/pacientes/${petId}`, { headers: { Authorization: `Bearer ${token}` } });
   }
 
 

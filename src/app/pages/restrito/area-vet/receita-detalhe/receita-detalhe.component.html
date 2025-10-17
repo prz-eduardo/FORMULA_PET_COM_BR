@@ -1,0 +1,60 @@
+<app-navmenu></app-navmenu>
+<div class="area-vet-wrapper">
+  <h1 class="titulo">Receita #{{ receita?.id }}</h1>
+
+  <div class="card" *ngIf="carregando">Carregando...</div>
+  <div class="card erro" *ngIf="erro">{{ erro }}</div>
+
+  <div class="card" *ngIf="!carregando && !erro && receita as r">
+    <div class="header">
+      <div class="titulo-menor">Receita #{{ r.id }}</div>
+      <div class="quando">{{ r.created_at | date:'fullDate' }} • {{ r.created_at | date:'shortTime' }}</div>
+    </div>
+
+    <div class="blocos">
+      <div class="bloco">
+        <div class="label">Pet</div>
+        <div class="valor grande">{{ r.pet_nome || r.nome_pet || '-' }}</div>
+        <div class="sub" *ngIf="r.especie || r.raca || r.peso">
+          {{ r.especie || '-' }} • {{ r.raca || '-' }}
+          <span *ngIf="r.peso"> • {{ r.peso }} kg</span>
+        </div>
+      </div>
+      <div class="bloco">
+        <div class="label">Tutor</div>
+        <div class="valor">{{ r.cliente_nome || '-' }}</div>
+        <div class="sub" *ngIf="r.endereco_text">{{ r.endereco_text }}</div>
+      </div>
+      <div class="bloco alerta" *ngIf="r.alerta_alergia === true || r.alerta_alergia === 1">
+        <div class="label">Alergias</div>
+        <div class="chips">
+          <span class="chip" *ngFor="let a of (r.alergias || [])">{{ a }}</span>
+          <span class="chip" *ngIf="!(r.alergias?.length)">Alerta de alergia marcado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="obs" *ngIf="r.observacoes">
+      <div class="label">Observações</div>
+      <div class="texto">{{ r.observacoes }}</div>
+    </div>
+
+    <div class="assinatura" *ngIf="r.assinatura_imagem">
+      <div class="label">Assinatura</div>
+      <div class="ass-box"><img [src]="r.assinatura_imagem" alt="Assinatura" /></div>
+    </div>
+
+    <div class="itens">
+      <div class="it" *ngFor="let it of r.itens">
+        <span class="badge ordem">#{{ it.ordem }}</span>
+        <span class="ativo">{{ it.nome_ativo }}</span>
+        <span class="muted">(ID {{ it.ativo_id }})</span>
+      </div>
+      <div class="vazio" *ngIf="!r.itens?.length">Sem itens</div>
+    </div>
+
+    <div class="acoes">
+      <button class="btn" (click)="imprimir()">Imprimir</button>
+    </div>
+  </div>
+</div>

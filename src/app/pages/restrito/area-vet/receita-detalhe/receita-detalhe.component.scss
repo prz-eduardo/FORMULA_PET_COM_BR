@@ -1,0 +1,33 @@
+.area-vet-wrapper{padding:20px;min-height:100vh;background:linear-gradient(135deg,#0d151f,#1a2230);color:#ecf0f5;font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif}
+.titulo{font-size:36px;text-align:center;color:#1abc9c;margin:10px 0 20px;padding-top:24px}
+.card{background:#1f2a38;border-radius:12px;padding:16px;margin:10px auto;box-shadow:0 6px 12px rgba(0,0,0,.35);max-width:1000px;width:90%}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.titulo-menor{font-size:18px;color:#9adccf;font-weight:700}
+.quando{font-size:13px;color:#a8b3bf}
+.blocos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:900px){.blocos{grid-template-columns:1fr}}
+.bloco{background:#16202a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px}
+.bloco.alerta{border-color:#ff6b6b;background:#3b1f1f}
+.label{font-size:12px;color:#a8b3bf;margin-bottom:6px}
+.valor{font-size:16px;color:#ecf0f5}
+.valor.grande{font-size:18px;font-weight:700}
+.sub{font-size:12px;color:#a8b3bf;margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#1f2a38;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 8px;font-size:12px;color:#dbe7ff}
+
+.obs{margin-top:12px}
+.obs .texto{background:#16202a;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px}
+
+.assinatura{margin-top:12px}
+.ass-box{background:#0f1620;border:1px dashed rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;min-height:120px}
+.ass-box img{max-width:100%;max-height:220px;object-fit:contain}
+
+.itens{display:grid;gap:8px;margin-top:14px}
+.it{display:flex;gap:8px;align-items:center;background:#16202a;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px}
+.badge.ordem{background:#2a364a;color:#ecf0f5;border-radius:999px;padding:4px 8px;font-size:12px}
+.ativo{font-weight:700}
+.muted{color:#a8b3bf}
+.vazio{text-align:center;color:#9aa3ad;padding:8px}
+
+.acoes{display:flex;justify-content:flex-end;margin-top:12px}
+.btn{background:#1abc9c;color:#0b151f;border:none;border-radius:8px;padding:8px 14px;cursor:pointer}

@@ -1,18 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { GuiaAtivosAdminComponent } from './guia-ativos.component';
 
-import { GuiaAtivosComponent } from './guia-ativos.component';
-
-describe('GuiaAtivosComponent', () => {
-  let component: GuiaAtivosComponent;
-  let fixture: ComponentFixture<GuiaAtivosComponent>;
+describe('GuiaAtivosAdminComponent', () => {
+  let component: GuiaAtivosAdminComponent;
+  let fixture: ComponentFixture<GuiaAtivosAdminComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GuiaAtivosComponent]
+      imports: [GuiaAtivosAdminComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(GuiaAtivosComponent);
+    fixture = TestBed.createComponent(GuiaAtivosAdminComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
