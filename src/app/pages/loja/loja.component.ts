@@ -1,31 +1,36 @@
 import { Component, OnInit, ElementRef, ViewChild, Renderer2 } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { StoreService, ShopProduct } from '../../services/store.service';
+import { StoreService, ShopProduct, StoreCategory, StoreMeta } from '../../services/store.service';
 import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
 
 @Component({
   selector: 'app-loja',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe, NavmenuComponent, FooterComponent],
+  imports: [CommonModule, FormsModule, RouterLink, NavmenuComponent, FooterComponent, ProductCardV2Component],
   templateUrl: './loja.component.html',
   styleUrls: ['./loja.component.scss']
 })
 export class LojaComponent implements OnInit {
-  categorias: string[] = [];
+  categorias: StoreCategory[] = [];
   produtos: ShopProduct[] = [];
+  storeMeta: StoreMeta | null = null;
   filtro = '';
   categoria = '';
-  sort: 'relevance' | 'price-asc' | 'price-desc' | 'name' = 'relevance';
+  sort: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'popularity' | 'my_favorites' = 'relevance';
   onlyFavorites = false;
   // Pagination
   page = 1;
   pageSize = 20;
+  total = 0;
+  totalPagesSrv = 1;
+  loading = false;
   // Auth UI
   showLogin = false;
   showEmailLogin = false;
@@ -36,68 +41,74 @@ export class LojaComponent implements OnInit {
   popoverLeft = 0;
   private pendingProduct: ShopProduct | null = null;
 
-  @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLAnchorElement>;
+  @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('profileBtn') profileBtn?: ElementRef<HTMLButtonElement>;
 
   constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
 
   async ngOnInit() {
-    await this.store.loadProducts();
     this.store.products$.subscribe(p => this.produtos = p);
-    this.store.categories$.subscribe(c => this.categorias = c);
+  this.store.categories$.subscribe(c => this.categorias = c);
+  this.store.meta$.subscribe(m => this.storeMeta = m);
     // try fetch me silently
     await this.fetchMe();
     // If not logged in, clear cart as requested
     if (!this.me) this.store.clearCart();
     // read query params to prefill filters
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.subscribe(async params => {
       const q = params.get('q');
       const cat = params.get('cat');
       const login = params.get('login');
       const fav = params.get('fav');
+      const srt = params.get('sort');
       if (q !== null) this.filtro = q;
       if (cat !== null) this.categoria = cat;
       if (login === '1') this.openLoginNearProfile();
       this.onlyFavorites = fav === '1';
+      if (srt) {
+        const valid = ['relevance','newest','price_asc','price_desc','rating','popularity','my_favorites'] as const;
+        if ((valid as readonly string[]).includes(srt)) this.sort = srt as any;
+      }
+      // fetch with current params
+      await this.fetchProducts();
     });
+    // initial fetch (in case there are no query params)
+    await this.fetchProducts();
   }
 
   get filtered(): ShopProduct[] {
-    const f = this.filtro.trim().toLowerCase();
-    const cat = this.categoria;
-    let base = this.produtos.filter(p =>
-      (!cat || p.category === cat) &&
-      (!f || p.name.toLowerCase().includes(f) || p.description.toLowerCase().includes(f))
-    );
-    if (this.onlyFavorites) base = base.filter(p => this.isFav(p));
-
-    switch (this.sort) {
-      case 'price-asc':
-        return [...base].sort((a,b) => this.price(a) - this.price(b));
-      case 'price-desc':
-        return [...base].sort((a,b) => this.price(b) - this.price(a));
-      case 'name':
-        return [...base].sort((a,b) => a.name.localeCompare(b.name));
-      default:
-        return base; // relevance placeholder
+    // Deixe o servidor cuidar de categoria, busca e ordenação.
+    // Mantemos a lista como veio do backend; local só faz favoritos quando necessário.
+    let base = this.produtos;
+    if (this.onlyFavorites) {
+      // Em modo favoritos, ainda assim buscamos no servidor, mas caso venha tudo, garantimos estado local coerente
+      base = base.filter(p => this.isFav(p));
     }
+    return base;
   }
 
-  // Paginated slice of filtered
+  // Paginated slice of filtered (server paginates; local slice only if we truly filtered local-only)
   get paginated(): ShopProduct[] {
-    const start = (this.page - 1) * this.pageSize;
-    const end = start + this.pageSize;
-    return this.filtered.slice(start, end);
+    return this.filtered;
   }
-  totalPages(): number { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); }
+  totalPages(): number { return this.totalPagesSrv; }
   pageStart(): number { return (this.page - 1) * this.pageSize + 1; }
-  pageEnd(): number { return Math.min(this.page * this.pageSize, this.filtered.length); }
+  pageEnd(): number { const totalLocal = this.total; return Math.min(this.page * this.pageSize, totalLocal); }
   canPrev(): boolean { return this.page > 1; }
   canNext(): boolean { return this.page < this.totalPages(); }
-  prevPage() { if (this.canPrev()) this.page--; }
-  nextPage() { if (this.canNext()) this.page++; }
-  goToPage(p: number) { const t = this.totalPages(); this.page = Math.min(Math.max(1, p), t); }
-  onChangePageSize(ev: Event) { const v = Number((ev.target as HTMLSelectElement).value) || 20; this.pageSize = v; this.page = 1; }
+  async prevPage() { if (this.canPrev()) { this.page--; await this.fetchProducts(); } }
+  async nextPage() { if (this.canNext()) { this.page++; await this.fetchProducts(); } }
+  async goToPage(p: number) { const t = this.totalPages(); this.page = Math.min(Math.max(1, p), t); await this.fetchProducts(); }
+  async onChangePageSize(ev: Event) { const v = Number((ev.target as HTMLSelectElement).value) || 20; this.pageSize = v; this.page = 1; await this.fetchProducts(); }
+
+  async onCategoryChange(val: string) {
+    this.categoria = val;
+    this.page = 1;
+    await this.fetchProducts();
+    this.persistQueryParams();
+  }
+  async onSortChange(val: 'relevance'|'newest'|'price_asc'|'price_desc'|'rating'|'popularity') { this.sort = val; this.page = 1; await this.fetchProducts(); this.persistQueryParams(); }
+  async onQueryChange(val: string) { this.filtro = val; this.page = 1; await this.fetchProducts(); this.persistQueryParams(); }
 
   isFav(p: ShopProduct) { return this.store.isFavorite(p.id); }
   async toggleFav(p: ShopProduct) {
@@ -119,7 +130,7 @@ export class LojaComponent implements OnInit {
     return this.store.getCartTotals().count;
   }
 
-  async onAddToCart(p: ShopProduct, ev: MouseEvent) {
+  async onAddToCart(p: ShopProduct, ev: Event) {
     // If not logged in, clicking cart should trigger login
     if (!this.me) { this.openLoginNearProfile(); return; }
     const ok = await this.addToCart(p);
@@ -128,18 +139,23 @@ export class LojaComponent implements OnInit {
 
   // If user clicks cart link and is not logged in, intercept to open login
   onCartClick(ev: MouseEvent) {
-    if (!this.me) { ev.preventDefault(); this.openLoginNearProfile(); }
+    ev.preventDefault();
+    if (!this.me) { this.openLoginNearProfile(); return; }
+    this.router.navigate(['/carrinho']);
   }
 
   toggleFavoritesOnly() {
     this.onlyFavorites = !this.onlyFavorites;
-    // reflect in query params without reloading component
-    const queryParams: any = { ...this.route.snapshot.queryParams };
-    if (this.onlyFavorites) queryParams.fav = '1'; else delete queryParams.fav;
-    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
+    // reflect in query params and refetch when toggled off
+    this.persistQueryParams();
+    if (!this.onlyFavorites) {
+      // back to server pagination
+      this.page = 1;
+      this.fetchProducts();
+    }
   }
 
-  private flyToCart(ev: MouseEvent) {
+  private flyToCart(ev: Event) {
     try {
       if (!this.cartBtn) return;
       const target = ev.currentTarget as HTMLElement;
@@ -195,7 +211,7 @@ export class LojaComponent implements OnInit {
   // Inline auth
   async fetchMe() {
     try {
-      const token = localStorage.getItem('token');
+      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? localStorage.getItem('token') : null;
       if (!token) { this.me = null; return; }
       const resp = await this.api.getClienteMe(token).toPromise();
       this.me = resp?.user || null;
@@ -248,6 +264,32 @@ export class LojaComponent implements OnInit {
   private openLoginNearProfile() {
     this.showLogin = true;
     this.positionPopover();
+  }
+
+  private persistQueryParams() {
+    const queryParams: any = {};
+    if (this.filtro) queryParams.q = this.filtro; else queryParams.q = null;
+    if (this.categoria) queryParams.cat = this.categoria; else queryParams.cat = null;
+    if (this.onlyFavorites) queryParams.fav = '1'; else queryParams.fav = null;
+    if (this.sort && this.sort !== 'relevance') queryParams.sort = this.sort; else queryParams.sort = null;
+    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
+  }
+
+  private async fetchProducts() {
+    const sortMap = { relevance: 'relevance', newest: 'newest', price_asc: 'price_asc', price_desc: 'price_desc', rating: 'rating', popularity: 'popularity', my_favorites: 'my_favorites' } as const;
+    try {
+      this.loading = true;
+      const useFavs = this.onlyFavorites ? true : undefined;
+      const effectiveSort = this.onlyFavorites ? 'my_favorites' : sortMap[this.sort];
+  const selected = this.categorias.find(c => c.nome === this.categoria);
+  const res = await this.store.loadProducts({ page: this.page, pageSize: this.pageSize, category: this.categoria || undefined, categoryId: selected?.id, q: this.filtro || undefined, myFavorites: useFavs, sort: effectiveSort });
+      this.total = res.total;
+      this.totalPagesSrv = res.totalPages;
+      this.page = res.page; // in case server adjusted
+      this.pageSize = res.pageSize;
+    } finally {
+      this.loading = false;
+    }
   }
 
   async doLogin() {

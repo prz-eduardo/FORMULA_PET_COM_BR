@@ -1,0 +1,32 @@
+<article class="p-card">
+  <div class="thumb">
+    <img [src]="product.image" [alt]="product.name" width="320" height="200" />
+    <div class="badge" *ngIf="product.discount">{{ product.discount }}% OFF</div>
+    <div class="tipo" *ngIf="product.tipo">{{ product.tipo }}</div>
+    <button class="fav" *ngIf="supportsFavorites" (click)="toggleFav.emit()" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
+      <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>
+      <span class="count" *ngIf="product.favoritesCount != null">{{ product.favoritesCount }}</span>
+    </button>
+    <button class="add" (click)="add.emit($event)" title="Adicionar ao carrinho">🛒</button>
+  </div>
+  <div class="info">
+    <h3 class="nome" [title]="product.name">{{ product.name }}</h3>
+    <div class="linha">
+      <div class="categoria" *ngIf="product.category">{{ product.category }}</div>
+      <div class="rating" *ngIf="supportsRatings">
+        <span class="stars">
+          <ng-container *ngFor="let s of stars; let i = index">
+            <span class="star">{{ i + 1 <= ratingValue ? '★' : '☆' }}</span>
+          </ng-container>
+        </span>
+        <span class="r-val">{{ ratingValue | number:'1.1-1' }}</span>
+        <span class="r-total" *ngIf="product.ratingsCount">({{ product.ratingsCount }})</span>
+      </div>
+    </div>
+    <p class="desc" *ngIf="product.description">{{ product.description }}</p>
+    <div class="preco">
+      <span class="atual">{{ priceNow | currency:'BRL' }}</span>
+      <span class="old" *ngIf="product.discount">{{ product.price | currency:'BRL' }}</span>
+    </div>
+  </div>
+</article>

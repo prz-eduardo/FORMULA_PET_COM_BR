@@ -1,4 +1,4 @@
-<div class="dash-layout" *ngIf="!loading(); else loadingTpl">
+<div class="dash-layout">
   <aside class="sidebar">
     <div class="brand">Admin</div>
     <nav>
@@ -37,17 +37,20 @@
     <div *ngIf="error()" class="error">{{ error() }}</div>
     <ng-container *ngIf="data() as d">
       <section *ngIf="section()==='resumo'">
-        <!-- Preserve existing summary view -->
-        <!-- KPIs -->
+        <!-- KPIs (novo payload) -->
         <section class="kpis">
-          <div class="kpi"><span>Admins</span><strong>{{ d.totals?.admins || 0 }}</strong></div>
-          <div class="kpi"><span>Clientes</span><strong>{{ d.totals?.clientes || 0 }}</strong></div>
-          <div class="kpi"><span>Veterinários</span><strong>{{ d.totals?.vets || 0 }}</strong></div>
-          <div class="kpi"><span>Pets</span><strong>{{ d.totals?.pets || 0 }}</strong></div>
-          <div class="kpi"><span>Receitas</span><strong>{{ d.totals?.receitas || 0 }}</strong></div>
-          <div class="kpi"><span>Ativos</span><strong>{{ d.totals?.ativos || 0 }}</strong></div>
-          <div class="kpi"><span>Produtos</span><strong>{{ d.totals?.products || 0 }}</strong></div>
-          <div class="kpi" *ngIf="d.alergias"><span>Alergias</span><strong>{{ d.alergias?.total || 0 }}</strong></div>
+          <div class="kpi"><span>Receita total</span><strong>{{ (d.kpis?.total_revenue || d.sales?.total_revenue || 0) | currency:'BRL':'symbol-narrow' }}</strong></div>
+          <div class="kpi"><span>Pedidos</span><strong>{{ d.kpis?.total_orders || d.sales?.total_orders || 0 }}</strong></div>
+          <div class="kpi"><span>Itens</span><strong>{{ d.kpis?.total_items || d.sales?.total_items || 0 }}</strong></div>
+          <div class="kpi"><span>Ticket médio</span><strong>{{ (d.kpis?.avg_ticket || 0) | currency:'BRL':'symbol-narrow' }}</strong></div>
+          <div class="kpi"><span>Receita promo</span><strong>{{ (d.kpis?.promo_revenue || 0) | currency:'BRL':'symbol-narrow' }}</strong></div>
+          <div class="kpi"><span>Itens promo</span><strong>{{ d.kpis?.promo_items || 0 }}</strong></div>
+          <div class="kpi"><span>Share promo</span><strong>{{ d.kpis?.promo_share || 0 | number:'1.0-2' }}%</strong></div>
+          <div class="kpi"><span>Desconto total</span><strong>{{ (d.kpis?.desconto_total || 0) | currency:'BRL':'symbol-narrow' }}</strong></div>
+          <div class="kpi"><span>Pedidos c/ cupom</span><strong>{{ d.kpis?.pedidos_com_cupom || 0 }}</strong></div>
+          <div class="kpi"><span>Clientes únicos</span><strong>{{ d.kpis?.unique_customers || 0 }}</strong></div>
+          <div class="kpi"><span>Novos clientes</span><strong>{{ d.kpis?.novos_clientes || 0 }}</strong></div>
+          <div class="kpi"><span>Recorrentes</span><strong>{{ d.kpis?.recorrentes_clientes || 0 }}</strong></div>
         </section>
         <!-- Quick charts -->
         <section class="charts two">
@@ -71,28 +74,112 @@
           <div class="card">
             <h3>Marketplace</h3>
             <ul>
-              <li>Produtos: <strong>{{ d.marketplace?.totals?.produtos || 0 }}</strong></li>
-              <li>Ativos: <strong>{{ d.marketplace?.totals?.ativos || 0 }}</strong></li>
-              <li>Inativos: <strong>{{ d.marketplace?.totals?.inativos || 0 }}</strong></li>
-              <li>Categorias: <strong>{{ d.marketplace?.totals?.categorias || 0 }}</strong></li>
-              <li>Tags: <strong>{{ d.marketplace?.totals?.tags || 0 }}</strong></li>
-              <li>Imagens: <strong>{{ d.marketplace?.totals?.imagens || 0 }}</strong></li>
+              <li>Produtos: <strong>{{ (d.highlights?.marketplace?.produtos || d.marketplace?.totals?.produtos || 0) }}</strong></li>
+              <li>Ativos: <strong>{{ (d.highlights?.marketplace?.ativos || d.marketplace?.totals?.ativos || 0) }}</strong></li>
+              <li>Inativos: <strong>{{ (d.highlights?.marketplace?.inativos || d.marketplace?.totals?.inativos || 0) }}</strong></li>
             </ul>
           </div>
           <div class="card">
             <h3>Promoções</h3>
             <ul>
-              <li>Ativas: <strong>{{ d.promotions?.active || 0 }}</strong></li>
-              <li>Produtos em promoção: <strong>{{ d.promotions?.products_under_promo || 0 }}</strong></li>
+              <li>Ativas: <strong>{{ d.highlights?.promotions?.active || d.promotions?.active || 0 }}</strong></li>
             </ul>
           </div>
           <div class="card">
-            <h3>Vendas</h3>
+            <h3>Cupons</h3>
             <ul>
-              <li>Receita total: <strong>{{ d.sales?.total_revenue || 0 }}</strong></li>
-              <li>Pedidos: <strong>{{ d.sales?.total_orders || 0 }}</strong></li>
-              <li>Itens: <strong>{{ d.sales?.total_items || 0 }}</strong></li>
+              <li>Ativos: <strong>{{ d.highlights?.coupons?.active || 0 }}</strong></li>
             </ul>
+          </div>
+          <div class="card">
+            <h3>Snapshots</h3>
+            <ul>
+              <li>Hoje: <strong>{{ (d.snapshots?.today?.revenue || 0) | currency:'BRL':'symbol-narrow' }}</strong> · {{ d.snapshots?.today?.orders || 0 }} pedidos</li>
+              <li>7 dias: <strong>{{ (d.snapshots?.last_7d?.revenue || 0) | currency:'BRL':'symbol-narrow' }}</strong> · {{ d.snapshots?.last_7d?.orders || 0 }} pedidos</li>
+              <li>30 dias: <strong>{{ (d.snapshots?.last_30d?.revenue || 0) | currency:'BRL':'symbol-narrow' }}</strong> · {{ d.snapshots?.last_30d?.orders || 0 }} pedidos</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Breakdowns (tables for quick scan) -->
+        <section class="charts two" *ngIf="d.breakdowns">
+          <div class="panel">
+            <h3>Por pagamento</h3>
+            <div class="table-wrap small">
+              <table>
+                <thead><tr><th>Forma</th><th>Pedidos</th><th>Receita</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let p of d.breakdowns?.by_payment">
+                    <td>{{ p.pagamento_forma }}</td>
+                    <td>{{ p.pedidos }}</td>
+                    <td>{{ (p.receita || 0) | currency:'BRL':'symbol-narrow' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Por status</h3>
+            <div class="table-wrap small">
+              <table>
+                <thead><tr><th>Status</th><th>Pedidos</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let s of d.breakdowns?.by_status">
+                    <td>{{ s.status }}</td>
+                    <td>{{ s.pedidos }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Top lists -->
+        <section class="charts three" *ngIf="d.top">
+          <div class="panel">
+            <h3>Top produtos</h3>
+            <div class="table-wrap small">
+              <table>
+                <thead><tr><th>Produto</th><th>Receita</th><th>Itens</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let p of d.top?.products">
+                    <td>{{ p.nome }}</td>
+                    <td>{{ (p.receita || 0) | currency:'BRL':'symbol-narrow' }}</td>
+                    <td>{{ p.itens }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Top categorias</h3>
+            <div class="table-wrap small">
+              <table>
+                <thead><tr><th>Categoria</th><th>Receita</th><th>Itens</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let c of d.top?.categories">
+                    <td>{{ c.nome }}</td>
+                    <td>{{ (c.receita || 0) | currency:'BRL':'symbol-narrow' }}</td>
+                    <td>{{ c.itens }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Top tags</h3>
+            <div class="table-wrap small">
+              <table>
+                <thead><tr><th>Tag</th><th>Receita</th><th>Itens</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let t of d.top?.tags">
+                    <td>{{ t.nome }}</td>
+                    <td>{{ (t.receita || 0) | currency:'BRL':'symbol-narrow' }}</td>
+                    <td>{{ t.itens }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </section>
@@ -164,8 +251,12 @@
       </section>
     </ng-container>
   </main>
+  <!-- Loading overlay modal to avoid white background while loading -->
+  <div class="loading-overlay" *ngIf="loading()">
+    <div class="loader">
+      <div class="spinner"></div>
+      <div>Carregando dashboard…</div>
+    </div>
+  </div>
 </div>
 
-<ng-template #loadingTpl>
-  <div class="loading">Carregando dashboard…</div>
-</ng-template>

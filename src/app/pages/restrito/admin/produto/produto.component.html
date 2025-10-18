@@ -8,8 +8,24 @@
     </div>
   </div>
 
-  <!-- STEP 0: Ativo -->
-  <section *ngIf="step()===0" class="step step-ativo">
+  <!-- STEP 0: Imagem (obrigatória) -->
+  <section *ngIf="step()===0" class="step step-imagem">
+    <div class="image-upload">
+      <label for="imgUpload">
+        <div class="img-preview" *ngIf="form.value.image; else placeholder">
+          <img [src]="form.value.image" alt="Imagem do produto">
+        </div>
+        <ng-template #placeholder>
+          <div class="img-placeholder">Clique para adicionar imagem</div>
+        </ng-template>
+      </label>
+      <input type="file" id="imgUpload" (change)="onImageSelected($event)">
+      <div class="hint">A imagem é obrigatória para cadastrar o produto.</div>
+    </div>
+  </section>
+
+  <!-- STEP 1: Ativo -->
+  <section *ngIf="step()===1" class="step step-ativo">
     <div class="image-upload">
       <label for="imgUpload">
         <div class="img-preview" *ngIf="form.value.image; else placeholder">
@@ -40,10 +56,14 @@
       <div class="estoque-list" *ngIf="estoqueLotes.length; else semEstoque">
         <div class="lote-card" *ngFor="let e of estoqueLotes" (click)="selecionarLote(e)"
              [class.selected]="estoqueSelecionado?.id === e.id">
-          <div><strong>Lote:</strong> {{ e.lote || '—' }}</div>
-          <div><strong>Quantidade:</strong> {{ e.quantity }} {{ e.unit_code }}</div>
-          <div><strong>Validade:</strong> {{ e.validade || '—' }}</div>
-          <div class="muted">#{{ e.id }} • Local: {{ e.location || '—' }}</div>
+          <div class="lote-select">
+            <div class="meta">
+              <div><strong>Lote:</strong> {{ e.lote || '—' }}</div>
+              <div><strong>Qtd:</strong> {{ e.quantity }} {{ e.unit_code }}</div>
+              <div><strong>Validade:</strong> {{ e.validade || '—' }}</div>
+              <div class="muted">#{{ e.id }} • {{ e.unit_name || e.unit_code }} • {{ e.location || '—' }}</div>
+            </div>
+          </div>
         </div>
       </div>
       <ng-template #semEstoque>
@@ -70,8 +90,24 @@
   </section>
 
   <!-- STEP 1: Básico -->
-  <section *ngIf="step()===1" class="step step-basico">
+  <section *ngIf="step()===2" class="step step-basico">
     <div class="form-grid">
+      <div class="form-group">
+        <label>Tipo do Produto</label>
+        <select formControlName="tipo" required>
+          <option value="pronto">Pronto</option>
+          <option value="manipulado">Manipulado</option>
+        </select>
+      </div>
+      <div class="form-group" *ngIf="form.value.tipo==='manipulado'">
+        <label>Fórmula</label>
+        <select formControlName="formulaId" required>
+          <option [ngValue]="null">Selecione</option>
+          <ng-container *ngFor="let f of formulasSelect">
+            <option [ngValue]="f.id">{{ f.name }}</option>
+          </ng-container>
+        </select>
+      </div>
       <div class="form-group">
         <label>Nome do Produto</label>
         <input type="text" formControlName="name" required>
@@ -84,7 +120,7 @@
   </section>
 
   <!-- STEP 2: Preço/Estoque -->
-  <section *ngIf="step()===2" class="step step-preco">
+  <section *ngIf="step()===3" class="step step-preco">
     <div class="form-grid">
       <div class="form-group">
         <label>Preço</label>
@@ -119,12 +155,13 @@
   </section>
 
   <!-- STEP 3: Categoria/Tags -->
-  <section *ngIf="step()===3" class="step step-categorias">
+  <section *ngIf="step()===4" class="step step-categorias">
     <div class="form-grid">
       <div class="form-group">
         <label>Categoria</label>
-        <select formControlName="category" required>
-          <option *ngFor="let c of categoriasList" [value]="c.name">{{ c.name }}</option>
+        <select formControlName="categoryId" required>
+          <option [ngValue]="null">Selecione</option>
+          <option *ngFor="let c of categoriasList" [ngValue]="c.id">{{ c.name }}</option>
         </select>
         <button type="button" (click)="showCategoryModal=true">+ Nova Categoria</button>
       </div>
@@ -141,7 +178,7 @@
   </section>
 
   <!-- STEP 4: Customizações -->
-  <section *ngIf="step()===4" class="step step-custom">
+  <section *ngIf="step()===5" class="step step-custom">
     <div class="customizations">
       <h4>Dosagens</h4>
       <div class="dosagens" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
@@ -163,21 +200,38 @@
   </section>
 
   <!-- STEP 5: Revisão e Envio -->
-  <section *ngIf="step()===5" class="step step-revisao">
+  <section *ngIf="step()===6" class="step step-revisao">
     <div class="review">
       <h4>Revisão</h4>
       <ul>
+        <li><strong>Tipo:</strong> {{ form.value.tipo }}</li>
+  <li *ngIf="form.value.tipo==='manipulado'"><strong>Fórmula:</strong> {{ formulaNameById(form.value.formulaId) }}</li>
         <li><strong>Ativo:</strong> {{ ativoSelecionado?.ativo_nome || '—' }}</li>
   <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
         <li><strong>Nome:</strong> {{ form.value.name }}</li>
         <li><strong>Descrição:</strong> {{ form.value.description }}</li>
         <li><strong>Preço:</strong> {{ form.value.price | currency:'BRL':'symbol-narrow' }}</li>
         <li><strong>Estoque:</strong> {{ form.value.stock ?? '—' }}</li>
-        <li><strong>Categoria:</strong> {{ form.value.category }}</li>
+  <li><strong>Categoria:</strong> {{ categoryNameById(form.value.categoryId) }}</li>
         <li><strong>Tags:</strong> {{ (form.value.tags || []).join(', ') || '—' }}</li>
         <li><strong>Dosagens:</strong> {{ (form.value.customizations?.dosage || []).join(', ') || '—' }}</li>
         <li><strong>Embalagens:</strong> {{ (form.value.customizations?.packaging || []).join(', ') || '—' }}</li>
       </ul>
+      <div class="gallery">
+        <label>Imagens adicionais</label>
+        <div class="thumbs">
+          <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index">
+            <img [src]="img.value" alt="img">
+            <div class="thumb-actions">
+              <button type="button" (click)="moveImage(i,-1)">↑</button>
+              <button type="button" (click)="moveImage(i,1)">↓</button>
+              <button type="button" (click)="removeImageAt(i)">✕</button>
+            </div>
+            <div class="pos">{{ i }}</div>
+          </div>
+        </div>
+        <input type="file" multiple (change)="onImagesSelected($event)">
+      </div>
     </div>
   </section>
 
@@ -185,7 +239,7 @@
   <div class="footer-actions">
     <button type="button" class="btn-reset" (click)="prevStep()" [disabled]="step()===0">Voltar</button>
     <div class="spacer"></div>
-    <button type="button" class="btn-next" *ngIf="step()<steps.length-1" (click)="nextStep()">Avançar</button>
+  <button type="button" class="btn-next" *ngIf="step()<steps.length-1" (click)="nextStep()">{{ nextLabel() }}</button>
     <button type="button" class="btn-submit" *ngIf="step()===steps.length-1" (click)="submit()">{{ form.value.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
   </div>
 </div>
@@ -195,7 +249,7 @@
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Categoria</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let c of categoriasList" class="badge" [class.selected]="form.value.category === c.name" (click)="form.patchValue({ category: c.name })">
+        <span *ngFor="let c of categoriasList" class="badge" [class.selected]="form.value.categoryId === c.id" (click)="form.patchValue({ categoryId: c.id })">
           {{ c.name }}
           <span class="badge-remove" (click)="deleteTaxonomia('categorias', c)">-</span>
         </span>

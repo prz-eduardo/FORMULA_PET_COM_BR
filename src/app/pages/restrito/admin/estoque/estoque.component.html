@@ -130,11 +130,11 @@
   </div>
 
   <div *ngIf="step()===1">
-    <div class="grid">
+    <!-- Criar novo lote: mostra todos os campos -->
+    <div class="grid" *ngIf="!form.value.id; else onlyOps">
       <div class="field">
         <label>Quantidade</label>
-  <input type="number" formControlName="quantity" [disabled]="!!form.value.id" />
-        <small *ngIf="form.value.id" style="color:#9aa4b2">Para alterar a quantidade use Entrada/Ajuste/Consumo abaixo.</small>
+        <input type="number" formControlName="quantity" />
       </div>
 
       <div class="field">
@@ -190,10 +190,13 @@
         </select>
       </div>
     </div>
+    <ng-template #onlyOps>
+      <div class="notice" style="margin:8px 0 12px;color:#9aa4b2">
+      </div>
+    </ng-template>
 
     <div class="actions">
       <button type="button" class="btn" *ngIf="!form.value.id" (click)="criarLote()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Criar Lote' }}</button>
-      <button type="button" class="btn" *ngIf="form.value.id" (click)="salvarAlteracoes()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar alterações' }}</button>
       <button type="button" class="btn secondary" (click)="prevStep()">Voltar</button>
       <span class="err" *ngIf="error()">{{ error() }}</span>
     </div>

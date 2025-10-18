@@ -26,8 +26,9 @@ export class ProdutoComponent implements OnInit {
   success = signal<string | null>(null);
 
   // stepper state
-  step = signal(0); // 0..5
+  step = signal(0); // 0..6
   steps = [
+    { key: 'imagem', label: 'Imagem' },
     { key: 'ativo', label: 'Ativo' },
     { key: 'basico', label: 'Básico' },
     { key: 'preco', label: 'Preço/Estoque' },
@@ -60,21 +61,30 @@ export class ProdutoComponent implements OnInit {
   forms: ProductFormDto[] = [];
   estoqueLotes: EstoqueAtivoDto[] = [];
   estoqueSelecionado: EstoqueAtivoDto | null = null;
+  
+  // fórmulas para produtos manipulados
+  formulas: ProductFormDto[] = [];
+  formulasSelect: Array<{ id: number; name: string }> = [];
 
   ngOnInit() {
     this.form = this.fb.group({
       id: [null],
+      // novo modelo
+      tipo: ['pronto', Validators.required], // 'pronto' | 'manipulado'
+      active: [1], // 1 ativo, 0 inativo
+      formulaId: [null], // obrigatório quando tipo = manipulado
       name: ['', Validators.required],
       description: ['', Validators.required],
       price: [0, [Validators.required, Validators.min(0)]],
       image: [null],
-      category: ['', Validators.required],
+      categoryId: [null, Validators.required],
       discount: [null],
       rating: [null],
       stock: [null],
       tags: this.fb.array<string>([]),
       weightValue: [0],
       weightUnit: ['g'],
+      images: this.fb.array<string>([]), // base64 gallery
       customizations: this.fb.group({
         dosage: this.fb.array<string>([]),
         packaging: this.fb.array<string>([])
@@ -100,6 +110,15 @@ export class ProdutoComponent implements OnInit {
       error: () => { this.forms = []; this.units = []; this.ativosAll = []; }
     });
 
+    // carregar fórmulas para seleção quando tipo = manipulado
+    this.api.listFormulas({ page: 1, pageSize: 100 }).subscribe({
+      next: (res) => {
+        const items = res?.data || [];
+        this.formulasSelect = items.map(f => ({ id: f.id as number, name: f.name }));
+      },
+      error: () => { this.formulasSelect = []; }
+    });
+
     // editar produto se tiver id na rota
     const produtoId = this.route.snapshot.queryParamMap.get('produto_id');
     if (produtoId) this.loadProduto(produtoId);
@@ -110,6 +129,26 @@ export class ProdutoComponent implements OnInit {
   get tagsFA() { return this.form.get('tags') as FormArray; }
   get dosageFA() { return this.form.get(['customizations','dosage']) as FormArray; }
   get packagingFA() { return this.form.get(['customizations','packaging']) as FormArray; }
+  get imagesFA() { return this.form.get('images') as FormArray; }
+
+  // helpers for template display
+  formulaNameById(id: number | null): string {
+    if (!id) return '—';
+    const f = this.formulasSelect.find(x => x.id === id);
+    return f?.name || '—';
+  }
+  categoryNameById(id: number | string | null): string {
+    if (id == null) return '—';
+    const c = this.categoriasList.find(x => x.id === id);
+    return c?.name || '—';
+  }
+
+  // footer next button label
+  nextLabel(): string {
+    // If we're in Ativo step (index 1) and no ativo selected, user can skip selecting ativo/lote
+    if (this.step() === 1 && !this.ativoSelecionado) return 'Pular';
+    return 'Avançar';
+  }
 
   private loadTaxonomy(tipo: TaxonomyType) {
     this.loading.set(true);
@@ -131,20 +170,22 @@ export class ProdutoComponent implements OnInit {
       next: (p) => {
         this.form.patchValue({
           id: p.id,
+          // mapeamento básico para compatibilidade de edição antiga
           name: p.name,
           description: p.description,
           price: p.price,
           image: p.image ?? null,
-          category: p.category,
+          // vamos tentar mapear nome -> id se existir na lista
+          categoryId: this.categoriasList.find(c => c.name === (p as any).category)?.id ?? null,
           discount: p.discount ?? null,
           rating: p.rating ?? null,
           stock: p.stock ?? null,
           weightValue: p.weightValue ?? 0,
           weightUnit: p.weightUnit ?? 'g',
         });
-  this.tagsFA.clear(); (p.tags || []).forEach(t => this.tagsFA.push(this.fb.control<string>(t)));
-  this.dosageFA.clear(); (p.customizations?.dosage || []).forEach(d => this.dosageFA.push(this.fb.control<string>(d)));
-  this.packagingFA.clear(); (p.customizations?.packaging || []).forEach(e => this.packagingFA.push(this.fb.control<string>(e)));
+        this.tagsFA.clear(); (p.tags || []).forEach(t => this.tagsFA.push(this.fb.control<string>(t)));
+        this.dosageFA.clear(); (p.customizations?.dosage || []).forEach(d => this.dosageFA.push(this.fb.control<string>(d)));
+        this.packagingFA.clear(); (p.customizations?.packaging || []).forEach(e => this.packagingFA.push(this.fb.control<string>(e)));
         this.loading.set(false);
       },
       error: (err) => { console.error(err); this.loading.set(false); }
@@ -172,23 +213,31 @@ export class ProdutoComponent implements OnInit {
   isStepValid(i: number): boolean {
     switch (i) {
       case 0: {
+        // Imagem obrigatória
+        const img = this.form.get('image')?.value;
+        return !!img;
+      }
+      case 1: {
         // Ativo é opcional, porém, se houver ativo selecionado, exigir estoqueId
         const ativoId = this.form.get('ativoId')?.value;
         if (!ativoId) return true;
         const estoqueId = this.form.get('estoqueId')?.value;
         return !!estoqueId;
       }
-      case 1: {
+      case 2: {
         const name = this.form.get('name');
         const desc = this.form.get('description');
-        return !!name && !!desc && name.valid && desc.valid;
+        const tipo = this.form.get('tipo');
+        const isManipulado = tipo?.value === 'manipulado';
+        const formulaOk = isManipulado ? !!this.form.get('formulaId')?.value : true;
+        return !!name && !!desc && name.valid && desc.valid && !!tipo && tipo.valid && formulaOk;
       }
-      case 2: {
+      case 3: {
         const price = this.form.get('price');
         return !!price && price.valid;
       }
-      case 3: {
-        const cat = this.form.get('category');
+      case 4: {
+        const cat = this.form.get('categoryId');
         return !!cat && cat.valid;
       }
       default:
@@ -198,10 +247,11 @@ export class ProdutoComponent implements OnInit {
   markStepTouched(i: number) {
     const mark = (path: string) => this.form.get(path)?.markAsTouched();
     switch (i) {
-      case 0: mark('ativoId'); break;
-      case 1: mark('name'); mark('description'); break;
-      case 2: mark('price'); break;
-      case 3: mark('category'); break;
+      case 0: mark('image'); break;
+      case 1: mark('ativoId'); break;
+      case 2: mark('name'); mark('description'); mark('tipo'); if (this.form.get('tipo')?.value === 'manipulado') mark('formulaId'); break;
+      case 3: mark('price'); break;
+      case 4: mark('categoryId'); break;
     }
   }
 
@@ -211,6 +261,27 @@ export class ProdutoComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = (e: any) => this.form.patchValue({ image: e.target.result });
     reader.readAsDataURL(file);
+  }
+
+  onImagesSelected(event: any) {
+    const files: FileList | undefined = event.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e: any) => this.imagesFA.push(this.fb.control<string>(e.target.result));
+      reader.readAsDataURL(file);
+    });
+    // reset input
+    event.target.value = '';
+  }
+  removeImageAt(i: number) { if (i>=0) this.imagesFA.removeAt(i); }
+  moveImage(i: number, dir: -1 | 1) {
+    const target = i + dir;
+    if (target < 0 || target >= this.imagesFA.length) return;
+    const current = this.imagesFA.at(i).value;
+    const other = this.imagesFA.at(target).value;
+    this.imagesFA.at(i).setValue(other);
+    this.imagesFA.at(target).setValue(current);
   }
 
   // tags/dosagens/embalagens
@@ -291,7 +362,7 @@ export class ProdutoComponent implements OnInit {
     this.api.createTaxonomia(tipo, name).subscribe({
       next: (res) => {
         this.loadTaxonomy(tipo);
-        if (tipo === 'categorias') this.form.patchValue({ category: res.name });
+        if (tipo === 'categorias') this.form.patchValue({ categoryId: res.id });
       }
     });
   }
@@ -303,7 +374,7 @@ export class ProdutoComponent implements OnInit {
     this.api.deleteTaxonomia(tipo, item.id).subscribe(() => this.loadTaxonomy(tipo));
   }
 
-  resetForm() { this.form.reset({ price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); }
+  resetForm() { this.form.reset({ tipo: 'pronto', active: 1, price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.ativoSelecionado = null; this.estoqueSelecionado = null; }
 
   fixRating(event: any) {
     const v = parseFloat(event.target.value);
@@ -317,27 +388,54 @@ export class ProdutoComponent implements OnInit {
       if (!this.isStepValid(s)) { this.markStepTouched(s); this.error.set('Preencha os campos obrigatórios.'); return; }
     }
     this.error.set(null); this.saving.set(true);
-    const payload: ProdutoDto = {
-      id: this.form.value.id ?? undefined,
+    // map tags names -> ids
+    const tagNameToId = new Map(this.tagsList.map(t => [t.name, t.id] as [string, number | string]));
+    const tag_ids = (this.tagsFA.value as string[])
+      .map(n => tagNameToId.get(n))
+      .filter((v): v is number | string => v != null);
+    const categoria_ids = this.form.value.categoryId ? [this.form.value.categoryId] : [];
+    // imagens com posição: primeira do array é capa (posicao 0); se houver 'image' single, insere como capa antes da galeria
+    const gallery: string[] = this.imagesFA.value as string[];
+    const imagens: Array<{ data: string; posicao: number }> = [];
+    const cover = this.form.value.image as string | null;
+    let pos = 0;
+    if (cover) { imagens.push({ data: cover, posicao: pos++ }); }
+    gallery.forEach(img => imagens.push({ data: img, posicao: pos++ }));
+
+    const tipo: 'pronto' | 'manipulado' = this.form.value.tipo;
+    const body: any = {
+      nome: this.form.value.name,
+      descricao: this.form.value.description,
+      preco: this.form.value.price,
+      tipo,
+      ativo: this.form.value.active ?? 1,
+      categoria_ids,
+      tag_ids,
+      imagens,
+    };
+    if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
+    if (this.form.value.ativoId) body.ativo_id = this.form.value.ativoId;
+    if (this.form.value.estoqueId) body.estoque_id = this.form.value.estoqueId;
+
+    // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full
+    const legacyId = this.form.value.id;
+    const req$ = legacyId ? this.api.updateProduto(legacyId, {
+      id: legacyId,
       name: this.form.value.name,
       description: this.form.value.description,
       price: this.form.value.price,
       image: this.form.value.image ?? null,
-      category: this.form.value.category,
-      customizations: {
-        dosage: this.dosageFA.value,
-        packaging: this.packagingFA.value
-      },
+      category: (this.categoriasList.find(c => c.id === this.form.value.categoryId)?.name) || '',
+      customizations: { dosage: this.dosageFA.value, packaging: this.packagingFA.value },
+      tags: this.tagsFA.value,
       discount: this.form.value.discount ?? null,
       rating: this.form.value.rating ?? null,
       stock: this.form.value.stock ?? null,
-      tags: this.tagsFA.value,
       weightValue: this.form.value.weightValue ?? null,
       weightUnit: this.form.value.weightUnit ?? null,
       ativoId: this.form.value.ativoId ?? null,
       estoqueId: this.form.value.estoqueId ?? null,
-    };
-    const req$ = payload.id ? this.api.updateProduto(payload.id, payload) : this.api.createProduto(payload);
+    }) : this.api.createMarketplaceProdutoFull(body);
     req$.subscribe({
       next: (res) => { this.saving.set(false); this.success.set('Produto salvo com sucesso.'); this.form.patchValue({ id: res.id }); },
       error: (err) => {

@@ -187,6 +187,58 @@ export class ApiService {
     return this.http.get<Ativo[]>(`${this.baseUrl}/ativos`);
   }
 
+  // Loja - listagem pública de produtos com paginação e filtros
+    listStoreProducts(
+      params?: {
+        page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto';
+        category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[];
+        minPrice?: number; maxPrice?: number; myFavorites?: boolean;
+        sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites'
+      },
+      token?: string
+    ): Observable<{
+      data: any[];
+      page: number; pageSize: number; total: number; totalPages: number;
+      meta?: {
+        loggedIn?: boolean;
+        userType?: string;
+        favoritesPersonalization?: boolean;
+        supports?: { images?: boolean; favorites?: boolean; ratings?: boolean; categories?: boolean; tags?: boolean };
+        categories?: Array<{ id: number; nome: string; produtos: number }>;
+        tags?: Array<{ id: number; nome: string; produtos: number }>;
+      };
+    }> {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    if (params?.q) search.set('q', params.q);
+    if (params?.tipo) search.set('tipo', params.tipo);
+    if (params?.category) search.set('category', params.category);
+  if (params?.categoryId != null) search.set('category_id', String(params.categoryId));
+    if (params?.categories && params.categories.length) search.set('categories', params.categories.join(','));
+    if (params?.tag) search.set('tag', params.tag);
+    if (params?.tags && params.tags.length) search.set('tags', params.tags.join(','));
+    if (typeof params?.minPrice === 'number') search.set('minPrice', String(params.minPrice));
+    if (typeof params?.maxPrice === 'number') search.set('maxPrice', String(params.maxPrice));
+    if (params?.myFavorites) search.set('myFavorites', 'true');
+    if (params?.sort) search.set('sort', params.sort);
+    const qp = search.toString();
+      const url = `${this.baseUrl}/produtos${qp ? `?${qp}` : ''}`;
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+      return this.http.get<{
+        data: any[];
+        page: number; pageSize: number; total: number; totalPages: number;
+        meta?: {
+          loggedIn?: boolean;
+          userType?: string;
+          favoritesPersonalization?: boolean;
+          supports?: { images?: boolean; favorites?: boolean; ratings?: boolean; categories?: boolean; tags?: boolean };
+          categories?: Array<{ id: number; nome: string; produtos: number }>;
+          tags?: Array<{ id: number; nome: string; produtos: number }>;
+        };
+      }>(url, { headers });
+  }
+
   // Ativos (busca por termo, se o backend suportar ?q=)
   searchAtivos(q: string): Observable<Ativo[]> {
     const term = (q || '').trim();
@@ -269,6 +321,14 @@ export class ApiService {
   consultarPedido(codigo: string, token?: string) {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
     return this.http.get<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(codigo)}`, { headers });
+  }
+
+  // Favoritar/Desfavoritar produto (toggle). Backend deve reconhecer o token do cliente.
+  // Resposta esperada genérica: { is_favorited?: boolean, favorited?: boolean, favoritos?: number }
+  toggleFavorite(productId: number, token: string) {
+    return this.http.post<any>(`${this.baseUrl}/produtos/${productId}/favorite`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
   }
 
   // Criar Pet para um cliente

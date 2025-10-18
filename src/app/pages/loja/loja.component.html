@@ -10,16 +10,18 @@
   </section>
 
   <div class="filtros card">
-    <input class="input" placeholder="Buscar produtos..." [(ngModel)]="filtro" aria-label="Buscar produtos" />
-    <select class="input" [(ngModel)]="categoria" aria-label="Filtrar por categoria">
+    <input class="input" placeholder="Buscar produtos..." [ngModel]="filtro" (ngModelChange)="onQueryChange($event)" aria-label="Buscar produtos" />
+    <select class="input" [ngModel]="categoria" (ngModelChange)="onCategoryChange($event)" aria-label="Filtrar por categoria">
       <option value="">Todas categorias</option>
-      <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+      <option *ngFor="let c of categorias" [value]="c.nome">{{ c.nome }} ({{ c.produtos }})</option>
     </select>
-    <select class="input" [(ngModel)]="sort" aria-label="Ordenar">
+    <select class="input" [ngModel]="sort" (ngModelChange)="onSortChange($event)" aria-label="Ordenar">
       <option value="relevance">Mais relevantes</option>
-      <option value="price-asc">Menor preço</option>
-      <option value="price-desc">Maior preço</option>
-      <option value="name">Nome (A-Z)</option>
+      <option value="newest">Mais recentes</option>
+      <option value="price_asc">Menor preço</option>
+      <option value="price_desc">Maior preço</option>
+      <option value="rating">Melhor avaliação</option>
+      <option value="popularity">Mais populares</option>
     </select>
     <div class="cta">
       <button class="btn light fav-toggle" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" title="Mostrar apenas favoritos">
@@ -30,47 +32,34 @@
           {{ me ? '👤 ' + (me?.nome || 'Cliente') : '👤 Entrar' }}
         </button>
       </div>
-      <a #cartBtn routerLink="/carrinho" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho">
+      <button #cartBtn type="button" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho">
         🛒 Carrinho
         <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
-      </a>
+      </button>
     </div>
   </div>
 
   <div class="cats" *ngIf="categorias.length">
-    <button class="chip" [class.active]="!categoria" (click)="categoria=''">Todas</button>
-    <button class="chip" *ngFor="let c of categorias" [class.active]="categoria===c" (click)="categoria=c">{{ c }}</button>
+    <button class="chip" [class.active]="!categoria" (click)="onCategoryChange('')">Todas</button>
+    <button class="chip" *ngFor="let c of categorias" [class.active]="categoria===c.nome" (click)="onCategoryChange(c.nome)">{{ c.nome }} <span class="count">({{ c.produtos }})</span></button>
   </div>
 
-  <div class="meta" aria-live="polite">{{ filtered.length }} itens</div>
+  <div class="meta" aria-live="polite">{{ onlyFavorites ? filtered.length : total }} itens</div>
 
   <section class="catalogo">
     <h2 class="sec-title">Produtos</h2>
-    <div class="grid">
-      <div class="card produto" *ngFor="let p of paginated">
-        <div class="img-box">
-          <img [src]="p.image" width="320" height="200" alt="" role="presentation" />
-          <div class="badge" *ngIf="p.discount">{{ p.discount }}% OFF</div>
-          <button class="fav" (click)="toggleFav(p)" [attr.aria-pressed]="isFav(p)">
-            {{ isFav(p) ? '❤️' : '🤍' }}
-          </button>
-          <button class="add-fab" (click)="onAddToCart(p, $event)" title="Adicionar ao carrinho">🛒</button>
-        </div>
-        <div class="info">
-          <div class="top">
-            <h3 class="nome">{{ p.name }}</h3>
-            <div class="categoria">{{ p.category }}</div>
-            <p class="desc">{{ p.description }}</p>
-          </div>
-          <div class="bottom">
-            <div class="preco">
-              <span class="atual">{{ price(p) | currency:'BRL' }}</span>
-              <span *ngIf="p.discount" class="old">{{ p.price | currency:'BRL' }}</span>
-            </div>
-            <div class="acoes"></div>
-          </div>
-        </div>
+    <div class="grid" [class.loading]="loading">
+      <div class="grid-loader" *ngIf="loading">
+        <div class="skeleton-card" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
       </div>
+      <app-product-card-v2 *ngFor="let p of paginated"
+        [product]="p"
+        [supportsFavorites]="storeMeta?.supports?.favorites ?? true"
+        [supportsRatings]="storeMeta?.supports?.ratings ?? true"
+        [favoriteActive]="isFav(p)"
+        (toggleFav)="toggleFav(p)"
+        (add)="onAddToCart(p, $event)"
+      ></app-product-card-v2>
     </div>
     <div class="paginacao" *ngIf="filtered.length > pageSize">
       <div class="left">
@@ -88,6 +77,18 @@
         <span>Página {{ page }} de {{ totalPages() }}</span>
         <button class="btn light" (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
       </div>
+    </div>
+  </section>
+
+  <!-- CTA: não encontrou? Fale com a gente -->
+  <section class="cta-help card">
+    <div class="cta-text">
+      <h3>Não encontrou o que procurava?</h3>
+      <p>Nos envie uma mensagem que ajudamos você a encontrar o produto ideal para o seu pet.</p>
+      <a class="btn whatsapp" href="https://wa.me/554132051910?text=Olá!%20Estou%20na%20loja%20e%20não%20encontrei%20o%20que%20procurava." target="_blank" rel="noopener">Falar no WhatsApp</a>
+    </div>
+    <div class="cta-media">
+      <img src="imagens/gato-cachorro-rato.png" alt="Cachorro e gato juntos" />
     </div>
   </section>
 

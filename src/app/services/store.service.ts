@@ -12,13 +12,27 @@ export interface ShopProduct {
   price: number;
   image: string;
   category: string;
+  tipo?: 'manipulado'|'pronto';
   customizations?: Record<string, string[]>;
   discount?: number;
-  rating?: number;
+  rating?: number; // média 0-5
+  ratingsCount?: number;
   stock?: number;
   tags?: string[];
   weight?: string;
   requiresPrescription?: boolean;
+  isFavorited?: boolean;
+  favoritesCount?: number;
+}
+export interface StoreCategory { id: number; nome: string; produtos: number; }
+export interface StoreTag { id: number; nome: string; produtos: number; }
+export interface StoreMeta {
+  loggedIn?: boolean;
+  userType?: string;
+  favoritesPersonalization?: boolean;
+  supports?: { images?: boolean; favorites?: boolean; ratings?: boolean; categories?: boolean; tags?: boolean };
+  categories?: StoreCategory[];
+  tags?: StoreTag[];
 }
 
 export interface CartItem {
@@ -34,8 +48,11 @@ export class StoreService {
   private productsSubject = new BehaviorSubject<ShopProduct[]>([]);
   products$ = this.productsSubject.asObservable();
 
-  private categoriesSubject = new BehaviorSubject<string[]>([]);
+  private categoriesSubject = new BehaviorSubject<StoreCategory[]>([]);
   categories$ = this.categoriesSubject.asObservable();
+
+  private metaSubject = new BehaviorSubject<StoreMeta | null>(null);
+  meta$ = this.metaSubject.asObservable();
 
   private favoritesSubject = new BehaviorSubject<number[]>(this.readFavorites());
   favorites$ = this.favoritesSubject.asObservable();
@@ -53,18 +70,54 @@ export class StoreService {
     private router: Router
   ) {}
 
-  // Products
-  async loadProducts(): Promise<void> {
+  private isBrowser(): boolean {
+    try { return typeof window !== 'undefined' && typeof localStorage !== 'undefined'; } catch { return false; }
+  }
+
+  // Products - server-first with local fallback
+  async loadProducts(params?: { page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto'; category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[]; minPrice?: number; maxPrice?: number; myFavorites?: boolean; sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites' }): Promise<{ total: number; totalPages: number; page: number; pageSize: number; meta?: StoreMeta }> {
+    // Try server endpoint if available
     try {
-      const products = await this.http.get<ShopProduct[]>('/products.json').toPromise();
-      const list = products || [];
+      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+  const res = await this.api.listStoreProducts(params, token).toPromise();
+      const list = (res?.data || []).map((it: any) => ({
+        id: it.id,
+        name: it.nome || it.name,
+        description: it.descricao || it.description || '',
+        price: Number(it.preco ?? it.price ?? 0),
+        image: it.imagem_url || it.image || '',
+        category: it.categoria || it.category || '',
+        tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
+        discount: it.desconto || 0,
+        rating: typeof it.rating_media === 'number' ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : undefined),
+        ratingsCount: typeof it.rating_total === 'number' ? it.rating_total : undefined,
+        isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : (it.is_favorited === 1 ? true : (it.is_favorited === 0 ? false : undefined)),
+        favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
+        stock: undefined,
+        tags: undefined,
+        weight: undefined,
+        requiresPrescription: undefined
+      })) as ShopProduct[];
       this.productsSubject.next(list);
-      const cats = Array.from(new Set(list.map(p => p.category).filter(Boolean))).sort();
+      // Meta and categories/tags support
+      const meta: StoreMeta | undefined = res?.meta ? {
+        loggedIn: res.meta.loggedIn,
+        userType: res.meta.userType,
+        favoritesPersonalization: res.meta.favoritesPersonalization,
+        supports: res.meta.supports,
+        categories: res.meta.categories,
+        tags: res.meta.tags,
+      } : undefined;
+      this.metaSubject.next(meta || null);
+      const cats = meta?.categories || [];
       this.categoriesSubject.next(cats);
-    } catch (err) {
+      return { total: res?.total || list.length, totalPages: res?.totalPages || 1, page: res?.page || (params?.page || 1), pageSize: res?.pageSize || (params?.pageSize || 20), meta };
+    } catch {
       this.toast.error('Não foi possível carregar os produtos.', 'Erro');
       this.productsSubject.next([]);
       this.categoriesSubject.next([]);
+      this.metaSubject.next(null);
+      return { total: 0, totalPages: 1, page: params?.page || 1, pageSize: params?.pageSize || 20 };
     }
   }
 
@@ -72,18 +125,44 @@ export class StoreService {
   async toggleFavorite(productId: number): Promise<boolean> {
     const ok = await this.ensureClienteSession();
     if (!ok) return false;
-    const fav = new Set(this.favoritesSubject.value);
-    if (fav.has(productId)) {
-      fav.delete(productId);
-      this.toast.info('Removido dos favoritos');
-    } else {
-      fav.add(productId);
-      this.toast.success('Adicionado aos favoritos');
+    try {
+      const token = this.isBrowser() ? (localStorage.getItem('token') || '') : '';
+      // Call backend toggle
+      const resp = await this.api.toggleFavorite(productId, token).toPromise();
+      const serverFavorited = typeof resp?.is_favorited === 'boolean'
+        ? resp.is_favorited
+        : (typeof resp?.favorited === 'boolean' ? resp.favorited : undefined);
+      // Update local favorites set
+      const fav = new Set(this.favoritesSubject.value);
+      const shouldBeFav = serverFavorited != null
+        ? serverFavorited
+        : !fav.has(productId); // fallback to toggle
+      if (shouldBeFav) {
+        fav.add(productId);
+        this.toast.success('Adicionado aos favoritos');
+      } else {
+        fav.delete(productId);
+        this.toast.info('Removido dos favoritos');
+      }
+      const arr = Array.from(fav);
+      this.favoritesSubject.next(arr);
+      if (this.isBrowser()) {
+        localStorage.setItem('favorites', JSON.stringify(arr));
+      }
+      // Optionally sync product snapshot with favoritesCount and isFavorited
+      const list = this.productsSubject.value.map(p => {
+        if (p.id !== productId) return p;
+        const updated: ShopProduct = { ...p };
+        if (typeof resp?.favoritos === 'number') updated.favoritesCount = resp.favoritos;
+        if (serverFavorited != null) updated.isFavorited = serverFavorited;
+        return updated;
+      });
+      this.productsSubject.next(list);
+      return true;
+    } catch (e) {
+      this.toast.error('Não foi possível atualizar favoritos no servidor.');
+      return false;
     }
-    const arr = Array.from(fav);
-    this.favoritesSubject.next(arr);
-    localStorage.setItem('favorites', JSON.stringify(arr));
-    return true;
   }
 
   isFavorite(productId: number): boolean {
@@ -145,7 +224,7 @@ export class StoreService {
   async isClienteLoggedSilent(): Promise<boolean> {
     if (this.clienteChecked) return this.isCliente;
     try {
-      const token = localStorage.getItem('token');
+      const token = this.isBrowser() ? localStorage.getItem('token') : null;
       if (!token) throw new Error('Sem token');
       const resp = await this.api.getClienteMe(token).toPromise();
       if (resp && resp.user && resp.user.tipo === 'cliente') {
@@ -172,7 +251,7 @@ export class StoreService {
     if (this.clienteChecked) return this.isCliente;
     // Tenta validar via backend (clientes/me). Se falhar, redireciona para login de cliente.
     try {
-      const token = localStorage.getItem('token');
+      const token = this.isBrowser() ? localStorage.getItem('token') : null;
       if (!token) throw new Error('Sem token');
       const resp = await this.api.getClienteMe(token).toPromise();
       if (resp && resp.user && resp.user.tipo === 'cliente') {
@@ -191,14 +270,17 @@ export class StoreService {
 
   // Persistence
   private readFavorites(): number[] {
+    if (!this.isBrowser()) return [];
     try { return JSON.parse(localStorage.getItem('favorites') || '[]'); } catch { return []; }
   }
 
   private readCart(): CartItem[] {
+    if (!this.isBrowser()) return [];
     try { return JSON.parse(localStorage.getItem('cart') || '[]'); } catch { return []; }
   }
 
   private persistCart(cart: CartItem[]) {
+    if (!this.isBrowser()) return;
     localStorage.setItem('cart', JSON.stringify(cart));
   }
 

@@ -46,6 +46,16 @@ h2 { text-align: center; margin-bottom: 2rem; }
   .img-preview:hover, .img-placeholder:hover { transform: scale(1.05); }
 }
 
+/* Lote selection cards */
+.estoque-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:10px}
+.lote-card{background:#0E151A;border:1px solid #0DB8DE;border-radius:10px;padding:10px;cursor:pointer;transition:transform .15s, box-shadow .15s}
+.lote-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.lote-card.selected{outline:2px solid #27EF9F}
+.lote-card .lote-select{display:flex;gap:10px;align-items:flex-start}
+.lote-card .lote-select input[type=radio]{accent-color:#27EF9F;margin-top:4px}
+.lote-card .meta{display:flex;flex-direction:column;gap:2px}
+.lote-card .muted{font-size:12px;color:#9ca3af}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -212,3 +222,12 @@ button:hover { background: #27EF9F; }
 .step { animation: fade .2s ease; position: relative; z-index: 5; }
 section.step-ativo { overflow: hidden; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Gallery thumbs */
+.gallery { margin-top: 1rem; }
+.gallery .thumbs { display:flex; flex-wrap: wrap; gap: 10px; }
+.gallery .thumb { position: relative; width: 110px; height: 110px; background:#0E151A; border:1px solid #0DB8DE; border-radius:8px; overflow:hidden; }
+.gallery .thumb img { width:100%; height:100%; object-fit: cover; display:block; }
+.gallery .thumb .thumb-actions { position:absolute; right:4px; top:4px; display:flex; flex-direction: column; gap:4px; }
+.gallery .thumb .thumb-actions button { padding:2px 6px; margin:0; font-size:12px; background:#0DB8DE; color:#03131a; border-radius:4px; }
+.gallery .thumb .pos { position:absolute; left:4px; bottom:4px; font-size:12px; background:rgba(13,184,222,0.2); padding:2px 6px; border-radius:4px; }
