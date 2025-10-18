@@ -312,11 +312,12 @@ nav {
       display: flex;
       flex-direction: row-reverse;
       z-index: 3;
-      overflow: hidden;
+      overflow-x: auto; // desktop: permite rolar se exceder largura
+      overflow-y: hidden;
 
       // Menu Open - Main Link
       .menu-link {
-        width: 8%;
+        width: 220px; // desktop: largura fixa por coluna
         display: flex;
         justify-content: center;
         align-items: center;
@@ -364,25 +365,33 @@ nav {
           font-family: $font-01;
           text-transform: uppercase;
           font-weight: 800;
-          font-size: 40px;
+          font-size: 28px; // desktop: menorzinho
           opacity: 0.3;
           width: 100%;
-          height: 20%;
-          letter-spacing: 5px;
-          transform: rotate(-90deg) translateX(0px);
-          transition: all 0.4s 0.2s ease-in-out, letter-spacing 0.2s ease-in,
-            opacity 0.2s ease-in;
+          height: auto; // desktop: sem altura fixa
+          letter-spacing: 4px;
+          transform: none; // desktop: texto horizontal
+          transition: opacity 0.2s ease-in, letter-spacing 0.2s ease-in;
           display: flex;
-          justify-content: center;
+          justify-content: flex-start; // desktop: colado à esquerda
           align-items: center;
           flex-direction: column;
           transform-origin: center;
           animation: text-in 0.6s ease;
-          position: absolute;
+          position: relative; // desktop: não absoluto
+          text-align: left;
+          padding-left: 12px; // encosta no canto com um leve respiro
+          align-self: flex-start; // força grudar na esquerda do painel
 
           @include sm {
             transform: rotate(0deg);
             font-size: 30px;
+            position: absolute; // mobile mantém layout original
+            height: 20%;
+            justify-content: center;
+            align-items: center;
+            padding-left: 0;
+            align-self: auto;
           }
 
           @keyframes text-in {
@@ -476,15 +485,12 @@ nav {
 
         // Hover do Menu Link
         &:hover {
-          width: 50%;
-          transition: all 0.4s ease-in-out;
+          transition: filter 0.25s ease-in-out;
+          filter: brightness(0.96);
 
           .text-item {
-            height: 50%;
-            transform: rotate(0deg) translateX(0px);
-            font-size: 30px;
             opacity: 1;
-            letter-spacing: 10px;
+            letter-spacing: 6px; // leve aumento em desktop
 
             .icon {
               opacity: 1;
@@ -507,7 +513,7 @@ nav {
             }
 
             .text-item {
-              transform: rotate(0deg) translateX(0px) translateY(-50%);
+              transform: translateY(-50%); // desktop: mantém horizontal
               transform-origin: center center;
               transition: all 0.6s ease-in-out;
 
@@ -689,53 +695,115 @@ $logo-color: #c4d600;
 // Logo container
 .logo-container {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 60px;  // volta ao tamanho para não vazar
+  height: 60px; // volta ao tamanho para não vazar
+  overflow: hidden; // evita vazar pra fora do container
+  padding-top: 4px; // leve ajuste para não encostar no topo
+
+  // Scoped styles for requested metaballs snippet (wrapper + ball)
+  #wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    filter: contrast(20);
+    overflow: hidden;
+  }
+  #ball {
+    background: $logo-color;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    filter: blur(8px);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .ball1{
+    background: $logo-color;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    filter: blur(8px);
+    position: absolute;
+  }
 
   .imagem-navbar {
     position: relative;
-    z-index: 10;
-    width: 55px;
+    z-index: 10; // above slime
+    width: 55px; // volta ao tamanho original
     height: auto;
   }
 
   // 7 Layers
   @for $i from 1 through 7 {
     .layer#{$i} {
-      @include splash-layer(60px - $i*3, $i, 5s + $i*0.3s, $i*0.2s);
+      // camadas menores para caber no container, com movimento visível
+      @include splash-layer(56px - $i*4, $i, 4.6s + $i*0.45s, $i*0.35s);
+      border: none;
+      border-radius: 50%;
+      opacity: 1; // sem transparência
+      // offsets moderados para não vazar
+      top: calc(50% + #{(random(11) - 6)}px);
+      left: calc(50% + #{(random(11) - 6)}px);
     }
   }
 }
 
-// Keyframes para cada layer com deformação orgânica
+// Keyframes para cada layer com deformação orgânica + leve pulso de escala
 @for $i from 1 through 7 {
   @keyframes splash-#{$i} {
     0% {
+      transform: translate(-50%, -50%) scale(1);
       clip-path: polygon(
-        50% 0%, 60% 5%, 70% 15%, 80% 35%, 70% 55%, 50% 65%, 35% 55%, 20% 45%, 10% 30%, 20% 15%, 35% 5%
+        48% 2%, 60% 6%, 72% 16%, 80% 34%, 70% 56%, 50% 66%, 36% 56%, 22% 46%, 12% 32%, 22% 16%, 36% 6%
       );
     }
     25% {
+      transform: translate(-50%, -50%) scale(1.06);
       clip-path: polygon(
-        52% 2%, 62% 8%, 72% 18%, 78% 32%, 68% 50%, 50% 63%, 33% 53%, 18% 42%, 12% 28%, 22% 12%, 38% 6%
+        52% 1%, 62% 9%, 71% 20%, 78% 33%, 68% 50%, 50% 63%, 33% 53%, 18% 41%, 10% 30%, 20% 12%, 38% 7%
       );
     }
     50% {
+      transform: translate(-50%, -50%) scale(0.94);
       clip-path: polygon(
-        48% 1%, 58% 6%, 68% 12%, 82% 38%, 72% 52%, 50% 66%, 34% 58%, 22% 46%, 12% 32%, 18% 10%, 32% 8%
+        49% 0%, 58% 7%, 69% 14%, 82% 36%, 73% 52%, 50% 67%, 35% 58%, 20% 45%, 12% 33%, 18% 11%, 32% 7%
       );
     }
     75% {
+      transform: translate(-50%, -50%) scale(1.05);
       clip-path: polygon(
-        51% -1%, 61% 4%, 71% 14%, 79% 33%, 69% 53%, 50% 64%, 36% 54%, 21% 44%, 11% 29%, 21% 14%, 33% 5%
+        51% -2%, 61% 5%, 72% 12%, 79% 32%, 69% 54%, 50% 65%, 36% 54%, 21% 43%, 11% 28%, 21% 14%, 33% 5%
       );
     }
     100% {
+      transform: translate(-50%, -50%) scale(1);
       clip-path: polygon(
-        50% 0%, 60% 5%, 70% 15%, 80% 35%, 70% 55%, 50% 65%, 35% 55%, 20% 45%, 10% 30%, 20% 15%, 35% 5%
+        48% 2%, 60% 6%, 72% 16%, 80% 34%, 70% 56%, 50% 66%, 36% 56%, 22% 46%, 12% 32%, 22% 16%, 36% 6%
       );
     }
   }
+}
+
+// Keyframes for metaballs
+@keyframes meta-center-pulse {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  50%  { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes meta-orbit-a {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+  25%  { transform: translate(-50%, -50%) translate(10px, -6px) scale(0.95); }
+  50%  { transform: translate(-50%, -50%) translate(-8px, 8px) scale(1.05); }
+  75%  { transform: translate(-50%, -50%) translate(6px, 10px) scale(0.9); }
+  100% { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+}
+@keyframes meta-orbit-b {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+  20%  { transform: translate(-50%, -50%) translate(-9px, 7px) scale(1.05); }
+  60%  { transform: translate(-50%, -50%) translate(11px, 5px) scale(0.9); }
+  100% { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
 }
 
 

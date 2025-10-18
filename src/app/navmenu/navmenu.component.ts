@@ -4,6 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
+import { gsap } from 'gsap';
 
 @Component({
   selector: 'app-navmenu',
@@ -48,6 +49,9 @@ export class NavmenuComponent implements AfterViewInit {
       this.store.cart$.subscribe(items => {
         this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
       });
+
+      // Initialize metaballs animation behind logo (scoped to logo-container)
+      this.initMetaBalls();
     }
   }
 
@@ -106,5 +110,67 @@ export class NavmenuComponent implements AfterViewInit {
   private openSubmenu(event: MouseEvent): void {
     const currentTarget = event.currentTarget as HTMLElement;
     currentTarget.classList.toggle('active');
+  }
+
+  // --- Metaballs (adapted from provided snippet) ---
+  private initMetaBalls(): void {
+  const wrapper = document.querySelector('.logo-container #wrapper') as HTMLElement | null;
+  if (!wrapper) return;
+  const ball = wrapper.querySelector('#ball') as HTMLElement | null;
+    if (!ball) return;
+
+    let i = 0;
+    const raf = () => {
+      if (i % 25 === 0) createBall();
+      i++;
+      requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf);
+
+    function createBall() {
+      if (!wrapper) return;
+      const ball1 = document.createElement('div');
+      ball1.classList.add('ball1');
+      ball1.style.left = '50%';
+      ball1.style.top = '50%';
+      ball1.style.transform = 'translate(-50%, -50%)';
+      ball1.style.willChange = 'transform';
+      setTimeout(() => {
+        wrapper.appendChild(ball1);
+        const aleaY = Math.round(Math.random() * 200 - 100);
+        const aleaX = Math.round(Math.random() * 200 - 100);
+        const a = Math.abs(aleaX);
+        const b = Math.abs(aleaY);
+        let c = Math.sqrt(a * a + b * b);
+        c = (c * 100 / 150) / 100;
+        c = 1 - c;
+        gsap.set(ball1, { x: 0, y: 0, scale: 1 });
+        gsap.to(ball1, {
+          duration: 3,
+          x: aleaX,
+          y: aleaY,
+          scale: c,
+          ease: 'bounce.in',
+          delay: 0.5,
+          onComplete: () => ballMove(ball1)
+        });
+      }, 300);
+    }
+
+    function destroy(elem: HTMLElement) {
+      if (!wrapper) return;
+      if (elem.parentElement === wrapper) wrapper.removeChild(elem);
+    }
+
+    function ballMove(elem: HTMLElement) {
+      gsap.to(elem, {
+        duration: 2,
+        x: 0,
+        y: 0,
+        scale: 0.7,
+        ease: 'power2.inOut',
+        onComplete: () => destroy(elem)
+      });
+    }
   }
 }

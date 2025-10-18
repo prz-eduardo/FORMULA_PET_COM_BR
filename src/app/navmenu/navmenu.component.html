@@ -1,5 +1,16 @@
 
 <nav [class.hidden]="!isVisible">
+  <!-- SVG Goo filter for slime effect -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="goo">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+        <feColorMatrix in="blur" mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+        <feBlend in="SourceGraphic" in2="goo" />
+      </filter>
+    </defs>
+  </svg>
 
 
 <div class="nav-menu">
@@ -25,13 +36,9 @@
     <div class="menubar">
 <a href="#0" class="home">
   <div class="logo-container">
-    <div class="logo-bg layer1"></div>
-    <div class="logo-bg layer2"></div>
-    <div class="logo-bg layer3"></div>
-    <div class="logo-bg layer4"></div>
-    <div class="logo-bg layer5"></div>
-    <div class="logo-bg layer6"></div>
-    <div class="logo-bg layer7"></div>
+    <div id="wrapper">
+      <div id="ball"></div>
+    </div>
     <img src="/imagens/image.png" alt="Logo" class="imagem-navbar">
   </div>
 </a>
