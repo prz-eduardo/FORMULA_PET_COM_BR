@@ -18,6 +18,20 @@
     font-weight: 700;
     font-size: 32px;
     letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .badge-super {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 800;
+    border-radius: 999px;
+    background: #10b981;
+    color: #0b1220;
+    border: 1px solid #059669;
   }
 
   .btn-logout {
@@ -39,9 +53,19 @@
 }
 
 .admin-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
-  flex-wrap: wrap;
+
+  .sec-title {
+    grid-column: 1 / -1;
+    margin: 8px 0 -4px;
+    color: #9ca3af;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
 
   .action-card {
     flex: 1 1 250px;
@@ -52,6 +76,7 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     cursor: pointer;
     transition: all 0.3s ease;
+    outline: none;
 
     i {
       font-size: 50px;
@@ -71,7 +96,7 @@
       color: #a2a4a4;
     }
 
-    &:hover {
+    &:hover, &:focus-visible {
       transform: translateY(-5px);
       box-shadow: 0 15px 30px rgba(0,0,0,0.5);
 
