@@ -1,17 +1,23 @@
 <div class="mk-wrapper">
-  <h2>Customizações do Marketplace</h2>
-
-  <div class="actions">
-    <button class="btn" (click)="addCategoria()">+ Categoria</button>
-    <button class="btn" (click)="addTag()">+ Tag</button>
-    <div class="spacer"></div>
-    <button class="btn primary" (click)="save()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+  <div class="header">
+    <div>
+      <h2>Customizações do Marketplace</h2>
+      <p class="sub">Gerencie categorias e tags usadas na vitrine e filtros.</p>
+    </div>
+    <div class="tools">
+      <button class="btn ghost" (click)="load()" [disabled]="loading()">{{ loading() ? 'Atualizando…' : 'Atualizar' }}</button>
+      <button class="btn primary" (click)="save()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+    </div>
   </div>
 
   <div class="grid">
     <section>
-      <h3>Categorias</h3>
-      <div class="list">
+      <div class="section-head">
+        <h3>Categorias</h3>
+        <button class="btn" (click)="addCategoria()">+ Adicionar</button>
+      </div>
+      <div class="empty" *ngIf="!categorias.length">Nenhuma categoria ainda.</div>
+      <div class="list" *ngIf="categorias.length">
         <div class="row" *ngFor="let c of categorias.controls; let i = index" [formGroup]="$any(c)">
           <div class="field small">
             <label>ID</label>
@@ -42,8 +48,12 @@
     </section>
 
     <section>
-      <h3>Tags</h3>
-      <div class="list">
+      <div class="section-head">
+        <h3>Tags</h3>
+        <button class="btn" (click)="addTag()">+ Adicionar</button>
+      </div>
+      <div class="empty" *ngIf="!tags.length">Nenhuma tag ainda.</div>
+      <div class="list" *ngIf="tags.length">
         <div class="row" *ngFor="let t of tags.controls; let i = index" [formGroup]="$any(t)">
           <div class="field small">
             <label>ID</label>

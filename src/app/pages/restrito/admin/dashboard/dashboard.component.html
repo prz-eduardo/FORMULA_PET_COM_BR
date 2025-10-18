@@ -10,6 +10,26 @@
   <div *ngIf="error()" class="error">{{ error() }}</div>
 
   <ng-container *ngIf="data() as d">
+    <!-- Chart Toggles -->
+    <section class="toggles">
+      <label><input type="checkbox" [checked]="show()['receitas7']" (change)="toggle('receitas7')"/> Receitas 7d</label>
+      <label><input type="checkbox" [checked]="show()['receitas30']" (change)="toggle('receitas30')"/> Receitas 30d</label>
+      <label><input type="checkbox" [checked]="show()['topAtivos']" (change)="toggle('topAtivos')"/> Top Ativos</label>
+      <label><input type="checkbox" [checked]="show()['topVets']" (change)="toggle('topVets')"/> Top Vets</label>
+      <label><input type="checkbox" [checked]="show()['topClientes']" (change)="toggle('topClientes')"/> Top Clientes</label>
+      <label><input type="checkbox" [checked]="show()['topPets']" (change)="toggle('topPets')"/> Top Pets</label>
+      <label><input type="checkbox" [checked]="show()['marketplaceTipo']" (change)="toggle('marketplaceTipo')"/> Marketplace por tipo</label>
+      <label><input type="checkbox" [checked]="show()['salesByDay']" (change)="toggle('salesByDay')"/> Vendas por dia</label>
+      <label><input type="checkbox" [checked]="show()['salesByTipo']" (change)="toggle('salesByTipo')"/> Vendas por tipo</label>
+      <label><input type="checkbox" [checked]="show()['salesTopPromoProducts']" (change)="toggle('salesTopPromoProducts')"/> Top produtos promo</label>
+      <label><input type="checkbox" [checked]="show()['customersByState']" (change)="toggle('customersByState')"/> Clientes por estado</label>
+      <label><input type="checkbox" [checked]="show()['couponsTop']" (change)="toggle('couponsTop')"/> Cupons</label>
+      <label><input type="checkbox" [checked]="show()['salesByPayment']" (change)="toggle('salesByPayment')"/> Por pagamento</label>
+      <label><input type="checkbox" [checked]="show()['salesByStatus']" (change)="toggle('salesByStatus')"/> Por status</label>
+      <label><input type="checkbox" [checked]="show()['salesTopProducts']" (change)="toggle('salesTopProducts')"/> Top produtos</label>
+      <label><input type="checkbox" [checked]="show()['salesTopCategories']" (change)="toggle('salesTopCategories')"/> Top categorias</label>
+      <label><input type="checkbox" [checked]="show()['salesTopTags']" (change)="toggle('salesTopTags')"/> Top tags</label>
+    </section>
     <!-- KPIs -->
     <section class="kpis">
       <div class="kpi"><span>Admins</span><strong>{{ d.totals?.admins || 0 }}</strong></div>
@@ -49,63 +69,131 @@
     </section>
 
     <!-- Séries de receitas -->
-    <section class="charts two">
+  <section class="charts two" *ngIf="show()['receitas7'] || show()['receitas30']">
       <div class="panel">
         <h3>Receitas (7 dias)</h3>
         <div class="chart-box">
-          <canvas id="chart-receitas7" *ngIf="(d?.receitas_last7?.length || 0) > 0"></canvas>
+          <canvas id="chart-receitas7" *ngIf="show()['receitas7'] && (d?.receitas_last7?.length || 0) > 0"></canvas>
           <div class="empty" *ngIf="!(d?.receitas_last7?.length)">Sem dados para o período</div>
         </div>
       </div>
       <div class="panel">
         <h3>Receitas (30 dias)</h3>
         <div class="chart-box">
-          <canvas id="chart-receitas30" *ngIf="(d?.receitas_last30?.length || 0) > 0"></canvas>
+          <canvas id="chart-receitas30" *ngIf="show()['receitas30'] && (d?.receitas_last30?.length || 0) > 0"></canvas>
           <div class="empty" *ngIf="!(d?.receitas_last30?.length)">Sem dados para o período</div>
         </div>
       </div>
     </section>
 
-    <!-- Top ativos e produtos por categoria -->
-    <section class="charts two">
+    <!-- Top ativos + Marketplace por tipo -->
+  <section class="charts two" *ngIf="show()['topAtivos'] || show()['marketplaceTipo']">
       <div class="panel">
         <h3>Top Ativos</h3>
         <div class="chart-box">
-          <canvas id="chart-top-ativos" *ngIf="(d?.top_ativos?.length || 0) > 0"></canvas>
+          <canvas id="chart-top-ativos" *ngIf="show()['topAtivos'] && (d?.top_ativos?.length || 0) > 0"></canvas>
           <div class="empty" *ngIf="!(d?.top_ativos?.length)">Sem dados</div>
         </div>
       </div>
       <div class="panel">
-        <h3>Produtos por Categoria</h3>
+        <h3>Marketplace por tipo</h3>
         <div class="chart-box">
-          <canvas id="chart-products-by-category" *ngIf="(d?.products_breakdown?.by_category?.length || 0) > 0"></canvas>
-          <div class="empty" *ngIf="!(d?.products_breakdown?.by_category?.length)">Sem dados</div>
+          <canvas id="chart-marketplace-por-tipo" *ngIf="show()['marketplaceTipo'] && (d?.marketplace?.totals?.por_tipo?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.marketplace?.totals?.por_tipo?.length)">Sem dados</div>
         </div>
       </div>
     </section>
 
     <!-- Top entidades -->
-    <section class="charts three">
+  <section class="charts three" *ngIf="show()['topVets'] || show()['topClientes'] || show()['topPets']">
       <div class="panel">
         <h3>Top Veterinários</h3>
         <div class="chart-box">
-          <canvas id="chart-top-vets" *ngIf="(d?.top_entities?.vets?.length || 0) > 0"></canvas>
+          <canvas id="chart-top-vets" *ngIf="show()['topVets'] && (d?.top_entities?.vets?.length || 0) > 0"></canvas>
           <div class="empty" *ngIf="!(d?.top_entities?.vets?.length)">Sem dados</div>
         </div>
       </div>
       <div class="panel">
         <h3>Top Clientes</h3>
         <div class="chart-box">
-          <canvas id="chart-top-clientes" *ngIf="(d?.top_entities?.clientes?.length || 0) > 0"></canvas>
+          <canvas id="chart-top-clientes" *ngIf="show()['topClientes'] && (d?.top_entities?.clientes?.length || 0) > 0"></canvas>
           <div class="empty" *ngIf="!(d?.top_entities?.clientes?.length)">Sem dados</div>
         </div>
       </div>
       <div class="panel">
         <h3>Top Pets</h3>
         <div class="chart-box">
-          <canvas id="chart-top-pets" *ngIf="(d?.top_entities?.pets?.length || 0) > 0"></canvas>
+          <canvas id="chart-top-pets" *ngIf="show()['topPets'] && (d?.top_entities?.pets?.length || 0) > 0"></canvas>
           <div class="empty" *ngIf="!(d?.top_entities?.pets?.length)">Sem dados</div>
         </div>
+      </div>
+    </section>
+
+    <!-- Sales charts -->
+  <section class="charts two" *ngIf="show()['salesByDay'] || show()['salesByTipo']">
+      <div class="panel">
+        <h3>Vendas por dia</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-by-day" *ngIf="show()['salesByDay'] && (d?.sales?.by_day?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.by_day?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Vendas por tipo</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-by-tipo" *ngIf="show()['salesByTipo'] && (d?.sales?.by_tipo?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.by_tipo?.length)">Sem dados</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sales: Top promo products & Coupons -->
+  <section class="charts two" *ngIf="show()['salesTopPromoProducts'] || show()['couponsTop']">
+      <div class="panel">
+        <h3>Top produtos em promoção</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-top-promo-products" *ngIf="show()['salesTopPromoProducts'] && (d?.sales?.top_promo_products?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.top_promo_products?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Cupons (desconto total)</h3>
+        <div class="chart-box">
+          <canvas id="chart-coupons-top" *ngIf="show()['couponsTop'] && (d?.coupons?.top?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.coupons?.top?.length)">Sem dados</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Customers geography -->
+    <section class="charts one" *ngIf="show()['customersByState'] || show()['customersMap']">
+      <div class="panel">
+        <h3>Clientes por estado</h3>
+        <div class="chart-box">
+          <canvas id="chart-customers-by-state" *ngIf="show()['customersByState'] && (d?.customers_geo?.by_state?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.customers_geo?.by_state?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel" *ngIf="show()['customersMap']">
+        <h3>Pedidos por estado (mapa)</h3>
+        <div class="map-wrap" *ngIf="(d?.customers_geo?.by_state?.length || 0) > 0; else noGeo">
+          <div class="map-grid" *ngIf="byUF(d) as m">
+            <div class="row" *ngFor="let row of getMapRows()">
+              <div class="tile" *ngFor="let uf of row"
+                   [attr.title]="uf + ' - ' + (m[uf]?.pedidos || 0) + ' pedidos'"
+                   [style.background]="colorFor(m[uf]?.pedidos || 0, maxPedidos(d))">
+                <div class="uf">{{ uf }}</div>
+                <div class="val">{{ m[uf]?.pedidos || 0 }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <span>0</span>
+            <div class="bar"></div>
+            <span>máx</span>
+          </div>
+        </div>
+        <ng-template #noGeo><div class="empty">Sem dados</div></ng-template>
       </div>
     </section>
 
@@ -137,13 +225,76 @@
     <!-- Taxonomias -->
     <section class="grid-cards">
       <div class="card">
-        <h3>Taxonomias</h3>
+        <h3>Marketplace</h3>
         <ul>
-          <li>Categorias: <strong>{{ d.taxonomies?.categorias || 0 }}</strong></li>
-          <li>Tags: <strong>{{ d.taxonomies?.tags || 0 }}</strong></li>
-          <li>Dosagens: <strong>{{ d.taxonomies?.dosages || 0 }}</strong></li>
-          <li>Embalagens: <strong>{{ d.taxonomies?.embalagens || 0 }}</strong></li>
+          <li>Produtos: <strong>{{ d.marketplace?.totals?.produtos || 0 }}</strong></li>
+          <li>Ativos: <strong>{{ d.marketplace?.totals?.ativos || 0 }}</strong></li>
+          <li>Inativos: <strong>{{ d.marketplace?.totals?.inativos || 0 }}</strong></li>
+          <li>Categorias: <strong>{{ d.marketplace?.totals?.categorias || 0 }}</strong></li>
+          <li>Tags: <strong>{{ d.marketplace?.totals?.tags || 0 }}</strong></li>
+          <li>Imagens: <strong>{{ d.marketplace?.totals?.imagens || 0 }}</strong></li>
         </ul>
+      </div>
+      <div class="card">
+        <h3>Promoções</h3>
+        <ul>
+          <li>Ativas: <strong>{{ d.promotions?.active || 0 }}</strong></li>
+          <li>Produtos em promoção: <strong>{{ d.promotions?.products_under_promo || 0 }}</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Vendas</h3>
+        <ul>
+          <li>Receita total: <strong>{{ d.sales?.total_revenue || 0 }}</strong></li>
+          <li>Pedidos: <strong>{{ d.sales?.total_orders || 0 }}</strong></li>
+          <li>Itens: <strong>{{ d.sales?.total_items || 0 }}</strong></li>
+          <li>Receita em promoções: <strong>{{ d.sales?.promo_revenue || 0 }}</strong></li>
+          <li>Itens em promoções: <strong>{{ d.sales?.promo_items || 0 }}</strong></li>
+          <li>Ticket médio: <strong>{{ d.sales?.avg_ticket || 0 }}</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Sales breakdown: payments and status -->
+    <section class="charts two" *ngIf="show()['salesByPayment'] || show()['salesByStatus']">
+      <div class="panel">
+        <h3>Vendas por forma de pagamento</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-by-payment" *ngIf="show()['salesByPayment'] && (d?.sales?.by_payment?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.by_payment?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Pedidos por status</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-by-status" *ngIf="show()['salesByStatus'] && (d?.sales?.by_status?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.by_status?.length)">Sem dados</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sales: Top products/categories/tags (revenue) -->
+    <section class="charts three" *ngIf="show()['salesTopProducts'] || show()['salesTopCategories'] || show()['salesTopTags']">
+      <div class="panel">
+        <h3>Top Produtos (receita)</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-top-products" *ngIf="show()['salesTopProducts'] && (d?.sales?.top_products?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.top_products?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Top Categorias (receita)</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-top-categories" *ngIf="show()['salesTopCategories'] && (d?.sales?.top_categories?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.top_categories?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Top Tags (receita)</h3>
+        <div class="chart-box">
+          <canvas id="chart-sales-top-tags" *ngIf="show()['salesTopTags'] && (d?.sales?.top_tags?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.sales?.top_tags?.length)">Sem dados</div>
+        </div>
       </div>
     </section>
 

@@ -32,9 +32,42 @@ export class DashboardAdminComponent implements OnInit {
   private topVetsChart?: Chart;
   private topClientesChart?: Chart;
   private topPetsChart?: Chart;
-  private productsByCategoryChart?: Chart;
+  private marketplaceTipoChart?: Chart;
+  private salesByDayChart?: Chart;
+  private salesByTipoChart?: Chart;
+  private salesTopPromoProductsChart?: Chart;
+  private customersByStateChart?: Chart;
+  private couponsTopChart?: Chart;
+  private salesByPaymentChart?: Chart;
+  private salesByStatusChart?: Chart;
+  private salesTopProductsChart?: Chart;
+  private salesTopCategoriesChart?: Chart;
+  private salesTopTagsChart?: Chart;
+
+  // show/hide toggles for charts
+  show = signal<Record<string, boolean>>({
+    receitas7: true,
+    receitas30: true,
+    topAtivos: true,
+    topVets: true,
+    topClientes: true,
+    topPets: true,
+    marketplaceTipo: true,
+    salesByDay: true,
+    salesByTipo: true,
+    salesTopPromoProducts: true,
+    customersByState: true,
+    couponsTop: true,
+    salesByPayment: true,
+    salesByStatus: true,
+    salesTopProducts: true,
+    salesTopCategories: true,
+    salesTopTags: true,
+    customersMap: true,
+  });
 
   ngOnInit(): void {
+    this.restoreToggles();
     this.load();
   }
 
@@ -66,14 +99,24 @@ export class DashboardAdminComponent implements OnInit {
     this.topVetsChart?.destroy();
     this.topClientesChart?.destroy();
     this.topPetsChart?.destroy();
-    this.productsByCategoryChart?.destroy();
+    this.marketplaceTipoChart?.destroy();
+    this.salesByDayChart?.destroy();
+    this.salesByTipoChart?.destroy();
+    this.salesTopPromoProductsChart?.destroy();
+    this.customersByStateChart?.destroy();
+    this.couponsTopChart?.destroy();
+    this.salesByPaymentChart?.destroy();
+    this.salesByStatusChart?.destroy();
+    this.salesTopProductsChart?.destroy();
+    this.salesTopCategoriesChart?.destroy();
+    this.salesTopTagsChart?.destroy();
   }
 
   private renderCharts(res: any) {
     const get = (id: string) => document.getElementById(id) as HTMLCanvasElement | null;
 
     // receitas last 7 days
-    if (res?.receitas_last7?.length) {
+    if (this.isOn('receitas7') && res?.receitas_last7?.length) {
       const ctx = get('chart-receitas7');
       if (ctx) {
         const labels = res.receitas_last7.map((d: any) => {
@@ -91,7 +134,7 @@ export class DashboardAdminComponent implements OnInit {
     }
 
     // receitas last 30 days
-    if (res?.receitas_last30?.length) {
+    if (this.isOn('receitas30') && res?.receitas_last30?.length) {
       const ctx = get('chart-receitas30');
       if (ctx) {
         const labels = res.receitas_last30.map((d: any) => {
@@ -109,7 +152,7 @@ export class DashboardAdminComponent implements OnInit {
     }
 
     // top ativos (top 10)
-    if (res?.top_ativos?.length) {
+    if (this.isOn('topAtivos') && res?.top_ativos?.length) {
       const ctx = get('chart-top-ativos');
       if (ctx) {
         const labels = res.top_ativos.map((a: any) => a.ativo_nome || a.nome || a.name || a.ativo || a.id);
@@ -123,7 +166,7 @@ export class DashboardAdminComponent implements OnInit {
     }
 
     // top entities: vets, clientes, pets por receitas
-    if (res?.top_entities?.vets?.length) {
+    if (this.isOn('topVets') && res?.top_entities?.vets?.length) {
       const ctx = get('chart-top-vets');
       if (ctx) {
         const labels = res.top_entities.vets.map((v: any) => v.nome || v.name || v.vet_nome || v.id);
@@ -136,7 +179,7 @@ export class DashboardAdminComponent implements OnInit {
       } else { console.warn('Canvas chart-top-vets não encontrado'); }
     }
 
-    if (res?.top_entities?.clientes?.length) {
+    if (this.isOn('topClientes') && res?.top_entities?.clientes?.length) {
       const ctx = get('chart-top-clientes');
       if (ctx) {
         const labels = res.top_entities.clientes.map((v: any) => v.nome || v.name || v.cliente_nome || v.id);
@@ -149,7 +192,7 @@ export class DashboardAdminComponent implements OnInit {
       } else { console.warn('Canvas chart-top-clientes não encontrado'); }
     }
 
-    if (res?.top_entities?.pets?.length) {
+    if (this.isOn('topPets') && res?.top_entities?.pets?.length) {
       const ctx = get('chart-top-pets');
       if (ctx) {
         const labels = res.top_entities.pets.map((v: any) => v.nome || v.name || v.pet_nome || v.id);
@@ -162,18 +205,166 @@ export class DashboardAdminComponent implements OnInit {
       } else { console.warn('Canvas chart-top-pets não encontrado'); }
     }
 
-    // products breakdown by category
-    if (res?.products_breakdown?.by_category?.length) {
-      const ctx = get('chart-products-by-category');
+    // marketplace: produtos por tipo
+    if (this.isOn('marketplaceTipo') && res?.marketplace?.totals?.por_tipo?.length) {
+      const ctx = get('chart-marketplace-por-tipo');
       if (ctx) {
-        const labels = res.products_breakdown.by_category.map((c: any) => c.category || c.nome || c.name || 'Categoria');
-        const data = res.products_breakdown.by_category.map((c: any) => c.total || c.count || c.qtd || 0);
-        this.productsByCategoryChart = new Chart(ctx, {
+        const labels = res.marketplace.totals.por_tipo.map((c: any) => c.tipo);
+        const data = res.marketplace.totals.por_tipo.map((c: any) => Number(c.total) || 0);
+        this.marketplaceTipoChart = new Chart(ctx, {
           type: 'doughnut',
           data: { labels, datasets: [{ data, backgroundColor: this.palette(labels.length) }]},
           options: { responsive: true, maintainAspectRatio: false }
         });
-      } else { console.warn('Canvas chart-products-by-category não encontrado'); }
+      }
+    }
+
+    // sales by day
+    if (this.isOn('salesByDay') && res?.sales?.by_day?.length) {
+      const ctx = get('chart-sales-by-day');
+      if (ctx) {
+        const labels = res.sales.by_day.map((d: any) => this.date.transform(d.dia, 'dd/MM') || d.dia);
+        const receita = res.sales.by_day.map((d: any) => Number(d.receita) || 0);
+        const pedidos = res.sales.by_day.map((d: any) => Number(d.pedidos) || 0);
+        this.salesByDayChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [
+            { type: 'bar', label: 'Receita', data: receita, backgroundColor: 'rgba(37,99,235,.6)', yAxisID: 'y' },
+            { type: 'line', label: 'Pedidos', data: pedidos, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.2)', yAxisID: 'y1', tension: .3 }
+          ]},
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true }, y1: { position: 'right', beginAtZero: true } } }
+        });
+      }
+    }
+
+    // sales by tipo
+    if (this.isOn('salesByTipo') && res?.sales?.by_tipo?.length) {
+      const ctx = get('chart-sales-by-tipo');
+      if (ctx) {
+        const labels = res.sales.by_tipo.map((t: any) => t.tipo);
+        const data = res.sales.by_tipo.map((t: any) => Number(t.receita) || 0);
+        this.salesByTipoChart = new Chart(ctx, {
+          type: 'pie',
+          data: { labels, datasets: [{ data, backgroundColor: this.palette(labels.length) }]},
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // top promo products
+    if (this.isOn('salesTopPromoProducts') && res?.sales?.top_promo_products?.length) {
+      const ctx = get('chart-sales-top-promo-products');
+      if (ctx) {
+        const labels = res.sales.top_promo_products.map((p: any) => p.nome || p.produto_id);
+        const data = res.sales.top_promo_products.map((p: any) => Number(p.receita) || 0);
+        this.salesTopPromoProductsChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Receita por produto (promo)', data, backgroundColor: 'rgba(234,179,8,.7)' }]},
+          options: { indexAxis: 'y' as const, responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // customers by state
+    if (this.isOn('customersByState') && res?.customers_geo?.by_state?.length) {
+      const ctx = get('chart-customers-by-state');
+      if (ctx) {
+        const labels = res.customers_geo.by_state.map((s: any) => s.estado);
+        const data = res.customers_geo.by_state.map((s: any) => Number(s.clientes) || 0);
+        this.customersByStateChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Clientes por estado', data, backgroundColor: 'rgba(59,130,246,.7)' }]},
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // coupons top
+    if (this.isOn('couponsTop') && res?.coupons?.top?.length) {
+      const ctx = get('chart-coupons-top');
+      if (ctx) {
+        const labels = res.coupons.top.map((c: any) => c.codigo);
+        const data = res.coupons.top.map((c: any) => Number(c.desconto) || 0);
+        this.couponsTopChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Desconto total por cupom', data, backgroundColor: 'rgba(244,63,94,.7)' }]},
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // sales by payment
+    if (this.isOn('salesByPayment') && res?.sales?.by_payment?.length) {
+      const ctx = get('chart-sales-by-payment');
+      if (ctx) {
+        const labels = res.sales.by_payment.map((p: any) => p.pagamento_forma);
+        const receita = res.sales.by_payment.map((p: any) => Number(p.receita) || 0);
+        const pedidos = res.sales.by_payment.map((p: any) => Number(p.pedidos) || 0);
+        this.salesByPaymentChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [
+            { type: 'bar', label: 'Receita', data: receita, backgroundColor: 'rgba(99,102,241,.7)', yAxisID: 'y' },
+            { type: 'line', label: 'Pedidos', data: pedidos, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.2)', yAxisID: 'y1', tension: .3 }
+          ]},
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true }, y1: { position: 'right', beginAtZero: true } } }
+        });
+      }
+    }
+
+    // sales by status
+    if (this.isOn('salesByStatus') && res?.sales?.by_status?.length) {
+      const ctx = get('chart-sales-by-status');
+      if (ctx) {
+        const labels = res.sales.by_status.map((s: any) => s.status);
+        const pedidos = res.sales.by_status.map((s: any) => Number(s.pedidos) || 0);
+        this.salesByStatusChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Pedidos por status', data: pedidos, backgroundColor: 'rgba(16,185,129,.7)' }]},
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // top products (all)
+    if (this.isOn('salesTopProducts') && res?.sales?.top_products?.length) {
+      const ctx = get('chart-sales-top-products');
+      if (ctx) {
+        const labels = res.sales.top_products.map((p: any) => p.nome || p.produto_id);
+        const data = res.sales.top_products.map((p: any) => Number(p.receita) || 0);
+        this.salesTopProductsChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Receita por produto (geral)', data, backgroundColor: 'rgba(2,132,199,.7)' }]},
+          options: { indexAxis: 'y' as const, responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // top categories
+    if (this.isOn('salesTopCategories') && res?.sales?.top_categories?.length) {
+      const ctx = get('chart-sales-top-categories');
+      if (ctx) {
+        const labels = res.sales.top_categories.map((c: any) => c.nome || c.id);
+        const data = res.sales.top_categories.map((c: any) => Number(c.receita) || 0);
+        this.salesTopCategoriesChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Receita por categoria', data, backgroundColor: 'rgba(234,88,12,.7)' }]},
+          options: { indexAxis: 'y' as const, responsive: true, maintainAspectRatio: false }
+        });
+      }
+    }
+
+    // top tags
+    if (this.isOn('salesTopTags') && res?.sales?.top_tags?.length) {
+      const ctx = get('chart-sales-top-tags');
+      if (ctx) {
+        const labels = res.sales.top_tags.map((t: any) => t.nome || t.id);
+        const data = res.sales.top_tags.map((t: any) => Number(t.receita) || 0);
+        this.salesTopTagsChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Receita por tag', data, backgroundColor: 'rgba(147,51,234,.7)' }]},
+          options: { indexAxis: 'y' as const, responsive: true, maintainAspectRatio: false }
+        });
+      }
     }
   }
 
@@ -183,4 +374,76 @@ export class DashboardAdminComponent implements OnInit {
     for (let i = 0; i < n; i++) out.push(base[i % base.length]);
     return out;
   }
+
+  // toggles helpers
+  toggle(key: keyof ReturnType<typeof this.show> | string) {
+    const state = { ...this.show() } as any;
+    state[key] = !state[key];
+    this.show.set(state);
+    this.persistToggles();
+    if (this.isBrowser) {
+      // re-render only affected charts by rebuilding all for simplicity
+      this.destroyCharts();
+      const d = this.data();
+      if (d) this.renderCharts(d);
+    }
+  }
+  isOn(key: string) { return !!this.show()[key]; }
+
+  private persistToggles() {
+    if (!this.isBrowser) return;
+    try { localStorage.setItem('admin_dash_show', JSON.stringify(this.show())); } catch {}
+  }
+  private restoreToggles() {
+    if (!this.isBrowser) return;
+    try {
+      const raw = localStorage.getItem('admin_dash_show');
+      if (raw) { const parsed = JSON.parse(raw); this.show.set({ ...this.show(), ...parsed }); }
+    } catch {}
+  }
+
+  // ====== Brazil tile map helpers ======
+  private mapRows: string[][] = [
+    ['RR','AP'],
+    ['AM','PA'],
+    ['AC','RO','TO','MA','PI','CE','RN'],
+    ['MT','GO','DF','BA','PB','PE','AL','SE'],
+    ['MS','MG','ES'],
+    ['SP','RJ'],
+    ['PR'],
+    ['SC'],
+    ['RS']
+  ];
+  private ufName(uf: string): string {
+    const d: Record<string,string> = { AC:'Acre', AL:'Alagoas', AM:'Amazonas', AP:'Amapá', BA:'Bahia', CE:'Ceará', DF:'Distrito Federal', ES:'Espírito Santo', GO:'Goiás', MA:'Maranhão', MG:'Minas Gerais', MS:'Mato Grosso do Sul', MT:'Mato Grosso', PA:'Pará', PB:'Paraíba', PE:'Pernambuco', PI:'Piauí', PR:'Paraná', RJ:'Rio de Janeiro', RN:'Rio Grande do Norte', RO:'Rondônia', RR:'Roraima', RS:'Rio Grande do Sul', SC:'Santa Catarina', SE:'Sergipe', SP:'São Paulo', TO:'Tocantins' };
+    return d[uf] || uf;
+  }
+  byUF(d: any): Record<string, { pedidos: number; clientes?: number; receita?: number }> {
+    const out: Record<string, { pedidos: number; clientes?: number; receita?: number }> = {};
+    const arr = d?.customers_geo?.by_state || [];
+    for (const x of arr) {
+      const uf = x.estado; if (!uf) continue;
+      out[uf] = { pedidos: Number(x.pedidos) || 0, clientes: Number(x.clientes) || 0, receita: Number(x.receita) || 0 };
+    }
+    return out;
+  }
+  colorFor(value: number, max: number): string {
+    if (!max || max <= 0) return '#e5e7eb';
+    const t = Math.max(0, Math.min(1, value / max));
+    // interpolate between light and dark blue
+    const start = [219, 234, 254]; // #DBEAFE
+    const end = [37, 99, 235];     // #2563EB
+    const c = start.map((s, i) => Math.round(s + (end[i] - s) * t));
+    return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+  }
+  maxPedidos(d: any): number {
+    const arr = d?.customers_geo?.by_state || [];
+    let max = 0;
+    for (const x of arr) {
+      const v = Number(x?.pedidos) || 0;
+      if (v > max) max = v;
+    }
+    return max;
+  }
+  getMapRows(): string[][] { return this.mapRows; }
 }

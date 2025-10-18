@@ -86,7 +86,52 @@ export interface Paged<T> {
   totalPages: number;
 }
 
+// Pessoas (Usuários/Clientes/Vets)
+export interface PessoaDto {
+  id: number | string;
+  uid?: string;
+  // Unificado: backend usa 'nome', manter alias 'name' para front
+  name?: string | null;
+  nome?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  telefone?: string | null;
+  city?: string | null;
+  uf?: string | null;
+  cpf?: string | null;
+  role?: 'cliente' | 'vet' | 'admin';
+  tipo?: 'cliente' | 'vet' | 'admin';
+  active?: 0 | 1;
+  ativo?: 0 | 1;
+  created_at?: string;
+  updated_at?: string;
+  // Vet extras
+  crmv?: string | null;
+  verification_status?: 'pending' | 'approved' | 'rejected' | null;
+  approved?: 0 | 1;
+}
+export interface PessoaDocDto {
+  id: number | string;
+  tipo: 'rg' | 'cpf' | 'crmv' | 'comprovante' | 'outro';
+  url: string;
+  mime_type?: string | null;
+  uploaded_at?: string;
+}
+
 export interface FornecedorDto { id: number; nome: string }
+export interface AdminFornecedorDto {
+  id?: number;
+  nome: string;
+  cnpj?: string | null;
+  contato?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  endereco?: string | null;
+  obs?: string | null;
+  ativo?: 0 | 1;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // Fórmulas (manipulados)
 export interface FormulaDto {
@@ -129,6 +174,23 @@ export interface MarketplaceCustomizacoesResponse {
   };
   categorias: MarketplaceCategoria[];
   tags: MarketplaceTag[];
+}
+export interface MarketplaceCustomizacoesList { categorias: MarketplaceCategoria[]; tags: MarketplaceTag[] }
+
+// Promoções
+export type PromocaoTipo = 'percentual' | 'valor';
+export interface PromocaoDto {
+  id?: number;
+  nome: string;
+  descricao?: string | null;
+  tipo?: PromocaoTipo;
+  valor?: number;
+  inicio?: string | null; // YYYY-MM-DD HH:mm:ss ou YYYY-MM-DDTHH:mm:ss
+  fim?: string | null;
+  ativo?: boolean | number;
+  created_at?: string;
+  updated_at?: string;
+  produtos?: Array<{ id: number; name: string; price?: number }>; // resumo
 }
 
 @Injectable({ providedIn: 'root' })
@@ -309,6 +371,30 @@ export class AdminApiService {
       .pipe(map((res) => Array.isArray(res) ? res : (res?.data ?? [])));
   }
 
+  // Admin - Fornecedores CRUD (/admin/fornecedores)
+  listAdminFornecedores(params?: { q?: string; active?: 0 | 1; page?: number; pageSize?: number }): Observable<Paged<AdminFornecedorDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+    }
+    return this.http.get<Paged<AdminFornecedorDto>>(`${this.baseUrl}/fornecedores`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminFornecedor(id: number | string): Observable<AdminFornecedorDto> {
+    return this.http.get<AdminFornecedorDto>(`${this.baseUrl}/fornecedores/${id}`, { headers: this.headers() });
+  }
+  createAdminFornecedor(body: Partial<AdminFornecedorDto> & { nome: string }): Observable<AdminFornecedorDto> {
+    return this.http.post<AdminFornecedorDto>(`${this.baseUrl}/fornecedores`, body, { headers: this.headers() });
+  }
+  updateAdminFornecedor(id: number | string, body: Partial<AdminFornecedorDto>): Observable<AdminFornecedorDto> {
+    return this.http.put<AdminFornecedorDto>(`${this.baseUrl}/fornecedores/${id}`, body, { headers: this.headers() });
+  }
+  deleteAdminFornecedor(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/fornecedores/${id}`, { headers: this.headers() });
+  }
+
   // Dashboard
   getDashboard(): Observable<any> {
     return this.http.get<any>(this.dashboardUrl, { headers: this.headers() });
@@ -348,9 +434,63 @@ export class AdminApiService {
   manageMarketplaceCustomizacoes(body: MarketplaceCustomizacoesPayload): Observable<MarketplaceCustomizacoesResponse> {
     return this.http.post<MarketplaceCustomizacoesResponse>(`${this.baseUrl}/marketplace/customizacoes`, body, { headers: this.headers() });
   }
+  getMarketplaceCustomizacoes(): Observable<MarketplaceCustomizacoesList> {
+    return this.http.get<MarketplaceCustomizacoesList>(`${this.baseUrl}/marketplace/customizacoes`, { headers: this.headers() });
+  }
+
+  // Admin - Promoções
+  listPromocoes(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<PromocaoDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+    }
+    return this.http.get<Paged<PromocaoDto>>(`${this.baseUrl}/promocoes`, { headers: this.headers(), params: httpParams });
+  }
+  getPromocao(id: number | string): Observable<PromocaoDto> {
+    return this.http.get<PromocaoDto>(`${this.baseUrl}/promocoes/${id}`, { headers: this.headers() });
+  }
+  createPromocao(body: PromocaoDto): Observable<PromocaoDto> {
+    return this.http.post<PromocaoDto>(`${this.baseUrl}/promocoes`, body, { headers: this.headers() });
+  }
+  updatePromocao(id: number | string, body: Partial<PromocaoDto>): Observable<PromocaoDto> {
+    return this.http.put<PromocaoDto>(`${this.baseUrl}/promocoes/${id}`, body, { headers: this.headers() });
+  }
+  deletePromocao(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/promocoes/${id}`, { headers: this.headers() });
+  }
+  setPromocaoProdutos(id: number | string, produto_ids: number[]): Observable<PromocaoDto> {
+    return this.http.put<PromocaoDto>(`${this.baseUrl}/promocoes/${id}/produtos`, { produto_ids }, { headers: this.headers() });
+  }
 
   // Usuários
-  listUsuarios(params?: { q?: string; page?: number; pageSize?: number; tipo?: 'cliente' | 'vet' | 'admin' }): Observable<Paged<any>> {
+  listUsuarios(params?: { q?: string; page?: number; pageSize?: number; tipo?: 'cliente' | 'vet' | 'admin'; status?: 0 | 1; verification?: 'pending' | 'approved' | 'rejected'; city?: string; uf?: string; from?: string; to?: string }): Observable<Paged<PessoaDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (params.tipo) httpParams = httpParams.set('tipo', params.tipo);
+      if (typeof params.status === 'number') httpParams = httpParams.set('status', String(params.status));
+      if (params.verification) httpParams = httpParams.set('verification', params.verification);
+      if (params.city) httpParams = httpParams.set('city', params.city);
+      if (params.uf) httpParams = httpParams.set('uf', params.uf);
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+    }
+    return this.http.get<Paged<PessoaDto>>(`${this.baseUrl}/usuarios`, { headers: this.headers(), params: httpParams });
+  }
+  getUsuario(id: string | number): Observable<PessoaDto> {
+    return this.http.get<PessoaDto>(`${this.baseUrl}/usuarios/${id}`, { headers: this.headers() });
+  }
+  updateUsuario(id: string | number, body: Partial<PessoaDto>): Observable<PessoaDto> {
+    return this.http.put<PessoaDto>(`${this.baseUrl}/usuarios/${id}`, body, { headers: this.headers() });
+  }
+
+  // Pessoas unificado (/admin/people)
+  listPeople(params?: { q?: string; page?: number; pageSize?: number; tipo?: 'cliente' | 'vet' | 'admin' }): Observable<Paged<PessoaDto>> {
     let httpParams = new HttpParams();
     if (params) {
       if (params.q) httpParams = httpParams.set('q', params.q);
@@ -358,10 +498,48 @@ export class AdminApiService {
       if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
       if (params.tipo) httpParams = httpParams.set('tipo', params.tipo);
     }
-    return this.http.get<Paged<any>>(`${this.baseUrl}/usuarios`, { headers: this.headers(), params: httpParams });
+    return this.http.get<Paged<PessoaDto>>(`${this.baseUrl.replace('/admin','')}/admin/people`, { headers: this.headers(), params: httpParams });
+  }
+  getPerson(id: string | number, tipo?: 'cliente' | 'vet' | 'admin'): Observable<PessoaDto> {
+    let httpParams = new HttpParams();
+    if (tipo) httpParams = httpParams.set('tipo', tipo);
+    return this.http.get<PessoaDto>(`${this.baseUrl.replace('/admin','')}/admin/people/${id}`, { headers: this.headers(), params: httpParams });
+  }
+  createPerson(body: { tipo: 'cliente' | 'vet' | 'admin' } & Record<string, any>): Observable<PessoaDto> {
+    return this.http.post<PessoaDto>(`${this.baseUrl.replace('/admin','')}/admin/people`, body, { headers: this.headers() });
+  }
+  updatePerson(id: string | number, tipo: 'cliente' | 'vet' | 'admin', body: Record<string, any>): Observable<PessoaDto> {
+    // Backend exige tipo no body
+    return this.http.put<PessoaDto>(`${this.baseUrl.replace('/admin','')}/admin/people/${id}`, { tipo, ...body }, { headers: this.headers() });
+  }
+  deletePerson(id: string | number, tipo?: 'cliente' | 'vet' | 'admin'): Observable<{ ok: boolean }> {
+    let httpParams = new HttpParams();
+    if (tipo) httpParams = httpParams.set('tipo', tipo);
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl.replace('/admin','')}/admin/people/${id}`, { headers: this.headers(), params: httpParams });
   }
 
-  updateUsuario(id: string | number, body: any): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/usuarios/${id}`, body, { headers: this.headers() });
+  // Documentos por usuário
+  listUsuarioDocs(id: string | number): Observable<PessoaDocDto[]> {
+    return this.http.get<PessoaDocDto[]>(`${this.baseUrl}/usuarios/${id}/docs`, { headers: this.headers() });
+  }
+  uploadUsuarioDoc(id: string | number, file: File, tipo: PessoaDocDto['tipo']): Observable<PessoaDocDto> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('tipo', tipo);
+    return this.http.post<PessoaDocDto>(`${this.baseUrl}/usuarios/${id}/docs`, form, { headers: this.headers() });
+  }
+  deleteUsuarioDoc(id: string | number, docId: string | number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/usuarios/${id}/docs/${docId}`, { headers: this.headers() });
+  }
+
+  // Vet - aprovação e auditoria
+  approveVet(id: string | number, body?: { reason?: string }): Observable<{ ok: boolean; status: 'approved' }> {
+    return this.http.post<{ ok: boolean; status: 'approved' }>(`${this.baseUrl}/vets/${id}/approve`, body || {}, { headers: this.headers() });
+  }
+  rejectVet(id: string | number, body: { reason: string }): Observable<{ ok: boolean; status: 'rejected' }> {
+    return this.http.post<{ ok: boolean; status: 'rejected' }>(`${this.baseUrl}/vets/${id}/reject`, body, { headers: this.headers() });
+  }
+  vetAuditLogs(id: string | number): Observable<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>> {
+    return this.http.get<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>>(`${this.baseUrl}/vets/${id}/audit-logs`, { headers: this.headers() });
   }
 }

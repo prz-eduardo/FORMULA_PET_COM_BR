@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
-import { AdminApiService, MarketplaceCategoria, MarketplaceTag, MarketplaceCustomizacoesResponse } from '../../../../services/admin-api.service';
+import { AdminApiService, MarketplaceCategoria, MarketplaceTag, MarketplaceCustomizacoesResponse, MarketplaceCustomizacoesList } from '../../../../services/admin-api.service';
 
 @Component({
   selector: 'app-admin-marketplace-customizacoes',
@@ -26,8 +26,22 @@ export class MarketplaceCustomizacoesAdminComponent implements OnInit {
   get tags() { return this.tagsFA as unknown as FormArray; }
 
   ngOnInit() {
-    // Poderia ter um GET, mas como o endpoint é POST transacional que retorna listas atualizadas,
-    // iniciamos vazio e o primeiro salvar pode criar/atualizar/deletar e refletir estados.
+    this.load();
+  }
+
+  load() {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api.getMarketplaceCustomizacoes().subscribe({
+      next: (res: MarketplaceCustomizacoesList) => {
+        this.categorias.clear();
+        (res.categorias || []).forEach(c => this.addCategoria(c));
+        this.tags.clear();
+        (res.tags || []).forEach(t => this.addTag(t));
+        this.loading.set(false);
+      },
+      error: () => { this.loading.set(false); this.error.set('Falha ao carregar customizações'); }
+    });
   }
 
   addCategoria(c?: Partial<MarketplaceCategoria>) {

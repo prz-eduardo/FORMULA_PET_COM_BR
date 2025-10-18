@@ -54,6 +54,10 @@ export const routes: Routes = [
   {path: 'restrito/admin/guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/estoque', loadComponent: () => import('./pages/restrito/admin/estoque/estoque.component').then(m => m.EstoqueAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/formulas', loadComponent: () => import('./pages/restrito/admin/formulas/formulas.component').then(m => m.FormulasAdminComponent), canActivate: [authGuard]},
+  {path: 'restrito/admin/promocoes', loadComponent: () => import('./pages/restrito/admin/promocoes/promocoes.component').then(m => m.AdminPromocoesComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard]},
+  {path: 'restrito/admin/usuarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'admin' }, canActivate: [authGuard]},
+  {path: 'restrito/admin/clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente' }, canActivate: [authGuard]},
+  {path: 'restrito/admin/veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet' }, canActivate: [authGuard]},
   { path: '**', redirectTo: '' }                        // Redireciona qualquer rota inválida pra home
 ];

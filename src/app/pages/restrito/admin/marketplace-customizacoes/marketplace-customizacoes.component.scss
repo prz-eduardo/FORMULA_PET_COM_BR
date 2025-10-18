@@ -1,13 +1,14 @@
 .mk-wrapper{min-height:100vh;background:linear-gradient(135deg,#0d151f,#1a2230);color:#ecf0f5;font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;padding:72px 16px}
-.mk-wrapper h2{margin:0 0 16px}
-.actions{display:flex;gap:10px;align-items:center;margin:12px 0}
-.actions .spacer{flex:1}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.header .sub{margin:4px 0 0;color:#9aa4b2}
 .btn{background:#2563eb;border:1px solid transparent;color:#fff;padding:8px 12px;border-radius:6px;cursor:pointer;transition:all .15s}
 .btn:hover{filter:brightness(1.08)}
 .btn.primary{background:#22c55e}
 .btn.danger{background:#dc2626}
+.btn.ghost{background:transparent;border-color:#334155;color:#cbd5e1}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-section{background:#0f2135;border:1px solid #263241;border-radius:12px;padding:12px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+section{background:#0f2135;border:1px solid #263241;border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .list{display:flex;flex-direction:column;gap:10px}
 .row{display:flex;gap:10px;flex-wrap:wrap;border:1px dashed #263241;border-radius:8px;padding:10px}
 .field{display:flex;flex-direction:column;min-width:140px}
@@ -18,3 +19,4 @@ section{background:#0f2135;border:1px solid #263241;border-radius:12px;padding:1
 .field input[type=text],.field input[type=number]{padding:8px 10px;border-radius:8px;border:1px solid #263241;background:#0b1220;color:#e5e7eb}
 .ok{color:#22c55e}
 .err{color:#f87171}
+.empty{padding:24px;border:1px dashed #334155;border-radius:8px;color:#9aa4b2;text-align:center}

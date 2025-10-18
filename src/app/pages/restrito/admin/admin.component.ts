@@ -35,7 +35,7 @@ export class AdminComponent implements OnInit {
 
   goToCadastro() { this.router.navigate(['/restrito/produto']); }
   goToLista() { this.router.navigate(['/restrito/lista-produtos']); }
-  goToUsuarios() { this.router.navigate(['/restrito/usuarios']); }
+  goToUsuarios() { this.router.navigate(['/restrito/admin/usuarios']); }
   goToGuiaAtivos() { this.router.navigate(['/restrito/admin/guia-ativos']); }
 
   // Extras úteis baseados no app
