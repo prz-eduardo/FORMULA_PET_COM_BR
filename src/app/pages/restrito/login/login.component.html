@@ -3,37 +3,26 @@
     <div class="login-key">
       <i class="fa fa-key"></i>
     </div>
-    <div class="login-title">
-      ADMIN PANEL
-    </div>
+    <div class="login-title">ADMIN PANEL</div>
 
-    <form (ngSubmit)="login()">
-      <div class="form-group">
-        <label>USERNAME</label>
-        <input type="text" [(ngModel)]="email" name="email" required placeholder="Enter username">
-      </div>
-
-      <div class="form-group">
-        <label>PASSWORD</label>
-        <input type="password" [(ngModel)]="senha" name="senha" required placeholder="Enter password">
-      </div>
-
-      <div class="login-bottom">
-        <div class="login-error" *ngIf="error">{{ error }}</div>
-        <button type="submit" class="btn-login">LOGIN</button>
-        <button type="button" class="btn-forgot" (click)="showForgot = true">Esqueci minha senha</button>
-      </div>
-    </form>
-
-    <!-- Modal Esqueci Senha -->
-    <div class="modal" *ngIf="showForgot">
-      <div class="modal-content">
-        <h4>Redefinir Senha</h4>
-        <input type="email" [(ngModel)]="forgotEmail" placeholder="Digite seu email" />
-        <div *ngIf="forgotMessage" class="info">{{ forgotMessage }}</div>
-        <button (click)="sendResetEmail()" class="esqueci-env">Enviar</button>
-        <button (click)="showForgot = false" class="esqueci-cancelar">Cancelar</button>
-      </div>
+    <div class="login-bottom single">
+      <div class="login-error" *ngIf="error">{{ error }}</div>
+      <button type="button" class="btn-login google" (click)="loginWithGoogle()" [disabled]="loading">
+        <img src="imagens/google.png" alt="Google" class="g-img">
+        <span *ngIf="!loading">Entrar com Google</span>
+        <span *ngIf="loading">Conectando…</span>
+      </button>
     </div>
   </div>
 </div>
+
+<!-- Blocking alert overlay for auth errors -->
+<div class="alert-overlay" *ngIf="blocked">
+  <div class="alert-card">
+    <h3>Não foi possível entrar</h3>
+    <p class="msg">{{ error }}</p>
+    <p class="count">Redirecionando para a página inicial em {{ countdown }}s…</p>
+  <button class="btn-ok" (click)="goHomeNow()">Ir agora</button>
+  </div>
+  <div class="alert-backdrop"></div>
+  </div>

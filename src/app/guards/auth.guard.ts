@@ -1,25 +1,17 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { auth } from '../firebase-config';// importa o auth que criamos
-import { onAuthStateChanged } from 'firebase/auth';
+import { CanActivate, Router, UrlTree } from '@angular/router';
+import { SessionService } from '../services/session.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class authGuard implements CanActivate {
+  constructor(private router: Router, private session: SessionService) {}
 
-  constructor(private router: Router) {}
-
-  canActivate(): Promise<boolean> {
-    return new Promise((resolve) => {
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          resolve(true); // logado ✅
-        } else {
-          this.router.navigate(['/login']); // manda pro login 🚪
-          resolve(false);
-        }
-      });
-    });
+  canActivate(): boolean | UrlTree {
+    // For admin routes we require a valid backend token with role=admin
+    const ok = this.session.hasValidSession(true);
+    if (ok) return true;
+    return this.router.parseUrl('/restrito/login');
   }
 }

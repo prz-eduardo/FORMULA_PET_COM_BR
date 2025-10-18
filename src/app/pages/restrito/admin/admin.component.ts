@@ -1,8 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { auth, db } from '../../../firebase-config';
-import { signOut } from 'firebase/auth';
-import { collection, getDocs, getDoc, doc, setDoc } from 'firebase/firestore';
+import { SessionService } from '../../../services/session.service';
 
 @Component({
   selector: 'app-admin',
@@ -13,24 +11,21 @@ export class AdminComponent implements OnInit {
   hasProducts = true; // ajuste conforme sua lógica
   isAdmin = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private session: SessionService) {}
 
   async ngOnInit() {
-    const user = auth.currentUser;
-    if (!user) {
-      this.router.navigate(['/login']);
+    // Check backend JWT for admin role
+    if (!this.session.hasValidSession(true)) {
+      this.router.navigate(['/restrito/login']);
       return;
     }
-
-    // Verifica role no Firestore
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (userDoc.exists()) {
-      this.isAdmin = userDoc.data()['role'] === 'admin';
-    }
+    this.isAdmin = this.session.isAdmin();
   }
 
   logout() {
-    signOut(auth).then(() => this.router.navigate(['/login']));
+    // Clear local backend token and go to login
+    this.session.saveBackendToken('');
+    this.router.navigate(['/restrito/login']);
   }
 
   goToCadastro() { this.router.navigate(['/restrito/cadastro-produto']); }
