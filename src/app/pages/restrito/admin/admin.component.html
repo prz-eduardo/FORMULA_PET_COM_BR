@@ -1,142 +1,164 @@
 <div class="admin-wrapper animate-fade">
   <div class="admin-header">
     <h1>ADMIN PANEL <small *ngIf="isSuper" class="badge-super">SUPER</small></h1>
-    <button (click)="logout()" class="btn-logout">Sair</button>
+    <div class="header-actions">
+      <div class="command" [class.open]="showUserMenu">
+        <button class="btn-command" (click)="toggleUserMenu()" aria-haspopup="menu" [attr.aria-expanded]="showUserMenu">
+          <i class="fa fa-user-circle"></i>
+          <span class="label">Conta</span>
+          <i class="fa fa-chevron-down caret"></i>
+        </button>
+        <div class="menu" *ngIf="showUserMenu" role="menu">
+          <button role="menuitem" (click)="goToPerfil(); toggleUserMenu(false)"><i class="fa fa-user"></i> Meu Perfil</button>
+          <button role="menuitem" (click)="logout(); toggleUserMenu(false)"><i class="fa fa-sign-out"></i> Sair</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="admin-actions">
-    <h3 class="sec-title">Inteligência</h3>
-    <div class="action-card" (click)="goToDashboard()" tabindex="0">
-      <i class="fa fa-line-chart"></i>
-      <h2>Dashboard</h2>
-      <p>Visão geral de vendas, acessos e performance.</p>
-    </div>
-    <h3 class="sec-title">Catálogo</h3>
-    <div class="action-card" (click)="goToCadastro()" tabindex="0">
-      <i class="fa fa-plus-circle"></i>
-      <h2>Cadastrar Produto</h2>
-      <p>Adicione novos produtos ao site.</p>
-    </div>
+    <!-- Inteligência -->
+    <section class="section-card" [class.collapsed]="isCollapsed('inteligencia')">
+      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('inteligencia')" (keydown.enter)="toggleSection('inteligencia')" (keydown.space)="toggleSection('inteligencia')" [attr.aria-expanded]="!isCollapsed('inteligencia')">
+        <h3 class="sec-title">Inteligência</h3>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('inteligencia')">
+        <button class="item" (click)="goToDashboard()" tabindex="0">
+          <i class="fa fa-line-chart"></i>
+          <span>Dashboard</span>
+        </button>
+      </div>
+    </section>
 
-    <div class="action-card" 
-        [class.disabled]="!hasProducts" 
-        (click)="goToLista()" tabindex="0">
-      <i class="fa fa-list"></i>
-      <h2>Lista de Produtos</h2>
-      <p>Visualize todos os produtos cadastrados.</p>
-    </div>
+    <!-- Catálogo -->
+    <section class="section-card" [class.collapsed]="isCollapsed('catalogo')">
+      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('catalogo')" (keydown.enter)="toggleSection('catalogo')" (keydown.space)="toggleSection('catalogo')" [attr.aria-expanded]="!isCollapsed('catalogo')">
+        <h3 class="sec-title">Catálogo</h3>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('catalogo')">
+        <button class="item" (click)="goToCadastro()" tabindex="0">
+          <i class="fa fa-plus-circle"></i>
+          <span>Cadastrar Produto</span>
+        </button>
+        <button class="item" [class.disabled]="!hasProducts" (click)="goToLista()" tabindex="0">
+          <i class="fa fa-list"></i>
+          <span>Lista de Produtos</span>
+        </button>
+        <button class="item" (click)="goToEstoque()" tabindex="0">
+          <i class="fa fa-archive"></i>
+          <span>Estoque</span>
+        </button>
+        <button class="item" (click)="goToFornecedores()" tabindex="0">
+          <i class="fa fa-truck"></i>
+          <span>Fornecedores</span>
+        </button>
+        <button class="item" (click)="goToFormulas()" tabindex="0">
+          <i class="fa fa-flask"></i>
+          <span>Fórmulas</span>
+        </button>
+        <button class="item" (click)="goToMarketplaceCustomizacoes()" tabindex="0">
+          <i class="fa fa-tags"></i>
+          <span>Marketplace: Categorias & Tags</span>
+        </button>
+      </div>
+    </section>
 
-    <div class="action-card" (click)="goToEstoque()" tabindex="0">
-      <i class="fa fa-archive"></i>
-      <h2>Estoque</h2>
-      <p>Controle de entradas, saídas e alertas de estoque.</p>
-    </div>
+    <!-- Pessoas -->
+    <section class="section-card" [class.collapsed]="isCollapsed('pessoas')">
+      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('pessoas')" (keydown.enter)="toggleSection('pessoas')" (keydown.space)="toggleSection('pessoas')" [attr.aria-expanded]="!isCollapsed('pessoas')">
+        <h3 class="sec-title">Pessoas</h3>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('pessoas')">
+        <button class="item" *ngIf="isSuper" (click)="goToUsuarios()" tabindex="0">
+          <i class="fa fa-cog"></i>
+          <span>Gerenciar Usuários</span>
+        </button>
+        <button class="item" (click)="goToClientes()" tabindex="0">
+          <i class="fa fa-user-circle"></i>
+          <span>Gerenciar Clientes</span>
+        </button>
+        <button class="item" (click)="goToVeterinarios()" tabindex="0">
+          <i class="fa fa-user-md"></i>
+          <span>Gerenciar Veterinários</span>
+        </button>
+      </div>
+    </section>
 
-    <div class="action-card" (click)="goToFormulas()" tabindex="0">
-      <i class="fa fa-flask"></i>
-      <h2>Fórmulas</h2>
-      <p>Criar e gerenciar fórmulas manipuladas.</p>
-    </div>
+    <!-- Clínico -->
+    <section class="section-card" [class.collapsed]="isCollapsed('clinico')">
+      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('clinico')" (keydown.enter)="toggleSection('clinico')" (keydown.space)="toggleSection('clinico')" [attr.aria-expanded]="!isCollapsed('clinico')">
+        <h3 class="sec-title">Clínico</h3>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('clinico')">
+        <button class="item" (click)="goToGuiaAtivos()" tabindex="0">
+          <i class="fa fa-book"></i>
+          <span>Guia de Ativos</span>
+        </button>
+      </div>
+    </section>
 
-    <div class="action-card" (click)="goToMarketplaceCustomizacoes()" tabindex="0">
-      <i class="fa fa-tags"></i>
-      <h2>Marketplace: Categorias & Tags</h2>
-      <p>Gerencie categorias e tags do marketplace em uma única operação.</p>
-    </div>
-
-    <h3 class="sec-title">Pessoas</h3>
-    <!-- Gerenciar Usuários (somente super admin) -->
-    <div class="action-card" *ngIf="isSuper" (click)="goToUsuarios()" tabindex="0">
-      <i class="fa fa-cog"></i>
-      <h2>Gerenciar Usuários</h2>
-      <p>Crie invites, remova ou altere níveis de acesso.</p>
-    </div>
-
-    <div class="action-card" (click)="goToClientes()" tabindex="0">
-      <i class="fa fa-user-circle"></i>
-      <h2>Gerenciar Clientes</h2>
-      <p>Cadastro, atualização e histórico dos clientes.</p>
-    </div>
-
-    <div class="action-card" (click)="goToVeterinarios()" tabindex="0">
-      <i class="fa fa-user-md"></i>
-      <h2>Gerenciar Veterinários</h2>
-      <p>Cadastro, aprovação e gestão de veterinários.</p>
-    </div>
-
-    <h3 class="sec-title">Clínico</h3>
-    <div class="action-card" (click)="goToGuiaAtivos()" tabindex="0">
-      <i class="fa fa-book"></i>
-      <h2>Guia de Ativos</h2>
-      <p>Visualize, edite ou adicione novos ativos.</p>
-        </div>
-
-    <h3 class="sec-title">Operação</h3>
-    <div class="action-card" (click)="goToBanners()" tabindex="0">
+    <!-- Operação -->
+    <section class="section-card" [class.collapsed]="isCollapsed('operacao')">
+      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('operacao')" (keydown.enter)="toggleSection('operacao')" (keydown.space)="toggleSection('operacao')" [attr.aria-expanded]="!isCollapsed('operacao')">
+        <h3 class="sec-title">Operação</h3>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('operacao')">
+        <button class="item" (click)="goToBanners()" tabindex="0">
           <i class="fa fa-picture-o"></i>
-          <h2>Banners</h2>
-          <p>Gerencie os banners e destaques do site.</p>
-        </div>
-
-    <div class="action-card" (click)="goToPedidos()" tabindex="0">
+          <span>Banners</span>
+        </button>
+        <button class="item" (click)="goToPedidos()" tabindex="0">
           <i class="fa fa-shopping-cart"></i>
-          <h2>Pedidos</h2>
-          <p>Acompanhe o fluxo de pedidos e status.</p>
-        </div>
-
-    <div class="action-card" (click)="goToCupons()" tabindex="0">
+          <span>Pedidos</span>
+        </button>
+        <button class="item" (click)="goToCupons()" tabindex="0">
           <i class="fa fa-ticket"></i>
-          <h2>Cupons</h2>
-          <p>Crie e gerencie cupons e regras promocionais.</p>
-        </div>
-
-    <div class="action-card" (click)="goToPromocoes()" tabindex="0">
+          <span>Cupons</span>
+        </button>
+        <button class="item" (click)="goToPromocoes()" tabindex="0">
           <i class="fa fa-bullhorn"></i>
-          <h2>Promoções</h2>
-          <p>Configure promoções e campanhas sazonais.</p>
-        </div>
-
-    <div class="action-card" (click)="goToRelatorios()" tabindex="0">
+          <span>Promoções</span>
+        </button>
+        <button class="item" (click)="goToRelatorios()" tabindex="0">
           <i class="fa fa-bar-chart"></i>
-          <h2>Relatórios</h2>
-          <p>Relatórios avançados e exportações.</p>
-        </div>
+          <span>Relatórios</span>
+        </button>
+      </div>
+    </section>
 
-    <h3 class="sec-title">Atalhos</h3>
-    <div class="action-card" (click)="goToConfiguracoes()" tabindex="0">
+    <!-- Atalhos -->
+    <section class="section-card" [class.collapsed]="isCollapsed('atalhos')">
+      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('atalhos')" (keydown.enter)="toggleSection('atalhos')" (keydown.space)="toggleSection('atalhos')" [attr.aria-expanded]="!isCollapsed('atalhos')">
+        <h3 class="sec-title">Atalhos</h3>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('atalhos')">
+        <button class="item" (click)="goToConfiguracoes()" tabindex="0">
           <i class="fa fa-sliders"></i>
-          <h2>Configurações</h2>
-          <p>Preferências, integrações e parâmetros do sistema.</p>
-        </div>
+          <span>Configurações</span>
+        </button>
+        <button class="item" (click)="goToHistoricoReceitas()" tabindex="0">
+          <i class="fa fa-file-text"></i>
+          <span>Histórico de Receitas</span>
+        </button>
+        <button class="item" (click)="goToPacientes()" tabindex="0">
+          <i class="fa fa-users"></i>
+          <span>Pacientes</span>
+        </button>
+        <button class="item" (click)="goToAreaVet()" tabindex="0">
+          <i class="fa fa-stethoscope"></i>
+          <span>Área do Veterinário</span>
+        </button>
+        <button class="item" (click)="goToLoja()" tabindex="0">
+          <i class="fa fa-shopping-bag"></i>
+          <span>Loja</span>
+        </button>
+      </div>
+    </section>
 
-    <div class="action-card" (click)="goToHistoricoReceitas()" tabindex="0">
-      <i class="fa fa-file-text"></i>
-      <h2>Histórico de Receitas</h2>
-      <p>Relatórios e auditoria de receitas emitidas.</p>
-    </div>
-
-    <div class="action-card" (click)="goToPacientes()" tabindex="0">
-      <i class="fa fa-users"></i>
-      <h2>Pacientes</h2>
-      <p>Listagem e detalhes dos pacientes atendidos.</p>
-    </div>
-
-    <div class="action-card" (click)="goToAreaVet()" tabindex="0">
-      <i class="fa fa-stethoscope"></i>
-      <h2>Área do Veterinário</h2>
-      <p>Acessar ferramentas operacionais do vet.</p>
-    </div>
-
-    <div class="action-card" (click)="goToLoja()" tabindex="0">
-      <i class="fa fa-shopping-bag"></i>
-      <h2>Loja</h2>
-      <p>Acessar a vitrine e operação comercial.</p>
-    </div>
-
-    <div class="action-card" (click)="goToPerfil()" tabindex="0">
-      <i class="fa fa-user"></i>
-      <h2>Editar Perfil</h2>
-      <p>Atualize seus dados e preferências.</p>
-    </div>
-
-</div>
+  </div>

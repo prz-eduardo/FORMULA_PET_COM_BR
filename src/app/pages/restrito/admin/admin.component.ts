@@ -14,6 +14,10 @@ export class AdminComponent implements OnInit {
   hasProducts = true; // ajuste conforme sua lógica
   isAdmin = false;
   isSuper = false;
+  showUserMenu = false;
+
+  // Persist collapsible state by key
+  private collapsed: Record<string, boolean> = {};
 
   constructor(private router: Router, private session: SessionService) {}
 
@@ -25,6 +29,12 @@ export class AdminComponent implements OnInit {
     }
     this.isAdmin = this.session.isAdmin();
     this.isSuper = this.session.isSuper();
+
+    // restore collapsed state from localStorage (SSR-safe guard)
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('admin_collapsed') : null;
+      if (raw) this.collapsed = JSON.parse(raw);
+    } catch {}
   }
 
   logout() {
@@ -58,4 +68,24 @@ export class AdminComponent implements OnInit {
   goToConfiguracoes() { this.router.navigate(['/restrito/admin/configuracoes']); }
   goToFormulas() { this.router.navigate(['/restrito/admin/formulas']); }
   goToMarketplaceCustomizacoes() { this.router.navigate(['/restrito/admin/marketplace/customizacoes']); }
+  goToFornecedores() { this.router.navigate(['/restrito/admin/fornecedores']); }
+
+  // Header user menu
+  toggleUserMenu(force?: boolean) {
+    this.showUserMenu = typeof force === 'boolean' ? force : !this.showUserMenu;
+  }
+
+  // Collapsible sections utilities
+  isCollapsed(key: string): boolean {
+    return !!this.collapsed[key];
+  }
+
+  toggleSection(key: string) {
+    this.collapsed[key] = !this.collapsed[key];
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_collapsed', JSON.stringify(this.collapsed));
+      }
+    } catch {}
+  }
 }

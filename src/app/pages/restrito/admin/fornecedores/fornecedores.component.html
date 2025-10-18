@@ -1,0 +1,92 @@
+<div class="fornec-wrap">
+  <div class="header">
+    <h2>Fornecedores</h2>
+    <div class="filters">
+      <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, CNPJ, contato…" />
+      <select [value]="active()" (change)="onActive($event)">
+        <option value="all">Todos</option>
+        <option value="1">Ativos</option>
+        <option value="0">Inativos</option>
+      </select>
+      <button (click)="openCreate()" class="primary">Novo</button>
+    </div>
+  </div>
+
+  <div class="list" *ngIf="items().length; else emptyTpl">
+    <div class="row" *ngFor="let s of items()" (click)="view(s)">
+    <div class="name">{{ s.nome }}</div>
+    <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : '—' }}</div>
+      <div class="muted">{{ s.email || s.telefone || s.contato || '—' }}</div>
+      <div class="badges">
+        <span class="chip" [class.ok]="(s.ativo ?? 1)===1">{{ (s.ativo ?? 1)===1 ? 'Ativo' : 'Inativo' }}</span>
+      </div>
+    </div>
+  </div>
+  <ng-template #emptyTpl>
+    <div class="empty">Nenhum fornecedor encontrado.</div>
+  </ng-template>
+
+  <div class="pagination" *ngIf="total() > pageSize()">
+    <button (click)="prev()" [disabled]="!canPrev()">Anterior</button>
+    <span>Página {{ page() }} de {{ totalPages() }}</span>
+    <button (click)="next()" [disabled]="!canNext()">Próxima</button>
+  </div>
+
+  <div class="detail" *ngIf="selected() as s">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>{{ s.nome }}</h3>
+        <div class="head-actions">
+          <button (click)="closeDetail()">Fechar</button>
+          <button class="danger" (click)="remove()">Remover</button>
+          <button class="primary" (click)="save()" [disabled]="form.invalid">Salvar</button>
+        </div>
+      </div>
+      <form [formGroup]="form" class="grid">
+        <div><label>Nome</label><input formControlName="nome" /></div>
+  <div><label>CNPJ</label><input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'edit')" /></div>
+        <div><label>Contato</label><input formControlName="contato" /></div>
+        <div><label>Email</label><input type="email" formControlName="email" /></div>
+        <div><label>Telefone</label><input formControlName="telefone" /></div>
+        <div class="colspan2"><label>Endereço</label><input formControlName="endereco" /></div>
+        <div class="colspan2"><label>Observações</label><textarea formControlName="obs"></textarea></div>
+        <div>
+          <label>Status</label>
+          <select formControlName="ativo">
+            <option [ngValue]="1">Ativo</option>
+            <option [ngValue]="0">Inativo</option>
+          </select>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="create-drawer" *ngIf="showCreate()">
+    <div class="drawer">
+      <div class="drawer-head">
+        <h3>Novo fornecedor</h3>
+        <button class="ghost" (click)="cancelCreate()">Fechar</button>
+      </div>
+      <form [formGroup]="createForm" (ngSubmit)="create()" class="grid">
+        <div><label>Nome</label><input formControlName="nome" /></div>
+  <div><label>CNPJ</label><input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'create')" /></div>
+        <div><label>Contato</label><input formControlName="contato" /></div>
+        <div><label>Email</label><input type="email" formControlName="email" /></div>
+        <div><label>Telefone</label><input formControlName="telefone" /></div>
+        <div class="colspan2"><label>Endereço</label><input formControlName="endereco" /></div>
+        <div class="colspan2"><label>Observações</label><textarea formControlName="obs"></textarea></div>
+        <div>
+          <label>Status</label>
+          <select formControlName="ativo">
+            <option [ngValue]="1">Ativo</option>
+            <option [ngValue]="0">Inativo</option>
+          </select>
+        </div>
+        <div class="drawer-actions">
+          <button type="button" class="ghost" (click)="cancelCreate()">Cancelar</button>
+          <button type="submit" class="primary" [disabled]="createForm.invalid">Criar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
