@@ -94,7 +94,15 @@
             el.style.top = cy + 'px';
             el.setAttribute('data-x', String(cx));
             el.setAttribute('data-y', String(cy));
-            var angle = left ? angleLeft : angleRight;
+            // Compute direction-based rotation: vector from this step
+            var dxPct = (stepPx / vw) * 100 * state.dx;
+            var dyPct = (stepPx / vh) * 100 * state.dy;
+            var dxPx = (dxPct/100) * vw;
+            var dyPx = (dyPct/100) * vh;
+            var baseAngle = Math.atan2(dyPx, dxPx) * 180 / Math.PI; // 0=east, 90=south
+            var facing = baseAngle + 90; // rotate so 'top' of image points along vector
+            var alt = left ? -12 : 12;   // subtle alternation for steps
+            var angle = facing + alt;
             el.style.transform = 'translate(-50%, -50%) rotate(' + angle + 'deg)';
             trail.appendChild(el);
           }
