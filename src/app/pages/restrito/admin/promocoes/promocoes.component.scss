@@ -1,9 +1,7 @@
 .promos-wrap{padding:16px}
 .promos-wrap h1{margin:0 0 12px}
 .filters{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-.filters input,.filters select{padding:8px 10px;border:1px solid #d9d9d9;border-radius:8px}
-.filters button{padding:8px 12px;border-radius:8px;border:1px solid #d9d9d9;background:#fff;cursor:pointer}
-.filters button:hover{background:#f7f7f7}
+.filters .spacer{flex:1}
 .table{width:100%}
 .editor{margin-top:16px;padding-top:12px;border-top:1px solid #e3e3e3}
 .editor .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -43,4 +41,28 @@
 }
 @media (max-width: 640px){
 	.cards{grid-template-columns:1fr}
+	.editor .grid{grid-template-columns:1fr}
+}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;z-index:60;padding:24px 12px}
+.modal{width:min(900px,100%);background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 20px 60px rgba(0,0,0,.2);padding:16px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.modal form .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.modal form label{display:flex;flex-direction:column;gap:4px}
+.modal form label.chk{align-items:center;flex-direction:row;gap:8px}
+.modal .produtos{margin-top:12px}
+.modal .produtos .add{position:relative;max-width:480px}
+.modal .produtos .sugestoes{position:absolute;z-index:5;background:#fff;border:1px solid #ddd;width:100%;max-height:240px;overflow:auto;margin:0;padding:4px 0;list-style:none}
+.modal .produtos .sugestoes li{padding:6px 8px;cursor:pointer}
+.modal .produtos .sugestoes li:hover{background:#f3f3f3}
+.modal .selecionados{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+@media (max-width: 800px){
+  .modal form .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 640px){
+  .modal{border-radius:12px;padding:12px}
+  .modal form .grid{grid-template-columns:1fr}
 }

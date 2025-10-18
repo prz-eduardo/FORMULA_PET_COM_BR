@@ -1,8 +1,27 @@
-.dash-wrap{display:flex;flex-direction:column;gap:16px;padding:16px}
+/* Base layout */
+.dash-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;padding:16px;min-height:calc(100vh - 80px);background:#f3f4f6}
+.sidebar{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px}
+.sidebar .brand{font-weight:800;color:#111827}
+.sidebar nav{display:flex;flex-direction:column;gap:6px}
+.sidebar nav button{padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;text-align:left;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.sidebar nav button.active{background:#111827;color:#fff;border-color:#111827}
+.sidebar .theme{margin-top:auto;display:flex;justify-content:space-between;align-items:center}
+.content{display:flex;flex-direction:column;gap:16px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.toolbar .filters{display:flex;align-items:center;gap:8px}
+.toolbar input,.toolbar select{padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
 .head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .head h1{margin:0;font-weight:700;font-size:22px}
 .head .meta{display:flex;align-items:center;gap:8px}
-.head .refresh{padding:6px 10px;border-radius:6px;background:#111827;color:#fff;border:none;cursor:pointer}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111827;cursor:pointer;transition:background .2s,border-color .2s,color .2s,box-shadow .2s}
+.btn:hover{background:#f9fafb}
+.btn:active{transform:translateY(1px)}
+.btn.refresh{background:#111827;color:#fff;border-color:#111827}
+.btn.refresh:hover{background:#0b1220}
+.btn.ghost{background:transparent;border-color:#e5e7eb;color:#374151}
+.btn.ghost:hover{background:#f9fafb}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .kpi{background:#111827;color:#fff;border-radius:10px;padding:12px;display:flex;flex-direction:column}
@@ -13,6 +32,7 @@
 .charts.three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .charts.one{display:grid;grid-template-columns:1fr;gap:16px}
 @media(max-width:1000px){.charts.two,.charts.three{grid-template-columns:1fr}}
+@media(max-width:900px){.dash-layout{grid-template-columns:1fr}}
 .panel{background:#fff;border-radius:12px;padding:12px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:8px}
 .panel h3{margin:0}
 .chart-box{position:relative;height:280px}
@@ -45,3 +65,22 @@
 .tile .val{font-size:12px}
 .legend{display:flex;align-items:center;gap:8px}
 .legend .bar{height:10px;width:160px;background:linear-gradient(90deg,#dbeafe,#2563eb);border-radius:5px;border:1px solid #e5e7eb}
+
+/* Dark theme using host-context on documentElement[data-theme="dark"] */
+:host-context([data-theme="dark"]) .dash-layout{background:#0b1220}
+:host-context([data-theme="dark"]) .sidebar{background:#0f172a;border-color:#1f2937;color:#e5e7eb}
+:host-context([data-theme="dark"]) .sidebar .brand{color:#e5e7eb}
+:host-context([data-theme="dark"]) .sidebar nav button{background:#0f172a;border-color:#1f2937;color:#e5e7eb}
+:host-context([data-theme="dark"]) .sidebar nav button.active{background:#111827;border-color:#111827;color:#e5e7eb}
+:host-context([data-theme="dark"]) .content{color:#e5e7eb}
+:host-context([data-theme="dark"]) .panel{background:#0f172a;border-color:#1f2937;color:#e5e7eb}
+:host-context([data-theme="dark"]) .kpi{background:#111827;color:#e5e7eb}
+:host-context([data-theme="dark"]) .toolbar input,
+:host-context([data-theme="dark"]) .toolbar select{background:#0b1220;border-color:#1f2937;color:#e5e7eb}
+:host-context([data-theme="dark"]) .table-wrap{background:#0f172a;border-color:#1f2937}
+:host-context([data-theme="dark"]) .table-wrap thead th{background:#0b1220}
+:host-context([data-theme="dark"]) .legend .bar{border-color:#1f2937}
+:host-context([data-theme="dark"]) .btn{background:#0f172a;border-color:#1f2937;color:#e5e7eb}
+:host-context([data-theme="dark"]) .btn:hover{background:#111827}
+:host-context([data-theme="dark"]) .btn.refresh{background:#111827;border-color:#111827;color:#e5e7eb}
+:host-context([data-theme="dark"]) .btn.ghost{background:transparent;border-color:#1f2937;color:#cbd5e1}

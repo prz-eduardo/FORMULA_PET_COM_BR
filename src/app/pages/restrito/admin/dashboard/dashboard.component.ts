@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, PLATFORM_ID } from '@angular/core';
 import { CommonModule, DatePipe, isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminApiService } from '../../../../services/admin-api.service';
 
@@ -9,7 +10,7 @@ import Chart from 'chart.js/auto';
 @Component({
   selector: 'app-dashboard-admin',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, FormsModule],
   providers: [DatePipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -24,6 +25,15 @@ export class DashboardAdminComponent implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   data = signal<any | null>(null);
+  // modular sections
+  section = signal<'resumo'|'vendas'|'marketplace'|'clientes'|'promocoes'|'cupons'>('resumo');
+  // filters
+  from = signal<string | null>(null);
+  to = signal<string | null>(null);
+  sortDir = signal<'asc'|'desc'|null>('desc');
+  limit = signal<number | null>(null);
+  // theme
+  theme = signal<'light' | 'dark'>('light');
 
   // Chart instances
   private receitas7Chart?: Chart;
@@ -68,6 +78,7 @@ export class DashboardAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreToggles();
+    this.restoreTheme();
     this.load();
   }
 
@@ -76,7 +87,21 @@ export class DashboardAdminComponent implements OnInit {
   private load() {
     this.loading.set(true);
     this.error.set(null);
-    this.api.getDashboard().subscribe({
+    const params: any = {};
+    if (this.from()) params.from = this.from();
+    if (this.to()) params.to = this.to();
+    if (this.sortDir()) params.sortDir = this.sortDir();
+    if (this.limit()) params.limit = this.limit();
+
+    const sec = this.section();
+    const req$ = sec === 'resumo' ? this.api.getAdminDashboardSummary(params)
+               : sec === 'vendas' ? this.api.getAdminDashboardSales(params)
+               : sec === 'marketplace' ? this.api.getAdminDashboardMarketplace(params)
+               : sec === 'clientes' ? this.api.getAdminDashboardCustomers(params)
+               : sec === 'promocoes' ? this.api.getAdminDashboardPromotions(params)
+               : this.api.getAdminDashboardCoupons(params);
+
+    req$.subscribe({
       next: (res) => {
         this.data.set(res);
         if (this.isBrowser) {
@@ -113,6 +138,8 @@ export class DashboardAdminComponent implements OnInit {
   }
 
   private renderCharts(res: any) {
+    // Clear previous charts when switching section
+    this.destroyCharts();
     const get = (id: string) => document.getElementById(id) as HTMLCanvasElement | null;
 
     // receitas last 7 days
@@ -401,6 +428,39 @@ export class DashboardAdminComponent implements OnInit {
       if (raw) { const parsed = JSON.parse(raw); this.show.set({ ...this.show(), ...parsed }); }
     } catch {}
   }
+
+  // Theme helpers
+  toggleTheme() {
+    const next = this.theme() === 'light' ? 'dark' : 'light';
+    this.theme.set(next);
+    this.applyTheme(next);
+    this.persistTheme();
+  }
+  private applyTheme(t: 'light'|'dark') {
+    if (!this.isBrowser) return;
+    const el = document.documentElement;
+    el.dataset['theme'] = t;
+  }
+  private persistTheme() {
+    if (!this.isBrowser) return;
+    try { localStorage.setItem('admin_theme', this.theme()); } catch {}
+  }
+  private restoreTheme() {
+    if (!this.isBrowser) return;
+    try {
+      const saved = localStorage.getItem('admin_theme') as 'light'|'dark'|null;
+      const pref = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      const t = saved || pref;
+      this.theme.set(t);
+      this.applyTheme(t);
+    } catch {}
+  }
+
+  // Filter change handlers (avoid template typing issues)
+  onFromChange(v: any) { this.from.set(v || null); this.reload(); }
+  onToChange(v: any) { this.to.set(v || null); this.reload(); }
+  onSortDirChange(v: any) { this.sortDir.set((v as 'asc'|'desc') || 'desc'); this.reload(); }
+  onLimitChange(v: any) { const n = (v === null || v === 'null' || v === '') ? null : Number(v); this.limit.set(n as any); this.reload(); }
 
   // ====== Brazil tile map helpers ======
   private mapRows: string[][] = [

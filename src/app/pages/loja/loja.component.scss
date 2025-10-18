@@ -1,5 +1,9 @@
 .loja-wrap { padding: 16px; font-family: 'Inter', sans-serif; max-width: 100%; overflow-x: hidden; }
-.titulo { margin: 0 0 16px; padding-top: 72px; font-size: 32px; font-weight: 800; color: var(--primary, #0ea5e9); text-align: center; }
+.hero { position: relative; border-radius: 16px; overflow: hidden; height: 240px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.hero-img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(1.05) contrast(1.02); }
+.hero-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(0deg, rgba(0,0,0,0.25), rgba(0,0,0,0.15)); text-align: center; color: #fff; padding: 16px; }
+.titulo { margin: 0 0 4px; padding-top: 0; font-size: 32px; font-weight: 800; color: #fff; text-align: center; text-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+.subtitle { margin: 0; font-size: 14px; opacity: .95; }
 .card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
 .filtros { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; -webkit-backdrop-filter: saturate(120%); backdrop-filter: saturate(120%);
 	.cta { position: relative; display: flex; gap: 8px; align-items: center; }
@@ -42,6 +46,11 @@
 .add-fab { position: absolute; bottom: 8px; right: 8px; width: 44px; height: 44px; border-radius: 999px; border: none; background: var(--primary, #2563eb); color: #fff; box-shadow: 0 6px 14px rgba(37,99,235,0.35); cursor: pointer; display: grid; place-items: center; }
 .add-fab:active { transform: scale(0.96); }
 
+.paginacao { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; }
+.paginacao .left { display: flex; align-items: center; gap: 10px; color: #6b7280; font-size: 12px; }
+.paginacao .right { display: flex; align-items: center; gap: 8px; }
+.paginacao select { padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 8px; }
+
 /* Fly-to-cart anim dot */
 .fly-dot {
 	position: fixed;
@@ -77,6 +86,10 @@
 	.cart-link { margin-left: 0; }
 	.grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.produto img { height: 140px; }
+  .hero { height: 160px; border-radius: 12px; }
+  .titulo { font-size: 24px; }
+  .subtitle { font-size: 12px; }
+  .paginacao { flex-direction: column; align-items: stretch; }
 }
 
 /* Footer spacing */

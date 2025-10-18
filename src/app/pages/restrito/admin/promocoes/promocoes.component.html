@@ -9,8 +9,9 @@
         <option value="1">Ativos</option>
         <option value="0">Inativos</option>
       </select>
-      <button (click)="loadList()">Atualizar</button>
-      <button (click)="novaPromocao()">Nova promoção</button>
+      <button class="outline" (click)="loadList()">Atualizar</button>
+      <div class="spacer"></div>
+      <button class="primary" (click)="novaPromocao()">Nova promoção</button>
     </div>
     <div class="cards">
       <div class="card" *ngFor="let p of list()">
@@ -41,59 +42,65 @@
     </div>
   </section>
 
-  <section class="editor">
-    <h2>{{ editingId() ? 'Editar promoção #' + editingId() : 'Nova promoção' }}</h2>
-    <form [formGroup]="form" (ngSubmit)="salvar()">
-      <div class="grid">
-        <label>
-          Nome
-          <input type="text" formControlName="nome" />
-        </label>
-        <label>
-          Descrição
-          <input type="text" formControlName="descricao" />
-        </label>
-        <label>
-          Tipo
-          <select formControlName="tipo">
-            <option value="percentual">Percentual</option>
-            <option value="valor">Valor</option>
-          </select>
-        </label>
-        <label>
-          Valor
-          <input type="number" formControlName="valor" />
-        </label>
-        <label>
-          Início
-          <input type="datetime-local" formControlName="inicio" />
-        </label>
-        <label>
-          Fim
-          <input type="datetime-local" formControlName="fim" />
-        </label>
-        <label class="chk">
-          <input type="checkbox" formControlName="ativo" /> Ativa
-        </label>
+  <!-- Modal criar/editar promoção -->
+  <div class="modal-backdrop" *ngIf="showCreateModal()">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>{{ editingId() ? 'Editar promoção #' + editingId() : 'Nova promoção' }}</h2>
+        <button class="ghost" (click)="closeCreateModal()">Fechar</button>
       </div>
-
-      <div class="produtos">
-        <h3>Vincular produtos</h3>
-        <div class="add">
-          <input type="text" [formControl]="produtoBusca" (input)="buscarProdutos()" placeholder="Buscar produtos pelo nome" />
-          <ul class="sugestoes" *ngIf="produtoSugestoes().length">
-            <li *ngFor="let s of produtoSugestoes()" (click)="addProduto(s.id)">{{ s.name }} <small>#{{ s.id }}</small></li>
-          </ul>
+      <form [formGroup]="form" (ngSubmit)="salvar()">
+        <div class="grid">
+          <label>
+            Nome
+            <input type="text" formControlName="nome" />
+          </label>
+          <label>
+            Descrição
+            <input type="text" formControlName="descricao" />
+          </label>
+          <label>
+            Tipo
+            <select formControlName="tipo">
+              <option value="percentual">Percentual</option>
+              <option value="valor">Valor</option>
+            </select>
+          </label>
+          <label>
+            Valor
+            <input type="number" formControlName="valor" />
+          </label>
+          <label>
+            Início
+            <input type="datetime-local" formControlName="inicio" />
+          </label>
+          <label>
+            Fim
+            <input type="datetime-local" formControlName="fim" />
+          </label>
+          <label class="chk">
+            <input type="checkbox" formControlName="ativo" /> Ativa
+          </label>
         </div>
-        <div class="selecionados" *ngIf="produtosVinculados().length">
-          <span class="pill" *ngFor="let id of produtosVinculados()">#{{ id }} <button type="button" (click)="removeProduto(id)">x</button></span>
-        </div>
-      </div>
 
-      <div class="actions">
-        <button type="submit">Salvar</button>
-        <button type="button" (click)="resetEditor()">Limpar</button>
-      </div>
-    </form>
-  </section>
+        <div class="produtos">
+          <h3>Vincular produtos</h3>
+          <div class="add">
+            <input type="text" [formControl]="produtoBusca" (input)="buscarProdutos()" placeholder="Buscar produtos pelo nome" />
+            <ul class="sugestoes" *ngIf="produtoSugestoes().length">
+              <li *ngFor="let s of produtoSugestoes()" (click)="addProduto(s.id)">{{ s.name }} <small>#{{ s.id }}</small></li>
+            </ul>
+          </div>
+          <div class="selecionados" *ngIf="produtosVinculados().length">
+            <span class="pill" *ngFor="let id of produtosVinculados()">#{{ id }} <button type="button" (click)="removeProduto(id)">x</button></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="ghost" (click)="closeCreateModal()">Cancelar</button>
+          <button type="submit" class="primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

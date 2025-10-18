@@ -400,6 +400,68 @@ export class AdminApiService {
     return this.http.get<any>(this.dashboardUrl, { headers: this.headers() });
   }
 
+  // Modular Admin Dashboard endpoints
+  getAdminDashboardSummary(params?: { from?: string; to?: string; sortDir?: 'asc'|'desc'; limit?: number }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
+      if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<any>(`${this.baseUrl}/dashboard/summary`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminDashboardSales(params?: { from?: string; to?: string; sortDir?: 'asc'|'desc'; limit?: number }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
+      if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<any>(`${this.baseUrl}/dashboard/sales`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminDashboardMarketplace(params?: { from?: string; to?: string; sortDir?: 'asc'|'desc'; limit?: number }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
+      if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<any>(`${this.baseUrl}/dashboard/marketplace`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminDashboardCustomers(params?: { from?: string; to?: string; sortDir?: 'asc'|'desc'; limit?: number }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
+      if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<any>(`${this.baseUrl}/dashboard/customers`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminDashboardPromotions(params?: { from?: string; to?: string; sortDir?: 'asc'|'desc'; limit?: number }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
+      if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<any>(`${this.baseUrl}/dashboard/promotions`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminDashboardCoupons(params?: { from?: string; to?: string; sortDir?: 'asc'|'desc'; limit?: number }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
+      if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<any>(`${this.baseUrl}/dashboard/coupons`, { headers: this.headers(), params: httpParams });
+  }
+
   // Fórmulas - cadastro
   createFormula(body: FormulaDto): Observable<FormulaDto> {
     return this.http.post<FormulaDto>(`${this.baseUrl}/formulas`, body, { headers: this.headers() });
@@ -533,11 +595,14 @@ export class AdminApiService {
   }
 
   // Vet - aprovação e auditoria
-  approveVet(id: string | number, body?: { reason?: string }): Observable<{ ok: boolean; status: 'approved' }> {
-    return this.http.post<{ ok: boolean; status: 'approved' }>(`${this.baseUrl}/vets/${id}/approve`, body || {}, { headers: this.headers() });
+  approveVet(id: string | number, body?: { reason?: string }): Observable<PessoaDto> {
+    return this.http.post<PessoaDto>(`${this.baseUrl.replace('/admin','')}/admin/people/vets/${id}/approve`, body || {}, { headers: this.headers() });
   }
-  rejectVet(id: string | number, body: { reason: string }): Observable<{ ok: boolean; status: 'rejected' }> {
-    return this.http.post<{ ok: boolean; status: 'rejected' }>(`${this.baseUrl}/vets/${id}/reject`, body, { headers: this.headers() });
+  rejectVet(id: string | number, body: { reason?: string }): Observable<PessoaDto> {
+    return this.http.post<PessoaDto>(`${this.baseUrl.replace('/admin','')}/admin/people/vets/${id}/reject`, body || {}, { headers: this.headers() });
+  }
+  listVetApprovals(id: string | number): Observable<Array<{ id: number; vet_id: number; admin_id: number; admin_email: string; admin_nome?: string; approved: 0|1; reason?: string; ip?: string; created_at: string }>> {
+    return this.http.get<Array<{ id: number; vet_id: number; admin_id: number; admin_email: string; admin_nome?: string; approved: 0|1; reason?: string; ip?: string; created_at: string }>>(`${this.baseUrl.replace('/admin','')}/admin/people/vets/${id}/approvals`, { headers: this.headers() });
   }
   vetAuditLogs(id: string | number): Observable<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>> {
     return this.http.get<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>>(`${this.baseUrl}/vets/${id}/audit-logs`, { headers: this.headers() });

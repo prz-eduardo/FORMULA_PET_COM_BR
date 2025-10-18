@@ -16,8 +16,10 @@
 .field.small{min-width:130px;max-width:180px}
 .field.grow{flex:1 1 260px}
 .field.full{grid-column:1/-1}
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{border:1px solid #263241;padding:8px}
+.table-wrap{width:100%; overflow-x:auto; -webkit-overflow-scrolling: touch; border-radius:8px}
+.table{width:100%;border-collapse:collapse;background:#0f2135;border:1px solid #263241}
+.table thead{background:#132235}
+.table th,.table td{border-bottom:1px solid #263241;padding:10px; white-space: nowrap}
 .items{display:flex;flex-direction:column;gap:10px}
 .item{display:flex;gap:8px;flex-wrap:wrap;background:#0f2135;border:1px solid #263241;border-radius:8px;padding:10px}
 .items-section{margin-top:24px}

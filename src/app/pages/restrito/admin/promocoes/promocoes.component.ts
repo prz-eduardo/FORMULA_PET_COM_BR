@@ -25,6 +25,7 @@ export class AdminPromocoesComponent implements OnInit {
 
   // edição/criação
   editingId = signal<number | null>(null);
+  showCreateModal = signal(false);
   form: FormGroup = this.fb.group({
     nome: ['', Validators.required],
     descricao: [''],
@@ -107,6 +108,7 @@ export class AdminPromocoesComponent implements OnInit {
 
   novaPromocao() {
     this.resetEditor();
+    this.showCreateModal.set(true);
   }
 
   editarPromocao(p: PromocaoDto) {
@@ -148,10 +150,12 @@ export class AdminPromocoesComponent implements OnInit {
       if (ids.length) {
         this.api.setPromocaoProdutos(saved.id!, ids).subscribe(() => {
           this.resetEditor();
+          this.showCreateModal.set(false);
           this.loadList();
         });
       } else {
         this.resetEditor();
+        this.showCreateModal.set(false);
         this.loadList();
       }
     };
@@ -200,4 +204,6 @@ export class AdminPromocoesComponent implements OnInit {
     this.active.set(value);
     this.loadList();
   }
+
+  closeCreateModal(){ this.showCreateModal.set(false); }
 }

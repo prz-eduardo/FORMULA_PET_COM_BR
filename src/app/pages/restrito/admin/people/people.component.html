@@ -36,7 +36,7 @@
   </div>
 
   <div class="list" *ngIf="items().length; else emptyTpl">
-    <div class="row" *ngFor="let u of items()">
+    <div class="row" *ngFor="let u of items()" [class.expanded]="isExpanded(u)" (click)="toggleExpand(u)">
       <div class="avatar">{{ initials(u) }}</div>
       <div class="col main">
         <div class="name">
@@ -52,10 +52,119 @@
         <div class="muted">{{ u.city || '-' }}/{{ u.uf || '-' }}</div>
         <div class="muted" *ngIf="tipo==='vet' && u.crmv">CRMV: {{ u.crmv }}</div>
       </div>
-      <div class="col actions">
-        <button (click)="view(u)">Ver/Editar</button>
-        <button *ngIf="!isActive(u)" (click)="ativar(u)">Ativar</button>
-        <button *ngIf="isActive(u)" class="warn" (click)="desativar(u)">Desativar</button>
+      <div class="col actions" (click)="$event.stopPropagation()">
+        <button (click)="toggleExpand(u)">{{ isExpanded(u) ? 'Fechar' : 'Ver/Editar' }}</button>
+        <ng-container *ngIf="tipo==='vet'">
+          <button class="primary" *ngIf="!vetApproved(u)" (click)="aprovarVetQuick(u)">Aprovar</button>
+          <button class="warn" *ngIf="vetApproved(u)" (click)="reprovarVetQuick(u)">Reprovar</button>
+        </ng-container>
+        <ng-container *ngIf="tipo!=='vet'">
+          <button *ngIf="!isActive(u)" (click)="ativar(u)">Ativar</button>
+          <button *ngIf="isActive(u)" class="warn" (click)="desativar(u)">Desativar</button>
+        </ng-container>
+      </div>
+
+      <div class="row-expand" *ngIf="isExpanded(u) && selected() as s" (click)="$event.stopPropagation()">
+        <div class="panel">
+          <button class="close-x" (click)="toggleExpand(u)" aria-label="Colapsar">×</button>
+          <div class="panel-head">
+            <div class="id">
+              <div class="avatar lg">{{ initials(s) }}</div>
+              <div>
+                <h3>{{ displayName(s) }}</h3>
+                <div class="chips">
+                  <span class="chip tipo">{{ (s.tipo || tipo) | titlecase }}</span>
+                  <span class="chip" *ngFor="let c of statusChips(s)" [class.ok]="c.cls==='ok'" [class.warn]="c.cls==='warn'" [class.danger]="c.cls==='danger'" [class.info]="c.cls==='info'">{{ c.label }}</span>
+                </div>
+                <div class="meta-dates muted">
+                  <span *ngIf="s.created_at">Criado em {{ s.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  <span *ngIf="s.updated_at"> · Atualizado em {{ s.updated_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="head-actions">
+              <button class="danger" (click)="removeSelected()">Remover</button>
+              <button class="primary" (click)="salvarEdicao()" [disabled]="form.invalid">Salvar</button>
+            </div>
+          </div>
+
+          <nav class="tabs">
+            <button [class.active]="selectedTab()==='dados'" (click)="selectTab('dados')">Dados</button>
+            <button [class.active]="selectedTab()==='docs'" (click)="selectTab('docs')">Documentos</button>
+            <button *ngIf="tipo==='vet'" [class.active]="selectedTab()==='audit'" (click)="selectTab('audit')">Auditoria</button>
+          </nav>
+
+          <div class="tab-body">
+            <div class="pane" *ngIf="selectedTab()==='dados'">
+              <form [formGroup]="form" class="grid">
+                <div><label>Nome</label><input formControlName="name" /></div>
+                <div><label>Email</label><input formControlName="email" /></div>
+                <div><label>Telefone</label><input formControlName="phone" /></div>
+                <div><label>Cidade</label><input formControlName="city" /></div>
+                <div><label>UF</label><input formControlName="uf" maxlength="2" /></div>
+                <div *ngIf="tipo!=='vet'"><label>CPF</label><input formControlName="cpf" /></div>
+                <div *ngIf="tipo==='vet'"><label>CRMV</label><input formControlName="crmv" /></div>
+              </form>
+
+              <div class="address">
+                <div class="muted" style="margin-top:8px"><strong>Endereço</strong></div>
+                <div class="grid">
+                  <div><label>CEP</label><div class="badge">{{ $any(s).cep || $any(s).endereco?.cep || '—' }}</div></div>
+                  <div><label>Logradouro</label><div class="badge">{{ $any(s).logradouro || $any(s).endereco?.logradouro || '—' }}</div></div>
+                  <div><label>Número</label><div class="badge">{{ $any(s).numero || $any(s).endereco?.numero || '—' }}</div></div>
+                  <div><label>Complemento</label><div class="badge">{{ $any(s).complemento || $any(s).endereco?.complemento || '—' }}</div></div>
+                  <div><label>Bairro</label><div class="badge">{{ $any(s).bairro || $any(s).endereco?.bairro || '—' }}</div></div>
+                  <div><label>Cidade/UF</label><div class="badge">{{ ($any(s).city || $any(s).endereco?.cidade || '—') }}/{{ ($any(s).uf || $any(s).endereco?.estado || '—') }}</div></div>
+                </div>
+              </div>
+
+              <div class="edit-actions">
+                <ng-container *ngIf="tipo==='vet'">
+                  <button (click)="aprovarVet()" class="primary" *ngIf="!vetApproved(s)">Aprovar Vet</button>
+                  <button (click)="reprovarVet()" class="warn" *ngIf="vetApproved(s)">Reprovar Vet</button>
+                </ng-container>
+                <ng-container *ngIf="tipo!=='vet'">
+                  <button *ngIf="!isActive(s)" (click)="ativar(s)">Ativar</button>
+                  <button *ngIf="isActive(s)" class="warn" (click)="desativar(s)">Desativar</button>
+                </ng-container>
+              </div>
+            </div>
+
+            <div class="pane" *ngIf="selectedTab()==='docs'">
+              <div class="uploaders">
+                <label>RG<input type="file" (change)="onSelectDoc($event,'rg')" /></label>
+                <label>CPF<input type="file" (change)="onSelectDoc($event,'cpf')" /></label>
+                <label>CRMV<input type="file" (change)="onSelectDoc($event,'crmv')" /></label>
+                <label>Comprovante<input type="file" (change)="onSelectDoc($event,'comprovante')" /></label>
+                <label>Outro<input type="file" (change)="onSelectDoc($event,'outro')" /></label>
+              </div>
+              <div class="gallery" *ngIf="docs().length; else nodocs">
+                <div class="thumb" *ngFor="let d of docs()">
+                  <div class="tipo">{{ d.tipo }}</div>
+                  <a [href]="d.url" target="_blank" rel="noopener">
+                    <img *ngIf="d.mime_type?.startsWith('image/')" [src]="d.url" alt="doc" />
+                    <div class="file" *ngIf="!d.mime_type || !d.mime_type.startsWith('image/')">{{ d.mime_type || 'arquivo' }}</div>
+                  </a>
+                  <button (click)="removeDoc(d)" class="danger">Excluir</button>
+                </div>
+              </div>
+              <ng-template #nodocs>
+                <div class="placeholder">Sem documentos enviados.</div>
+              </ng-template>
+            </div>
+
+            <div class="pane" *ngIf="selectedTab()==='audit'">
+              <div class="audit" *ngIf="logs().length; else emptyAudit">
+                <div class="log" *ngFor="let l of logs()">
+                  <div class="when">{{ l.created_at | date:'short' }}</div>
+                  <div class="what">{{ l.action }}</div>
+                  <div class="reason" *ngIf="l.reason">{{ l.reason }}</div>
+                </div>
+              </div>
+              <ng-template #emptyAudit><div class="placeholder">Sem registros de auditoria.</div></ng-template>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -65,92 +174,25 @@
   </ng-template>
 
   <div class="pagination" *ngIf="total() > pageSize()">
-    <button (click)="prevPage()" [disabled]="!canPrev()">Anterior</button>
-    <span>Página {{ page() }} de {{ totalPages() }}</span>
-    <button (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
-  </div>
-
-  <div class="detail" *ngIf="selected() as s">
-    <div class="panel">
-      <div class="panel-head">
-        <div class="id">
-          <div class="avatar lg">{{ initials(s) }}</div>
-          <div>
-            <h3>{{ displayName(s) }}</h3>
-            <div class="chips">
-              <span class="chip tipo">{{ (s.tipo || tipo) | titlecase }}</span>
-              <span class="chip" *ngFor="let c of statusChips(s)" [class.ok]="c.cls==='ok'" [class.warn]="c.cls==='warn'" [class.danger]="c.cls==='danger'" [class.info]="c.cls==='info'">{{ c.label }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="head-actions">
-          <button (click)="closeDetail()">Fechar</button>
-          <button class="danger" (click)="removeSelected()">Remover</button>
-          <button class="primary" (click)="salvarEdicao()" [disabled]="form.invalid">Salvar</button>
-        </div>
-      </div>
-      <nav class="tabs">
-        <button [class.active]="selectedTab()==='dados'" (click)="selectTab('dados')">Dados</button>
-        <button [class.active]="selectedTab()==='docs'" (click)="selectTab('docs')">Documentos</button>
-        <button *ngIf="tipo==='vet'" [class.active]="selectedTab()==='audit'" (click)="selectTab('audit')">Auditoria</button>
-      </nav>
-      <div class="tab-body">
-        <div class="pane" *ngIf="selectedTab()==='dados'">
-          <form [formGroup]="form" class="grid">
-            <div><label>Nome</label><input formControlName="name" /></div>
-            <div><label>Email</label><input formControlName="email" /></div>
-            <div><label>Telefone</label><input formControlName="phone" /></div>
-            <div><label>Cidade</label><input formControlName="city" /></div>
-            <div><label>UF</label><input formControlName="uf" maxlength="2" /></div>
-            <div *ngIf="tipo!=='vet'"><label>CPF</label><input formControlName="cpf" /></div>
-            <div *ngIf="tipo==='vet'"><label>CRMV</label><input formControlName="crmv" /></div>
-          </form>
-          <div class="edit-actions">
-            <ng-container *ngIf="tipo==='vet'">
-              <button (click)="aprovarVet()" class="ok" *ngIf="!vetApproved(s)">Aprovar Vet</button>
-              <button (click)="reprovarVet()" class="warn" *ngIf="vetApproved(s)">Reprovar Vet</button>
-            </ng-container>
-            <ng-container *ngIf="tipo!=='vet'">
-              <button *ngIf="!isActive(s)" (click)="ativar(s)">Ativar</button>
-              <button *ngIf="isActive(s)" class="warn" (click)="desativar(s)">Desativar</button>
-            </ng-container>
-          </div>
-        </div>
-        <div class="pane" *ngIf="selectedTab()==='docs'">
-          <div class="uploaders">
-            <label>RG<input type="file" (change)="onSelectDoc($event,'rg')" /></label>
-            <label>CPF<input type="file" (change)="onSelectDoc($event,'cpf')" /></label>
-            <label>CRMV<input type="file" (change)="onSelectDoc($event,'crmv')" /></label>
-            <label>Comprovante<input type="file" (change)="onSelectDoc($event,'comprovante')" /></label>
-            <label>Outro<input type="file" (change)="onSelectDoc($event,'outro')" /></label>
-          </div>
-          <div class="gallery" *ngIf="docs().length; else nodocs">
-            <div class="thumb" *ngFor="let d of docs()">
-              <div class="tipo">{{ d.tipo }}</div>
-              <a [href]="d.url" target="_blank" rel="noopener">
-                <img *ngIf="d.mime_type?.startsWith('image/')" [src]="d.url" alt="doc" />
-                <div class="file" *ngIf="!d.mime_type || !d.mime_type.startsWith('image/')">{{ d.mime_type || 'arquivo' }}</div>
-              </a>
-              <button (click)="removeDoc(d)" class="danger">Excluir</button>
-            </div>
-          </div>
-          <ng-template #nodocs>
-            <div class="placeholder">Sem documentos enviados.</div>
-          </ng-template>
-        </div>
-        <div class="pane" *ngIf="selectedTab()==='audit'">
-          <div class="audit" *ngIf="logs().length; else emptyAudit">
-            <div class="log" *ngFor="let l of logs()">
-              <div class="when">{{ l.created_at | date:'short' }}</div>
-              <div class="what">{{ l.action }}</div>
-              <div class="reason" *ngIf="l.reason">{{ l.reason }}</div>
-            </div>
-          </div>
-          <ng-template #emptyAudit><div class="placeholder">Sem registros de auditoria.</div></ng-template>
-        </div>
-      </div>
+    <div class="left">
+      <label>Tamanho da página
+        <select [value]="pageSize()" (change)="onSelectPageSize($event)">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </label>
+  <span class="range">{{ ((page()-1)*pageSize())+1 }}–{{ pageEnd() }} de {{ total() }}</span>
+    </div>
+    <div class="right">
+      <button (click)="prevPage()" [disabled]="!canPrev()">Anterior</button>
+      <span>Página {{ page() }} de {{ totalPages() }}</span>
+      <button (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
     </div>
   </div>
+
+  
 
   <!-- Drawer de criação -->
   <div class="create-drawer" *ngIf="showCreate()">

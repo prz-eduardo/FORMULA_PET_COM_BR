@@ -1,13 +1,7 @@
 .fornec-wrap{padding:16px}
 .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .header .filters{display:flex;gap:8px;align-items:center}
-.header .filters input,.header .filters select{padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;outline:none;transition:box-shadow .15s,border-color .15s}
-.header .filters input:focus,.header .filters select:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.12)}
-.header .filters button{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;transition:background .15s,border-color .15s,transform .06s}
-.header .filters button:hover{background:#f9fafb}
-.header .filters button:active{transform:translateY(1px)}
-.header .filters .primary{background:#111827;color:#fff;border:1px solid #111827}
-.header .filters .primary:hover{filter:brightness(1.05)}
+/* rely on global input/button styles from styles.scss */
 
 .list{display:flex;flex-direction:column;gap:8px}
 .row{display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:12px;align-items:center;border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:10px;cursor:pointer}
@@ -25,12 +19,8 @@
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .grid > div{display:flex;flex-direction:column;gap:4px}
 .grid label{font-size:12px;color:#374151}
-.grid input,.grid select,.grid textarea{padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;outline:none;transition:box-shadow .15s,border-color .15s;background:#fff}
-.grid input:focus,.grid select:focus,.grid textarea:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.12)}
 .grid textarea{min-height:96px;resize:vertical}
-.panel .head-actions button{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer}
-.panel .head-actions .primary{background:#111827;color:#fff;border-color:#111827}
-.panel .head-actions .danger{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.panel .head-actions{display:flex;gap:8px}
 .grid .colspan2{grid-column:span 2}
 
 .create-drawer{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-start;justify-content:flex-end;z-index:50}
@@ -39,9 +29,14 @@
 .drawer .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .drawer .grid > div{display:flex;flex-direction:column;gap:4px}
 .drawer .grid label{font-size:12px;color:#374151}
-.drawer .grid input,.drawer .grid select,.drawer .grid textarea{padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;outline:none;transition:box-shadow .15s,border-color .15s;background:#fff}
-.drawer .grid input:focus,.drawer .grid select:focus,.drawer .grid textarea:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.12)}
 .drawer .grid textarea{min-height:96px;resize:vertical}
 .drawer-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-.drawer-actions .primary{background:#111827;color:#fff;border:1px solid #111827;padding:8px 12px;border-radius:8px}
-.drawer-actions .ghost{background:#fff;border:1px solid #d1d5db;color:#111827;padding:8px 12px;border-radius:8px}
+
+@media (max-width: 800px){
+	.row{grid-template-columns:1.5fr 1fr 1.5fr auto}
+}
+@media (max-width: 640px){
+	.header{flex-direction:column; align-items:stretch}
+	.header .filters{flex-wrap:wrap}
+	.row{grid-template-columns:1fr; gap:6px}
+}

@@ -1,6 +1,13 @@
 <div class="loja-wrap">
   <app-navmenu></app-navmenu>
-  <h1 class="titulo">Loja</h1>
+  <!-- Hero/Banner -->
+  <section class="hero">
+    <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" />
+    <div class="hero-overlay">
+      <h1 class="titulo">Loja</h1>
+      <p class="subtitle">Medicamentos, suplementos e cuidados para o seu pet</p>
+    </div>
+  </section>
 
   <div class="filtros card">
     <input class="input" placeholder="Buscar produtos..." [(ngModel)]="filtro" aria-label="Buscar produtos" />
@@ -23,7 +30,7 @@
           {{ me ? '👤 ' + (me?.nome || 'Cliente') : '👤 Entrar' }}
         </button>
       </div>
-      <a #cartBtn routerLink="/carrinho" class="btn cart-link with-badge" title="Ir para o carrinho">
+      <a #cartBtn routerLink="/carrinho" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho">
         🛒 Carrinho
         <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
       </a>
@@ -40,7 +47,7 @@
   <section class="catalogo">
     <h2 class="sec-title">Produtos</h2>
     <div class="grid">
-      <div class="card produto" *ngFor="let p of filtered">
+      <div class="card produto" *ngFor="let p of paginated">
         <div class="img-box">
           <img [src]="p.image" width="320" height="200" alt="" role="presentation" />
           <div class="badge" *ngIf="p.discount">{{ p.discount }}% OFF</div>
@@ -63,6 +70,23 @@
             <div class="acoes"></div>
           </div>
         </div>
+      </div>
+    </div>
+    <div class="paginacao" *ngIf="filtered.length > pageSize">
+      <div class="left">
+        <label>Itens por página
+          <select [ngModel]="pageSize" (ngModelChange)="onChangePageSize($event)">
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="40">40</option>
+            <option [ngValue]="60">60</option>
+          </select>
+        </label>
+  <span class="range">{{ pageStart() }}–{{ pageEnd() }} de {{ filtered.length }}</span>
+      </div>
+      <div class="right">
+        <button class="btn light" (click)="prevPage()" [disabled]="!canPrev()">Anterior</button>
+        <span>Página {{ page }} de {{ totalPages() }}</span>
+        <button class="btn light" (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
       </div>
     </div>
   </section>

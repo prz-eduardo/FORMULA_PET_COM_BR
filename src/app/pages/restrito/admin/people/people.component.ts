@@ -25,8 +25,9 @@ export class PeopleAdminComponent implements OnInit {
   total = signal(0);
   items = signal<PessoaDto[]>([]);
 
-  // edição/view
+  // edição/view (accordion por linha)
   selected = signal<PessoaDto | null>(null);
+  expandedId = signal<string | number | null>(null);
   form!: FormGroup;
   showDocs = signal(false);
   docs = signal<PessoaDocDto[]>([]);
@@ -74,8 +75,8 @@ export class PeopleAdminComponent implements OnInit {
     if (this.uf()) params.uf = this.uf();
     if (this.from()) params.from = this.from();
     if (this.to()) params.to = this.to();
-    // Use unified endpoint if available (listPeople), fallback to listUsuarios
-    const api$ = this.api.listPeople ? this.api.listPeople({ q: params.q, page: params.page, pageSize: params.pageSize, tipo: params.tipo }) : this.api.listUsuarios(params);
+  // Use unified endpoint if available (listPeople), passing all filters; fallback to legacy listUsuarios
+  const api$ = this.api.listPeople ? this.api.listPeople({ ...params }) : this.api.listUsuarios(params);
     api$.subscribe({
       next: (res: Paged<any>) => {
         this.items.set(res.data || []);
@@ -91,6 +92,8 @@ export class PeopleAdminComponent implements OnInit {
   canNext(): boolean { return this.page() < this.totalPages(); }
   prevPage() { if (this.canPrev()) { this.page.set(this.page() - 1); this.load(); } }
   nextPage() { if (this.canNext()) { this.page.set(this.page() + 1); this.load(); } }
+  onSelectPageSize(ev: Event) { const el = ev.target as HTMLSelectElement | null; if (!el) return; const n = Number(el.value) || 10; this.pageSize.set(n); this.page.set(1); this.load(); }
+  pageEnd(): number { return Math.min(this.page() * this.pageSize(), this.total()); }
 
   onQInput(ev: Event) { this.q.set((ev.target as HTMLInputElement).value); this.page.set(1); this.load(); }
   applyFilters() { this.page.set(1); this.load(); }
@@ -120,6 +123,7 @@ export class PeopleAdminComponent implements OnInit {
   }
 
   // UI helpers
+  idOf(u: any): string | number | null { return (u?.id ?? u?.uid) ?? null; }
   displayName(u: Partial<PessoaDto> & Record<string, any>) {
     return u.name || (u as any).nome || (u as any).full_name || u.email || (u as any).username || '—';
   }
@@ -151,6 +155,7 @@ export class PeopleAdminComponent implements OnInit {
 
   view(u: PessoaDto) {
     this.selected.set(u);
+    this.expandedId.set(this.idOf(u));
     this.showDocs.set(false);
     this.selectedTab.set('dados');
     this.form = this.fb.group({
@@ -165,9 +170,10 @@ export class PeopleAdminComponent implements OnInit {
     const id = (u.id ?? (u as any).uid) as any;
     if (id) {
       this.api.listUsuarioDocs(id).subscribe((d) => this.docs.set(d || []));
-      // auditoria (quando disponível para vet)
-      if (this.tipo === 'vet' && this.api.vetAuditLogs) {
-        this.api.vetAuditLogs(id).subscribe(logs => this.logs.set(logs || []));
+      // auditoria (quando disponível para vet) + approvals history
+      if (this.tipo === 'vet') {
+        if (this.api.vetAuditLogs) this.api.vetAuditLogs(id).subscribe(logs => this.logs.set(logs || []));
+        if ((this.api as any).listVetApprovals) (this.api as any).listVetApprovals(id).subscribe();
       } else { this.logs.set([]); }
     } else {
       this.docs.set([]);
@@ -175,15 +181,17 @@ export class PeopleAdminComponent implements OnInit {
     }
   }
   toggleDocs() { this.showDocs.set(!this.showDocs()); }
-  closeDetail() { this.selected.set(null); }
+  closeDetail() { this.selected.set(null); this.expandedId.set(null); }
+  isExpanded(u: any): boolean { const id = this.idOf(u); return id != null && id === this.expandedId(); }
+  toggleExpand(u: any) { if (this.isExpanded(u)) { this.closeDetail(); } else { this.view(u as any); } }
   selectTab(tab: 'dados'|'docs'|'audit') { this.selectedTab.set(tab); }
 
   ativar(u: any) {
-    const id = u.id || u.uid; const tipo = this.tipo; const body: any = tipo === 'admin' ? { tipo, ativo: 1 } : tipo === 'vet' ? { tipo, approved: 1 } : { tipo, ativo: 1 };
+    const id = u.id || u.uid; const tipo = this.tipo; const body: any = { tipo, ativo: 1 };
     if (this.api.updatePerson) this.api.updatePerson(id, tipo, body).subscribe(() => this.load()); else this.api.updateUsuario(id, { active: 1 }).subscribe(() => this.load());
   }
   desativar(u: any) {
-    const id = u.id || u.uid; const tipo = this.tipo; const body: any = tipo === 'vet' ? { tipo, approved: 0 } : { tipo, ativo: 0 };
+    const id = u.id || u.uid; const tipo = this.tipo; const body: any = { tipo, ativo: 0 };
     if (this.api.updatePerson) this.api.updatePerson(id, tipo, body).subscribe(() => this.load()); else this.api.updateUsuario(id, { active: 0 }).subscribe(() => this.load());
   }
 
@@ -229,11 +237,11 @@ export class PeopleAdminComponent implements OnInit {
     const u = this.selected();
     if (!u) return;
     const id = (u.id ?? (u as any).uid) as any;
-    // unified API: approved=1
-    if (this.api.updatePerson) {
+    // use dedicated endpoint for explicit audit trail
+    if (this.api.approveVet) {
+      this.api.approveVet(id, {}).subscribe((updated) => { this.selected.set({ ...u, ...updated, approved: 1, verification_status: 'approved' }); this.load(); });
+    } else if (this.api.updatePerson) {
       this.api.updatePerson(id, 'vet', { approved: 1 }).subscribe(() => { this.selected.set({ ...u, approved: 1, verification_status: 'approved' }); this.load(); });
-    } else {
-      this.api.approveVet(id, {}).subscribe(() => { this.selected.set({ ...u, verification_status: 'approved' }); this.load(); });
     }
   }
   reprovarVet() {
@@ -242,11 +250,25 @@ export class PeopleAdminComponent implements OnInit {
     const motivo = prompt('Motivo da reprovação?');
     if (!motivo) return;
     const id = (u.id ?? (u as any).uid) as any;
-    if (this.api.updatePerson) {
+    if (this.api.rejectVet) {
+      this.api.rejectVet(id, { reason: motivo }).subscribe((updated) => { this.selected.set({ ...u, ...updated, approved: 0, verification_status: 'rejected' }); this.load(); });
+    } else if (this.api.updatePerson) {
       this.api.updatePerson(id, 'vet', { approved: 0 }).subscribe(() => { this.selected.set({ ...u, approved: 0, verification_status: 'rejected' }); this.load(); });
-    } else {
-      this.api.rejectVet(id, { reason: motivo }).subscribe(() => { this.selected.set({ ...u, verification_status: 'rejected' }); this.load(); });
     }
+  }
+
+  // Quick actions in list (without opening detail)
+  aprovarVetQuick(u: any) {
+    const id = u.id || u.uid; if (!id) return;
+    if (this.api.approveVet) this.api.approveVet(id, {}).subscribe(() => this.load());
+    else if (this.api.updatePerson) this.api.updatePerson(id, 'vet', { approved: 1 }).subscribe(() => this.load());
+  }
+  reprovarVetQuick(u: any) {
+    const id = u.id || u.uid; if (!id) return;
+    const motivo = prompt('Motivo da reprovação?');
+    if (!motivo) return;
+    if (this.api.rejectVet) this.api.rejectVet(id, { reason: motivo }).subscribe(() => this.load());
+    else if (this.api.updatePerson) this.api.updatePerson(id, 'vet', { approved: 0 }).subscribe(() => this.load());
   }
 
   exportCSV() {

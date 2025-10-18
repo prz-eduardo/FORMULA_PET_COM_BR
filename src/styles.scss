@@ -57,3 +57,131 @@ img, video, canvas, svg {
 @media (prefers-reduced-motion: reduce){
     .paw-print{ transition: opacity .6s ease; }
 }
+
+/* === Admin UI: global, consistent styles across restrito/admin pages === */
+:root{
+    --admin-bg: #0d151f;
+    --admin-surface: #0f1722;
+    --admin-border: rgba(255,255,255,0.08);
+    --admin-card: #ffffff;
+    --admin-text: #0f1722;
+    --admin-muted: #6b7280;
+    --admin-primary: #0db8de;
+    --admin-primary-ink: #05222b;
+    --admin-warn: #f59e0b;
+    --admin-danger: #ef4444;
+    --admin-ok: #10b981;
+}
+
+/* Target common admin wrappers to normalize controls */
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) {
+    color: #0f1722;
+}
+
+/* Controls */
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) input,
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) select,
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) textarea {
+    appearance: none;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border);
+    background: #fff;
+    color: #111827;
+    outline: none;
+    transition: box-shadow .18s ease, border-color .18s ease;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) input:focus,
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) select:focus,
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) textarea:focus {
+    border-color: rgba(13,184,222,.45);
+    box-shadow: 0 0 0 3px rgba(13,184,222,.18);
+}
+
+/* Buttons */
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border);
+    background: #fff;
+    color: #0f1722;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button:hover {
+    transform: translateY(-1px);
+    background: #f8fafc;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.primary {
+    background: var(--admin-primary);
+    color: #fff;
+    border-color: rgba(13,184,222,.5);
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.primary:hover {
+    background: #12c5ee;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.ok {
+    background:#ecfdf5; border-color:#a7f3d0; color:#065f46;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.warn {
+    background:#fff7ed; border-color:#fed7aa; color:#92400e;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.danger {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.ghost {
+    background: transparent;
+    border-color: var(--admin-border);
+    color: #111827;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.outline {
+    background: transparent;
+    border-color: rgba(15,23,34,.3);
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.secondary {
+    background: #f8fafc;
+}
+
+/* Chips / Badges */
+.chip, .badge {
+    font-size: 12px;
+    border-radius: 999px;
+    padding: 4px 8px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.chip.ok, .badge.ok{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46 }
+.chip.warn, .badge.warn{ background:#fff7ed; border-color:#fed7aa; color:#9a3412 }
+.chip.danger, .badge.danger{ background:#fef2f2; border-color:#fecaca; color:#991b1b }
+.chip.info, .badge.info{ background:#eff6ff; border-color:#bfdbfe; color:#1e40af }
+
+/* Tables: make responsive by default inside admin wrappers */
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) thead { background: #f8fafc; }
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) th,
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+/* Horizontal scroll on small screens */
+@media (max-width: 768px){
+    :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) th,
+    :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) td { white-space: nowrap; font-size: 13px; padding: 8px 10px; }
+}

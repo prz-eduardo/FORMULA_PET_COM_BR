@@ -23,6 +23,9 @@ export class LojaComponent implements OnInit {
   categoria = '';
   sort: 'relevance' | 'price-asc' | 'price-desc' | 'name' = 'relevance';
   onlyFavorites = false;
+  // Pagination
+  page = 1;
+  pageSize = 20;
   // Auth UI
   showLogin = false;
   showEmailLogin = false;
@@ -44,6 +47,8 @@ export class LojaComponent implements OnInit {
     this.store.categories$.subscribe(c => this.categorias = c);
     // try fetch me silently
     await this.fetchMe();
+    // If not logged in, clear cart as requested
+    if (!this.me) this.store.clearCart();
     // read query params to prefill filters
     this.route.queryParamMap.subscribe(params => {
       const q = params.get('q');
@@ -78,6 +83,22 @@ export class LojaComponent implements OnInit {
     }
   }
 
+  // Paginated slice of filtered
+  get paginated(): ShopProduct[] {
+    const start = (this.page - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.filtered.slice(start, end);
+  }
+  totalPages(): number { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); }
+  pageStart(): number { return (this.page - 1) * this.pageSize + 1; }
+  pageEnd(): number { return Math.min(this.page * this.pageSize, this.filtered.length); }
+  canPrev(): boolean { return this.page > 1; }
+  canNext(): boolean { return this.page < this.totalPages(); }
+  prevPage() { if (this.canPrev()) this.page--; }
+  nextPage() { if (this.canNext()) this.page++; }
+  goToPage(p: number) { const t = this.totalPages(); this.page = Math.min(Math.max(1, p), t); }
+  onChangePageSize(ev: Event) { const v = Number((ev.target as HTMLSelectElement).value) || 20; this.pageSize = v; this.page = 1; }
+
   isFav(p: ShopProduct) { return this.store.isFavorite(p.id); }
   async toggleFav(p: ShopProduct) {
     const ok = await this.store.toggleFavorite(p.id);
@@ -99,8 +120,15 @@ export class LojaComponent implements OnInit {
   }
 
   async onAddToCart(p: ShopProduct, ev: MouseEvent) {
+    // If not logged in, clicking cart should trigger login
+    if (!this.me) { this.openLoginNearProfile(); return; }
     const ok = await this.addToCart(p);
     if (ok) this.flyToCart(ev);
+  }
+
+  // If user clicks cart link and is not logged in, intercept to open login
+  onCartClick(ev: MouseEvent) {
+    if (!this.me) { ev.preventDefault(); this.openLoginNearProfile(); }
   }
 
   toggleFavoritesOnly() {
