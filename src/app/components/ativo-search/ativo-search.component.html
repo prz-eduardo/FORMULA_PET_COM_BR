@@ -1,0 +1,17 @@
+<div class="ativo-search">
+  <label>{{ label }}</label>
+  <input type="text" [value]="selecionado?.ativo_nome || query()" (input)="onInput($any($event.target).value)" (keydown)="onKeyDown($event)" [placeholder]="placeholder" />
+  <div class="ativo-suggestions" role="listbox" *ngIf="sugestoes.length">
+    <div class="ativo-option" role="option" *ngFor="let s of sugestoes; let i=index" (click)="pick(s)" [class.active]="i===activeIndex()">
+      <div class="name">{{ s.ativo_nome }}</div>
+    </div>
+  </div>
+  <div class="ativo-suggestions" *ngIf="!sugestoes.length && (query()?.length || 0) >= minLength">
+    <div class="ativo-option empty">Nenhum ativo encontrado</div>
+  </div>
+  <div class="ativo-selected" *ngIf="selecionado">
+    Selecionado: <strong>{{ selecionado.ativo_nome }}</strong>
+    <button type="button" class="link" (click)="clear()">trocar</button>
+  </div>
+  <div class="hint">Digite parte do nome ou descrição do ativo.</div>
+</div>

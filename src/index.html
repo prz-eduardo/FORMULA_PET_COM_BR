@@ -15,6 +15,121 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    (function(){
+      // Create overlay container for paw prints
+      var trail = document.createElement('div');
+      trail.id = 'paw-trail';
+      document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(trail); });
+
+      // Random starting corner and direction (diagonal walk)
+      function pickStart(){
+        var corners = [
+          { x: 0,   y: 100, dx: 1,  dy: -1 },  // bottom-left -> up-right
+          { x: 100, y: 100, dx: -1, dy: -1 },  // bottom-right -> up-left
+          { x: 0,   y: 0,   dx: 1,  dy: 1  },  // top-left -> down-right
+          { x: 100, y: 0,   dx: -1, dy: 1  }   // top-right -> down-left
+        ];
+        return corners[Math.floor(Math.random()*corners.length)];
+      }
+
+      var state = pickStart();
+  var stepPx = 72;        // distance between prints (px)
+  var stepMs = 500;       // spawn interval (ms)
+  var sway = 60;          // more lateral randomness (px)
+      var angleLeft = -22;    // alternating angle for left paw
+      var angleRight = 22;    // alternating angle for right paw
+      var left = true;
+  var lifeMs = 4000;      // how long a print stays visible before fading
+
+      var cachedPawSize = null;
+      function getPawSize(){
+        if (cachedPawSize != null) return cachedPawSize;
+        try{
+          var cs = getComputedStyle(document.documentElement);
+          var val = cs.getPropertyValue('--paw-size');
+          var n = parseFloat(val);
+          cachedPawSize = isNaN(n) ? 56 : n;
+        }catch(e){ cachedPawSize = 56; }
+        return cachedPawSize;
+      }
+      function canPlaceAt(x, y){
+        var minDist = getPawSize() * 0.9; // require at least ~1 footprint apart
+        for (var i = 0; i < trail.children.length; i++){
+          var c = trail.children[i];
+          var px = parseFloat(c.getAttribute('data-x'));
+          var py = parseFloat(c.getAttribute('data-y'));
+          if (!isNaN(px) && !isNaN(py)){
+            var dx = px - x;
+            var dy = py - y;
+            if (Math.hypot(dx, dy) < minDist) return false;
+          }
+        }
+        return true;
+      }
+
+      function spawnPrint(){
+        try{
+          var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+          var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+          // If off screen substantially, reset
+          if (state.x < -20 || state.x > 120 || state.y < -20 || state.y > 120) {
+            state = pickStart();
+          }
+          // Compute pixel position from percentage
+          var baseX = (state.x/100)*vw;
+          var baseY = (state.y/100)*vh;
+          var placed = false;
+          var cx = baseX, cy = baseY;
+          // Try a few random jitters to avoid overlapping existing prints
+          for (var t = 0; t < 12; t++){
+            cx = baseX + (Math.random()*2-1)*sway;
+            cy = baseY + (Math.random()*2-1)*sway;
+            if (canPlaceAt(cx, cy)) { placed = true; break; }
+          }
+          if (placed){
+            var el = document.createElement('div');
+            el.className = 'paw-print';
+            el.style.left = cx + 'px';
+            el.style.top = cy + 'px';
+            el.setAttribute('data-x', String(cx));
+            el.setAttribute('data-y', String(cy));
+            var angle = left ? angleLeft : angleRight;
+            el.style.transform = 'translate(-50%, -50%) rotate(' + angle + 'deg)';
+            trail.appendChild(el);
+          }
+
+          // Fade in
+          if (placed){
+            requestAnimationFrame(function(){ el.classList.add('show'); });
+            // schedule fade-out and removal
+            setTimeout(function(){
+              try{
+                el.classList.add('hide');
+                setTimeout(function(){ if (el && el.parentNode) el.parentNode.removeChild(el); }, 800);
+              }catch(e){}
+            }, lifeMs);
+          }
+
+          // Advance along the path (convert step in px to % of viewport roughly)
+          var dxPct = (stepPx / vw) * 100 * state.dx;
+          var dyPct = (stepPx / vh) * 100 * state.dy;
+          state.x += dxPct;
+          state.y += dyPct;
+          left = !left;
+
+          // Limit total nodes to avoid memory leaks (higher cap for more prints)
+          if (trail.childElementCount > 200){
+            for (var i=0;i<40;i++) if (trail.firstChild) trail.removeChild(trail.firstChild);
+          }
+        }catch(e){}
+        setTimeout(spawnPrint, stepMs);
+      }
+
+      // Start when DOM ready
+      document.addEventListener('DOMContentLoaded', function(){ spawnPrint(); });
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

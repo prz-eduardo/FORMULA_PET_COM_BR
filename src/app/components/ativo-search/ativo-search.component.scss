@@ -1,0 +1,36 @@
+.ativo-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ativo-search input[type="text"] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #263241;
+  background: #0b1220;
+  color: #e5e7eb;
+}
+
+.ativo-suggestions {
+  display: block;
+  background: #0b1220;
+  border: 1px solid #263241;
+  border-radius: 8px;
+  margin-top: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.ativo-option {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.ativo-option:hover { background: #12243a; }
+.ativo-option.active { background: #1b2b43; }
+.ativo-option.empty { color: #9aa4b2; cursor: default; }
+.ativo-option .name { font-weight: 500; }
+
+.ativo-selected { font-size: 0.9rem; color: #aaa; }
+.link { margin-left: 0.5rem; background: none; border: none; color: #4ea1ff; cursor: pointer; }
+.hint { font-size: 0.8rem; color: #888; }

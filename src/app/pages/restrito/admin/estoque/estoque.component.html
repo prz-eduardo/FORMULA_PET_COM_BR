@@ -1,0 +1,272 @@
+<div class="estoque-wrapper" [formGroup]="form">
+  <h2>Estoque de Ativos</h2>
+
+  <div class="stepper">
+    <div class="step" [class.active]="step()===0" (click)="goToStep(0)">1. Escolher ativo</div>
+    <div class="step" [class.active]="step()===1" (click)="goToStep(1)">2. Criar/editar lote</div>
+  </div>
+
+  <div *ngIf="step()===0">
+    <div class="field form-group full-width">
+      <label>Ativo</label>
+      <input type="text" placeholder="Digite para buscar o ativo"
+             [value]="ativoSelecionado?.ativo_nome || ativoQuery()"
+             (input)="onAtivoQueryChange($any($event.target).value)" />
+      <div class="sugestoes" *ngIf="ativosSugestoes.length > 0">
+        <div class="sugestao" *ngFor="let a of ativosSugestoes" (click)="selecionarAtivo(a)">{{ a.ativo_nome }}</div>
+      </div>
+      <div class="hint">Selecione um ativo para visualizar lotes e criar novos.</div>
+    </div>
+
+    <div *ngIf="ativoSelecionado">
+      <h3>Lotes do ativo selecionado</h3>
+      <div *ngIf="(lotes() || []).length; else semLotes">
+        <div class="lote-card" *ngFor="let l of lotes()" (click)="selecionarLoteExistente(l)">
+          <div><strong>ID:</strong> {{ l.id }}</div>
+          <div><strong>Qtd:</strong> {{ l.quantity }} {{ l.unit_code }}</div>
+          <div><strong>Lote:</strong> {{ l.lote || '—' }}</div>
+          <div><strong>Validade:</strong> {{ l.validade || '—' }}</div>
+          <div *ngIf="l.preco_unit != null"><strong>Preço:</strong> {{ l.preco_unit | currency:'BRL':'symbol-narrow' }} / {{ l.unit_code }}</div>
+          <div *ngIf="l.preco_por_kg != null"><strong>Preço/kg:</strong> {{ l.preco_por_kg | currency:'BRL':'symbol-narrow' }}</div>
+          <div *ngIf="l.fornecedor_nome"><strong>Fornecedor:</strong> {{ l.fornecedor_nome }}</div>
+        </div>
+      </div>
+      <ng-template #semLotes><div class="empty">Nenhum lote para este ativo.</div></ng-template>
+
+      <div class="actions">
+        <button type="button" class="btn" (click)="step.set(1)">Criar novo lote</button>
+      </div>
+    </div>
+
+    <!-- Gestão de Estoque: filtros + tabela -->
+    <div class="gestao">
+      <h3>Gerenciar Estoque</h3>
+      <div class="grid">
+        <div class="field">
+          <label>Busca</label>
+          <input type="text" [formControl]="filterForm.controls.q" (input)="onFilterChange()" placeholder="Lote, local, ativo..." />
+        </div>
+        <div class="field">
+          <label>Fornecedor</label>
+          <select [formControl]="filterForm.controls.fornecedor_id" (change)="onFilterChange()">
+            <option [ngValue]="null">Todos</option>
+            <option *ngFor="let f of fornecedores" [ngValue]="f.id">{{ f.nome }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select [formControl]="filterForm.controls.active" (change)="onFilterChange()">
+            <option [ngValue]="'all'">Todos</option>
+            <option [ngValue]="'1'">Ativos</option>
+            <option [ngValue]="'0'">Inativos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Somente ativo selecionado</label>
+          <select [formControl]="filterForm.controls.onlySelectedAtivo" (change)="onFilterChange()">
+            <option [ngValue]="false">Não</option>
+            <option [ngValue]="true">Sim</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn outline" type="button" (click)="loadEstoqueTable(1)">Atualizar</button>
+      </div>
+
+      <div class="table-wrap" *ngIf="!tableLoading(); else tableLoadingTpl">
+        <table class="movs">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Ativo</th>
+              <th>Qtd</th>
+              <th>Un</th>
+              <th>Fornecedor</th>
+              <th>Lote</th>
+              <th>Validade</th>
+              <th>Local</th>
+              <th>Preço</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of tableRows()">
+              <td>{{ r.id }}</td>
+              <td>{{ r.ativo_nome || r.ativo_id }}</td>
+              <td>{{ r.quantity }}</td>
+              <td>{{ r.unit_code }}</td>
+              <td>{{ r.fornecedor_nome || '—' }}</td>
+              <td>{{ r.lote || '—' }}</td>
+              <td>{{ r.validade || '—' }}</td>
+              <td>{{ r.location || '—' }}</td>
+              <td>
+                <span *ngIf="r.preco_unit != null">{{ r.preco_unit | currency:'BRL':'symbol-narrow' }}/{{ r.unit_code }}</span>
+                <br />
+                <small *ngIf="r.preco_por_kg != null">{{ r.preco_por_kg | currency:'BRL':'symbol-narrow' }}/kg</small>
+              </td>
+              <td>
+                <span [style.color]="(r.active ? '#22c55e' : '#f59e0b')">{{ r.active ? 'Ativo' : 'Inativo' }}</span>
+              </td>
+              <td>
+                <button class="btn secondary" (click)="editarRow(r)">Editar</button>
+                <button class="btn outline" (click)="toggleAtivoRow(r)">{{ r.active ? 'Inativar' : 'Ativar' }}</button>
+                <button class="btn danger" (click)="deletarRow(r)">Excluir</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="actions">
+          <button class="btn secondary" (click)="changeTablePage(-1)" [disabled]="tablePage()===1">Anterior</button>
+          <span>Página {{ tablePage() }} / {{ tableTotalPages() || 1 }}</span>
+          <button class="btn secondary" (click)="changeTablePage(1)" [disabled]="tablePage() === (tableTotalPages() || 1)">Próxima</button>
+        </div>
+      </div>
+      <ng-template #tableLoadingTpl>
+        <div class="empty">Carregando...</div>
+      </ng-template>
+    </div>
+  </div>
+
+  <div *ngIf="step()===1">
+    <div class="grid">
+      <div class="field">
+        <label>Quantidade</label>
+  <input type="number" formControlName="quantity" [disabled]="!!form.value.id" />
+        <small *ngIf="form.value.id" style="color:#9aa4b2">Para alterar a quantidade use Entrada/Ajuste/Consumo abaixo.</small>
+      </div>
+
+      <div class="field">
+        <label>Unidade</label>
+        <select formControlName="unit_code">
+          <option *ngFor="let u of units" [value]="u.code">{{ u.name }} ({{ u.code }})</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Fornecedor</label>
+        <select formControlName="fornecedor_id">
+          <option [ngValue]="null">—</option>
+          <option *ngFor="let f of fornecedores" [ngValue]="f.id">{{ f.nome }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nota Fiscal</label>
+        <input type="text" formControlName="nota_fiscal" />
+      </div>
+
+      <div class="field">
+        <label>Preço (por unidade de medida)</label>
+        <input type="number" formControlName="preco_unit" step="0.01" />
+      </div>
+
+      <div class="field">
+        <label>Lote</label>
+        <input type="text" formControlName="lote" />
+      </div>
+
+      <div class="field">
+        <label>Validade</label>
+        <input type="date" formControlName="validade" />
+      </div>
+
+      <div class="field">
+        <label>Local</label>
+        <input type="text" formControlName="location" />
+      </div>
+
+      <div class="field">
+        <label>Ativo</label>
+        <input type="text" [value]="ativoSelecionado?.ativo_nome || createdLote()?.ativo_nome || ('ID '+(createdLote()?.ativo_id||''))" disabled />
+      </div>
+
+      <div class="field">
+        <label>Status</label>
+        <select formControlName="active">
+          <option [ngValue]="1">Ativo</option>
+          <option [ngValue]="0">Inativo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn" *ngIf="!form.value.id" (click)="criarLote()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Criar Lote' }}</button>
+      <button type="button" class="btn" *ngIf="form.value.id" (click)="salvarAlteracoes()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+      <button type="button" class="btn secondary" (click)="prevStep()">Voltar</button>
+      <span class="err" *ngIf="error()">{{ error() }}</span>
+    </div>
+
+    <div class="resultado" *ngIf="createdLote() as lote">
+      <h3>Detalhes do lote</h3>
+      <div class="lote-card selected">
+        <div><strong>ID:</strong> {{ lote.id }}</div>
+        <div><strong>Ativo ID:</strong> {{ lote.ativo_id }}</div>
+        <div><strong>Quantidade:</strong> {{ lote.quantity }} {{ lote.unit_code }}</div>
+        <div *ngIf="lote.preco_unit != null"><strong>Preço:</strong> {{ lote.preco_unit | currency:'BRL':'symbol-narrow' }} / {{ lote.unit_code }}</div>
+        <div *ngIf="lote.preco_por_kg != null"><strong>Preço/kg:</strong> {{ lote.preco_por_kg | currency:'BRL':'symbol-narrow' }}</div>
+        <div *ngIf="lote.fornecedor_nome"><strong>Fornecedor:</strong> {{ lote.fornecedor_nome }}</div>
+        <div><strong>Lote:</strong> {{ lote.lote || '—' }}</div>
+        <div><strong>Validade:</strong> {{ lote.validade || '—' }}</div>
+        <div><strong>Local:</strong> {{ lote.location || '—' }}</div>
+      </div>
+
+      <h4>Movimentos</h4>
+      <table class="movs" *ngIf="movimentos()?.length; else semMovs">
+        <thead>
+          <tr>
+            <th>Data</th><th>Tipo</th><th>Qtd</th><th>Un</th><th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of movimentos()">
+            <td>{{ m.created_at | date:'short' }}</td>
+            <td>{{ m.tipo }}</td>
+            <td>{{ m.quantity }}</td>
+            <td>{{ m.unit_code }}</td>
+            <td>{{ m.reason || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #semMovs><div class="empty">Sem movimentos</div></ng-template>
+
+      <h4>Operações rápidas</h4>
+      <div class="ops">
+        <div>
+          <label>Entrada rápida</label>
+          <input type="number" #qEntrada placeholder="Qtd" />
+          <select #uEntrada>
+            <option *ngFor="let u of units" [value]="u.code">{{ u.code }}</option>
+          </select>
+          <input type="text" #rEntrada placeholder="Motivo" />
+          <button type="button" class="btn" (click)="entrada(toNumber(qEntrada.value), uEntrada.value, rEntrada.value)">Registrar</button>
+        </div>
+
+        <div>
+          <label>Ajuste</label>
+          <input type="number" #qAjuste placeholder="Qtd absoluta" />
+          <select #uAjuste>
+            <option *ngFor="let u of units" [value]="u.code">{{ u.code }}</option>
+          </select>
+          <input type="text" #rAjuste placeholder="Motivo" />
+          <button type="button" class="btn" (click)="ajuste(toNumber(qAjuste.value), uAjuste.value, rAjuste.value)">Ajustar</button>
+        </div>
+
+        <div>
+          <label>Consumo</label>
+          <input type="number" #qConsumo placeholder="Qtd" />
+          <select #uConsumo>
+            <option *ngFor="let u of units" [value]="u.code">{{ u.code }}</option>
+          </select>
+          <input type="text" #rConsumo placeholder="Motivo" />
+          <button type="button" class="btn" (click)="consumir(toNumber(qConsumo.value), uConsumo.value, rConsumo.value)">Consumir</button>
+        </div>
+      </div>
+
+      <div class="danger">
+        <button type="button" class="btn danger" (click)="deletarLote()">Excluir lote</button>
+      </div>
+    </div>
+  </div>
+</div>

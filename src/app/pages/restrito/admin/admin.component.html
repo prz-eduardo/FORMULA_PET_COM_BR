@@ -32,6 +32,18 @@
       <p>Controle de entradas, saídas e alertas de estoque.</p>
     </div>
 
+    <div class="action-card" (click)="goToFormulas()" tabindex="0">
+      <i class="fa fa-flask"></i>
+      <h2>Fórmulas</h2>
+      <p>Criar e gerenciar fórmulas manipuladas.</p>
+    </div>
+
+    <div class="action-card" (click)="goToMarketplaceCustomizacoes()" tabindex="0">
+      <i class="fa fa-tags"></i>
+      <h2>Marketplace: Categorias & Tags</h2>
+      <p>Gerencie categorias e tags do marketplace em uma única operação.</p>
+    </div>
+
     <h3 class="sec-title">Pessoas</h3>
     <!-- Gerenciar Usuários (somente super admin) -->
     <div class="action-card" *ngIf="isSuper" (click)="goToUsuarios()" tabindex="0">

@@ -187,6 +187,13 @@ export class ApiService {
     return this.http.get<Ativo[]>(`${this.baseUrl}/ativos`);
   }
 
+  // Ativos (busca por termo, se o backend suportar ?q=)
+  searchAtivos(q: string): Observable<Ativo[]> {
+    const term = (q || '').trim();
+    const url = `${this.baseUrl}/ativos${term ? `?q=${encodeURIComponent(term)}` : ''}`;
+    return this.http.get<Ativo[]>(url);
+  }
+
   // Receitas
   criarReceita(receita: any, token?: string): Observable<any> {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;

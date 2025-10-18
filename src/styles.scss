@@ -25,3 +25,35 @@ img, video, canvas, svg {
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+
+/* === Global footprint overlay (paw trail) === */
+:root{
+    --paw-size: 56px;     /* size of the paw icon */
+    --paw-opacity: 0.14;  /* alpha of each footprint */
+}
+
+#paw-trail{
+    position: fixed;
+    inset: 0;
+    pointer-events: none; /* don't block clicks */
+    z-index: 0;           /* stays behind regular content */
+}
+
+.paw-print{
+    position: absolute;
+    width: var(--paw-size);
+    height: var(--paw-size);
+    background-image: url('/imagens/image.png');
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(0deg);
+    transition: opacity .6s ease, transform .4s ease;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.18));
+}
+.paw-print.show{ opacity: var(--paw-opacity); }
+.paw-print.hide{ opacity: 0; }
+
+@media (prefers-reduced-motion: reduce){
+    .paw-print{ transition: opacity .6s ease; }
+}

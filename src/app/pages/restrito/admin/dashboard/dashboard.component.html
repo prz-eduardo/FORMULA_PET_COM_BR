@@ -1,0 +1,206 @@
+<div class="dash-wrap" *ngIf="!loading(); else loadingTpl">
+  <div class="head">
+    <h1>Dashboard</h1>
+    <div class="meta">
+      <button class="refresh" (click)="reload()">Atualizar</button>
+      <span class="generated" *ngIf="data()?.generatedAt">Atualizado: {{ data()?.generatedAt | date:'short' }}</span>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="error">{{ error() }}</div>
+
+  <ng-container *ngIf="data() as d">
+    <!-- KPIs -->
+    <section class="kpis">
+      <div class="kpi"><span>Admins</span><strong>{{ d.totals?.admins || 0 }}</strong></div>
+      <div class="kpi"><span>Clientes</span><strong>{{ d.totals?.clientes || 0 }}</strong></div>
+      <div class="kpi"><span>Veterinários</span><strong>{{ d.totals?.vets || 0 }}</strong></div>
+      <div class="kpi"><span>Pets</span><strong>{{ d.totals?.pets || 0 }}</strong></div>
+      <div class="kpi"><span>Receitas</span><strong>{{ d.totals?.receitas || 0 }}</strong></div>
+      <div class="kpi"><span>Ativos</span><strong>{{ d.totals?.ativos || 0 }}</strong></div>
+      <div class="kpi"><span>Produtos</span><strong>{{ d.totals?.products || 0 }}</strong></div>
+      <div class="kpi" *ngIf="d.alergias"><span>Alergias</span><strong>{{ d.alergias?.total || 0 }}</strong></div>
+    </section>
+
+    <!-- Usuários resumo -->
+    <section class="users">
+      <div class="card">
+        <h3>Vets</h3>
+        <ul>
+          <li>Aprovados: <strong>{{ d.users?.vets?.aprovados || 0 }}</strong></li>
+          <li>Pendentes: <strong>{{ d.users?.vets?.pendentes || 0 }}</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Clientes</h3>
+        <ul>
+          <li>Total: <strong>{{ d.users?.clientes?.total || 0 }}</strong></li>
+          <li>Novos (30d): <strong>{{ d.users?.clientes?.novos_30d || 0 }}</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Admins</h3>
+        <ul>
+          <li>Super: <strong>{{ d.users?.admins?.supers || 0 }}</strong></li>
+          <li>Ativos: <strong>{{ d.users?.admins?.ativos || 0 }}</strong></li>
+          <li>Inativos: <strong>{{ d.users?.admins?.inativos || 0 }}</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Séries de receitas -->
+    <section class="charts two">
+      <div class="panel">
+        <h3>Receitas (7 dias)</h3>
+        <div class="chart-box">
+          <canvas id="chart-receitas7" *ngIf="(d?.receitas_last7?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.receitas_last7?.length)">Sem dados para o período</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Receitas (30 dias)</h3>
+        <div class="chart-box">
+          <canvas id="chart-receitas30" *ngIf="(d?.receitas_last30?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.receitas_last30?.length)">Sem dados para o período</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top ativos e produtos por categoria -->
+    <section class="charts two">
+      <div class="panel">
+        <h3>Top Ativos</h3>
+        <div class="chart-box">
+          <canvas id="chart-top-ativos" *ngIf="(d?.top_ativos?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.top_ativos?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Produtos por Categoria</h3>
+        <div class="chart-box">
+          <canvas id="chart-products-by-category" *ngIf="(d?.products_breakdown?.by_category?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.products_breakdown?.by_category?.length)">Sem dados</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top entidades -->
+    <section class="charts three">
+      <div class="panel">
+        <h3>Top Veterinários</h3>
+        <div class="chart-box">
+          <canvas id="chart-top-vets" *ngIf="(d?.top_entities?.vets?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.top_entities?.vets?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Top Clientes</h3>
+        <div class="chart-box">
+          <canvas id="chart-top-clientes" *ngIf="(d?.top_entities?.clientes?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.top_entities?.clientes?.length)">Sem dados</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Top Pets</h3>
+        <div class="chart-box">
+          <canvas id="chart-top-pets" *ngIf="(d?.top_entities?.pets?.length || 0) > 0"></canvas>
+          <div class="empty" *ngIf="!(d?.top_entities?.pets?.length)">Sem dados</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Últimas receitas -->
+    <section class="table-section">
+      <h3>Últimas receitas</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Pet</th>
+              <th>Cliente</th>
+              <th>Veterinário</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of d.ultimas_receitas || []">
+              <td>{{ r.created_at | date:'short' }}</td>
+              <td>{{ r.pet_nome }}</td>
+              <td>{{ r.cliente_nome }}</td>
+              <td>{{ r.vet_nome }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Taxonomias -->
+    <section class="grid-cards">
+      <div class="card">
+        <h3>Taxonomias</h3>
+        <ul>
+          <li>Categorias: <strong>{{ d.taxonomies?.categorias || 0 }}</strong></li>
+          <li>Tags: <strong>{{ d.taxonomies?.tags || 0 }}</strong></li>
+          <li>Dosagens: <strong>{{ d.taxonomies?.dosages || 0 }}</strong></li>
+          <li>Embalagens: <strong>{{ d.taxonomies?.embalagens || 0 }}</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Logs e Login attempts -->
+    <section class="charts two">
+      <div class="panel">
+        <h3>Logs (últimos 10)</h3>
+        <div class="table-wrap small">
+          <table>
+            <thead>
+              <tr>
+                <th>Origem</th>
+                <th>Mensagem</th>
+                <th>Quando</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of d.logs?.last10 || []">
+                <td>{{ l.origem }}</td>
+                <td>{{ l.mensagem }}</td>
+                <td>{{ l.created_at | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="muted">Erros 7d: <strong>{{ d.logs?.total_last7 || 0 }}</strong></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Tentativas de login (7d)</h3>
+        <div class="table-wrap small">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>IP</th>
+                <th>Agente</th>
+                <th>Motivo</th>
+                <th>Quando</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of d.admin_login_attempts?.last10 || []">
+                <td>{{ a.email }}</td>
+                <td>{{ a.ip }}</td>
+                <td>{{ a.user_agent }}</td>
+                <td>{{ a.reason }}</td>
+                <td>{{ a.created_at | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="muted">Total 7d: <strong>{{ d.admin_login_attempts?.total_last7 || 0 }}</strong></div>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>
+
+<ng-template #loadingTpl>
+  <div class="loading">Carregando dashboard…</div>
+</ng-template>

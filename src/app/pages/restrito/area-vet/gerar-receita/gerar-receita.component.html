@@ -388,8 +388,8 @@
 <!-- Scrim blocks interactions but does not close the tour on outside click -->
 <div *ngIf="showTour" class="tour-scrim" (click)="$event.stopPropagation()"></div>
 <div *ngIf="showTour" class="tour-popover" [ngStyle]="tourPopoverStyle" (click)="$event.stopPropagation()">
-  <div class="tour-title">{{ tourSteps[tourIndex]?.title }}</div>
-  <div class="tour-text">{{ tourSteps[tourIndex]?.text }}</div>
+  <div class="tour-title">{{ tourSteps[tourIndex].title }}</div>
+  <div class="tour-text">{{ tourSteps[tourIndex].text }}</div>
   <div class="tour-actions">
     <button type="button" class="btn-sec" (click)="prevTour()" [disabled]="tourIndex===0">Voltar</button>
     <div class="spacer"></div>

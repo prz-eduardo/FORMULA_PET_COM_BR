@@ -1,0 +1,20 @@
+.mk-wrapper{min-height:100vh;background:linear-gradient(135deg,#0d151f,#1a2230);color:#ecf0f5;font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;padding:72px 16px}
+.mk-wrapper h2{margin:0 0 16px}
+.actions{display:flex;gap:10px;align-items:center;margin:12px 0}
+.actions .spacer{flex:1}
+.btn{background:#2563eb;border:1px solid transparent;color:#fff;padding:8px 12px;border-radius:6px;cursor:pointer;transition:all .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn.primary{background:#22c55e}
+.btn.danger{background:#dc2626}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+section{background:#0f2135;border:1px solid #263241;border-radius:12px;padding:12px}
+.list{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;border:1px dashed #263241;border-radius:8px;padding:10px}
+.field{display:flex;flex-direction:column;min-width:140px}
+.field.small{min-width:110px;max-width:140px}
+.field.grow{flex:1 1 260px}
+.field.center{justify-content:flex-end}
+.field label{font-size:12px;color:#9aa4b2;margin-bottom:4px}
+.field input[type=text],.field input[type=number]{padding:8px 10px;border-radius:8px;border:1px solid #263241;background:#0b1220;color:#e5e7eb}
+.ok{color:#22c55e}
+.err{color:#f87171}

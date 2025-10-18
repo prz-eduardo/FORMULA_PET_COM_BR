@@ -1,0 +1,154 @@
+<div class="formulas-wrapper" [class.loading]="loading()">
+  <h2>Fórmulas</h2>
+
+  <div *ngIf="step()===0">
+    <div class="actions">
+      <input type="text" [value]="filterQ()" (input)="filterQ.set($any($event.target).value); loadRows()" placeholder="Buscar por nome..." />
+      <button class="btn" (click)="newFormula()">Nova fórmula</button>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Nome</th><th>Forma</th><th>Dose</th><th>Saída</th><th>Preço</th><th>Estimativa</th><th>Status</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows()">
+          <td>{{ r.id }}</td>
+          <td>{{ r.name }}</td>
+          <td>{{ getFormName(r.form_id) || r.form_id }}</td>
+          <td>
+            <span *ngIf="r.dose_amount && r.dose_unit_code">{{ r.dose_amount }} {{ r.dose_unit_code }}</span>
+            <span *ngIf="!r.dose_amount">—</span>
+          </td>
+          <td>{{ r.output_unit_code }}<span *ngIf="r.output_quantity_per_batch"> · lote {{ r.output_quantity_per_batch }}</span></td>
+          <td>{{ (r.price!=null) ? (r.price | currency:'BRL':'symbol-narrow') : '—' }}</td>
+          <td>{{ r.estimate?.producible_units ?? '—' }}</td>
+          <td><span [style.color]="(r.active ? '#22c55e' : '#f59e0b')">{{ r.active ? 'Ativa' : 'Inativa' }}</span></td>
+          <td>
+            <button class="btn secondary" (click)="editFormula(r)">Editar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <button class="btn secondary" (click)="changePage(-1)" [disabled]="page()===1">Anterior</button>
+      <span>Página {{ page() }} / {{ totalPages() || 1 }}</span>
+      <button class="btn secondary" (click)="changePage(1)" [disabled]="page() === (totalPages() || 1)">Próxima</button>
+    </div>
+  </div>
+
+  <div *ngIf="step()===1">
+    <h3>Cadastro de Fórmula</h3>
+    <form [formGroup]="form">
+      <div class="grid">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" formControlName="name" />
+        </div>
+        <div class="field">
+          <label>Forma</label>
+          <select formControlName="form_id">
+            <option *ngFor="let f of forms" [ngValue]="f.id">{{ f.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Unidade de saída</label>
+          <select formControlName="output_unit_code">
+            <option *ngFor="let u of units" [ngValue]="u.code">{{ u.name }} ({{ u.code }})</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Dose</label>
+          <div class="row">
+            <input type="number" [ngModelOptions]="{standalone:true}" [(ngModel)]="form.value.dose_amount" (ngModelChange)="form.patchValue({dose_amount: $event})" placeholder="Quant." />
+            <select [ngModelOptions]="{standalone:true}" [(ngModel)]="form.value.dose_unit_code" (ngModelChange)="form.patchValue({dose_unit_code: $event})">
+              <option *ngFor="let u of units" [ngValue]="u.code">{{ u.code }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Qtd por lote (saída)</label>
+          <input type="number" formControlName="output_quantity_per_batch" />
+        </div>
+        <div class="field">
+          <label>Preço sugerido</label>
+          <input type="number" formControlName="price" step="0.01" />
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select formControlName="active">
+            <option [ngValue]="1">Ativa</option>
+            <option [ngValue]="0">Inativa</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Observações</label>
+          <textarea formControlName="notes" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="err" *ngIf="error()">{{ error() }}</span>
+      </div>
+    </form>
+
+    <div class="items-section">
+      <h3>Itens da Fórmula</h3>
+      <div class="actions">
+        <button class="btn" (click)="addItem('ativo')">Adicionar Ativo</button>
+        <button class="btn secondary" (click)="addItem('insumo')">Adicionar Insumo</button>
+      </div>
+      <div class="items">
+        <div class="item" *ngFor="let c of items.controls; let i = index" [formGroup]="$any(c)">
+          <div class="field small">
+            <label>Tipo</label>
+            <select formControlName="tipo">
+              <option [ngValue]="'ativo'">Ativo</option>
+              <option [ngValue]="'insumo'">Insumo</option>
+            </select>
+          </div>
+          <div class="field grow" *ngIf="c.value.tipo==='ativo'">
+            <label>Ativo</label>
+            <div class="ativo-search">
+              <input type="text"
+                     [value]="itemAtivoQueries[i] || getAtivoNomeById(c.value?.ativo_id) || ''"
+                     (input)="onItemAtivoQueryChange(i, $any($event.target).value)"
+                     placeholder="Buscar ativo por nome" autocomplete="off" />
+              <ul class="suggestions" *ngIf="(itemSugestoes[i]?.length || 0) > 0">
+                <li *ngFor="let op of itemSugestoes[i]" (click)="selecionarItemAtivo(i, op)">{{ op.ativo_nome }}</li>
+              </ul>
+              <input type="hidden" formControlName="ativo_id" />
+              <small class="muted" *ngIf="c.value?.ativo_id">Selecionado: {{ getAtivoNomeById(c.value?.ativo_id) || '—' }}</small>
+            </div>
+          </div>
+          <div class="field grow" *ngIf="c.value.tipo==='insumo'">
+            <label>Nome do insumo</label>
+            <input type="text" formControlName="insumo_nome" placeholder="Ex.: Base creme neutra" />
+          </div>
+          <div class="field small">
+            <label>Quantidade</label>
+            <input type="number" formControlName="quantity" placeholder="Qtd" />
+          </div>
+          <div class="field small">
+            <label>Unidade</label>
+            <select formControlName="unit_code">
+              <option *ngFor="let u of units" [ngValue]="u.code">{{ u.code }}</option>
+            </select>
+          </div>
+          <div class="field actions-inline">
+            <label>&nbsp;</label>
+            <button class="btn danger" type="button" (click)="removeItem(i)">Remover</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" (click)="saveAll()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar' }}</button>
+        <button class="btn secondary" type="button" (click)="step.set(0)" [disabled]="saving()">Voltar</button>
+        <span class="err" *ngIf="error()">{{ error() }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>

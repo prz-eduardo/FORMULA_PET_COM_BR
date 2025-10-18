@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SessionService } from '../../../services/session.service';
 
 @Component({
   selector: 'app-admin',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
@@ -53,4 +56,6 @@ export class AdminComponent implements OnInit {
   goToPromocoes() { this.router.navigate(['/restrito/admin/promocoes']); }
   goToRelatorios() { this.router.navigate(['/restrito/admin/relatorios']); }
   goToConfiguracoes() { this.router.navigate(['/restrito/admin/configuracoes']); }
+  goToFormulas() { this.router.navigate(['/restrito/admin/formulas']); }
+  goToMarketplaceCustomizacoes() { this.router.navigate(['/restrito/admin/marketplace/customizacoes']); }
 }

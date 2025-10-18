@@ -1,81 +1,112 @@
-<div class="produto-container">
-  <h2>{{ produto.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
-
-  <!-- Upload de Imagem -->
-  <div class="image-upload">
-    <label for="imgUpload">
-      <div class="img-preview" *ngIf="produto.image; else placeholder">
-        <img [src]="produto.image" alt="Imagem do produto">
-      </div>
-      <ng-template #placeholder>
-        <div class="img-placeholder">Clique para adicionar imagem</div>
-      </ng-template>
-    </label>
-    <input type="file" id="imgUpload" (change)="onImageSelected($event)">
+<div class="produto-container" [formGroup]="form">
+  <div class="header">
+    <h2>{{ form.value.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
+    <div class="stepper">
+      <button type="button" *ngFor="let s of steps; let i = index"
+              [class.active]="step()===i" [class.done]="i<step()"
+              (click)="goToStep(i)">{{i+1}}. {{s.label}}</button>
+    </div>
   </div>
 
-  <form (ngSubmit)="submit()">
-    <div class="form-grid">
-      <!-- Nome -->
-      <div class="form-group">
-        <label>Nome do Produto</label>
-        <input type="text" [(ngModel)]="produto.name" name="name" required>
-      </div>
-
-      <!-- Categoria -->
-    <div class="form-group">
-      <label>Categoria</label>
-      <select [(ngModel)]="produto.category" name="category" required>
-        <option *ngFor="let c of categoriasList" [value]="c.name">{{ c.name }}</option>
-      </select>
-      <button type="button" (click)="showCategoryModal=true">+ Nova Categoria</button>
+  <!-- STEP 0: Ativo -->
+  <section *ngIf="step()===0" class="step step-ativo">
+    <div class="image-upload">
+      <label for="imgUpload">
+        <div class="img-preview" *ngIf="form.value.image; else placeholder">
+          <img [src]="form.value.image" alt="Imagem do produto">
+        </div>
+        <ng-template #placeholder>
+          <div class="img-placeholder">Clique para adicionar imagem</div>
+        </ng-template>
+      </label>
+      <input type="file" id="imgUpload" (change)="onImageSelected($event)">
     </div>
 
-      <!-- Preço -->
-      <div class="form-group">
-        <label>Preço</label>
-        <input type="number" [(ngModel)]="produto.price" name="price" required>
+    <div class="form-group full-width">
+      <label>Associar Ativo</label>
+      <input type="text" placeholder="Digite para buscar o ativo"
+             [value]="ativoSelecionado?.ativo_nome || ativoQuery()"
+             (input)="onAtivoQueryChange($any($event.target).value)" />
+      <div class="sugestoes" *ngIf="ativosSugestoes.length > 0">
+        <div class="sugestao" *ngFor="let a of ativosSugestoes" (click)="selecionarAtivo(a)">
+          {{ a.ativo_nome }}
+        </div>
       </div>
+      <div class="hint">Escolha um ativo para vincular este produto. Isso ajuda a evitar duplicidades.</div>
+    </div>
 
-      <!-- Estoque -->
-      <div class="form-group">
-        <label>Estoque</label>
-        <input type="number" [(ngModel)]="produto.stock" name="stock">
+    <div class="form-group full-width" *ngIf="ativoSelecionado">
+      <label>Selecionar Lote de Estoque (obrigatório quando há ativo)</label>
+      <div class="estoque-list" *ngIf="estoqueLotes.length; else semEstoque">
+        <div class="lote-card" *ngFor="let e of estoqueLotes" (click)="selecionarLote(e)"
+             [class.selected]="estoqueSelecionado?.id === e.id">
+          <div><strong>Lote:</strong> {{ e.lote || '—' }}</div>
+          <div><strong>Quantidade:</strong> {{ e.quantity }} {{ e.unit_code }}</div>
+          <div><strong>Validade:</strong> {{ e.validade || '—' }}</div>
+          <div class="muted">#{{ e.id }} • Local: {{ e.location || '—' }}</div>
+        </div>
       </div>
+      <ng-template #semEstoque>
+        <div class="empty">
+          Nenhum lote ativo para este ativo. Cadastre estoque antes de prosseguir.
+          <button type="button" class="link" (click)="router.navigate(['/restrito/admin/estoque'])">+ Cadastrar Estoque</button>
+        </div>
+      </ng-template>
+    </div>
 
-      <!-- Descrição -->
+    <div class="existing" *ngIf="produtosExistentes.length > 0">
+      <div class="msg">Produtos com esse ativo já existem. Deseja editar ou reativar?</div>
+      <div class="cards">
+        <div class="card" *ngFor="let p of produtosExistentes">
+          <div class="title">{{ p.name }}</div>
+          <div class="meta">Categoria: {{ p.category }} | Preço: {{ p.price | currency:'BRL':'symbol-narrow' }}</div>
+          <div class="actions">
+            <button type="button" (click)="editarProdutoExistente(p)">Editar</button>
+            <button type="button" (click)="reativarProdutoExistente(p)">Reativar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 1: Básico -->
+  <section *ngIf="step()===1" class="step step-basico">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome do Produto</label>
+        <input type="text" formControlName="name" required>
+      </div>
       <div class="form-group full-width">
         <label>Descrição</label>
-        <textarea [(ngModel)]="produto.description" name="description" required></textarea>
+        <textarea formControlName="description" required rows="4"></textarea>
       </div>
+    </div>
+  </section>
 
-      <!-- Desconto -->
+  <!-- STEP 2: Preço/Estoque -->
+  <section *ngIf="step()===2" class="step step-preco">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Preço</label>
+        <input type="number" formControlName="price" required>
+      </div>
       <div class="form-group">
         <label>Desconto (%)</label>
-        <input type="number" [(ngModel)]="produto.discount" name="discount">
+        <input type="number" formControlName="discount">
       </div>
-
-      <!-- Avaliação -->
-<!-- Avaliação -->
-<div class="form-group">
-  <label>Avaliação</label>
-  <input 
-    type="number" 
-    [(ngModel)]="produto.rating" 
-    (blur)="fixRating($event)" 
-    name="rating" 
-    step="0.1" 
-    max="5" 
-    min="0">
-</div>
-
-
-      <!-- Peso/Unidade -->
+      <div class="form-group">
+        <label>Estoque</label>
+        <input type="number" formControlName="stock">
+      </div>
+      <div class="form-group">
+        <label>Avaliação</label>
+        <input type="number" formControlName="rating" (blur)="fixRating($event)" step="0.1" max="5" min="0">
+      </div>
       <div class="form-group">
         <label>Peso/Volume/Unidade</label>
         <div style="display:flex; gap:0.5rem;">
-          <input type="number" [(ngModel)]="produto.weightValue" name="weightValue" placeholder="Valor">
-          <select [(ngModel)]="produto.weightUnit" name="weightUnit">
+          <input type="number" formControlName="weightValue" placeholder="Valor">
+          <select formControlName="weightUnit">
             <option value="mg">mg</option>
             <option value="g">g</option>
             <option value="kg">kg</option>
@@ -85,143 +116,149 @@
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- Dosagens -->
+  <!-- STEP 3: Categoria/Tags -->
+  <section *ngIf="step()===3" class="step step-categorias">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Categoria</label>
+        <select formControlName="category" required>
+          <option *ngFor="let c of categoriasList" [value]="c.name">{{ c.name }}</option>
+        </select>
+        <button type="button" (click)="showCategoryModal=true">+ Nova Categoria</button>
+      </div>
+      <div class="form-group full-width">
+        <label>Tags</label>
+        <div class="tags" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" *ngFor="let t of tagsList"
+                  [class.selected]="hasTag(t.name)"
+                  (click)="toggleTagVal(t.name)">{{t.name}}</button>
+          <button type="button" (click)="showTagModal=true">+ Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4: Customizações -->
+  <section *ngIf="step()===4" class="step step-custom">
     <div class="customizations">
       <h4>Dosagens</h4>
       <div class="dosagens" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button type="button" *ngFor="let d of produto.customizations.dosage"
-                [class.selected]="produto.customizations.dosage.includes(d)"
-                (click)="toggleDosage(d)">
-          {{d}}
-        </button>
+        <button type="button" *ngFor="let d of dosagesList"
+                [class.selected]="hasDosage(d.name)"
+                (click)="toggleDosageVal(d.name)">{{d.name}}</button>
         <button type="button" (click)="showDosageModal=true">+ Adicionar</button>
       </div>
     </div>
-
-    <!-- Embalagens -->
     <div class="customizations">
       <h4>Embalagens</h4>
       <div class="embalagens" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button type="button" *ngFor="let p of produto.customizations.packaging"
-                [class.selected]="produto.customizations.packaging.includes(p)"
-                (click)="togglePackaging(p)">
-          {{p}}
-          <span class="remove-item" (click)="removePackaging(p, $event)">✖</span>
-        </button>
+        <button type="button" *ngFor="let p of embalagensList"
+                [class.selected]="hasPackaging(p.name)"
+                (click)="togglePackagingVal(p.name)">{{p.name}}</button>
         <button type="button" (click)="showPackagingModal=true">+ Adicionar</button>
       </div>
     </div>
+  </section>
 
-    <!-- Tags -->
-    <div class="customizations">
-      <h4>Tags</h4>
-      <div class="tags" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button type="button" *ngFor="let t of produto.tags"
-                [class.selected]="produto.tags.includes(t)"
-                (click)="toggleTag(t)">
-          {{t}}
-          <span class="remove-item" (click)="removeTag(t)">✖</span>
-        </button>
-        <button type="button" (click)="showTagModal=true">+ Adicionar</button>
-      </div>
+  <!-- STEP 5: Revisão e Envio -->
+  <section *ngIf="step()===5" class="step step-revisao">
+    <div class="review">
+      <h4>Revisão</h4>
+      <ul>
+        <li><strong>Ativo:</strong> {{ ativoSelecionado?.ativo_nome || '—' }}</li>
+  <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
+        <li><strong>Nome:</strong> {{ form.value.name }}</li>
+        <li><strong>Descrição:</strong> {{ form.value.description }}</li>
+        <li><strong>Preço:</strong> {{ form.value.price | currency:'BRL':'symbol-narrow' }}</li>
+        <li><strong>Estoque:</strong> {{ form.value.stock ?? '—' }}</li>
+        <li><strong>Categoria:</strong> {{ form.value.category }}</li>
+        <li><strong>Tags:</strong> {{ (form.value.tags || []).join(', ') || '—' }}</li>
+        <li><strong>Dosagens:</strong> {{ (form.value.customizations?.dosage || []).join(', ') || '—' }}</li>
+        <li><strong>Embalagens:</strong> {{ (form.value.customizations?.packaging || []).join(', ') || '—' }}</li>
+      </ul>
     </div>
+  </section>
 
-    <!-- Ações -->
-    <div class="form-actions">
-      <button type="submit" class="btn-submit">{{ produto.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
-      <button type="button" class="btn-reset" (click)="resetForm()">Limpar</button>
-    </div>
-  </form>
+  <!-- Sticky footer actions -->
+  <div class="footer-actions">
+    <button type="button" class="btn-reset" (click)="prevStep()" [disabled]="step()===0">Voltar</button>
+    <div class="spacer"></div>
+    <button type="button" class="btn-next" *ngIf="step()<steps.length-1" (click)="nextStep()">Avançar</button>
+    <button type="button" class="btn-submit" *ngIf="step()===steps.length-1" (click)="submit()">{{ form.value.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
+  </div>
+</div>
 
-  <!-- =================== MODAIS =================== -->
-
-  <!-- Modal Categoria -->
+  <!-- Modais Taxonomias -->
   <div class="modal" *ngIf="showCategoryModal">
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Categoria</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-      <span *ngFor="let c of categoriasList" 
-            class="badge" 
-            [class.selected]="produto.category === c.name"
-            (click)="toggleCategory(c.name)">
-        {{ c.name }}
-        <span class="badge-remove" (click)="removeCategory(c.name, $event)">-</span>
-      </span>
+        <span *ngFor="let c of categoriasList" class="badge" [class.selected]="form.value.category === c.name" (click)="form.patchValue({ category: c.name })">
+          {{ c.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('categorias', c)">-</span>
+        </span>
       </div>
       <hr>
-      <input type="text" [(ngModel)]="newCategory" placeholder="Ex: Vitaminas">
-      <button (click)="addNewCategory(newCategory)">Adicionar</button>
+      <input #catInput type="text" placeholder="Ex: Vitaminas">
+      <button (click)="createTaxonomia('categorias', catInput.value); catInput.value=''">Adicionar</button>
       <button (click)="showCategoryModal=false">Fechar</button>
     </div>
   </div>
 
-  <!-- Modal Dosagem -->
-  <!-- Modal Dosagem -->
   <div class="modal" *ngIf="showDosageModal">
     <div class="modal-content">
       <h4>Adicionar Dosagem</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-<span *ngFor="let d of dosagesList" class="badge"
-      [class.selected]="produto.customizations.dosage.includes(d.name)"
-      (click)="toggleDosage(d.name)">
-  {{ d.name }}
-  <span class="badge-remove" (click)="removeDosage(d.name, $event)">-</span>
-</span>
-
-
+  <span *ngFor="let d of dosagesList" class="badge" [class.selected]="hasDosage(d.name)" (click)="toggleDosageVal(d.name)">
+         {{ d.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('dosages', d)">-</span>
+        </span>
       </div>
       <hr>
-      <input type="text" [(ngModel)]="newDosage" placeholder="Ex: 25mg">
-      <button (click)="addDosage(newDosage)">Adicionar</button>
+      <input #dosInput type="text" placeholder="Ex: 25mg">
+      <button (click)="addDosage(dosInput.value); dosInput.value=''">Adicionar</button>
       <button (click)="showDosageModal=false">Cancelar</button>
     </div>
   </div>
 
-
-  <!-- Modal Embalagem -->
   <div class="modal" *ngIf="showPackagingModal">
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Embalagem</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let p of embalagensList" class="badge"
-              [class.selected]="produto.customizations.packaging.includes(p.name)"
-              (click)="togglePackaging(p.name)">
-          {{ p.name }}
-          <span class="badge-remove" (click)="removePackaging(p.name, $event)">-</span>
+  <span *ngFor="let p of embalagensList" class="badge" [class.selected]="hasPackaging(p.name)" (click)="togglePackagingVal(p.name)">
+         {{ p.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('embalagens', p)">-</span>
         </span>
       </div>
       <hr>
-      <input type="text" [(ngModel)]="newPackaging" placeholder="Ex: Caixa grande">
-      <button (click)="addNewPackaging(newPackaging)">Adicionar</button>
+      <input #packInput type="text" placeholder="Ex: Caixa grande">
+      <button (click)="addPackaging(packInput.value); packInput.value=''">Adicionar</button>
       <button (click)="showPackagingModal=false">Fechar</button>
     </div>
   </div>
 
-  <!-- Modal Tags -->
   <div class="modal" *ngIf="showTagModal">
     <div class="modal-content">
       <h4>Selecionar ou Adicionar Tag</h4>
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let t of tagsList" class="badge"
-              [class.selected]="produto.tags.includes(t.name)"
-              (click)="toggleTag(t.name)">
-          {{ t.name }}
-          <span class="badge-remove" (click)="removeTag(t.name)">-</span>
+  <span *ngFor="let t of tagsList" class="badge" [class.selected]="hasTag(t.name)" (click)="toggleTagVal(t.name)">
+         {{ t.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('tags', t)">-</span>
         </span>
       </div>
       <hr>
-      <input type="text" [(ngModel)]="newTag" placeholder="Ex: vitamina">
-      <button (click)="addNewTag(newTag)">Adicionar</button>
+      <input #tagInput type="text" placeholder="Ex: vitamina">
+      <button (click)="addTag(tagInput.value); tagInput.value=''">Adicionar</button>
       <button (click)="showTagModal=false">Fechar</button>
     </div>
   </div>
 
-  <!-- Modal Success -->
-  <div class="modal" *ngIf="showSuccessModal">
+  <div class="modal" *ngIf="success()">
     <div class="modal-content">
-      <h4>Produto {{ produto.id ? 'atualizado' : 'cadastrado' }} com sucesso!</h4>
-      <button (click)="showSuccessModal=false; router.navigate(['/restrito/admin'])">OK</button>
+      <h4>{{ success() }}</h4>
+      <button (click)="success.set(null); router.navigate(['/restrito/admin'])">OK</button>
     </div>
   </div>
-</div>
+

@@ -1,82 +1,60 @@
 // lista-produtos.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { db } from '../../../../firebase-config';
-import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { AdminApiService, Paged, ProdutoDto } from '../../../../services/admin-api.service';
 
-interface Produto {
-  id?: string; // Firestore id é string
-  name: string;
-  description: string;
-  price: number;
-  image?: string;
-  category: string;
-  customizations: {
-    dosage: string[];
-    packaging: string[];
-  };
-  discount?: number;
-  rating?: number;
-  stock?: number;
-  tags: string[];
-  weight?: string;
-  weightUnit?: string;
-  weightValue?: number;
-  isFavourite?: boolean;
-  isAddedToCart?: boolean;
-}
 
 @Component({
   selector: 'app-lista-produtos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './lista-produtos.component.html',
   styleUrl: './lista-produtos.component.scss'
 })
 export class ListaProdutosComponent implements OnInit {
-  isCardView = true;
-  produtos: Produto[] = [];
-  loading = false;
-
+  private api = inject(AdminApiService);
   constructor(private router: Router) {}
+
+  isCardView = true;
+  produtos: ProdutoDto[] = [];
+  loading = false;
+  error: string | null = null;
+
+  // filtros e paginação
+  q = '';
+  category = '';
+  tag = '';
+  active: 1 | 0 | undefined = undefined;
+  page = 1;
+  pageSize = 12;
+  total = 0;
 
   ngOnInit(): void {
     this.loadProdutos();
   }
 
-  async loadProdutos() {
-    try {
-      this.loading = true;
-      const colRef = collection(db, 'produtos');
-      const snapshot = await getDocs(colRef);
-      this.produtos = snapshot.docs.map(d => {
-        const data = d.data() as any;
-        return { id: d.id, ...data } as Produto;
+  loadProdutos() {
+    this.loading = true; this.error = null;
+    this.api.listProdutos({ q: this.q || undefined, category: this.category || undefined, tag: this.tag || undefined, active: this.active, page: this.page, pageSize: this.pageSize })
+      .subscribe({
+        next: (res) => { this.produtos = res.data; this.total = res.total; this.loading = false; },
+        error: (err) => { console.error(err); this.error = 'Erro ao carregar produtos.'; this.loading = false; }
       });
-      console.log('Produtos carregados:', this.produtos);
-    } catch (err) {
-      console.error('Erro ao carregar produtos:', err);
-    } finally {
-      this.loading = false;
-    }
   }
 
-  editProduto(produto: Produto) {
+  editProduto(produto: ProdutoDto) {
     this.router.navigate(['/restrito/produto'], { queryParams: { produto_id: produto.id } });
   }
 
-  async deleteProduto(produto: Produto) {
+  deleteProduto(produto: ProdutoDto) {
     if (!produto.id) return;
     if (!confirm(`Deseja realmente excluir "${produto.name}"?`)) return;
-    try {
-      await deleteDoc(doc(db, 'produtos', produto.id));
-      // remove localmente pra UX imediata
-      this.produtos = this.produtos.filter(p => p.id !== produto.id);
-    } catch (err) {
-      console.error('Erro ao excluir produto:', err);
-      alert('Erro ao excluir produto. Veja console.');
-    }
+    this.api.deleteProduto(produto.id).subscribe({
+      next: () => this.produtos = this.produtos.filter(p => p.id !== produto.id),
+      error: (err) => { console.error(err); alert('Erro ao excluir produto. Veja console.'); }
+    });
   }
 
   addProduto() {
@@ -84,4 +62,10 @@ export class ListaProdutosComponent implements OnInit {
   }
 
   toggleView() { this.isCardView = !this.isCardView; }
+
+  // paginação simples
+  canPrev() { return this.page > 1; }
+  canNext() { return this.page * this.pageSize < this.total; }
+  prev() { if (this.canPrev()) { this.page--; this.loadProdutos(); } }
+  next() { if (this.canNext()) { this.page++; this.loadProdutos(); } }
 }

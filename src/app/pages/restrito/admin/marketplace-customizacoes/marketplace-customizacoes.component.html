@@ -1,0 +1,73 @@
+<div class="mk-wrapper">
+  <h2>Customizações do Marketplace</h2>
+
+  <div class="actions">
+    <button class="btn" (click)="addCategoria()">+ Categoria</button>
+    <button class="btn" (click)="addTag()">+ Tag</button>
+    <div class="spacer"></div>
+    <button class="btn primary" (click)="save()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar alterações' }}</button>
+  </div>
+
+  <div class="grid">
+    <section>
+      <h3>Categorias</h3>
+      <div class="list">
+        <div class="row" *ngFor="let c of categorias.controls; let i = index" [formGroup]="$any(c)">
+          <div class="field small">
+            <label>ID</label>
+            <input type="text" formControlName="id" placeholder="novo" [disabled]="true" />
+          </div>
+          <div class="field grow">
+            <label>Nome</label>
+            <input type="text" formControlName="nome" placeholder="Ex.: Vitaminas" />
+          </div>
+          <div class="field">
+            <label>Slug</label>
+            <input type="text" formControlName="slug" placeholder="opcional" />
+          </div>
+          <div class="field">
+            <label>Ícone</label>
+            <input type="text" formControlName="icone" placeholder="mdi-..." />
+          </div>
+          <div class="field small center">
+            <label>Remover</label>
+            <input type="checkbox" formControlName="remove" />
+          </div>
+          <div class="field small center">
+            <label>&nbsp;</label>
+            <button type="button" class="btn danger" (click)="removeCategoria(i)">Excluir</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Tags</h3>
+      <div class="list">
+        <div class="row" *ngFor="let t of tags.controls; let i = index" [formGroup]="$any(t)">
+          <div class="field small">
+            <label>ID</label>
+            <input type="text" formControlName="id" placeholder="novo" [disabled]="true" />
+          </div>
+          <div class="field grow">
+            <label>Nome</label>
+            <input type="text" formControlName="nome" placeholder="Ex.: pet-idoso" />
+          </div>
+          <div class="field small center">
+            <label>Remover</label>
+            <input type="checkbox" formControlName="remove" />
+          </div>
+          <div class="field small center">
+            <label>&nbsp;</label>
+            <button type="button" class="btn danger" (click)="removeTag(i)">Excluir</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="feedback">
+    <span class="ok" *ngIf="success()">{{ success() }}</span>
+    <span class="err" *ngIf="error()">{{ error() }}</span>
+  </div>
+</div>
