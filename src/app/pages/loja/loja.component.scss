@@ -6,7 +6,7 @@
 .subtitle { margin: 0; font-size: 14px; opacity: .95; }
 .card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
 .filtros { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; -webkit-backdrop-filter: saturate(120%); backdrop-filter: saturate(120%); position: relative; z-index: 10;
-	.cta { position: relative; display: flex; gap: 8px; align-items: center; padding: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.05); }
+	.cta { position: relative; display: flex; gap: 6px; align-items: center; padding: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.05); }
 	.perfil { position: relative; }
 		.popover { position: absolute; top: 48px; left: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.12); padding: 12px; width: 260px; z-index: 2000; }
 	.popover-header { font-weight: 700; margin-bottom: 8px; color: #111827; }
@@ -15,7 +15,7 @@
 	.welcome { font-weight: 600; color: #111827; }
 }
 .input { flex: 1; min-width: 0; padding: 10px 9px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; height: 40px; box-sizing: border-box; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); line-height: 1; min-height: 40px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); line-height: 1; min-height: 40px; height: 40px; }
 .btn.light { background: #f3f4f6; color: #111827; box-shadow: none; border: 1px solid #e5e7eb; }
 .btn.light.active { background: #fde68a; border-color: #f59e0b; }
 .fav-toggle { margin-right: 4px; }
@@ -155,7 +155,7 @@ app-footer { display: block; margin-top: 16px; }
 .g-img { width: 18px; height: 18px; margin-right: 6px; }
 
 /* CTA WhatsApp */
-.cta-help { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: center; margin-top: 16px; }
+.cta-help { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: center; margin-top: 16px; position: relative; z-index: 10; }
 .cta-help .cta-text h3 { margin: 0 0 6px; font-size: 20px; font-weight: 800; color: #111827; }
 .cta-help .cta-text p { margin: 0 0 12px; color: #374151; }
 .cta-help .btn.whatsapp { background: #22c55e; box-shadow: 0 3px 8px rgba(34,197,94,.25); text-decoration: none; }
@@ -168,12 +168,15 @@ app-footer { display: block; margin-top: 16px; }
 .filters-modal { position: fixed; z-index: 4600; left: 50%; top: 12vh; transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 20px 48px rgba(0,0,0,0.25); }
 .filters-modal header { padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 800; }
 .filters-modal .body { display: grid; gap: 10px; padding: 12px; }
+.filters-modal .body .active-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.filters-modal .body .active-filters .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid #e5e7eb; background: #f9fafb; color: #111827; font-size: 12px; }
 .filters-modal .body .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
 .filters-modal .field { display: grid; gap: 6px; font-size: 12px; color: #374151; }
 .filters-modal footer { display: flex; justify-content: flex-end; gap: 10px; padding: 12px; border-top: 1px solid #e5e7eb; }
 
 /* Icon button sizing */
-.btn.icon { padding: 8px 10px; min-width: 40px; }
+.btn.icon { padding: 0; width: 40px; height: 40px; min-width: 40px; }
+.btn.icon.icon-only { font-size: 18px; }
 .btn.icon svg { display: block; }
 
 @media (max-width: 640px) {

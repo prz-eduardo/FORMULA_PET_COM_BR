@@ -127,6 +127,28 @@ export class LojaComponent implements OnInit {
   async goToPage(p: number) { const t = this.totalPages(); this.page = Math.min(Math.max(1, p), t); await this.fetchProducts(); }
   async onChangePageSize(ev: Event) { const v = Number((ev.target as HTMLSelectElement).value) || 20; this.pageSize = v; this.page = 1; await this.fetchProducts(); }
 
+  // Active filters summary for UI badges
+  get activeFilters(): string[] {
+    const out: string[] = [];
+    if (this.filtro?.trim()) out.push(`Busca: ${this.filtro.trim()}`);
+    if (this.categoria?.trim()) out.push(`Categoria: ${this.categoria.trim()}`);
+    if (typeof this.minPrice === 'number') out.push(`Min: ${this.formatBRL(this.minPrice)}`);
+    if (typeof this.maxPrice === 'number') out.push(`Max: ${this.formatBRL(this.maxPrice)}`);
+    if (this.promoOnly) out.push('Promoção');
+    if (this.inStockOnly) out.push('Com estoque');
+    if (typeof this.minRating === 'number' && this.minRating > 0) out.push(`Nota: ${this.minRating}+`);
+    if (this.sort && this.sort !== 'relevance') {
+      const labelMap: any = { newest: 'Mais recentes', price_asc: 'Menor preço', price_desc: 'Maior preço', rating: 'Melhor avaliação', popularity: 'Mais populares', my_favorites: 'Favoritos' };
+      out.push(`Ordenação: ${labelMap[this.sort] || this.sort}`);
+    }
+    if (this.onlyFavorites) out.push('Somente favoritos');
+    return out;
+  }
+
+  private formatBRL(n: number): string {
+    try { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } catch { return `R$ ${n}`; }
+  }
+
   async onCategoryChange(val: string) {
     this.categoria = val;
     this.page = 1;

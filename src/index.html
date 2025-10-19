@@ -35,12 +35,12 @@
 
       var state = pickStart();
   var stepPx = 72;        // distance between prints (px)
-  var stepMs = 500;       // spawn interval (ms)
+  var stepMs = 320;       // spawn interval (ms) - faster for more prints
   var sway = 60;          // more lateral randomness (px)
       var angleLeft = -22;    // alternating angle for left paw
       var angleRight = 22;    // alternating angle for right paw
       var left = true;
-  var lifeMs = 4000;      // how long a print stays visible before fading
+  var lifeMs = 3000;      // how long a print stays visible before fading (fade faster overall)
 
       var cachedPawSize = null;
       function getPawSize(){
@@ -68,17 +68,20 @@
         return true;
       }
 
+      var spawnPaused = false;
       function spawnPrint(){
         try{
+          if (spawnPaused) { setTimeout(spawnPrint, stepMs); return; }
           var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
           var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+          var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
           // If off screen substantially, reset
           if (state.x < -20 || state.x > 120 || state.y < -20 || state.y > 120) {
             state = pickStart();
           }
           // Compute pixel position from percentage
           var baseX = (state.x/100)*vw;
-          var baseY = (state.y/100)*vh;
+          var baseY = sy + (state.y/100)*vh; // anchor Y to current scroll position
           var placed = false;
           var cx = baseX, cy = baseY;
           // Try a few random jitters to avoid overlapping existing prints
@@ -127,15 +130,79 @@
           left = !left;
 
           // Limit total nodes to avoid memory leaks (higher cap for more prints)
-          if (trail.childElementCount > 200){
-            for (var i=0;i<40;i++) if (trail.firstChild) trail.removeChild(trail.firstChild);
+          if (trail.childElementCount > 500){
+            for (var i=0;i<80;i++) if (trail.firstChild) trail.removeChild(trail.firstChild);
           }
         }catch(e){}
         setTimeout(spawnPrint, stepMs);
       }
 
+      // Prefill prints below the fold so you see paws even before scrolling
+      function prefillBelowFold(screens, perScreen){
+        try{
+          var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+          var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+          var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
+          screens = (typeof screens === 'number' && screens > 0) ? screens : 6;
+          perScreen = (typeof perScreen === 'number' && perScreen > 0) ? perScreen : 16;
+          // Direction and angle based on current state
+          var dxPct = (stepPx / vw) * 100 * state.dx;
+          var dyPct = (stepPx / vh) * 100 * state.dy;
+          var dxPx = (dxPct/100) * vw;
+          var dyPx = (dyPct/100) * vh;
+          var baseAngle = Math.atan2(dyPx, dxPx) * 180 / Math.PI;
+          // Only seed below the current viewport to avoid visible bursts
+          for (var s=1; s<=screens; s++){
+            for (var k=0; k<perScreen; k++){
+              var cx = Math.random()*vw + (Math.random()*2-1)*(sway*0.5);
+              var cy = sy + (s*vh) + (Math.random()*vh);
+              if (!canPlaceAt(cx, cy)) continue;
+              var alt = left ? -12 : 12;
+              var angle = (baseAngle + 90) + alt;
+              var el = document.createElement('div');
+              el.className = 'paw-print';
+              el.style.left = cx + 'px';
+              el.style.top = cy + 'px';
+              el.setAttribute('data-x', String(cx));
+              el.setAttribute('data-y', String(cy));
+              el.style.transform = 'translate(-50%, -50%) rotate(' + angle + 'deg)';
+              trail.appendChild(el);
+              // Fade in and schedule fade out
+              requestAnimationFrame((function(node){ return function(){ node.classList.add('show'); }; })(el));
+              (function(node){
+                setTimeout(function(){
+                  try{
+                    node.classList.add('hide');
+                    setTimeout(function(){ if (node && node.parentNode) node.parentNode.removeChild(node); }, 800);
+                  }catch(e){}
+                }, lifeMs + Math.random()*1500);
+              })(el);
+              left = !left;
+            }
+          }
+        }catch(e){}
+      }
+
       // Start when DOM ready
-      document.addEventListener('DOMContentLoaded', function(){ spawnPrint(); });
+      document.addEventListener('DOMContentLoaded', function(){
+        prefillBelowFold(6, 16);
+        spawnPrint();
+      });
+
+      // As user scrolls, occasionally seed more prints just beyond view
+      (function(){
+        var scrollTimer = null;
+        function onScroll(){
+          spawnPaused = true; // pause spawning while scrolling
+          if (scrollTimer) clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(function(){
+            // scrolling stopped
+            spawnPaused = false;
+            try{ prefillBelowFold(2, 10); }catch(e){}
+          }, 420);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+      })();
     })();
   </script>
 </head>

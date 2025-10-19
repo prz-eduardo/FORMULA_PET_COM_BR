@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener } from '@angular/core';
+import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -13,13 +13,15 @@ import { gsap } from 'gsap';
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })
-export class NavmenuComponent implements AfterViewInit {
+export class NavmenuComponent implements AfterViewInit, OnDestroy {
   previousScroll: number = 0;
   isVisible = true;
   currentRoute: string = '';
   cartCount = 0;
   menuOpen = false;
   isCliente = false;
+  private idleTimer: any = null;
+  private readonly idleTimeoutMs = 5000; // 5s sem scroll
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService) {}
 
@@ -58,6 +60,9 @@ export class NavmenuComponent implements AfterViewInit {
 
       // Initialize metaballs animation behind logo (scoped to logo-container)
       this.initMetaBalls();
+
+      // Inicia o timer de inatividade (sem scroll) para auto-ocultar a navbar
+      this.resetIdleTimer();
     }
   }
 
@@ -65,9 +70,31 @@ export class NavmenuComponent implements AfterViewInit {
   onWindowScroll(): void {
     if (isPlatformBrowser(this.platformId)) {
       const currentScroll = window.scrollY;
-      this.isVisible = currentScroll < this.previousScroll;
+      // Mostra ao rolar para cima ou quando está no topo; esconde ao rolar para baixo
+      this.isVisible = currentScroll < this.previousScroll || currentScroll <= 0;
       this.previousScroll = currentScroll;
+      // Reinicia o timer de ociosidade sempre que houver scroll
+      this.resetIdleTimer();
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.idleTimer) clearTimeout(this.idleTimer);
+  }
+
+  private resetIdleTimer(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (this.idleTimer) clearTimeout(this.idleTimer);
+    if (this.menuOpen) return; // não oculta se o menu estiver aberto
+    const currentScroll = window.scrollY || 0;
+    // Nunca oculte quando estiver no topo da página
+    if (currentScroll <= 0){
+      this.isVisible = true;
+      return;
+    }
+    this.idleTimer = setTimeout(() => {
+      this.isVisible = false;
+    }, this.idleTimeoutMs);
   }
 
   private openMenu(menu: HTMLElement, iconMenu: HTMLElement): void {
@@ -90,6 +117,9 @@ export class NavmenuComponent implements AfterViewInit {
       menu.classList.add('open');
       iconMenu.classList.add('icon-closed');
       this.menuOpen = true;
+  // Garante visibilidade enquanto o menu está aberto
+  this.isVisible = true;
+  if (this.idleTimer) clearTimeout(this.idleTimer);
       try { document.body.style.overflow = 'hidden'; } catch {}
       // Randomization (all devices): duration and opacity fade from 0 to 1
       const linksOpen: NodeListOf<HTMLElement> = menu.querySelectorAll('.menu-link');
@@ -111,6 +141,9 @@ export class NavmenuComponent implements AfterViewInit {
     if (menu && iconMenu && menu.classList.contains('open')) {
       this.openMenu(menu, iconMenu);
     }
+    // Reinicia o timer de ocultar após fechar o menu
+    this.menuOpen = false;
+    this.resetIdleTimer();
   }
 
   private openSubmenu(event: MouseEvent): void {

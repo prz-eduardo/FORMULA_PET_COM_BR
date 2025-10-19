@@ -239,6 +239,13 @@ export class ApiService {
       }>(url, { headers });
   }
 
+  // Home - destaques
+  getHomeHighlights(token?: string): Observable<any> {
+    const url = `${this.baseUrl}/destaques-home`;
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(url, { headers });
+  }
+
   // Ativos (busca por termo, se o backend suportar ?q=)
   searchAtivos(q: string): Observable<Ativo[]> {
     const term = (q || '').trim();

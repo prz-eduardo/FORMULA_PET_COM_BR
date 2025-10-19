@@ -74,6 +74,31 @@ export class StoreService {
     try { return typeof window !== 'undefined' && typeof localStorage !== 'undefined'; } catch { return false; }
   }
 
+  // Home highlights
+  async loadHomeHighlights(): Promise<ShopProduct[]> {
+    try {
+      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const res = await this.api.getHomeHighlights(token).toPromise();
+      const items = (res?.data || res || []).map((it: any) => ({
+        id: it.id,
+        name: it.nome || it.name,
+        description: it.descricao || it.description || '',
+        price: Number(it.preco ?? it.price ?? 0),
+        image: it.imagem_url || it.image || '',
+        category: it.categoria || it.category || '',
+        discount: it.desconto || 0,
+        rating: typeof it.rating_media === 'number' ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : undefined),
+        ratingsCount: typeof it.rating_total === 'number' ? it.rating_total : undefined,
+        isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : undefined,
+        favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
+      })) as ShopProduct[];
+      return items;
+    } catch {
+      this.toast.error('Não foi possível carregar os destaques da Home.', 'Erro');
+      return [];
+    }
+  }
+
   // Products - server-first with local fallback
   async loadProducts(params?: { page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto'; category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[]; minPrice?: number; maxPrice?: number; myFavorites?: boolean; sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites' }): Promise<{ total: number; totalPages: number; page: number; pageSize: number; meta?: StoreMeta }> {
     // Try server endpoint if available

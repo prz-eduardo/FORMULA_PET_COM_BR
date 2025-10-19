@@ -39,6 +39,15 @@
 .btn-cta { display: inline-flex; align-items: center; gap: 8px; background-color: #c4d600; color: #333; border-radius: 999px; padding: 10px 16px; font-size: .9rem; font-weight: 700; letter-spacing: .02em; text-decoration: none; transition: filter .2s ease; margin: 4px 0 12px; }
 .btn-cta:hover { filter: brightness(0.95); }
 
+/* New icon-only CTA buttons */
+.cta-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 12px; }
+.btn-ico { width: 40px; height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); border: 1px solid rgba(0,0,0,.06); }
+.btn-ico .ico { width: 20px; height: 20px; display: block; background-size: contain; background-repeat: no-repeat; background-position: center; }
+.btn-ico.whatsapp { background: #22c55e; }
+.btn-ico.whatsapp .ico { background-image: url('/imagens/whatsapp-xxl.png'); }
+.btn-ico.instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+.btn-ico.instagram .ico { background-image: url('/imagens/icons8-instagram-500.png'); filter: brightness(0) invert(1); }
+
 .map-link { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; color: #333; text-decoration: none; }
 .map-link:hover { text-decoration: underline; }
 
@@ -59,6 +68,7 @@
   .btn-cta { width: 100%; justify-content: center; padding: 12px 14px; font-size: 0.95rem; box-shadow: 0 2px 0 rgba(0,0,0,.06); }
   .contact-row { justify-content: center; }
   .map-link { justify-content: center; }
+  .cta-row { justify-content: center; }
 }
 
 .footer a { color: #333; }

@@ -10,6 +10,9 @@ html, body{
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
 
+/* Make body a positioned container so the paw overlay can scroll with the page */
+body { position: relative; }
+
 /* Ensure form controls and buttons inherit the global font */
 button, input, select, textarea { font: inherit; }
 * { font-family: inherit; }
@@ -33,7 +36,7 @@ img, video, canvas, svg {
 }
 
 #paw-trail{
-    position: fixed;
+    position: absolute;
     inset: 0;
     pointer-events: none; /* don't block clicks */
     z-index: 0;           /* stays behind regular content */

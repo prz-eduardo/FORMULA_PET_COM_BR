@@ -17,8 +17,8 @@
       </button>
     <div class="cta">
       <!-- Favoritos só aparece logado -->
-      <button class="btn light fav-toggle" *ngIf="me" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" title="Mostrar apenas favoritos">
-        ❤️ Favoritos
+      <button class="btn light icon icon-only fav-toggle" *ngIf="me" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" aria-label="Mostrar apenas favoritos" title="Favoritos">
+        ❤
       </button>
       <div class="perfil">
         <button #profileBtn class="btn light" (click)="toggleLogin($event)" aria-haspopup="dialog" [attr.aria-expanded]="showLogin">
@@ -40,7 +40,7 @@
   <div class="meta" aria-live="polite">{{ onlyFavorites ? filtered.length : total }} itens</div>
 
   <section class="catalogo">
-    <h2 class="sec-title">Produtos</h2>
+    <h2 class="sec-title">{{ onlyFavorites ? 'Favoritos' : 'Produtos' }}</h2>
     <div class="grid" [class.loading]="loading">
       <div class="empty-state" *ngIf="!loading && onlyFavorites && filtered.length === 0">
         <div class="icon">❤</div>
@@ -86,6 +86,9 @@
       <h3>Filtros</h3>
     </header>
     <div class="body">
+      <div class="active-filters" *ngIf="activeFilters.length">
+        <span class="badge" *ngFor="let f of activeFilters">{{ f }}</span>
+      </div>
       <label class="field">Buscar
         <input class="input" type="text" [(ngModel)]="filtroDraft" placeholder="Nome do produto ou termos" />
       </label>
@@ -180,5 +183,6 @@
     </div>
   </div>
 
-  <app-footer></app-footer>
+  
 </div>
+<app-footer></app-footer>

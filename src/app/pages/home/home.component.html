@@ -6,6 +6,37 @@
 
   <!-- Seção de Banner -->
   <section id="swiper-topo" class="swiper-topo">
+    <!-- Banner estático da Home (imagem diferente da loja) -->
+    <section class="home-hero-banner" aria-label="Farmácia de manipulação veterinária">
+      <div class="banner-overlay" aria-hidden="true"></div>
+      <div class="banner-content">
+        <div class="banner-inner">
+          <div class="banner-glass">
+            <h1 class="banner-title">Manipulação veterinária sob medida</h1>
+            <p class="banner-sub">Fórmulas personalizadas para o seu pet, com qualidade e carinho.</p>
+            <p class="banner-info">Medicamentos manipulados com precisão, dosagem certa e apresentação ideal para cada espécie.</p>
+            <p class="banner-tagline">Do focinho ao rabinho a dose certa de carinho!💓</p>
+            <div class="banner-features">
+              <span class="chip"><i class="fa-solid fa-truck"></i> Entrega rápida</span>
+              <span class="chip"><i class="fa-solid fa-dog"></i> Cães e gatos</span>
+              <span class="chip"><i class="fa-solid fa-stethoscope"></i> Com receita</span>
+            </div>
+            <div class="banner-ctas">
+              <a routerLink="/loja" class="btn">Ver produtos</a>
+              <a href="https://wa.me/4132051910?text=Olá!%20Preciso%20de%20uma%20fórmula%20para%20meu%20pet" target="_blank" rel="noopener" class="btn whatsapp"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
+            </div>
+          </div>
+          <div class="banner-illustration" aria-hidden="true">
+            <img src="/imagens/image.png" alt="Mascote Fórmula Pet" loading="eager" decoding="async" />
+          </div>
+        </div>
+      </div>
+      <div class="banner-wave" aria-hidden="true">
+        <svg viewBox="0 0 1440 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,80 C240,150 480,10 720,60 C960,110 1200,140 1440,60 L1440,140 L0,140 Z"></path>
+        </svg>
+      </div>
+    </section>
     <!-- <app-swiper-topo app-swiper-topo></app-swiper-topo> -->
   <section class="info-section">
     <div class="info-content">
@@ -151,23 +182,19 @@
     }
   </style>
 
-    <!-- Seção de Produtos em Destaque (Preview) -->
-<section id="products-preview">
-  <app-product-preview ></app-product-preview> 
-  <!-- Lista rápida com ação de compra -->
-  <div class="home-products" *ngIf="(store.products$ | async) as prods">
-    <h3 class="hp-title">Em destaque</h3>
-    <div class="hp-grid">
-      <div class="hp-card" *ngFor="let p of prods | slice:0:6">
-        <img [src]="p.image" alt="{{p.name}}" />
-        <div class="hp-info">
-          <div class="hp-name">{{ p.name }}</div>
-          <div class="hp-price">{{ (p.price - (p.price * (p.discount || 0) / 100)) | currency:'BRL' }}</div>
-        </div>
-        <div class="hp-actions">
-          <a routerLink="/loja" class="btn light">Ver na loja</a>
-          <button class="btn" (click)="store.addToCart(p, 1)">Adicionar</button>
-        </div>
+    <!-- Seção de Produtos em Destaque (Home) -->
+<section id="products-highlight" class="home-products" *ngIf="produtos?.length">
+  <h3 class="hp-title">Em destaque</h3>
+  <div class="hp-grid">
+    <div class="hp-card" *ngFor="let p of produtos">
+      <img [src]="p.image" alt="{{p.name}}" />
+      <div class="hp-info">
+        <div class="hp-name">{{ p.name }}</div>
+        <div class="hp-price">{{ (p.price - (p.price * (p.discount || 0) / 100)) | currency:'BRL' }}</div>
+      </div>
+      <div class="hp-actions">
+        <a [routerLink]="['/loja']" [queryParams]="{ q: p.name }" class="btn light">Ver na loja</a>
+        <button class="btn" (click)="store.addToCart(p, 1)">Adicionar</button>
       </div>
     </div>
   </div>
@@ -225,7 +252,7 @@
   <!-- end about -->
 
 <style>
-  .spacer-1vh { padding: 1vh; }
+  .spacer-1vh { height: clamp(24px, 8vh, 120px); }
   .intro-top { display:flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem; }
   .title-splash { text-align: center; font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif; font-size: 2.8rem; }
   .info-card-center { max-width: 600px; margin: 0 auto; align-items: center; }

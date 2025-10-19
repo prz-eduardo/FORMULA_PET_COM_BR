@@ -17,10 +17,80 @@
 .home-products .btn.light { background: #e5e7eb; color: #111827; }
 .elfsight-pad { padding-left: 2vw; padding-right: 2vw; }
 .home-products .hp-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; }
-.home-products .hp-card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; }
+.home-products .hp-card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 3; }
 .home-products .hp-card img { width: 100%; height: 140px; object-fit: cover; }
 .home-products .hp-info { padding: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .home-products .hp-name { font-weight: 700; color: #111827; font-size: 14px; }
 .home-products .hp-price { font-weight: 800; color: #111827; font-size: 15px; }
 .home-products .hp-actions { display: flex; gap: 8px; padding: 10px; margin-top: auto; }
+.info-card-center { z-index: 99;}
+.info-card { z-index: 99;}
 @media (max-width:640px){ .home-products .hp-card img{ height: 120px;} }
+
+/* Home hero banner */
+.home-hero-banner{
+    position: relative;
+    z-index: 2; /* above paw prints (z=0) but below sticky nav if needed */
+    min-height: clamp(320px, 44vh, 560px);
+    border-radius: 18px;
+    margin: 8px 6vw 28px;
+    overflow: hidden;
+    background-color: #eaf3f0;
+    background-position: center;
+    background-size: cover;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.home-hero-banner{ background-image: url('/imagens/fmanip.webp'); }
+@supports (background-image: image-set(url('x') 1x)){
+    .home-hero-banner{
+        background-image:
+            image-set(
+                url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop') 1x,
+                url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2400&auto=format&fit=crop') 2x
+            );
+    }
+}
+.home-hero-banner .banner-overlay{
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(15,23,42,0.45) 0%, rgba(15,23,42,0.15) 42%, rgba(15,23,42,0.45) 100%);
+}
+.home-hero-banner .banner-content{
+    position: relative; z-index: 1; color: #fff;
+    display: flex; flex-direction: column; justify-content: center;
+    min-height: clamp(320px, 44vh, 560px); padding: clamp(16px, 4vw, 36px);
+}
+.home-hero-banner .banner-inner{ display:grid; grid-template-columns: 1.1fr .9fr; gap: clamp(8px, 3vw, 24px); align-items: center; max-width: 1200px; }
+.home-hero-banner .banner-tagline{ font-weight: 700; font-size: clamp(14px, 2.2vw, 18px); margin: 6px 0 14px; text-shadow: 0 1px 8px rgba(0,0,0,.2); }
+.home-hero-banner .banner-glass{
+    background: rgba(255,255,255,.08);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 16px;
+    padding: clamp(12px, 2.4vw, 22px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.home-hero-banner .banner-illustration{ display:flex; justify-content: center; align-items: flex-end; }
+.home-hero-banner .banner-illustration img{ max-width: min(420px, 38vw); width: 100%; height: auto; filter: drop-shadow(0 12px 40px rgba(0,0,0,.25)); transform: translateY(8px); }
+.home-hero-banner .banner-title{ font-size: clamp(22px, 4vw, 40px); font-weight: 800; margin: 0 0 8px; text-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.home-hero-banner .banner-sub{ font-size: clamp(14px, 2.4vw, 18px); opacity: .95; margin: 0 0 16px; text-shadow: 0 1px 8px rgba(0,0,0,.2); }
+.home-hero-banner .banner-info{ font-size: clamp(13px, 2.2vw, 16px); opacity: .95; margin: -6px 0 14px; text-shadow: 0 1px 8px rgba(0,0,0,.2); }
+.home-hero-banner .banner-features{ display:flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.home-hero-banner .banner-features .chip{ background: rgba(255,255,255,.9); color: #0f1722; border-color: rgba(15,23,34,.12); }
+.home-hero-banner .banner-ctas{ display: flex; gap: 10px; flex-wrap: wrap; }
+.home-hero-banner .btn{ padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); text-decoration: none; text-align: center; }
+.home-hero-banner .btn.light{ background: rgba(255,255,255,.9); color: #111827; }
+.home-hero-banner .btn.whatsapp{ background:#25d366; color:#fff; box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45); }
+.home-hero-banner .btn.whatsapp i{ margin-right: 6px; }
+
+.home-hero-banner .banner-wave{ position:absolute; left:0; right:0; bottom:-1px; height: 100px; pointer-events: none; }
+.home-hero-banner .banner-wave svg{ width:100%; height:100%; display:block; }
+.home-hero-banner .banner-wave path{ fill: #f8fafc; }
+
+@media (max-width: 640px){
+    .home-hero-banner{ margin: 6px 3vw 18px; min-height: 38vh; border-radius: 12px; }
+    .home-hero-banner .banner-content{ padding: 18px; }
+    .home-hero-banner .banner-inner{ grid-template-columns: 1fr; }
+    .home-hero-banner .banner-illustration{ order: -1; }
+    .home-hero-banner .banner-illustration img{ max-width: min(320px, 66vw); transform: translateY(0); }
+}
