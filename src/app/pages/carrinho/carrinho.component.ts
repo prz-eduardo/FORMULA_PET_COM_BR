@@ -519,6 +519,19 @@ export class CarrinhoComponent implements OnInit {
     return items + (this.entregaModo === 'entrega' ? (freteSel || 0) : 0) - (cupom || 0);
   }
 
+  // Exibição do frete na UI: sempre prioriza a opção selecionada (evita mostrar 0,00 quando totals.frete_total=0)
+  get freteValorDisplay(): number {
+    if (this.entregaModo !== 'entrega') return 0;
+    const v = this.freteSelecionado?.valor ?? this.freteValor;
+    return typeof v === 'number' ? Math.max(0, v) : 0;
+  }
+  get freteNomeDisplay(): string {
+    return this.freteSelecionado?.nome || 'Entrega';
+  }
+  get fretePrazoDias(): number | undefined {
+    return this.freteSelecionado?.prazo_dias != null ? this.freteSelecionado.prazo_dias : undefined;
+  }
+
   selecionarOpcaoFrete(opt: { servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string }) {
     this.freteSelecionado = opt;
     this.freteValor = Math.max(0, opt?.valor || 0);

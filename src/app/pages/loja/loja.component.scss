@@ -185,10 +185,10 @@ app-footer { display: block; margin-top: 16px; }
 .cta-help { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: center; margin-top: 16px; position: relative; z-index: 10; }
 .cta-help .cta-text h3 { margin: 0 0 6px; font-size: 20px; font-weight: 800; color: #111827; }
 .cta-help .cta-text p { margin: 0 0 12px; color: #374151; }
-.cta-help .btn.whatsapp { background: #22c55e; box-shadow: 0 3px 8px rgba(34,197,94,.25); text-decoration: none; }
-.cta-help .btn.whatsapp .wa-icon { width: 18px; height: 18px; background-image: url('/imagens/whatsapp-xxl.png'); background-size: contain; background-repeat: no-repeat; display: inline-block; }
+.cta-help .btn.whatsapp { background: #22c55e; box-shadow: 0 3px 8px rgba(34,197,94,.25); text-decoration: none; gap: 6px; }
+.cta-help .btn.whatsapp .wa-icon { width: 18px; height: 18px; background-image: url('/imagens/whatsapp-xxl.png'); background-size: contain; background-repeat: no-repeat; background-position: center; display: inline-block; flex: 0 0 18px; }
 .cta-help .cta-media { overflow: hidden; border-radius: 12px; }
-.cta-help .cta-media img { width: 100%; height: auto; display: block; }
+.cta-help .cta-media img { width: 100%; max-width: 100%; height: auto; display: block; }
 
 /* Filters modal */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 4500; }
@@ -228,6 +228,14 @@ app-footer { display: block; margin-top: 16px; }
 	.filters-modal .body { overflow-x: hidden; }
 	.filters-modal .body .two-cols { grid-template-columns: 1fr; }
 	.filters-modal .field .input, .filters-modal .field input.input, .filters-modal .field select.input { width: 100%; min-width: 0; box-sizing: border-box; }
+
+	/* Corrige overflow e layout do bloco CTA no mobile */
+	.cta-help { grid-template-columns: 1fr; gap: 10px; }
+	.cta-help .cta-text { display: grid; gap: 8px; }
+	.cta-help .cta-media { width: 100%; }
+	.cta-help .cta-media img { width: 100%; height: auto; max-width: 100%; display: block; }
+	.cta-help .btn.whatsapp { width: auto; max-width: 100%; justify-content: center; font-size: 14px; gap: 6px; padding: 8px 12px; height: 36px; min-height: 36px; }
+	.cta-help .btn.whatsapp .wa-icon { width: 18px; height: 18px; }
 
 	/* Filtros top: evita overflow da CTA */
 	.filtros { flex-wrap: wrap; }

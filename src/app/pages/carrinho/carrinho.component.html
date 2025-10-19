@@ -166,9 +166,9 @@
             <div class="discount" *ngIf="tn.discount_total && tn.discount_total > 0">Descontos aplicados: -{{ tn.discount_total | currency:'BRL' }}</div>
             <div>Subtotal com descontos: {{ (tn.items_total ?? total().subtotal) | currency:'BRL' }}</div>
             <div class="frete" *ngIf="entregaModo==='entrega'">
-              Frete ({{ freteSelecionado?.nome || 'Entrega' }}):
-              {{ (tn.frete_total ?? freteSelecionado?.valor ?? freteValor) | currency:'BRL' }}
-              <span class="prazo" *ngIf="freteSelecionado?.prazo_dias != null">• {{ freteSelecionado?.prazo_dias }} dia{{ freteSelecionado?.prazo_dias === 1 ? '' : 's' }}</span>
+              Frete ({{ freteNomeDisplay }}):
+              {{ freteValorDisplay | currency:'BRL' }}
+              <span class="prazo" *ngIf="fretePrazoDias != null">• {{ fretePrazoDias }} dia{{ fretePrazoDias === 1 ? '' : 's' }}</span>
             </div>
             <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
             <div class="discount" *ngIf="tn.coupon_total && tn.coupon_total > 0">Cupom: -{{ tn.coupon_total | currency:'BRL' }}</div>
@@ -181,8 +181,8 @@
               <div class="discount" *ngIf="vt2.discount_total && vt2.discount_total > 0">Descontos aplicados: -{{ vt2.discount_total | currency:'BRL' }}</div>
             </ng-container>
             <div class="frete" *ngIf="entregaModo==='entrega'">
-              Frete ({{ freteSelecionado?.nome || 'Entrega' }}): {{ (freteSelecionado?.valor ?? freteValor) | currency:'BRL' }}
-              <span class="prazo" *ngIf="freteSelecionado?.prazo_dias != null">• {{ freteSelecionado?.prazo_dias }} dia{{ freteSelecionado?.prazo_dias === 1 ? '' : 's' }}</span>
+              Frete ({{ freteNomeDisplay }}): {{ freteValorDisplay | currency:'BRL' }}
+              <span class="prazo" *ngIf="fretePrazoDias != null">• {{ fretePrazoDias }} dia{{ fretePrazoDias === 1 ? '' : 's' }}</span>
             </div>
             <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
             <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
