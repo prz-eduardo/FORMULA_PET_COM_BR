@@ -106,17 +106,21 @@ export class StoreService {
   }
 
   // Products - server-first with local fallback
-  async loadProducts(params?: { page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto'; category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[]; minPrice?: number; maxPrice?: number; myFavorites?: boolean; sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites' }): Promise<{ total: number; totalPages: number; page: number; pageSize: number; meta?: StoreMeta }> {
+  async loadProducts(params?: { page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto'; category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[]; minPrice?: number; maxPrice?: number; myFavorites?: boolean; promoOnly?: boolean; sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites' }): Promise<{ total: number; totalPages: number; page: number; pageSize: number; meta?: StoreMeta }> {
     // Try server endpoint if available
     try {
       const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
-      const res = await this.api.listStoreProducts(params, token).toPromise();
-  const raw = Array.isArray(res) ? res : ((res as any)?.data || (res as any)?.items || []);
+  const res = await this.api.listStoreProducts(params, token).toPromise();
+      const raw = Array.isArray(res) ? res : ((res as any)?.data || (res as any)?.items || []);
       const list: ShopProduct[] = (raw || []).map((it: any) => {
-        const price = Number(it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0));
-        const promoPrice = it.promo_price != null ? Number(it.promo_price) : (it.promoPrice != null ? Number(it.promoPrice) : null);
+        const price = Number(it.priceOriginal ?? it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0));
+        const promoPrice = (it.priceFinal != null ? Number(it.priceFinal)
+                          : (it.promo_price != null ? Number(it.promo_price)
+                          : (it.promoPrice != null ? Number(it.promoPrice) : null)));
         const discountFromPromo = (promoPrice != null && price > 0) ? Math.max(0, (1 - promoPrice / price) * 100) : 0;
-        const desconto = Number(it.desconto ?? it.discount ?? 0) || discountFromPromo;
+        const discountPercent = (it.discount && typeof it.discount.percent === 'number') ? Number(it.discount.percent)
+                              : (typeof it.desconto === 'number' ? Number(it.desconto) : 0);
+        const desconto = discountPercent || discountFromPromo;
         return {
           id: Number(it.id),
           name: it.nome || it.name,
@@ -131,6 +135,7 @@ export class StoreService {
           ratingsCount: (typeof it.rating_total === 'number') ? it.rating_total : (it.rating?.total ?? undefined),
           isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : (it.is_favorited === 1 ? true : (it.is_favorited === 0 ? false : undefined)),
           favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
+          tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
         } as ShopProduct;
       });
 

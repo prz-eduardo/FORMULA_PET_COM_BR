@@ -1,4 +1,4 @@
-<a class="p-card" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }">
+<a class="p-card" [class.has-discount]="product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }">
   <div class="thumb">
     <img [src]="product.image" [alt]="product.name" width="320" height="200" />
     <div class="badge" *ngIf="product.discount && product.discount > 0">-{{ product.discount | number:'1.0-0' }}%</div>
@@ -12,20 +12,25 @@
     <h3 class="nome" [title]="product.name">{{ product.name }}</h3>
     <div class="linha">
       <div class="categoria" *ngIf="product.category">{{ product.category }}</div>
-      <div class="rating" *ngIf="supportsRatings">
+      <div class="rating" *ngIf="supportsRatings && product.ratingsCount && product.ratingsCount > 0">
         <span class="stars">
           <ng-container *ngFor="let s of stars; let i = index">
             <span class="star">{{ i + 1 <= ratingValue ? '★' : '☆' }}</span>
           </ng-container>
         </span>
         <span class="r-val">{{ ratingValue | number:'1.1-1' }}</span>
-        <span class="r-total" *ngIf="product.ratingsCount">({{ product.ratingsCount }})</span>
+        <span class="r-total">({{ product.ratingsCount }})</span>
       </div>
+    </div>
+    <div class="tags" *ngIf="product.tags?.length">
+      <span class="tag" *ngFor="let t of (product.tags | slice:0:2)">{{ t }}</span>
+      <span class="tag more" *ngIf="(product.tags?.length || 0) > 2">+{{ (product.tags?.length || 0) - 2 }}</span>
     </div>
     <p class="desc" *ngIf="product.description">{{ product.description }}</p>
     <div class="preco">
       <span class="atual">{{ priceNow | currency:'BRL' }}</span>
-      <span class="old" *ngIf="product.promoPrice != null || (product.discount && product.discount > 0)">{{ product.price | currency:'BRL' }}</span>
+      <span class="old" *ngIf="showOldPrice">{{ product.price | currency:'BRL' }}</span>
+      <span class="old placeholder" *ngIf="!showOldPrice" aria-hidden="true">{{ product.price | currency:'BRL' }}</span>
     </div>
   </div>
 </a>

@@ -192,7 +192,7 @@ export class ApiService {
       params?: {
         page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto';
         category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[];
-        minPrice?: number; maxPrice?: number; myFavorites?: boolean;
+        minPrice?: number; maxPrice?: number; myFavorites?: boolean; promoOnly?: boolean;
         sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites'
       },
       token?: string
@@ -221,7 +221,8 @@ export class ApiService {
     if (typeof params?.minPrice === 'number') search.set('minPrice', String(params.minPrice));
     if (typeof params?.maxPrice === 'number') search.set('maxPrice', String(params.maxPrice));
     if (params?.myFavorites) search.set('myFavorites', 'true');
-    if (params?.sort) search.set('sort', params.sort);
+  if (params?.sort) search.set('sort', params.sort);
+  if (params?.promoOnly) search.set('promo', '1');
     const qp = search.toString();
       const url = `${this.baseUrl}/produtos${qp ? `?${qp}` : ''}`;
       const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;

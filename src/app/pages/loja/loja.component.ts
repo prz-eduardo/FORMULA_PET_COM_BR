@@ -79,8 +79,11 @@ export class LojaComponent implements OnInit {
       const login = params.get('login');
       const fav = params.get('fav');
       const srt = params.get('sort');
+      const prom = params.get('promo');
       if (q !== null) this.filtro = q;
       if (cat !== null) this.categoria = cat;
+      // promo flag from URL
+      this.promoOnly = prom === '1';
       if (login === '1') this.openLoginNearProfile();
       this.onlyFavorites = fav === '1';
       if (srt) {
@@ -131,7 +134,7 @@ export class LojaComponent implements OnInit {
   get activeFilters(): string[] {
     const out: string[] = [];
     if (this.filtro?.trim()) out.push(`Busca: ${this.filtro.trim()}`);
-    if (this.categoria?.trim()) out.push(`Categoria: ${this.categoria.trim()}`);
+    // Categoria selecionada não deve aparecer nos badges
     if (typeof this.minPrice === 'number') out.push(`Min: ${this.formatBRL(this.minPrice)}`);
     if (typeof this.maxPrice === 'number') out.push(`Max: ${this.formatBRL(this.maxPrice)}`);
     if (this.promoOnly) out.push('Promoção');
@@ -141,8 +144,81 @@ export class LojaComponent implements OnInit {
       const labelMap: any = { newest: 'Mais recentes', price_asc: 'Menor preço', price_desc: 'Maior preço', rating: 'Melhor avaliação', popularity: 'Mais populares', my_favorites: 'Favoritos' };
       out.push(`Ordenação: ${labelMap[this.sort] || this.sort}`);
     }
-    if (this.onlyFavorites) out.push('Somente favoritos');
     return out;
+  }
+
+  // Structured filters for dismissible badges outside the modal
+  get activeFiltersDetailed(): Array<{ key: string; label: string }> {
+    const out: Array<{ key: string; label: string }> = [];
+    if (this.filtro?.trim()) out.push({ key: 'q', label: `Busca: ${this.filtro.trim()}` });
+    if (typeof this.minPrice === 'number') out.push({ key: 'min', label: `Min: ${this.formatBRL(this.minPrice)}` });
+    if (typeof this.maxPrice === 'number') out.push({ key: 'max', label: `Max: ${this.formatBRL(this.maxPrice)}` });
+    if (this.promoOnly) out.push({ key: 'promo', label: 'Promoção' });
+    if (this.inStockOnly) out.push({ key: 'stock', label: 'Com estoque' });
+    if (typeof this.minRating === 'number' && this.minRating > 0) out.push({ key: 'rating', label: `Nota: ${this.minRating}+` });
+    if (this.sort && this.sort !== 'relevance') {
+      const labelMap: any = { newest: 'Mais recentes', price_asc: 'Menor preço', price_desc: 'Maior preço', rating: 'Melhor avaliação', popularity: 'Mais populares', my_favorites: 'Favoritos' };
+      out.push({ key: 'sort', label: `Ordenação: ${labelMap[this.sort] || this.sort}` });
+    }
+    return out;
+  }
+
+  async clearSearch() {
+    if (!this.filtro) return;
+    this.filtro = '';
+    this.page = 1;
+    await this.fetchProducts();
+    this.persistQueryParams();
+  }
+
+  async onClearSearch(ev: MouseEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    await this.clearSearch();
+  }
+
+  async clearFilterByKey(key: string) {
+    switch (key) {
+      case 'q':
+        this.filtro = '';
+        break;
+      case 'min':
+        this.minPrice = undefined;
+        this.minPriceDraft = undefined;
+        break;
+      case 'max':
+        this.maxPrice = undefined;
+        this.maxPriceDraft = undefined;
+        break;
+      case 'promo':
+        this.promoOnly = false;
+        this.promoOnlyDraft = false;
+        break;
+      case 'stock':
+        this.inStockOnly = false;
+        this.inStockOnlyDraft = false;
+        break;
+      case 'rating':
+        this.minRating = undefined;
+        this.minRatingDraft = undefined;
+        break;
+      case 'sort':
+        this.sort = 'relevance';
+        this.sortDraft = 'relevance';
+        break;
+      case 'fav':
+        this.onlyFavorites = false;
+        break;
+    }
+    this.page = 1;
+    await this.fetchProducts();
+    this.persistQueryParams();
+  }
+
+  async onClearFilter(ev: MouseEvent, key: string) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    await this.clearFilterByKey(key);
   }
 
   private formatBRL(n: number): string {
@@ -151,6 +227,16 @@ export class LojaComponent implements OnInit {
 
   async onCategoryChange(val: string) {
     this.categoria = val;
+    // Selecting a normal category disables promo-only mode
+    this.promoOnly = false;
+    this.page = 1;
+    await this.fetchProducts();
+    this.persistQueryParams();
+  }
+  async selectPromotions() {
+    // Fixed "Promoções" category behavior
+    this.promoOnly = true;
+    this.categoria = '';
     this.page = 1;
     await this.fetchProducts();
     this.persistQueryParams();
@@ -396,6 +482,7 @@ export class LojaComponent implements OnInit {
     if (this.filtro) queryParams.q = this.filtro; else queryParams.q = null;
     if (this.categoria) queryParams.cat = this.categoria; else queryParams.cat = null;
     if (this.onlyFavorites) queryParams.fav = '1'; else queryParams.fav = null;
+    if (this.promoOnly) queryParams.promo = '1'; else queryParams.promo = null;
     if (this.sort && this.sort !== 'relevance') queryParams.sort = this.sort; else queryParams.sort = null;
     this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
   }
@@ -416,7 +503,8 @@ export class LojaComponent implements OnInit {
         myFavorites: useFavs,
         sort: effectiveSort,
         minPrice: typeof this.minPrice === 'number' ? this.minPrice : undefined,
-        maxPrice: typeof this.maxPrice === 'number' ? this.maxPrice : undefined
+        maxPrice: typeof this.maxPrice === 'number' ? this.maxPrice : undefined,
+        promoOnly: this.promoOnly || undefined
       });
       this.total = res.total;
       this.totalPagesSrv = res.totalPages;

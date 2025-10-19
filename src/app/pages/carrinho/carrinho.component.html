@@ -27,7 +27,7 @@
           <div class="file" *ngIf="it.prescriptionFileName">Arquivo: {{ it.prescriptionFileName }}</div>
         </div>
       </div>
-      <button class="remove" (click)="remove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
+      <button class="remove" (click)="onRequestRemove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
       </div>
     </div>
 
@@ -55,6 +55,28 @@
     </div>
   </div>
 
+  <!-- Destaques quando há itens no carrinho -->
+  <section class="cart-highlights" *ngIf="(store.cart$ | async)?.length && !loadingHighlights && highlights?.length">
+    <div class="card">
+      <div class="ch-header">
+        <h3>Continue descobrindo</h3>
+        <p>Selecionamos alguns itens que combinam com a sua compra. Que tal dar uma olhada?</p>
+      </div>
+      <div class="ch-grid">
+        <div class="ch-item" *ngFor="let p of highlights | slice:0:6">
+          <div class="ch-img-box">
+            <img [src]="p.image" [alt]="p.name" />
+          </div>
+          <div class="ch-name">{{ p.name }}</div>
+          <div class="ch-bottom">
+            <div class="ch-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
+            <button class="btn add" (click)="store.addToCart(p, 1)">Adicionar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Sticky checkout bar (mobile only) -->
   <div class="checkout-bar mobile-only" *ngIf="(store.cart$ | async)?.length">
     <div class="bar-content">
@@ -68,6 +90,37 @@
   </div>
 
   <ng-template #vazio>
-    <div class="card vazio">Seu carrinho está vazio.</div>
+    <div class="card vazio">
+      <div class="empty-text">Seu carrinho ainda está vazio 😺</div>
+      <p class="empty-sub">Enquanto isso, separamos alguns favoritos da nossa loja para você começar:</p>
+      <div class="highlight-box" *ngIf="!loadingHighlights && highlights?.length">
+        <h3 class="h-title">Sugestões que seu pet vai amar</h3>
+        <div class="h-grid">
+          <div class="h-item" *ngFor="let p of highlights | slice:0:8">
+            <div class="h-img-box">
+              <img [src]="p.image" [alt]="p.name" />
+              <div class="h-name">{{ p.name }}</div>
+            </div>
+            <div class="h-bottom">
+              <div class="h-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
+              <button class="btn add" (click)="store.addToCart(p, 1)">Adicionar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </ng-template>
+
+  <!-- Confirmação de remoção -->
+  <div class="overlay" *ngIf="showConfirmRemove" (click)="cancelRemove()"></div>
+  <div class="confirm-modal" *ngIf="showConfirmRemove" role="dialog" aria-modal="true" aria-label="Remover item do carrinho" (click)="$event.stopPropagation()">
+    <div class="sad-face" aria-hidden="true">😿</div>
+    <h3>Remover do carrinho?</h3>
+    <p class="msg">{{ confirmTargetName || 'Este item' }} será removido do seu carrinho.</p>
+    <div class="actions">
+      <button class="btn light" (click)="cancelRemove()">Cancelar</button>
+      <!-- Botão destrutivo com menor destaque -->
+      <button class="btn subtle-danger" (click)="confirmRemoveNow()" title="Remover definitivamente">Remover mesmo</button>
+    </div>
+  </div>
 </div>

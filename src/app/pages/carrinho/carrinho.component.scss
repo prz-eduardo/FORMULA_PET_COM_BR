@@ -31,6 +31,31 @@
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: #10b981; }
 .vazio { text-align: center; }
+.vazio .empty-text { margin-bottom: 4px; font-size: 16px; font-weight: 800; color: #111827; }
+.vazio .empty-sub { margin: 0 0 8px; color: #374151; }
+.highlight-box { margin-top: 8px; text-align: left; }
+.highlight-box .h-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
+.h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; align-items: stretch; }
+.h-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px; display: grid; grid-template-rows: auto 1fr; gap: 8px; min-height: 240px; }
+.h-item .h-img-box { position: relative; border-radius: 10px; overflow: hidden; }
+.h-item img { width: 100%; height: 140px; object-fit: cover; display: block; }
+.h-item .h-name { position: absolute; left: 8px; right: 8px; bottom: 8px; background: rgba(0,0,0,0.55); color: #fff; font-size: 13px; font-weight: 700; padding: 6px 8px; border-radius: 8px; text-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+.h-item .h-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.h-item .h-price { font-size: 14px; font-weight: 800; color: #111827; }
+.h-item .btn.add { padding: 8px 10px; border-radius: 10px; font-size: 14px; }
+
+/* Highlights when cart has items */
+.cart-highlights { margin-top: 16px; }
+.cart-highlights .ch-header h3 { margin: 0 0 4px; font-size: 18px; font-weight: 800; color: #111827; }
+.cart-highlights .ch-header p { margin: 0 0 10px; color: #374151; }
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; align-items: stretch; }
+.ch-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; display: grid; grid-template-rows: auto auto 1fr; gap: 8px; }
+.ch-img-box { border-radius: 10px; overflow: hidden; }
+.ch-img-box img { width: 100%; height: 140px; object-fit: cover; display: block; }
+.ch-name { font-size: 14px; font-weight: 700; color: #111827; }
+.ch-bottom { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ch-price { font-size: 15px; font-weight: 800; color: #111827; }
+.ch-item .btn.add { padding: 8px 12px; border-radius: 10px; }
 
 /* Sticky mobile checkout bar */
 .checkout-bar { position: sticky; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.9); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); box-shadow: 0 -6px 18px rgba(0,0,0,0.08); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) 12px; border-top-left-radius: 16px; border-top-right-radius: 16px; }
@@ -66,3 +91,18 @@
 
 /* Hide mobile-only elements on desktop */
 .mobile-only { display: none; }
+
+/* Confirm remove modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 4500; }
+.confirm-modal {
+	position: fixed; z-index: 4600; left: 50%; top: 24vh; transform: translateX(-50%);
+	width: min(420px, calc(100vw - 24px));
+	background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+	padding: 16px; text-align: center;
+}
+.confirm-modal .sad-face { font-size: 32px; margin-bottom: 8px; }
+.confirm-modal h3 { margin: 0 0 6px; color: #111827; font-size: 18px; }
+.confirm-modal .msg { margin: 0 0 12px; color: #374151; }
+.confirm-modal .actions { display: flex; justify-content: center; gap: 10px; }
+.btn.subtle-danger { background: #fff; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
+.btn.subtle-danger:hover { background: #fef2f2; }

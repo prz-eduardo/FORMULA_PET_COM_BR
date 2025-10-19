@@ -38,6 +38,14 @@ export class ProductCardV2Component {
     return Math.max(0, price - price * disc / 100);
   }
 
+  // Exibe preço original riscado apenas quando há diferença real (evita float noise)
+  get showOldPrice(): boolean {
+    const orig = this.product?.price ?? 0;
+    const now = this.priceNow ?? 0;
+    const EPS = 0.009; // ~1 centavo
+    return Number.isFinite(orig) && Number.isFinite(now) && (orig - now) > EPS;
+  }
+
   get ratingValue(): number {
     const r = this.product.rating ?? 0;
     if (isNaN(r)) return 0;

@@ -4,22 +4,32 @@
   <section class="hero">
     <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" />
     <div class="hero-overlay">
-      <h1 class="titulo">Loja</h1>
-      <p class="subtitle">Medicamentos, suplementos e cuidados para o seu pet</p>
+      <h1 class="titulo">Formula Pet</h1>
+      <p class="subtitle">Do focinho ao rabinho a dose certa de carinho!💓</p>
     </div>
   </section>
 
-  <div class="filtros card">
+  <div class="filtros card" [class.search-active]="filtro && filtro.trim().length > 0">
       <button class="btn light icon filter" (click)="openFilters()" aria-haspopup="dialog" aria-label="Filtros" title="Filtros">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" stroke="#111827" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
         </svg>
       </button>
-    <div class="cta">
-      <!-- Favoritos só aparece logado -->
+      <!-- Favoritos (esquerda) -->
       <button class="btn light icon icon-only fav-toggle" *ngIf="me" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" aria-label="Mostrar apenas favoritos" title="Favoritos">
         ❤
       </button>
+      <div class="active-badges" *ngIf="activeFiltersDetailed.length">
+        <ng-container *ngFor="let f of activeFiltersDetailed">
+          <button type="button" class="mini-badge closable" (click)="onClearFilter($event, f.key)" [attr.aria-label]="'Remover ' + f.label" [title]="'Remover ' + f.label">
+            {{ f.label }}
+            <span class="x" aria-hidden="true" (click)="onClearFilter($event, f.key)">×</span>
+          </button>
+        </ng-container>
+      </div>
+      <!-- Espaçador para separar lados -->
+      <div class="spacer" aria-hidden="true"></div>
+    <div class="cta">
       <div class="perfil">
         <button #profileBtn class="btn light" (click)="toggleLogin($event)" aria-haspopup="dialog" [attr.aria-expanded]="showLogin">
             {{ me ? '👤 ' + (me?.nome?.split(' ')[0] || 'Cliente') : '👤 Entrar' }}
@@ -34,6 +44,7 @@
 
   <div class="cats" *ngIf="categorias.length">
     <button class="chip" [class.active]="!categoria" (click)="onCategoryChange('')">Todas</button>
+    <button class="chip promo" [class.active]="promoOnly" (click)="selectPromotions()">Promoções</button>
     <button class="chip" *ngFor="let c of categorias" [class.active]="categoria===c.nome" (click)="onCategoryChange(c.nome)">{{ c.nome }} <span class="count">({{ c.produtos }})</span></button>
   </div>
 
@@ -84,11 +95,9 @@
   <div class="filters-modal" *ngIf="showFilters" role="dialog" aria-label="Filtros da loja" (click)="$event.stopPropagation()">
     <header>
       <h3>Filtros</h3>
+      <button class="close-btn" (click)="closeFilters()" aria-label="Fechar filtros" title="Fechar">×</button>
     </header>
     <div class="body">
-      <div class="active-filters" *ngIf="activeFilters.length">
-        <span class="badge" *ngFor="let f of activeFilters">{{ f }}</span>
-      </div>
       <label class="field">Buscar
         <input class="input" type="text" [(ngModel)]="filtroDraft" placeholder="Nome do produto ou termos" />
       </label>

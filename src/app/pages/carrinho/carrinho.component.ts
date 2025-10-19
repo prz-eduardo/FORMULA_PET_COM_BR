@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { StoreService } from '../../services/store.service';
+import { StoreService, ShopProduct } from '../../services/store.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, Receita } from '../../services/api.service';
 import { PrescriptionPickerComponent } from '../../components/prescription-picker/prescription-picker.component';
@@ -15,11 +15,19 @@ import { PrescriptionPickerComponent } from '../../components/prescription-picke
 export class CarrinhoComponent implements OnInit {
   receitasDisponiveis: Receita[] = [];
   carregandoReceitas = false;
+  // Highlights quando carrinho vazio
+  loadingHighlights = false;
+  highlights: ShopProduct[] = [];
+  // Confirm remove modal state
+  showConfirmRemove = false;
+  confirmTargetId: number | null = null;
+  confirmTargetName: string | null = null;
 
   constructor(public store: StoreService, private api: ApiService) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();
+    await this.loadHighlights();
   }
 
   async loadReceitasDisponiveis() {
@@ -40,15 +48,51 @@ export class CarrinhoComponent implements OnInit {
     }
   }
 
+  async loadHighlights() {
+    try {
+      this.loadingHighlights = true;
+      this.highlights = await this.store.loadHomeHighlights();
+    } finally {
+      this.loadingHighlights = false;
+    }
+  }
+
   inc(id: number) {
     const item = this.store.cartSnapshot.find((ci: any) => ci.product.id === id);
     if (item) this.store.updateQuantity(id, item.quantity + 1);
   }
   dec(id: number) {
     const item = this.store.cartSnapshot.find((ci: any) => ci.product.id === id);
-    if (item && item.quantity > 1) this.store.updateQuantity(id, item.quantity - 1);
+    if (!item) return;
+    if (item.quantity > 1) {
+      this.store.updateQuantity(id, item.quantity - 1);
+    } else {
+      // quantity == 1: ask for confirmation to remove
+      this.openConfirmRemove(item.product.id, item.product.name);
+    }
   }
-  remove(id: number) { this.store.removeFromCart(id); }
+  onRequestRemove(id: number) {
+    const item = this.store.cartSnapshot.find((ci: any) => ci.product.id === id);
+    const name = item?.product?.name ?? '';
+    this.openConfirmRemove(id, name);
+  }
+  private openConfirmRemove(id: number, name: string) {
+    this.confirmTargetId = id;
+    this.confirmTargetName = name;
+    this.showConfirmRemove = true;
+  }
+  cancelRemove() {
+    this.showConfirmRemove = false;
+    this.confirmTargetId = null;
+    this.confirmTargetName = null;
+  }
+  confirmRemoveNow() {
+    if (this.confirmTargetId != null) {
+      this.store.removeFromCart(this.confirmTargetId);
+    }
+    this.cancelRemove();
+  }
+  remove(id: number) { this.onRequestRemove(id); }
   clear() { this.store.clearCart(); }
   total() { return this.store.getCartTotals(); }
 
