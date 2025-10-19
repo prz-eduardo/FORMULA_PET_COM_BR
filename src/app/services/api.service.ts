@@ -349,6 +349,12 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoCodigo))}/pagamentos`, body, { headers: { Authorization: `Bearer ${token}` } });
   }
 
+  // Validação de carrinho (preços/estoque) — ajuste a rota conforme seu backend
+  validarCarrinho(token: string | undefined, body: { itens: Array<{ id: number; quantidade: number }> }) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post<any>(`${this.baseUrl}/carrinho/validar`, body, { headers });
+  }
+
   // Favoritar/Desfavoritar produto (toggle). Backend deve reconhecer o token do cliente.
   // Resposta esperada genérica: { is_favorited?: boolean, favorited?: boolean, favoritos?: number }
   toggleFavorite(productId: number, token: string) {

@@ -185,7 +185,7 @@
       <a class="btn create-account full" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
     </div>
     <div class="popover-body" *ngIf="me">
-      <div class="welcome">Bem-vindo, {{ me?.nome?.split(' ')[0] }}!</div>
+      <div class="welcome">Bem-vindo!</div>
       <div class="divider"></div>
       <a class="btn light full" routerLink="/area-cliente">Ir para Área do Cliente</a>
       <button class="btn" (click)="logout()">Sair</button>

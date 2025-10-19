@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 // import { SwiperTopoComponent } from '../../swiper-topo/swiper-topo.component';
 // import { HeroComponent } from '../../hero/hero.component';
-import { ProductPreviewComponent } from '../../product-preview/product-preview.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { StoreService, ShopProduct } from '../../services/store.service';
@@ -22,7 +21,6 @@ import { CurrencyPipe } from '@angular/common';
     CommonModule,
   // SwiperTopoComponent,
   // HeroComponent,
-    ProductPreviewComponent,
     FooterComponent,
     NavmenuComponent,
     RouterLink,

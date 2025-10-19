@@ -430,4 +430,10 @@ export class StoreService {
     }
     return null;
   }
+
+  // Replace entire cart (silent)
+  setCart(cart: CartItem[]) {
+    this.cartSubject.next(cart);
+    this.persistCart(cart);
+  }
 }

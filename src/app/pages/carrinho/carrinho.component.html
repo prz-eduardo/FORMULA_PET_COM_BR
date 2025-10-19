@@ -6,12 +6,33 @@
   </h1>
 
   <div class="layout" *ngIf="(store.cart$ | async)?.length; else vazio">
-  <div class="card itens highlighted">
+  <div class="card warn" *ngIf="!validandoCarrinho && avisosCarrinho?.length">
+    <ul>
+      <li *ngFor="let m of avisosCarrinho">{{ m }}</li>
+    </ul>
+  </div>
+    <div class="card itens highlighted">
+      <div class="corner-loader" *ngIf="validandoCarrinho" title="Conferindo preços e estoque" aria-live="polite"></div>
       <div class="item" *ngFor="let it of (store.cart$ | async)">
       <img [src]="it.product.image" alt="{{ it.product.name }}" />
       <div class="info">
         <div class="nome">{{ it.product.name }}</div>
-        <div class="preco">{{ store.getPriceWithDiscount(it.product) | currency:'BRL' }}</div>
+        <div class="precos">
+          <ng-container *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
+            <span class="de" *ngIf="p.final < p.unit">{{ p.unit | currency:'BRL' }}</span>
+            <span class="por">{{ p.final | currency:'BRL' }}</span>
+            <span class="off-chip" *ngIf="p.unit > p.final">-{{ ((p.unit - p.final) / p.unit) * 100 | number:'1.0-0' }}%</span>
+          </ng-container>
+        </div>
+        <div class="promo-count" *ngIf="getPromotion(it.product.id) as promo">
+          <span class="promo-name" *ngIf="promo?.nome">{{ promo.nome }}</span>
+          <span class="promo-timer" *ngIf="fmtCountdown(promoEndsInMs(it.product.id)) as left">Termina em {{ left }}</span>
+        </div>
+        <div class="linha-desconto" *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
+          <ng-container *ngIf="getLineDiscount(it.product.id, it.quantity, p.unit, p.final) as ld">
+            <span class="save" *ngIf="ld > 0">Você economiza {{ ld | currency:'BRL' }} neste item</span>
+          </ng-container>
+        </div>
         <div class="qtd">
           <button (click)="dec(it.product.id)">-</button>
           <span>{{ it.quantity }}</span>
@@ -134,15 +155,45 @@
       </div>
       <div class="card resumo">
         <h3>Resumo do pedido</h3>
+        <div class="promo-banner" *ngIf="validarTotals as vt" [hidden]="!(vt.discount_total && vt.discount_total > 0)">
+          <span class="emoji" aria-hidden="true">🎉</span>
+          <span>Você está economizando <strong>{{ vt.discount_total | currency:'BRL' }}</strong> com as promoções ativas!</span>
+        </div>
         <div class="totais">
-          <div>Itens: {{ total().count }}</div>
-          <div>Subtotal: {{ total().subtotal | currency:'BRL' }}</div>
-          <div *ngIf="entregaModo==='entrega'" class="frete">Frete: {{ freteValor | currency:'BRL' }}</div>
-          <div class="grand">Total: {{ total().total | currency:'BRL' }}</div>
-          <div class="grand" *ngIf="entregaModo==='entrega'">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
+          <ng-container *ngIf="totalsNorm as tn; else legacyTotals">
+            <div>Itens: {{ tn.item_count ?? total().count }}</div>
+            <div>Subtotal original: {{ (tn.original_subtotal ?? total().subtotal) | currency:'BRL' }}</div>
+            <div class="discount" *ngIf="tn.discount_total && tn.discount_total > 0">Descontos: -{{ tn.discount_total | currency:'BRL' }}</div>
+            <div>Itens (após descontos): {{ (tn.items_total ?? total().subtotal) | currency:'BRL' }}</div>
+            <div class="frete" *ngIf="entregaModo==='entrega'">Frete: {{ (tn.frete_total ?? freteValor) | currency:'BRL' }}</div>
+            <div class="discount" *ngIf="tn.coupon_total && tn.coupon_total > 0">Cupom: -{{ tn.coupon_total | currency:'BRL' }}</div>
+            <div class="grand">Total: {{ (tn.grand_total ?? totalComFrete) | currency:'BRL' }}</div>
+          </ng-container>
+          <ng-template #legacyTotals>
+            <div>Itens: {{ total().count }}</div>
+            <div>Subtotal: {{ total().subtotal | currency:'BRL' }}</div>
+            <ng-container *ngIf="validarTotals as vt2">
+              <div class="discount" *ngIf="vt2.discount_total && vt2.discount_total > 0">Descontos: -{{ vt2.discount_total | currency:'BRL' }}</div>
+            </ng-container>
+            <div class="frete" *ngIf="entregaModo==='entrega'">Frete: {{ freteValor | currency:'BRL' }}</div>
+            <div class="grand">Total: {{ totalComFrete | currency:'BRL' }}</div>
+          </ng-template>
         </div>
         <div class="acoes">
-          <button class="btn primary" [disabled]="!store.isCheckoutAllowed()" (click)="irParaCheckout()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar compra</button>
+          <button class="btn primary" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar pedido' }}</button>
+        </div>
+        <div class="pagamento" *ngIf="pedidoCodigo">
+          <h4>Pagamento</h4>
+          <div class="linha-pag">
+            <label for="metodo">Método</label>
+            <select id="metodo" [(ngModel)]="pagamentoMetodo">
+              <option *ngFor="let p of pagamentoOpcoes" [value]="p.metodo">{{ p.label || p.metodo }}</option>
+            </select>
+          </div>
+          <div class="linha-pag acoes">
+            <button class="btn" [disabled]="pagando" (click)="pagarPedido()">{{ pagando ? 'Processando...' : 'Pagar' }}</button>
+          </div>
+          <div class="muted" *ngIf="pagamentoStatus">Status: {{ pagamentoStatus }}</div>
         </div>
       </div>
     </div>
@@ -187,7 +238,7 @@
         <span>{{ total().total | currency:'BRL' }}</span>
         <small class="count">{{ total().count }} itens</small>
       </div>
-  <button class="btn primary" aria-label="Finalizar compra" [disabled]="!store.isCheckoutAllowed()" (click)="irParaCheckout()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar</button>
+      <button class="btn primary" aria-label="Finalizar" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar' }}</button>
     </div>
   </div>
 

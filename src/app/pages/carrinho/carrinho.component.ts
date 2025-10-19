@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { Component, OnInit, Inject } from '@angular/core';
+import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
 import { StoreService, ShopProduct } from '../../services/store.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, Receita } from '../../services/api.service';
@@ -24,6 +25,18 @@ export class CarrinhoComponent implements OnInit {
   showConfirmRemove = false;
   confirmTargetId: number | null = null;
   confirmTargetName: string | null = null;
+  // Validação de carrinho no backend
+  validandoCarrinho = false;
+  avisosCarrinho: string[] = [];
+  validarTotals: { subtotal: number; discount_total: number; total: number; item_count: number } | null = null;
+  validarErrors: string[] = [];
+  // Totais normalizados (novo esquema)
+  totalsNorm: { original_subtotal?: number; items_total?: number; discount_total?: number; grand_total?: number; item_count?: number; coupon_total?: number; frete_total?: number } | null = null;
+  // Dados de validação por item (preço/linha/promo) indexados por produto_id
+  validarPorItem = new Map<number, { price?: { unit: number; final: number; discountUnit?: number }, line?: { subtotal: number; discount: number }, promotion?: any }>();
+  // Countdown
+  nowTs = Date.now();
+  private countdownTimer?: any;
 
   // Entrega/Retirada
   entregaModo: 'retirada' | 'entrega' = 'entrega';
@@ -39,6 +52,15 @@ export class CarrinhoComponent implements OnInit {
   freteOrigem?: { cep: string; endereco?: string; cidade?: string; uf?: string };
   freteDestino?: { cep: string; city?: string; state?: string; neighborhood?: string; street?: string; fonte?: string };
   carregandoFrete = false;
+  // Pedido e pagamento
+  criandoPedido = false;
+  pedidoCodigo?: string;
+  pagamentoOpcoes: Array<{ metodo: string; label?: string; detalhes?: any }> = [
+    { metodo: 'pix', label: 'PIX' }
+  ];
+  pagamentoMetodo: string = 'pix';
+  pagando = false;
+  pagamentoStatus?: 'pendente'|'pago'|'falhou';
   // CEP digitado para cálculo de frete
   cepInput: string = '';
   lojaInfo = {
@@ -52,24 +74,176 @@ export class CarrinhoComponent implements OnInit {
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', nome: 'Casa', tipo: 'casa'
   };
 
-  constructor(public store: StoreService, private api: ApiService, private router: Router) {}
+  // Revalidação do carrinho após mudanças de quantidade
+  private revalidateTimer?: any;
+  private needsRevalidate = false;
+
+  constructor(public store: StoreService, private api: ApiService, private router: Router, @Inject(PLATFORM_ID) private platformId: Object) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();
     await this.loadHighlights();
+    await this.validarCarrinhoComBackend();
     await this.loadEnderecos();
     // Se já estiver em modo entrega e há endereços, seleciona o primeiro e calcula
     if (this.entregaModo === 'entrega' && this.enderecos?.length) {
       this.enderecoSelecionado = this.enderecos[0];
       this.calcularFrete();
     }
+    // Atualiza relógio para contagens regressivas de promoções (apenas no browser)
+    if (isPlatformBrowser(this.platformId)) {
+      this.countdownTimer = setInterval(() => { this.nowTs = Date.now(); }, 1000);
+    }
+  }
+  ngOnDestroy() { if (this.countdownTimer) clearInterval(this.countdownTimer); }
+  private getToken(): string | undefined { return isPlatformBrowser(this.platformId) ? (localStorage.getItem('token') || undefined) : undefined; }
+  private getUserType(): string | undefined { return isPlatformBrowser(this.platformId) ? (localStorage.getItem('userType') || undefined) : undefined; }
+
+  // Conversa com o backend para validar preços/estoque do carrinho
+  async validarCarrinhoComBackend() {
+    try {
+      this.validandoCarrinho = true;
+  const token = this.getToken();
+      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, quantidade: ci.quantity }));
+      if (!itens.length) return;
+      const res = await this.api.validarCarrinho(token, { itens }).toPromise();
+      // Esperado do back (documentado pelo usuário):
+      // ok, itens: [{ produto_id, nome, tipo, quantidade, price: { unit, final, discountUnit }, line: { subtotal, discount }, promotion, available, stockInfo, ok }],
+      // totals: { subtotal, discount_total, total, item_count }, errors, timestamp
+      const mapa = new Map<number, any>();
+      (res?.itens || []).forEach((i: any) => mapa.set(Number(i.produto_id ?? i.id), i));
+      // Atualiza cache de validação por item para UI rica
+      this.validarPorItem.clear();
+      for (const it of (res?.itens || [])) {
+        const key = Number(it.produto_id ?? it.id);
+        this.validarPorItem.set(key, {
+          price: it.price ? { unit: Number(it.price.unit), final: Number(it.price.final), discountUnit: Number(it.price.discountUnit || 0) } : undefined,
+          line: it.line ? { subtotal: Number(it.line.subtotal), discount: Number(it.line.discount || 0) } : undefined,
+          promotion: it.promotion || null
+        });
+      }
+      const updated = [] as typeof this.store.cartSnapshot;
+      const removidos: string[] = [];
+      for (const ci of this.store.cartSnapshot) {
+        const v = mapa.get(ci.product.id);
+        if (!v) { updated.push(ci); continue; }
+        if (v.ok === false || v.available === false) {
+          removidos.push(v.nome || ci.product.name || `#${ci.product.id}`);
+          continue;
+        }
+        const novo: typeof ci = { ...ci };
+        // Preço unitário final e desconto unitário
+        const unit = Number(v?.price?.unit ?? ci.product.price);
+        const finalUnit = Number(v?.price?.final ?? unit);
+        const discountUnit = Number(v?.price?.discountUnit ?? 0);
+        // Ajusta produto: price e promoPrice coerentes
+        const newProduct = { ...novo.product };
+        newProduct.price = unit;
+        newProduct.promoPrice = finalUnit !== unit ? finalUnit : null;
+        // Se o back mandou um desconto unitário, preserva promoPrice
+        if (discountUnit > 0 && finalUnit === unit - discountUnit) {
+          newProduct.promoPrice = finalUnit;
+        }
+        // Quantidade conforme validado
+        const quantidade = Number(v.quantidade ?? novo.quantity);
+        novo.quantity = Math.max(0, quantidade);
+        novo.product = newProduct;
+        updated.push(novo);
+      }
+      this.store.setCart(updated);
+      // Totais e erros/avisos
+  this.validarTotals = res?.totals || null;
+  this.totalsNorm = this.normalizeTotals(res?.totals);
+      this.validarErrors = Array.isArray(res?.errors) ? res.errors : [];
+      const msgs = [] as string[];
+      if (removidos.length) msgs.push(`Itens removidos por indisponibilidade: ${removidos.join(', ')}`);
+      this.avisosCarrinho = msgs;
+      // Não recalcula frete aqui para não quebrar UX enquanto valida; mantém dados atuais
+    } catch {
+      // silencioso; mantém carrinho local
+    } finally {
+      this.validandoCarrinho = false;
+      // Se houve alteração durante a validação, dispara novamente
+      if (this.needsRevalidate) {
+        this.needsRevalidate = false;
+        this.validarCarrinhoComBackend();
+      }
+    }
+  }
+
+  // Normaliza totalizações vindas do backend (aceita esquema antigo e novo)
+  private normalizeTotals(t: any): { original_subtotal?: number; items_total?: number; discount_total?: number; grand_total?: number; item_count?: number; coupon_total?: number; frete_total?: number } | null {
+    if (!t) return null;
+    const num = (v: any) => (typeof v === 'number' ? v : (v != null ? Number(v) : undefined));
+    const hasNew = (t.original_subtotal != null) || (t.items_total != null) || (t.grand_total != null);
+    if (hasNew) {
+      return {
+        original_subtotal: num(t.original_subtotal),
+        items_total: num(t.items_total),
+        discount_total: num(t.discount_total),
+        grand_total: num(t.grand_total),
+        item_count: num(t.item_count),
+        coupon_total: num(t.coupon_total ?? t.cupom_total),
+        frete_total: num(t.frete_total)
+      };
+    }
+    // Esquema antigo: { subtotal, total, discount_total, item_count }
+    const subtotal = num(t.subtotal);
+    const total = num(t.total);
+    return {
+      original_subtotal: subtotal,
+      items_total: total ?? subtotal,
+      discount_total: num(t.discount_total),
+      grand_total: total ?? subtotal,
+      item_count: num(t.item_count),
+      coupon_total: num(t.coupon_total ?? t.cupom_total),
+      frete_total: num(t.frete_total)
+    };
+  }
+
+  // Helpers para UI de promoção/desconto
+  getUnitPrices(prodId: number, fallbackPrice: number, fallbackPromo?: number | null) {
+    const v = this.validarPorItem.get(prodId);
+    const unit = v?.price?.unit ?? fallbackPrice;
+    const final = v?.price?.final ?? (fallbackPromo ?? fallbackPrice);
+    const discountUnit = Math.max(0, (v?.price?.discountUnit ?? (unit - final)) || 0);
+    return { unit, final, discountUnit };
+  }
+  getLineDiscount(prodId: number, qty: number, unit: number, final: number) {
+    const v = this.validarPorItem.get(prodId);
+    if (v?.line?.discount != null) return Number(v.line.discount);
+    const perUnit = Math.max(0, unit - final);
+    return perUnit * qty;
+  }
+  getPromotion(prodId: number) {
+    return this.validarPorItem.get(prodId)?.promotion;
+  }
+  promoEndsInMs(prodId: number): number | null {
+    const promo = this.getPromotion(prodId);
+    if (!promo?.fim) return null;
+    const end = new Date(promo.fim).getTime();
+    const diff = end - this.nowTs;
+    return diff > 0 ? diff : 0;
+  }
+  fmtCountdown(ms: number | null) {
+    if (ms == null) return '';
+    if (ms <= 0) return 'terminou';
+    const s = Math.floor(ms / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const ss = s % 60;
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m ${ss}s`;
+    if (m > 0) return `${m}m ${ss}s`;
+    return `${ss}s`;
   }
 
   async loadReceitasDisponiveis() {
     try {
       this.carregandoReceitas = true;
-      const token = localStorage.getItem('token');
-      const userType = localStorage.getItem('userType');
+      const token = this.getToken();
+      const userType = this.getUserType();
       if (!token || userType !== 'cliente') { this.receitasDisponiveis = []; return; }
       // Se o backend suportar, peça apenas receitas disponíveis e do cliente logado
       const me = await this.api.getClienteMe(token).toPromise();
@@ -94,13 +268,14 @@ export class CarrinhoComponent implements OnInit {
 
   inc(id: number) {
     const item = this.store.cartSnapshot.find((ci: any) => ci.product.id === id);
-    if (item) this.store.updateQuantity(id, item.quantity + 1);
+    if (item) { this.store.updateQuantity(id, item.quantity + 1); this.scheduleRevalidate(); }
   }
   dec(id: number) {
     const item = this.store.cartSnapshot.find((ci: any) => ci.product.id === id);
     if (!item) return;
     if (item.quantity > 1) {
       this.store.updateQuantity(id, item.quantity - 1);
+      this.scheduleRevalidate();
     } else {
       // quantity == 1: ask for confirmation to remove
       this.openConfirmRemove(item.product.id, item.product.name);
@@ -126,10 +301,21 @@ export class CarrinhoComponent implements OnInit {
       this.store.removeFromCart(this.confirmTargetId);
     }
     this.cancelRemove();
+    this.scheduleRevalidate();
   }
   remove(id: number) { this.onRequestRemove(id); }
-  clear() { this.store.clearCart(); }
+  clear() { this.store.clearCart(); this.scheduleRevalidate(); }
   total() { return this.store.getCartTotals(); }
+
+  private scheduleRevalidate(delayMs: number = 450) {
+    this.needsRevalidate = true;
+    if (this.revalidateTimer) clearTimeout(this.revalidateTimer);
+    this.revalidateTimer = setTimeout(() => {
+      if (this.validandoCarrinho) return; // aguardará finally para reexecutar
+      this.needsRevalidate = false;
+      this.validarCarrinhoComBackend();
+    }, delayMs);
+  }
 
   onAttachPrescriptionId(productId: number, value: string) {
     const id = value.trim();
@@ -159,8 +345,8 @@ export class CarrinhoComponent implements OnInit {
   // Endereços e frete
   async loadEnderecos() {
     try {
-      const token = localStorage.getItem('token');
-      const userType = localStorage.getItem('userType');
+      const token = this.getToken();
+      const userType = this.getUserType();
       if (!token || userType !== 'cliente') { this.enderecos = []; return; }
       this.enderecos = (await this.api.listEnderecosCliente(token).toPromise()) || [];
       if (this.enderecos?.length) {
@@ -219,7 +405,7 @@ export class CarrinhoComponent implements OnInit {
 
   async cadastrarEndereco(novo: { cep: string; logradouro: string; numero: string; complemento?: string; bairro: string; cidade: string; estado: string; }) {
     try {
-      const token = localStorage.getItem('token') || '';
+      const token = this.getToken() || '';
       const payload = { ...novo, cep: (novo.cep || '').replace(/\D/g, '') };
       const created = await this.api.createEnderecoCliente(token, payload).toPromise();
       this.enderecos = [created, ...this.enderecos];
@@ -265,22 +451,22 @@ export class CarrinhoComponent implements OnInit {
   }
 
   async calcularFrete() {
-    this.freteValor = 0; this.fretePrazo = undefined;
-    this.freteOrigem = undefined; this.freteDestino = undefined;
-    this.carregandoFrete = true;
-    // Sempre oferece retirada na loja como primeira opção, mesmo sem cálculo externo
     const retiradaBase = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco };
-    this.freteOpcoes = [retiradaBase];
-    if (!this.freteSelecionado) this.freteSelecionado = retiradaBase;
+    const prevSel = this.freteSelecionado;
+    const prevOpcoes = (this.freteOpcoes || []).filter(o => o && o.servico !== 'retirada_loja');
+    // Mostra imediatamente a opção de retirada e mantém as opções atuais enquanto carrega
+    this.freteOpcoes = [retiradaBase, ...prevOpcoes];
+    if (!prevSel) this.freteSelecionado = retiradaBase;
+    this.carregandoFrete = true;
     try {
-      if (this.entregaModo !== 'entrega') return;
+      if (this.entregaModo !== 'entrega') { this.carregandoFrete = false; return; }
       // Auto-seleciona o primeiro endereço se nenhum estiver selecionado
       if (!this.enderecoSelecionado && this.enderecos?.length) this.enderecoSelecionado = this.enderecos[0];
       // Define CEP a partir do input ou do endereço selecionado
       const cep = (this.cepInput || this.enderecoSelecionado?.cep || '').trim();
-      if (!cep) return;
-      const token = localStorage.getItem('token') || undefined;
-      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product) }));
+      if (!cep) { this.carregandoFrete = false; return; }
+  const token = this.getToken();
+  const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product) }));
       const resp = await this.api.cotarFrete(token, { cep, itens }).toPromise();
       // Suporta tanto resposta antiga { valor, prazo } quanto nova com { origem, destino, pacote, opcoes }
       if (resp) {
@@ -293,9 +479,10 @@ export class CarrinhoComponent implements OnInit {
           // Garante retirada no topo
           const semRetirada = opcoes.filter(o => o.servico !== 'retirada_loja');
           this.freteOpcoes = [retiradaBase, ...semRetirada];
-          // Seleciona a mais barata por padrão
-          if (this.freteOpcoes.length) {
-            this.freteSelecionado = this.freteOpcoes.slice().sort((a,b) => a.valor - b.valor)[0];
+          // Mantém seleção anterior se ainda existir; senão, mantém a atual; como fallback, a mais barata
+          const keep = prevSel && this.freteOpcoes.find(o => o.servico === prevSel.servico && o.nome === prevSel.nome);
+          this.freteSelecionado = keep || prevSel || (this.freteOpcoes.slice().sort((a,b) => a.valor - b.valor)[0]);
+          if (this.freteSelecionado) {
             this.freteValor = Math.max(0, this.freteSelecionado.valor);
             this.fretePrazo = this.freteSelecionado.prazo_dias != null ? `${this.freteSelecionado.prazo_dias} dia${this.freteSelecionado.prazo_dias === 1 ? '' : 's'}` : undefined;
           }
@@ -303,8 +490,9 @@ export class CarrinhoComponent implements OnInit {
           // Resposta antiga
           const antigo = { servico: 'entrega', nome: 'Entrega', prazo_dias: undefined as any, valor: Math.max(0, (resp as any).valor) };
           this.freteOpcoes = [retiradaBase, antigo as any];
-          this.freteSelecionado = antigo as any;
-          this.freteValor = antigo.valor;
+          const keep = prevSel && this.freteOpcoes.find(o => o.servico === prevSel.servico && o.nome === prevSel.nome);
+          this.freteSelecionado = (keep || antigo) as any;
+          this.freteValor = Math.max(0, (this.freteSelecionado?.valor as number) || 0);
           this.fretePrazo = (resp as any).prazo;
         }
       }
@@ -315,8 +503,9 @@ export class CarrinhoComponent implements OnInit {
       const estimado = Math.min(40, Math.max(12, subtotal * 0.08));
       const estimativa = { servico: 'estimativa_entrega', nome: 'Entrega estimada', prazo_dias: undefined as any, valor: Math.round(estimado * 100) / 100 };
       this.freteOpcoes = [retiradaBase, estimativa as any];
-      this.freteSelecionado = estimativa as any;
-      this.freteValor = estimativa.valor;
+      const keep = prevSel && this.freteOpcoes.find(o => o.servico === prevSel.servico && o.nome === prevSel.nome);
+  this.freteSelecionado = (keep || estimativa) as any;
+  this.freteValor = Math.max(0, (this.freteSelecionado?.valor as number) || 0);
       this.fretePrazo = '3–7 dias úteis';
     } finally {
       this.carregandoFrete = false;
@@ -324,9 +513,10 @@ export class CarrinhoComponent implements OnInit {
   }
 
   get totalComFrete() {
-    const t = this.store.getCartTotals();
     const freteSel = this.freteSelecionado?.valor ?? this.freteValor;
-    return t.subtotal + (this.entregaModo === 'entrega' ? (freteSel || 0) : 0);
+    const items = this.totalsNorm?.items_total ?? this.store.getCartTotals().subtotal;
+    const cupom = this.totalsNorm?.coupon_total ?? 0;
+    return items + (this.entregaModo === 'entrega' ? (freteSel || 0) : 0) - (cupom || 0);
   }
 
   selecionarOpcaoFrete(opt: { servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string }) {
@@ -357,5 +547,82 @@ export class CarrinhoComponent implements OnInit {
       freteDestino: this.freteDestino
     });
     this.router.navigate(['/checkout']);
+  }
+
+  // Finaliza pedido direto do carrinho (POST) e aguarda resposta
+  async finalizarPedido() {
+    if (!this.store.isCheckoutAllowed()) return;
+    try {
+      this.criandoPedido = true;
+  const token = this.getToken() || '';
+      const itens = this.store.cartSnapshot.map(ci => ({
+        produto_id: ci.product.id,
+        nome: ci.product.name,
+        quantidade: ci.quantity,
+        preco_unit: this.store.getPriceWithDiscount(ci.product),
+        prescriptionId: ci.prescriptionId,
+        prescriptionFileName: ci.prescriptionFileName,
+      }));
+      // Modo e fallback
+      let modo: 'retirada'|'entrega' = this.entregaModo;
+      let endereco = this.enderecoSelecionado;
+      let freteSel = this.freteSelecionado || (this.freteValor ? { servico: 'entrega', nome: 'Entrega', prazo_dias: undefined as any, valor: this.freteValor } : null);
+      if (modo === 'entrega' && (!endereco || !freteSel)) {
+        modo = 'retirada';
+        endereco = null;
+        freteSel = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco } as any;
+      }
+      const payload: any = {
+        itens,
+        entrega: {
+          modo,
+          endereco,
+          frete: freteSel,
+          opcoes: this.freteOpcoes || [],
+          origem: this.freteOrigem || undefined,
+          destino: this.freteDestino || (endereco ? { cep: endereco?.cep, city: endereco?.cidade, state: endereco?.estado, neighborhood: endereco?.bairro, street: endereco?.logradouro } : undefined),
+        },
+        totais: {
+          original_subtotal: this.totalsNorm?.original_subtotal ?? this.store.getCartTotals().subtotal,
+          items_total: this.totalsNorm?.items_total ?? this.store.getCartTotals().subtotal,
+          discount_total: this.totalsNorm?.discount_total ?? 0,
+          coupon_total: this.totalsNorm?.coupon_total ?? 0,
+          frete: modo === 'entrega' ? (freteSel?.valor || 0) : 0,
+          grand_total: this.totalComFrete,
+          item_count: this.totalsNorm?.item_count ?? this.store.getCartTotals().count,
+        }
+      };
+      const res = await this.api.criarPedido(token, payload).toPromise();
+      this.pedidoCodigo = res?.codigo || res?.id || res?.numero || undefined;
+      // Carrega opções de pagamento se disponíveis
+      const opcoes = res?.paymentOptions || res?.pagamento_opcoes || res?.opcoesPagamento || [];
+      if (Array.isArray(opcoes) && opcoes.length) {
+        this.pagamentoOpcoes = opcoes.map((o: any) => ({ metodo: o.metodo || o.method || String(o), label: o.label || o.nome || String(o), detalhes: o }));
+        this.pagamentoMetodo = this.pagamentoOpcoes[0].metodo;
+      }
+    } catch (e) {
+      // feedback simples; ToastService está disponível via StoreService? já utilizado em StoreService. Mantemos silencioso aqui ou integramos toast quando necessário.
+    } finally {
+      this.criandoPedido = false;
+    }
+  }
+
+  async pagarPedido() {
+    if (!this.pedidoCodigo) return;
+    try {
+      this.pagando = true;
+  const token = this.getToken() || '';
+      const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
+        metodo: this.pagamentoMetodo || 'pix',
+        valor: this.totalComFrete,
+      }).toPromise();
+      await this.api.atualizarPedido(token, this.pedidoCodigo, { status: 'pago', pagamento }).toPromise();
+      this.pagamentoStatus = 'pago';
+      this.store.clearCart();
+    } catch (e) {
+      this.pagamentoStatus = 'falhou';
+    } finally {
+      this.pagando = false;
+    }
   }
 }

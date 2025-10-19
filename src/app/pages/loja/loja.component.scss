@@ -7,7 +7,7 @@
 .card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
 .filtros { display: flex; gap: 8px; align-items: center; justify-content: flex-start; margin-bottom: 8px; -webkit-backdrop-filter: saturate(120%); backdrop-filter: saturate(120%); position: relative; z-index: 10;
 	.spacer { flex: 1 1 auto; }
-	.cta { position: relative; z-index: 5; display: flex; gap: 6px; align-items: center; padding: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.05); margin-left: auto; white-space: nowrap; }
+	.cta { position: relative; z-index: 5; display: flex; gap: 6px; align-items: center; padding: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.05); margin-left: auto; white-space: nowrap; min-width: 0; }
 	.perfil { position: relative; }
 		.popover { position: absolute; top: 48px; left: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.12); padding: 12px; width: 260px; z-index: 2000; }
 	.popover-header { font-weight: 700; margin-bottom: 8px; color: #111827; }
@@ -219,7 +219,20 @@ app-footer { display: block; margin-top: 16px; }
 
 @media (max-width: 640px) {
 	.filters-modal .body { padding-right: 16px; }
+	/* Evita vazamento horizontal dos inputs no mobile */
+	.filters-modal { width: calc(100vw - 16px); }
+	.filters-modal .body { overflow-x: hidden; }
+	.filters-modal .body .two-cols { grid-template-columns: 1fr; }
+	.filters-modal .field .input, .filters-modal .field input.input, .filters-modal .field select.input { width: 100%; min-width: 0; box-sizing: border-box; }
+
+	/* Filtros top: evita overflow da CTA */
+	.filtros { flex-wrap: wrap; }
+	.filtros .cta { white-space: normal; flex-wrap: wrap; gap: 6px; padding: 6px; }
+	.filtros .cta .btn { min-width: auto; }
 
 	/* Modal buttons wider on mobile */
 	.login-popover .popover-body .btn { width: 90% !important; margin-left: auto; margin-right: auto; }
+
+	/* Reduz botão 'Ir para Área do Cliente' no mobile */
+	.login-popover .btn.light.full, .login-popover a.btn.full { min-height: 34px; height: 34px; padding: 6px 10px; font-size: 13px; }
 }

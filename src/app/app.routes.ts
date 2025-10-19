@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { CheckoutComponent } from './pages/checkout/checkout.component';
 import { HomeComponent } from './pages/home/home.component';
 import { LoginComponent } from './pages/restrito/login/login.component';
 import { AdminComponent } from './pages/restrito/admin/admin.component';
@@ -53,15 +52,16 @@ export const routes: Routes = [
   { path: 'produto/:id', loadComponent: () => import('./product-details/product-details.component').then(m => m.ProductDetailsComponent)},
   { path: 'favoritos', loadComponent: () => import('./pages/favoritos/favoritos.component').then(m => m.FavoritosComponent)},
   { path: 'carrinho', loadComponent: () => import('./pages/carrinho/carrinho.component').then(m => m.CarrinhoComponent)},
-  { path: 'checkout', component: CheckoutComponent},
+  // Checkout foi migrado para finalização no carrinho; rota removida enquanto o componente não é utilizado
   {path: 'restrito/admin/guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/estoque', loadComponent: () => import('./pages/restrito/admin/estoque/estoque.component').then(m => m.EstoqueAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/formulas', loadComponent: () => import('./pages/restrito/admin/formulas/formulas.component').then(m => m.FormulasAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/promocoes', loadComponent: () => import('./pages/restrito/admin/promocoes/promocoes.component').then(m => m.AdminPromocoesComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard]},
-  {path: 'restrito/admin/ativos', loadComponent: async () => (await import('./pages/restrito/admin/ativos/ativos.component')).AtivosAdminComponent, canActivate: [authGuard]},
-  {path: 'restrito/admin/insumos', loadComponent: async () => (await import('./pages/restrito/admin/insumos/insumos.component')).InsumosAdminComponent, canActivate: [authGuard]},
+  // Rotas abaixo removidas temporariamente pois os componentes não existem no workspace atual
+  // {path: 'restrito/admin/ativos', loadComponent: async () => (await import('./pages/restrito/admin/ativos/ativos.component')).AtivosAdminComponent, canActivate: [authGuard]},
+  // {path: 'restrito/admin/insumos', loadComponent: async () => (await import('./pages/restrito/admin/insumos/insumos.component')).InsumosAdminComponent, canActivate: [authGuard]},
   {path: 'restrito/admin/usuarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'admin' }, canActivate: [authGuard]},
   {path: 'restrito/admin/clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente' }, canActivate: [authGuard]},
   {path: 'restrito/admin/veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet' }, canActivate: [authGuard]},
