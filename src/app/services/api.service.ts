@@ -338,6 +338,17 @@ export class ApiService {
     return this.http.get<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(codigo)}`, { headers });
   }
 
+  // Pedidos e Pagamentos (checkout)
+  criarPedido(token: string, body: any) {
+    return this.http.post<any>(`${this.baseUrl}/pedidos`, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+  atualizarPedido(token: string, codigoOuId: string | number, body: any) {
+    return this.http.put<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(codigoOuId))}`, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+  criarPagamento(token: string, pedidoCodigo: string | number, body: any) {
+    return this.http.post<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoCodigo))}/pagamentos`, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
   // Favoritar/Desfavoritar produto (toggle). Backend deve reconhecer o token do cliente.
   // Resposta esperada genérica: { is_favorited?: boolean, favorited?: boolean, favoritos?: number }
   toggleFavorite(productId: number, token: string) {

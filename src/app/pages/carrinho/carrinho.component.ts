@@ -5,6 +5,7 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, Receita } from '../../services/api.service';
 import { PrescriptionPickerComponent } from '../../components/prescription-picker/prescription-picker.component';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-carrinho',
@@ -37,6 +38,7 @@ export class CarrinhoComponent implements OnInit {
   freteSelecionado?: { servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string };
   freteOrigem?: { cep: string; endereco?: string; cidade?: string; uf?: string };
   freteDestino?: { cep: string; city?: string; state?: string; neighborhood?: string; street?: string; fonte?: string };
+  carregandoFrete = false;
   // CEP digitado para cálculo de frete
   cepInput: string = '';
   lojaInfo = {
@@ -50,7 +52,7 @@ export class CarrinhoComponent implements OnInit {
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', nome: 'Casa', tipo: 'casa'
   };
 
-  constructor(public store: StoreService, private api: ApiService) {}
+  constructor(public store: StoreService, private api: ApiService, private router: Router) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();
@@ -200,8 +202,9 @@ export class CarrinhoComponent implements OnInit {
     this.entregaModo = mode;
     if (mode === 'retirada') {
       // Zera frete e destaca retirada
-      this.freteOpcoes = [];
-      this.freteSelecionado = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco };
+      const retiradaBase = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco };
+      this.freteOpcoes = [retiradaBase];
+      this.freteSelecionado = retiradaBase;
       this.freteValor = 0;
       this.fretePrazo = undefined;
     } else {
@@ -263,7 +266,12 @@ export class CarrinhoComponent implements OnInit {
 
   async calcularFrete() {
     this.freteValor = 0; this.fretePrazo = undefined;
-    this.freteOpcoes = []; this.freteSelecionado = undefined; this.freteOrigem = undefined; this.freteDestino = undefined;
+    this.freteOrigem = undefined; this.freteDestino = undefined;
+    this.carregandoFrete = true;
+    // Sempre oferece retirada na loja como primeira opção, mesmo sem cálculo externo
+    const retiradaBase = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco };
+    this.freteOpcoes = [retiradaBase];
+    if (!this.freteSelecionado) this.freteSelecionado = retiradaBase;
     try {
       if (this.entregaModo !== 'entrega') return;
       // Auto-seleciona o primeiro endereço se nenhum estiver selecionado
@@ -281,7 +289,10 @@ export class CarrinhoComponent implements OnInit {
           const r: any = resp as any;
           this.freteOrigem = r.origem;
           this.freteDestino = r.destino;
-          this.freteOpcoes = r.opcoes || [];
+          const opcoes = (r.opcoes || []) as Array<{ servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string }>;
+          // Garante retirada no topo
+          const semRetirada = opcoes.filter(o => o.servico !== 'retirada_loja');
+          this.freteOpcoes = [retiradaBase, ...semRetirada];
           // Seleciona a mais barata por padrão
           if (this.freteOpcoes.length) {
             this.freteSelecionado = this.freteOpcoes.slice().sort((a,b) => a.valor - b.valor)[0];
@@ -290,7 +301,10 @@ export class CarrinhoComponent implements OnInit {
           }
         } else if (typeof (resp as any).valor === 'number') {
           // Resposta antiga
-          this.freteValor = Math.max(0, (resp as any).valor);
+          const antigo = { servico: 'entrega', nome: 'Entrega', prazo_dias: undefined as any, valor: Math.max(0, (resp as any).valor) };
+          this.freteOpcoes = [retiradaBase, antigo as any];
+          this.freteSelecionado = antigo as any;
+          this.freteValor = antigo.valor;
           this.fretePrazo = (resp as any).prazo;
         }
       }
@@ -299,8 +313,13 @@ export class CarrinhoComponent implements OnInit {
       const subtotal = this.store.getCartTotals().subtotal;
       // Estimativa simples: 8% do subtotal, min 12, max 40
       const estimado = Math.min(40, Math.max(12, subtotal * 0.08));
-      this.freteValor = Math.round(estimado * 100) / 100;
+      const estimativa = { servico: 'estimativa_entrega', nome: 'Entrega estimada', prazo_dias: undefined as any, valor: Math.round(estimado * 100) / 100 };
+      this.freteOpcoes = [retiradaBase, estimativa as any];
+      this.freteSelecionado = estimativa as any;
+      this.freteValor = estimativa.valor;
       this.fretePrazo = '3–7 dias úteis';
+    } finally {
+      this.carregandoFrete = false;
     }
   }
 
@@ -325,5 +344,18 @@ export class CarrinhoComponent implements OnInit {
       case 'cobranca': return '🧾';
       default: return '📍';
     }
+  }
+
+  // Ir para checkout: persiste contexto mínimo e navega
+  irParaCheckout() {
+    this.store.setCheckoutContext({
+      entregaModo: this.entregaModo,
+      enderecoSelecionado: this.enderecoSelecionado,
+      freteSelecionado: this.freteSelecionado || (this.freteValor ? { valor: this.freteValor } : null),
+      freteOpcoes: this.freteOpcoes,
+      freteOrigem: this.freteOrigem,
+      freteDestino: this.freteDestino
+    });
+    this.router.navigate(['/checkout']);
   }
 }

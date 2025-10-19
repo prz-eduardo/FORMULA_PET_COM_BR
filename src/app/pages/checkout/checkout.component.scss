@@ -1,0 +1,8 @@
+.checkout-wrap{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.card h3{margin:0 0 8px 0}
+.card.acoes{display:flex;gap:12px;align-items:center}
+.btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+.btn.primary{background:#10b981;border-color:#10b981;color:#fff}
+.btn.success{background:#2563eb;border-color:#2563eb;color:#fff}
+.grand{font-weight:800;font-size:18px}

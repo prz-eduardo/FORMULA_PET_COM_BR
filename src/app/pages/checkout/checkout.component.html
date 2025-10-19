@@ -1,0 +1,68 @@
+<div class="checkout-wrap">
+  <app-navmenu></app-navmenu>
+  <h1>Checkout</h1>
+
+  <div class="card">
+    <h3>Resumo</h3>
+    <div>Subtotal: {{ store.getCartTotals().subtotal | currency:'BRL' }}</div>
+    <div *ngIf="entregaModo==='entrega'">Frete: {{ freteSelecionado?.valor || 0 | currency:'BRL' }}</div>
+    <div class="grand">Total: {{ totalComFrete | currency:'BRL' }}</div>
+  </div>
+
+  <div class="card">
+    <h3>Entrega</h3>
+    <div *ngIf="entregaModo==='retirada'">
+      <div><strong>Retirada na loja</strong></div>
+      <div>{{ lojaInfo.nome }} — {{ lojaInfo.endereco }} — CEP {{ lojaInfo.cep }}</div>
+      <div>Horário: {{ lojaInfo.horario }}</div>
+    </div>
+    <div *ngIf="entregaModo==='entrega'">
+      <div><strong>Endereço de entrega</strong></div>
+      <div *ngIf="enderecoSelecionado; else noEnd">
+        {{ enderecoSelecionado.logradouro }}, {{ enderecoSelecionado.numero }}
+        <span *ngIf="enderecoSelecionado.complemento"> - {{ enderecoSelecionado.complemento }}</span>
+        — {{ enderecoSelecionado.bairro }} — {{ enderecoSelecionado.cidade }}/{{ enderecoSelecionado.estado }} — CEP {{ enderecoSelecionado.cep }}
+      </div>
+      <ng-template #noEnd><em>Nenhum endereço selecionado — será considerada retirada na loja.</em></ng-template>
+      <div class="frete" *ngIf="freteSelecionado">
+        <div>Serviço: {{ freteSelecionado.nome || freteSelecionado.servico }}</div>
+        <div>Valor: {{ freteSelecionado.valor || 0 | currency:'BRL' }}</div>
+        <div *ngIf="freteSelecionado.prazo_dias != null">Prazo: {{ freteSelecionado.prazo_dias }} dia(s)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Etapas</h3>
+    <ol>
+      <li>1. Criar pedido com itens do carrinho</li>
+      <li>2. Realizar pagamento</li>
+      <li>3. Atualizar pedido e registrar pagamento</li>
+    </ol>
+  </div>
+
+  <div class="card" *ngIf="pedidoCodigo">
+    <h3>Pagamento</h3>
+    <div *ngIf="pagamentoOpcoes?.length; else simples">
+      <label for="metodo">Método</label>
+      <select id="metodo" [(ngModel)]="pagamentoMetodo">
+        <option *ngFor="let p of pagamentoOpcoes" [value]="p.metodo">{{ p.label || p.metodo }}</option>
+      </select>
+    </div>
+    <ng-template #simples>
+      <div>Método: {{ pagamentoMetodo | uppercase }}</div>
+    </ng-template>
+  </div>
+
+  <div class="card acoes">
+    <button class="btn" (click)="voltarCarrinho()">Voltar ao carrinho</button>
+    <button class="btn primary" [disabled]="carregando || !!pedidoCodigo" (click)="criarPedido()">Criar pedido</button>
+    <button class="btn success" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">Pagar</button>
+  </div>
+
+  <div class="card" *ngIf="pedidoCodigo">
+    <h3>Pedido</h3>
+    <div>Código do pedido: <strong>{{ pedidoCodigo }}</strong></div>
+    <div>Status pagamento: <strong>{{ pagamentoStatus || 'pendente' }}</strong></div>
+  </div>
+</div>

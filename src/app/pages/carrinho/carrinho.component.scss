@@ -1,7 +1,7 @@
 .carrinho-wrap { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); font-family: 'Inter', sans-serif; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
 .titulo { margin: 0 0 16px; padding-top: 72px; font-size: 28px; font-weight: 800; color: var(--primary, #0ea5e9); text-align: center; display: inline-flex; align-items: center; gap: 10px; }
 .titulo .cart-ico { font-size: 28px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); }
-.card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+.card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); position: relative; z-index: 20; }
 .card.highlighted { border: 2px solid rgba(37,99,235,0.2); box-shadow: 0 8px 24px rgba(37,99,235,0.12); }
 .layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,320px); gap: 16px; align-items: start; max-width: 1200px; margin: 0 auto; box-sizing: border-box; }
 .itens .item { position: relative; display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid #eee; min-width: 0; }
@@ -203,3 +203,11 @@
 .frete .opt .obs { font-size: 12px; color: #6b7280; }
 .frete .opt .valor { font-weight: 900; color: #111827; }
 .frete .opt .prazo { font-size: 12px; color: #6b7280; text-align: right; }
+
+/* Skeleton loaders for freight options */
+.opt.loading { pointer-events: none; }
+.sk { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 6px; height: 14px; }
+.sk-line { height: 12px; width: 180px; margin: 4px 0; }
+.sk-line.sm { width: 120px; height: 10px; }
+.sk-pill { width: 90px; height: 20px; border-radius: 999px; }
+@keyframes sk { 0% { background-position: 100% 0 } 100% { background-position: 0 0 } }

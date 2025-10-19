@@ -68,6 +68,10 @@ export class StoreService {
   private clienteChecked = false;
   private isCliente = false;
 
+  // Simple checkout context to bridge cart -> checkout
+  private checkoutContextSubject = new BehaviorSubject<any | null>(null);
+  checkoutContext$ = this.checkoutContextSubject.asObservable();
+
   constructor(
     private http: HttpClient,
     private api: ApiService,
@@ -411,5 +415,19 @@ export class StoreService {
       if (!ci.product.requiresPrescription) return true;
       return Boolean(ci.prescriptionId || ci.prescriptionFileName);
     });
+  }
+
+  // Checkout context helpers
+  setCheckoutContext(ctx: any) {
+    this.checkoutContextSubject.next(ctx);
+    if (this.isBrowser()) localStorage.setItem('checkoutContext', JSON.stringify(ctx));
+  }
+  getCheckoutContext(): any | null {
+    const ctx = this.checkoutContextSubject.value;
+    if (ctx) return ctx;
+    if (this.isBrowser()) {
+      try { return JSON.parse(localStorage.getItem('checkoutContext') || 'null'); } catch { return null; }
+    }
+    return null;
   }
 }

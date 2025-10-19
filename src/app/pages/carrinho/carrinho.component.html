@@ -99,6 +99,29 @@
               <div class="prazo">{{ op.prazo_dias }} dia{{ op.prazo_dias === 1 ? '' : 's' }}</div>
             </div>
           </div>
+          <!-- Skeleton loaders para opções externas enquanto carrega -->
+          <div class="opt loading" *ngIf="carregandoFrete">
+            <div class="col-1"><span class="bullet"></span></div>
+            <div class="col-2">
+              <div class="sk sk-line"></div>
+              <div class="sk sk-line sm"></div>
+            </div>
+            <div class="col-3">
+              <div class="sk sk-pill"></div>
+              <div class="sk sk-line sm"></div>
+            </div>
+          </div>
+          <div class="opt loading" *ngIf="carregandoFrete">
+            <div class="col-1"><span class="bullet"></span></div>
+            <div class="col-2">
+              <div class="sk sk-line"></div>
+              <div class="sk sk-line sm"></div>
+            </div>
+            <div class="col-3">
+              <div class="sk sk-pill"></div>
+              <div class="sk sk-line sm"></div>
+            </div>
+          </div>
           <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
         </div>
         <ng-template #freteSimples>
@@ -119,7 +142,7 @@
           <div class="grand" *ngIf="entregaModo==='entrega'">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
         </div>
         <div class="acoes">
-          <button class="btn primary" [disabled]="!store.isCheckoutAllowed()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar compra</button>
+          <button class="btn primary" [disabled]="!store.isCheckoutAllowed()" (click)="irParaCheckout()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar compra</button>
         </div>
       </div>
     </div>
@@ -164,7 +187,7 @@
         <span>{{ total().total | currency:'BRL' }}</span>
         <small class="count">{{ total().count }} itens</small>
       </div>
-      <button class="btn primary" aria-label="Finalizar compra" [disabled]="!store.isCheckoutAllowed()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar</button>
+  <button class="btn primary" aria-label="Finalizar compra" [disabled]="!store.isCheckoutAllowed()" (click)="irParaCheckout()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar</button>
     </div>
   </div>
 
