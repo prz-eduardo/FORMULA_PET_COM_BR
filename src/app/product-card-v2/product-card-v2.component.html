@@ -3,7 +3,7 @@
     <img [src]="product.image" [alt]="product.name" width="320" height="200" />
     <div class="badge" *ngIf="product.discount">{{ product.discount }}% OFF</div>
     <div class="tipo" *ngIf="product.tipo">{{ product.tipo }}</div>
-    <button class="fav" *ngIf="supportsFavorites" (click)="toggleFav.emit()" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
+    <button class="fav" *ngIf="supportsFavorites" (click)="onFavClick($event)" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
       <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>
       <span class="count" *ngIf="product.favoritesCount != null">{{ product.favoritesCount }}</span>
     </button>

@@ -18,6 +18,12 @@ export class ProductCardV2Component {
   @Output() add = new EventEmitter<MouseEvent>();
   @Output() toggleFav = new EventEmitter<void>();
 
+  onFavClick(ev: MouseEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.toggleFav.emit();
+  }
+
   get priceNow() {
     const price = this.product.price || 0;
     const disc = this.product.discount || 0;

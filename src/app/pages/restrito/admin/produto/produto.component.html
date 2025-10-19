@@ -24,8 +24,8 @@
     </div>
   </section>
 
-  <!-- STEP 1: Ativo -->
-  <section *ngIf="step()===1" class="step step-ativo">
+  <!-- STEP 1: Fórmula (opcional) -->
+  <section *ngIf="step()===1" class="step step-formula">
     <div class="image-upload">
       <label for="imgUpload">
         <div class="img-preview" *ngIf="form.value.image; else placeholder">
@@ -39,21 +39,59 @@
     </div>
 
     <div class="form-group full-width">
-      <label>Associar Ativo</label>
-      <input type="text" placeholder="Digite para buscar o ativo"
-             [value]="ativoSelecionado?.ativo_nome || ativoQuery()"
-             (input)="onAtivoQueryChange($any($event.target).value)" />
-      <div class="sugestoes" *ngIf="ativosSugestoes.length > 0">
-        <div class="sugestao" *ngFor="let a of ativosSugestoes" (click)="selecionarAtivo(a)">
-          {{ a.ativo_nome }}
+      <label>Este produto usa uma fórmula?</label>
+      <input type="text" placeholder="Buscar fórmula (nome ou forma)"
+        [value]="formulaQuery()"
+        (input)="onFormulaQueryInput($any($event.target).value)" />
+      <div class="sugestoes" *ngIf="(formulasFiltered?.length || 0) > 0">
+        <div class="sugestao" (click)="onFormulaChange(null); form.patchValue({ formulaId: null })">
+          Não, é um produto pronto
+        </div>
+        <div class="sugestao" *ngFor="let f of formulasFiltered"
+             (click)="form.patchValue({ formulaId: f.id }); onFormulaChange(f.id)">
+          {{ f.name }} <span class="muted">• {{ f.form_name || '—' }}</span>
         </div>
       </div>
-      <div class="hint">Escolha um ativo para vincular este produto. Isso ajuda a evitar duplicidades.</div>
+      <div class="hint">Se escolher uma fórmula, vamos buscar os estoques dos ativos dessa fórmula para vincular um lote.</div>
     </div>
 
-    <div class="form-group full-width" *ngIf="ativoSelecionado">
-      <label>Selecionar Lote de Estoque (obrigatório quando há ativo)</label>
-      <div class="estoque-list" *ngIf="estoqueLotes.length; else semEstoque">
+    <div class="form-group full-width" *ngIf="form.value.formulaId">
+      <div class="hint" *ngIf="formulaStatus.missing?.length">Ativos sem lote disponível: {{ missingLabel() }}</div>
+      <div class="availability" *ngIf="formulaStatus.items?.length">
+        <div class="availability-grid">
+          <div class="avail-row header">
+            <div>Ativo</div>
+            <div>Req/Unidade</div>
+            <div>Disponível (conv.)</div>
+            <div>Unidades producíveis</div>
+          </div>
+          <div class="avail-row" *ngFor="let it of formulaStatus.items">
+            <div>{{ it.ativo_nome }}</div>
+            <div>{{ it.required_per_unit }} {{ it.unit_code }}</div>
+            <div>{{ it.available_converted }} {{ it.unit_code }}</div>
+            <div>{{ it.producible_units }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="lots-by-ativo" *ngIf="formulaStatus.lotsByAtivo | keyvalue as kv">
+        <div class="ativo-block" *ngFor="let entry of kv">
+          <h5>Ativo #{{ entry.key }}</h5>
+          <div class="estoque-list">
+            <div class="lote-card" *ngFor="let e of entry.value" (click)="selecionarLote(e)" [class.selected]="estoqueSelecionado?.id === e.id">
+              <div class="lote-select">
+                <div class="meta">
+                  <div><strong>Lote:</strong> {{ e.lote || '—' }}</div>
+                  <div><strong>Qtd:</strong> {{ e.quantity }} {{ e.unit_code }}</div>
+                  <div><strong>Validade:</strong> {{ e.validade || '—' }}</div>
+                  <div class="muted">#{{ e.id }} • {{ e.unit_name || e.unit_code }} • {{ e.location || '—' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <label>Selecionar Lote de Estoque (obrigatório quando há fórmula)</label>
+      <div class="estoque-list" *ngIf="estoqueLotes.length; else semEstoqueFormula">
         <div class="lote-card" *ngFor="let e of estoqueLotes" (click)="selecionarLote(e)"
              [class.selected]="estoqueSelecionado?.id === e.id">
           <div class="lote-select">
@@ -66,30 +104,16 @@
           </div>
         </div>
       </div>
-      <ng-template #semEstoque>
+      <ng-template #semEstoqueFormula>
         <div class="empty">
-          Nenhum lote ativo para este ativo. Cadastre estoque antes de prosseguir.
+          Nenhum lote encontrado nos ativos da fórmula. Cadastre estoque antes de prosseguir.
           <button type="button" class="link" (click)="router.navigate(['/restrito/admin/estoque'])">+ Cadastrar Estoque</button>
         </div>
       </ng-template>
     </div>
-
-    <div class="existing" *ngIf="produtosExistentes.length > 0">
-      <div class="msg">Produtos com esse ativo já existem. Deseja editar ou reativar?</div>
-      <div class="cards">
-        <div class="card" *ngFor="let p of produtosExistentes">
-          <div class="title">{{ p.name }}</div>
-          <div class="meta">Categoria: {{ p.category }} | Preço: {{ p.price | currency:'BRL':'symbol-narrow' }}</div>
-          <div class="actions">
-            <button type="button" (click)="editarProdutoExistente(p)">Editar</button>
-            <button type="button" (click)="reativarProdutoExistente(p)">Reativar</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </section>
 
-  <!-- STEP 1: Básico -->
+  <!-- STEP 2: Básico -->
   <section *ngIf="step()===2" class="step step-basico">
     <div class="form-grid">
       <div class="form-group">
@@ -99,15 +123,7 @@
           <option value="manipulado">Manipulado</option>
         </select>
       </div>
-      <div class="form-group" *ngIf="form.value.tipo==='manipulado'">
-        <label>Fórmula</label>
-        <select formControlName="formulaId" required>
-          <option [ngValue]="null">Selecione</option>
-          <ng-container *ngFor="let f of formulasSelect">
-            <option [ngValue]="f.id">{{ f.name }}</option>
-          </ng-container>
-        </select>
-      </div>
+      <!-- Fórmula agora é escolhida na etapa anterior -->
       <div class="form-group">
         <label>Nome do Produto</label>
         <input type="text" formControlName="name" required>
@@ -119,24 +135,41 @@
     </div>
   </section>
 
-  <!-- STEP 2: Preço/Estoque -->
+  <!-- STEP 3: Preço/Estoque e Campanha -->
   <section *ngIf="step()===3" class="step step-preco">
     <div class="form-grid">
       <div class="form-group">
         <label>Preço</label>
         <input type="number" formControlName="price" required>
       </div>
-      <div class="form-group">
-        <label>Desconto (%)</label>
-        <input type="number" formControlName="discount">
+      <div class="form-group full-width">
+        <label>Campanha/Promoção</label>
+        <ng-container *ngIf="promocaoSelecionada; else noPromo">
+          <div class="promo-card">
+            <div class="promo-header">
+              <span class="badge" [class.active]="promocaoSelecionada.ui?.status==='active'" [class.upcoming]="promocaoSelecionada.ui?.status==='upcoming'" [class.expired]="promocaoSelecionada.ui?.status==='expired'" [class.inactive]="promocaoSelecionada.ui?.status==='inactive'">{{ promocaoSelecionada.ui?.status || '—' }}</span>
+              <strong>{{ promocaoSelecionada.nome }}</strong>
+              <span class="valor">{{ promocaoSelecionada.ui?.valor_label }}</span>
+            </div>
+            <div class="promo-meta">
+              <div *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</div>
+              <div>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</div>
+            </div>
+            <div class="promo-actions">
+              <button type="button" (click)="openPromoModal()">Trocar campanha</button>
+              <button type="button" class="link" (click)="promocaoSelecionada=null">Remover</button>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noPromo>
+          <div class="empty">Nenhuma campanha aplicada.
+            <button type="button" (click)="openPromoModal()">+ Aplicar campanha</button>
+          </div>
+        </ng-template>
       </div>
       <div class="form-group">
         <label>Estoque</label>
         <input type="number" formControlName="stock">
-      </div>
-      <div class="form-group">
-        <label>Avaliação</label>
-        <input type="number" formControlName="rating" (blur)="fixRating($event)" step="0.1" max="5" min="0">
       </div>
       <div class="form-group">
         <label>Peso/Volume/Unidade</label>
@@ -154,7 +187,7 @@
     </div>
   </section>
 
-  <!-- STEP 3: Categoria/Tags -->
+  <!-- STEP 4: Categoria/Tags -->
   <section *ngIf="step()===4" class="step step-categorias">
     <div class="form-grid">
       <div class="form-group">
@@ -177,7 +210,7 @@
     </div>
   </section>
 
-  <!-- STEP 4: Customizações -->
+  <!-- STEP 5: Customizações -->
   <section *ngIf="step()===5" class="step step-custom">
     <div class="customizations">
       <h4>Dosagens</h4>
@@ -199,15 +232,14 @@
     </div>
   </section>
 
-  <!-- STEP 5: Revisão e Envio -->
+  <!-- STEP 6: Revisão e Envio -->
   <section *ngIf="step()===6" class="step step-revisao">
     <div class="review">
       <h4>Revisão</h4>
       <ul>
-        <li><strong>Tipo:</strong> {{ form.value.tipo }}</li>
-  <li *ngIf="form.value.tipo==='manipulado'"><strong>Fórmula:</strong> {{ formulaNameById(form.value.formulaId) }}</li>
-        <li><strong>Ativo:</strong> {{ ativoSelecionado?.ativo_nome || '—' }}</li>
-  <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
+    <li><strong>Tipo:</strong> {{ form.value.formulaId ? 'manipulado' : 'pronto' }}</li>
+    <li *ngIf="form.value.formulaId"><strong>Fórmula:</strong> {{ formulaNameById(form.value.formulaId) }}</li>
+    <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
         <li><strong>Nome:</strong> {{ form.value.name }}</li>
         <li><strong>Descrição:</strong> {{ form.value.description }}</li>
         <li><strong>Preço:</strong> {{ form.value.price | currency:'BRL':'symbol-narrow' }}</li>
@@ -216,6 +248,7 @@
         <li><strong>Tags:</strong> {{ (form.value.tags || []).join(', ') || '—' }}</li>
         <li><strong>Dosagens:</strong> {{ (form.value.customizations?.dosage || []).join(', ') || '—' }}</li>
         <li><strong>Embalagens:</strong> {{ (form.value.customizations?.packaging || []).join(', ') || '—' }}</li>
+        <li><strong>Campanha:</strong> {{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</li>
       </ul>
       <div class="gallery">
         <label>Imagens adicionais</label>
@@ -313,6 +346,71 @@
     <div class="modal-content">
       <h4>{{ success() }}</h4>
       <button (click)="success.set(null); router.navigate(['/restrito/admin'])">OK</button>
+    </div>
+  </div>
+
+  <!-- Modal Selecionar Promoção -->
+  <div class="modal" *ngIf="showPromoModal">
+    <div class="modal-content">
+      <h4>Selecionar Campanha</h4>
+      <div class="promo-list" *ngIf="promocoes?.length; else promoEmpty">
+        <div class="promo-item" *ngFor="let pr of promocoes">
+          <div class="row" (click)="promocaoSelecionada=pr; showPromoModal=false">
+            <span class="badge" [class.active]="pr.ui?.status==='active'" [class.upcoming]="pr.ui?.status==='upcoming'" [class.expired]="pr.ui?.status==='expired'" [class.inactive]="pr.ui?.status==='inactive'">{{ pr.ui?.status || '—' }}</span>
+            <strong class="name">{{ pr.nome }}</strong>
+            <span class="valor">{{ pr.ui?.valor_label }}</span>
+          </div>
+          <div class="row small">
+            <span *ngIf="pr.ui?.start?.human">Início: {{ pr.ui?.start?.human }}</span>
+            <span>Fim: {{ pr.ui?.end?.human || 'sem validade' }}</span>
+          </div>
+          <div class="row actions">
+            <button type="button" (click)="$event.stopPropagation(); openPromoDetail(pr.id!)">Editar promoção</button>
+          </div>
+        </div>
+      </div>
+      <ng-template #promoEmpty>
+        <div class="empty">Nenhuma promoção encontrada. <button type="button" (click)="showPromoModal=false">Fechar</button></div>
+      </ng-template>
+      <div class="actions">
+        <button type="button" (click)="showPromoModal=false">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalhe da Promoção -->
+  <div class="modal" *ngIf="showPromoDetail">
+    <div class="modal-content promo-detail">
+      <h4>{{ promoDetalhe?.nome }}</h4>
+      <div class="detail-header">
+        <span class="badge" [class.active]="promoDetalhe?.ui?.status==='active'" [class.upcoming]="promoDetalhe?.ui?.status==='upcoming'" [class.expired]="promoDetalhe?.ui?.status==='expired'" [class.inactive]="promoDetalhe?.ui?.status==='inactive'">{{ promoDetalhe?.ui?.status || '—' }}</span>
+        <span class="valor">{{ promoDetalhe?.ui?.valor_label }}</span>
+      </div>
+      <p class="descricao" *ngIf="promoDetalhe?.descricao">{{ promoDetalhe?.descricao }}</p>
+      <div class="grid">
+        <div>
+          <strong>Tipo:</strong> {{ promoDetalhe?.tipo }} ({{ promoDetalhe?.ui?.tipo_simbolo }})
+        </div>
+        <div>
+          <strong>Início:</strong> {{ promoDetalhe?.ui?.start?.human || '—' }}
+        </div>
+        <div>
+          <strong>Fim:</strong> {{ promoDetalhe?.ui?.end?.human || 'sem validade' }}
+        </div>
+        <div>
+          <strong>Ativa agora?</strong> {{ promoDetalhe?.ui?.active_now ? 'Sim' : 'Não' }}
+        </div>
+      </div>
+      <div class="produtos" *ngIf="promoDetalhe?.produtos?.length">
+        <h5>Produtos vinculados</h5>
+        <ul>
+          <li *ngFor="let p of promoDetalhe!.produtos">#{{ p.id }} • {{ p.nome || p.name }} — {{ (p.preco || p.price) || '' }}</li>
+        </ul>
+      </div>
+      <div class="actions">
+        <button type="button" (click)="promocaoSelecionada=promoDetalhe!; showPromoDetail=false">Aplicar esta campanha</button>
+        <button type="button" (click)="showPromoDetail=false">Fechar</button>
+      </div>
     </div>
   </div>
 

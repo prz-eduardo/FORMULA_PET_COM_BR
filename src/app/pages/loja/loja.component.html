@@ -10,30 +10,23 @@
   </section>
 
   <div class="filtros card">
-    <input class="input" placeholder="Buscar produtos..." [ngModel]="filtro" (ngModelChange)="onQueryChange($event)" aria-label="Buscar produtos" />
-    <select class="input" [ngModel]="categoria" (ngModelChange)="onCategoryChange($event)" aria-label="Filtrar por categoria">
-      <option value="">Todas categorias</option>
-      <option *ngFor="let c of categorias" [value]="c.nome">{{ c.nome }} ({{ c.produtos }})</option>
-    </select>
-    <select class="input" [ngModel]="sort" (ngModelChange)="onSortChange($event)" aria-label="Ordenar">
-      <option value="relevance">Mais relevantes</option>
-      <option value="newest">Mais recentes</option>
-      <option value="price_asc">Menor preço</option>
-      <option value="price_desc">Maior preço</option>
-      <option value="rating">Melhor avaliação</option>
-      <option value="popularity">Mais populares</option>
-    </select>
+      <button class="btn light icon filter" (click)="openFilters()" aria-haspopup="dialog" aria-label="Filtros" title="Filtros">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" stroke="#111827" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+        </svg>
+      </button>
     <div class="cta">
-      <button class="btn light fav-toggle" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" title="Mostrar apenas favoritos">
+      <!-- Favoritos só aparece logado -->
+      <button class="btn light fav-toggle" *ngIf="me" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" title="Mostrar apenas favoritos">
         ❤️ Favoritos
       </button>
       <div class="perfil">
         <button #profileBtn class="btn light" (click)="toggleLogin($event)" aria-haspopup="dialog" [attr.aria-expanded]="showLogin">
-          {{ me ? '👤 ' + (me?.nome || 'Cliente') : '👤 Entrar' }}
+            {{ me ? '👤 ' + (me?.nome?.split(' ')[0] || 'Cliente') : '👤 Entrar' }}
         </button>
       </div>
-      <button #cartBtn type="button" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho">
-        🛒 Carrinho
+        <button #cartBtn type="button" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho" aria-label="Carrinho">
+          🛒
         <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
       </button>
     </div>
@@ -49,14 +42,20 @@
   <section class="catalogo">
     <h2 class="sec-title">Produtos</h2>
     <div class="grid" [class.loading]="loading">
+      <div class="empty-state" *ngIf="!loading && onlyFavorites && filtered.length === 0">
+        <div class="icon">❤</div>
+        <h3>Você ainda não favoritou nenhum produto</h3>
+        <p>Comece a favoritar para que eles apareçam aqui.</p>
+        <div class="tips">Dica: toque no coração nos cards de produto para adicionar aos favoritos.</div>
+      </div>
       <div class="grid-loader" *ngIf="loading">
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
       </div>
       <app-product-card-v2 *ngFor="let p of paginated"
         [product]="p"
-        [supportsFavorites]="storeMeta?.supports?.favorites ?? true"
+        [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
         [supportsRatings]="storeMeta?.supports?.ratings ?? true"
-        [favoriteActive]="isFav(p)"
+        [favoriteActive]="p.isFavorited"
         (toggleFav)="toggleFav(p)"
         (add)="onAddToCart(p, $event)"
       ></app-product-card-v2>
@@ -80,12 +79,72 @@
     </div>
   </section>
 
+  <!-- Modal de Filtros -->
+  <div class="overlay" *ngIf="showFilters" (click)="closeFilters()"></div>
+  <div class="filters-modal" *ngIf="showFilters" role="dialog" aria-label="Filtros da loja" (click)="$event.stopPropagation()">
+    <header>
+      <h3>Filtros</h3>
+    </header>
+    <div class="body">
+      <label class="field">Buscar
+        <input class="input" type="text" [(ngModel)]="filtroDraft" placeholder="Nome do produto ou termos" />
+      </label>
+      <label class="field">Categoria
+        <select class="input" [(ngModel)]="categoriaDraft">
+          <option value="">Todas categorias</option>
+          <option *ngFor="let c of categorias" [ngValue]="c.nome">{{ c.nome }} ({{ c.produtos }})</option>
+        </select>
+      </label>
+      <label class="field">Ordenar por
+        <select class="input" [(ngModel)]="sortDraft">
+          <option [ngValue]="'relevance'">Mais relevantes</option>
+          <option [ngValue]="'newest'">Mais recentes</option>
+          <option [ngValue]="'price_asc'">Menor preço</option>
+          <option [ngValue]="'price_desc'">Maior preço</option>
+          <option [ngValue]="'rating'">Melhor avaliação</option>
+          <option [ngValue]="'popularity'">Mais populares</option>
+        </select>
+      </label>
+      <div class="field two-cols">
+        <label>Preço mínimo
+          <input class="input" type="number" min="0" [(ngModel)]="minPriceDraft" placeholder="0" />
+        </label>
+        <label>Preço máximo
+          <input class="input" type="number" min="0" [(ngModel)]="maxPriceDraft" placeholder="1000" />
+        </label>
+      </div>
+      <div class="field two-cols">
+        <label>Somente em promoção
+          <input type="checkbox" [(ngModel)]="promoOnlyDraft" />
+        </label>
+        <label>Apenas com estoque
+          <input type="checkbox" [(ngModel)]="inStockOnlyDraft" />
+        </label>
+      </div>
+      <label class="field">Avaliação mínima
+        <select class="input" [(ngModel)]="minRatingDraft">
+          <option [ngValue]="0">Qualquer</option>
+          <option [ngValue]="3">3+ estrelas</option>
+          <option [ngValue]="4">4+ estrelas</option>
+          <option [ngValue]="4.5">4.5+ estrelas</option>
+        </select>
+      </label>
+    </div>
+    <footer>
+      <button class="btn light" (click)="clearFilters()">Limpar</button>
+      <button class="btn" (click)="applyFilters()">Aplicar</button>
+    </footer>
+  </div>
+
   <!-- CTA: não encontrou? Fale com a gente -->
   <section class="cta-help card">
     <div class="cta-text">
       <h3>Não encontrou o que procurava?</h3>
       <p>Nos envie uma mensagem que ajudamos você a encontrar o produto ideal para o seu pet.</p>
-      <a class="btn whatsapp" href="https://wa.me/554132051910?text=Olá!%20Estou%20na%20loja%20e%20não%20encontrei%20o%20que%20procurava." target="_blank" rel="noopener">Falar no WhatsApp</a>
+      <a class="btn whatsapp" href="https://wa.me/554132051910?text=Olá!%20Estou%20na%20loja%20e%20não%20encontrei%20o%20que%20procurava." target="_blank" rel="noopener">
+        <span class="wa-icon" aria-hidden="true"></span>
+        Falar no WhatsApp
+      </a>
     </div>
     <div class="cta-media">
       <img src="imagens/gato-cachorro-rato.png" alt="Cachorro e gato juntos" />
@@ -100,10 +159,9 @@
       <div *ngIf="me">Olá, {{ me?.nome?.split(' ')[0] || 'cliente' }} 👋</div>
     </div>
     <div class="popover-body" *ngIf="!me && !showEmailLogin">
-      
       <button class="btn google" (click)="doLoginGoogle()"><img src="imagens/google.png" alt="Google" class="g-img">Entrar com Google</button>
       <button class="btn light full" (click)="toggleEmailLogin()">Entrar com e‑mail e senha</button>
-      <a class="link" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
+      <a class="btn create-account full" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
     </div>
     <div class="popover-body" *ngIf="!me && showEmailLogin">
       <input class="input" type="email" [(ngModel)]="email" placeholder="E-mail" aria-label="E-mail" />
@@ -112,7 +170,7 @@
       
       <button class="btn light" (click)="resetSenha()">Esqueci minha senha</button>
       <button class="btn light full" (click)="toggleEmailLogin()">Login com Google</button>
-      <a class="link" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
+      <a class="btn create-account full" [routerLink]="['/area-cliente']" [queryParams]="{ cadastro: '1' }">Criar conta</a>
     </div>
     <div class="popover-body" *ngIf="me">
       <div class="welcome">Bem-vindo, {{ me?.nome?.split(' ')[0] }}!</div>

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto } from '../../../../services/admin-api.service';
+import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
 
 interface AtivoBasic { id: number | string; nome: string; descricao?: string }
 
@@ -29,7 +29,7 @@ export class ProdutoComponent implements OnInit {
   step = signal(0); // 0..6
   steps = [
     { key: 'imagem', label: 'Imagem' },
-    { key: 'ativo', label: 'Ativo' },
+    { key: 'formula', label: 'Fórmula' },
     { key: 'basico', label: 'Básico' },
     { key: 'preco', label: 'Preço/Estoque' },
     { key: 'categorias', label: 'Categoria/Tags' },
@@ -49,22 +49,27 @@ export class ProdutoComponent implements OnInit {
   showTagModal = false;
   showCategoryModal = false;
 
-  // busca de ativo (opcional)
-  // usamos o payload consolidado de config-new-product (id, nome)
-  ativoQuery = signal('');
-  ativosAll: AtivoBasic[] = [];
-  ativosSugestoes: Array<{ id: number|string; ativo_nome: string }> = [];
-  ativoSelecionado: { id: number|string; ativo_nome: string } | null = null;
+  // Ativo flow removido; agora deriva de fórmula quando aplicável
   produtosExistentes: Array<ProdutoDto> = [];
   // config (novas tabelas)
   units: UnitDto[] = [];
   forms: ProductFormDto[] = [];
   estoqueLotes: EstoqueAtivoDto[] = [];
   estoqueSelecionado: EstoqueAtivoDto | null = null;
+  // promoções
+  promocoes: PromocaoDto[] = [];
+  showPromoModal = false;
+  promocaoSelecionada: PromocaoDto | null = null;
+  showPromoDetail = false;
+  promoDetalhe: PromocaoDto | null = null;
   
   // fórmulas para produtos manipulados
   formulas: ProductFormDto[] = [];
   formulasSelect: Array<{ id: number; name: string }> = [];
+  formulaQuery = signal('');
+  formulasAll: Array<{ id: number; name: string; form_name?: string }> = [];
+  formulasFiltered: Array<{ id: number; name: string; form_name?: string }> = [];
+  formulaStatus: { missing: Array<{ ativo_id: number; ativo_nome?: string }>, items: Array<{ ativo_id: number; ativo_nome: string; required_per_unit: number; unit_code: string; available_converted: number; producible_units: number }>, lotsByAtivo: Record<string, EstoqueAtivoDto[]> } = { missing: [], items: [], lotsByAtivo: {} };
 
   ngOnInit() {
     this.form = this.fb.group({
@@ -72,7 +77,7 @@ export class ProdutoComponent implements OnInit {
       // novo modelo
       tipo: ['pronto', Validators.required], // 'pronto' | 'manipulado'
       active: [1], // 1 ativo, 0 inativo
-      formulaId: [null], // obrigatório quando tipo = manipulado
+  formulaId: [null], // quando setado, força tipo = 'manipulado'
       name: ['', Validators.required],
       description: ['', Validators.required],
       price: [0, [Validators.required, Validators.min(0)]],
@@ -99,15 +104,14 @@ export class ProdutoComponent implements OnInit {
     this.loadTaxonomy('embalagens');
     this.loadTaxonomy('dosages');
 
-    // carregar config (formas/unidades/ativos consolidado)
+    // carregar config (formas/unidades/ativos consolidado) - ativos ficam apenas para derivação via fórmula
     this.api.getConfigNewProduct().subscribe({
       next: (res) => {
         this.forms = res.forms || [];
         this.units = res.units || [];
-        // ativos básicos (id, nome) para busca local
-        this.ativosAll = Array.isArray(res.ativos) ? res.ativos.map(a => ({ id: a.id, nome: a.nome })) : [];
+        // não exibimos mais busca direta de ativo
       },
-      error: () => { this.forms = []; this.units = []; this.ativosAll = []; }
+      error: () => { this.forms = []; this.units = []; }
     });
 
     // carregar fórmulas para seleção quando tipo = manipulado
@@ -115,6 +119,8 @@ export class ProdutoComponent implements OnInit {
       next: (res) => {
         const items = res?.data || [];
         this.formulasSelect = items.map(f => ({ id: f.id as number, name: f.name }));
+        this.formulasAll = items.map(f => ({ id: f.id as number, name: f.name, form_name: (f as any).form_name }));
+        this.applyFormulaFilter();
       },
       error: () => { this.formulasSelect = []; }
     });
@@ -123,7 +129,7 @@ export class ProdutoComponent implements OnInit {
     const produtoId = this.route.snapshot.queryParamMap.get('produto_id');
     if (produtoId) this.loadProduto(produtoId);
 
-    this.setupAtivoSearch();
+    // ativo search removido
   }
 
   get tagsFA() { return this.form.get('tags') as FormArray; }
@@ -145,8 +151,8 @@ export class ProdutoComponent implements OnInit {
 
   // footer next button label
   nextLabel(): string {
-    // If we're in Ativo step (index 1) and no ativo selected, user can skip selecting ativo/lote
-    if (this.step() === 1 && !this.ativoSelecionado) return 'Pular';
+    // Step 1 (Fórmula): permitir pular se nenhuma fórmula selecionada
+    if (this.step() === 1 && !this.form.value.formulaId) return 'Pular';
     return 'Avançar';
   }
 
@@ -218,9 +224,9 @@ export class ProdutoComponent implements OnInit {
         return !!img;
       }
       case 1: {
-        // Ativo é opcional, porém, se houver ativo selecionado, exigir estoqueId
-        const ativoId = this.form.get('ativoId')?.value;
-        if (!ativoId) return true;
+        // Fórmula opcional; quando fórmula selecionada (manipulado), exigir lote (estoqueId)
+        const formulaId = this.form.get('formulaId')?.value;
+        if (!formulaId) return true;
         const estoqueId = this.form.get('estoqueId')?.value;
         return !!estoqueId;
       }
@@ -248,7 +254,7 @@ export class ProdutoComponent implements OnInit {
     const mark = (path: string) => this.form.get(path)?.markAsTouched();
     switch (i) {
       case 0: mark('image'); break;
-      case 1: mark('ativoId'); break;
+      case 1: mark('formulaId'); mark('estoqueId'); break;
       case 2: mark('name'); mark('description'); mark('tipo'); if (this.form.get('tipo')?.value === 'manipulado') mark('formulaId'); break;
       case 3: mark('price'); break;
       case 4: mark('categoryId'); break;
@@ -320,39 +326,67 @@ export class ProdutoComponent implements OnInit {
     this.editarProdutoExistente(p);
   }
 
-  // ativo: busca e associação
-  private setupAtivoSearch() {
-    // Mantemos a busca manual via onAtivoQueryChange (com signal)
-  }
-  onAtivoQueryChange(q: string) {
-    this.ativoQuery.set(q);
-    const term = (q || '').trim();
-    if (!term) { this.ativosSugestoes = []; return; }
-    const lower = term.toLowerCase();
-    this.ativosSugestoes = (this.ativosAll || [])
-      .filter(a => (a.nome || '').toLowerCase().includes(lower) || ((a as any).descricao || '').toLowerCase().includes(lower))
-      .slice(0, 20)
-      .map(a => ({ id: a.id as any, ativo_nome: (a as any).nome }));
-  }
-  selecionarAtivo(op: { id: number|string; ativo_nome: string }) {
-    this.ativoSelecionado = op;
-    this.form.patchValue({ ativoId: op.id });
-    this.estoqueSelecionado = null;
-    this.form.patchValue({ estoqueId: null });
-    // buscar produtos existentes por ativo
-    this.api.produtosPorAtivo(op.id).subscribe({
-      next: (res) => this.produtosExistentes = res || [],
-      error: () => this.produtosExistentes = []
+  // Fórmula: seleção e derivação de estoques a partir dos ativos da fórmula
+  onFormulaChange(formulaId: number | null) {
+    // Define tipo conforme presença de fórmula
+    this.form.patchValue({ tipo: formulaId ? 'manipulado' : 'pronto' });
+    this.estoqueSelecionado = null; this.form.patchValue({ estoqueId: null, ativoId: null });
+    this.estoqueLotes = [];
+    if (!formulaId) return;
+    // Backend fornece lotes e faltas diretamente, dado formula_id
+    this.api.getFormulaAvailability(formulaId).subscribe({
+      next: (res: FormulaAvailabilityResponse) => {
+        // Guardar itens e lots por ativo
+        this.formulaStatus.items = res.items || [];
+        this.formulaStatus.missing = res.missing || [];
+        this.formulaStatus.lotsByAtivo = res.lots || {};
+        // Flaten todos os lotes para a seleção simples
+        const flat: EstoqueAtivoDto[] = [];
+        Object.values(this.formulaStatus.lotsByAtivo).forEach(arr => flat.push(...(arr || [])));
+        this.estoqueLotes = flat;
+      },
+      error: () => { this.estoqueLotes = []; this.formulaStatus.missing = []; this.formulaStatus.items = []; this.formulaStatus.lotsByAtivo = {}; }
     });
-    // carregar lotes de estoque para o ativo selecionado
-    this.api.listEstoque({ ativo_id: op.id, page: 1, pageSize: 100, active: 1 }).subscribe({
-      next: (res) => this.estoqueLotes = res.data || [],
-      error: () => this.estoqueLotes = []
-    });
+  }
+
+  onFormulaQueryInput(q: string) {
+    this.formulaQuery.set(q || '');
+    this.applyFormulaFilter();
+  }
+  applyFormulaFilter() {
+    const q = (this.formulaQuery() || '').toLowerCase();
+    if (!q) {
+      this.formulasFiltered = this.formulasAll.slice(0, 50);
+      return;
+    }
+    this.formulasFiltered = this.formulasAll.filter(ff => ((ff.name + ' ' + (ff.form_name || '')).toLowerCase().includes(q))).slice(0, 50);
+  }
+  missingLabel(): string {
+    const arr = this.formulaStatus?.missing || [];
+    if (!arr.length) return '';
+    return arr.map(m => m.ativo_nome || ('#' + m.ativo_id)).join(', ');
   }
   selecionarLote(lote: EstoqueAtivoDto) {
     this.estoqueSelecionado = lote;
     this.form.patchValue({ estoqueId: lote.id });
+  }
+  openPromoModal() {
+    // Se já temos promoções carregadas (por ativo), apenas abre
+    if (!this.promocoes || this.promocoes.length === 0) {
+      // Carregar promoções ativas gerais
+      this.api.listPromocoes({ active: 1, page: 1, pageSize: 50 }).subscribe({
+        next: (res) => this.promocoes = res.data || [],
+        error: () => this.promocoes = []
+      });
+    }
+    this.showPromoModal = true;
+  }
+
+  openPromoDetail(promoId: number) {
+    this.api.getPromocao(promoId).subscribe({
+      next: (res) => { this.promoDetalhe = res; this.showPromoDetail = true; },
+      error: () => { this.promoDetalhe = null; this.showPromoDetail = false; }
+    });
   }
   // removido: carregamento de ativos públicos (agora vem via config-new-product)
 
@@ -374,7 +408,7 @@ export class ProdutoComponent implements OnInit {
     this.api.deleteTaxonomia(tipo, item.id).subscribe(() => this.loadTaxonomy(tipo));
   }
 
-  resetForm() { this.form.reset({ tipo: 'pronto', active: 1, price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.ativoSelecionado = null; this.estoqueSelecionado = null; }
+  resetForm() { this.form.reset({ tipo: 'pronto', active: 1, price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; }
 
   fixRating(event: any) {
     const v = parseFloat(event.target.value);
@@ -413,13 +447,12 @@ export class ProdutoComponent implements OnInit {
       tag_ids,
       imagens,
     };
-    if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
-    if (this.form.value.ativoId) body.ativo_id = this.form.value.ativoId;
+  if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
     if (this.form.value.estoqueId) body.estoque_id = this.form.value.estoqueId;
 
     // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full
     const legacyId = this.form.value.id;
-    const req$ = legacyId ? this.api.updateProduto(legacyId, {
+  const req$ = legacyId ? this.api.updateProduto(legacyId, {
       id: legacyId,
       name: this.form.value.name,
       description: this.form.value.description,
@@ -437,7 +470,19 @@ export class ProdutoComponent implements OnInit {
       estoqueId: this.form.value.estoqueId ?? null,
     }) : this.api.createMarketplaceProdutoFull(body);
     req$.subscribe({
-      next: (res) => { this.saving.set(false); this.success.set('Produto salvo com sucesso.'); this.form.patchValue({ id: res.id }); },
+      next: (res) => {
+        // Após criar, se houver promoção selecionada, vincular produto à promoção
+        const newId = res?.id;
+        const promoId = this.promocaoSelecionada?.id;
+        if (!legacyId && newId && promoId) {
+          this.api.setPromocaoProdutos(promoId, [Number(newId)]).subscribe({
+            next: () => { this.saving.set(false); this.success.set('Produto salvo e campanha aplicada.'); this.form.patchValue({ id: newId }); },
+            error: () => { this.saving.set(false); this.success.set('Produto salvo. Falha ao aplicar campanha.'); this.form.patchValue({ id: newId }); }
+          });
+          return;
+        }
+        this.saving.set(false); this.success.set('Produto salvo com sucesso.'); this.form.patchValue({ id: res.id });
+      },
       error: (err) => {
         console.error(err);
         this.saving.set(false);

@@ -98,7 +98,14 @@ export class StoreService {
         weight: undefined,
         requiresPrescription: undefined
       })) as ShopProduct[];
-      this.productsSubject.next(list);
+  this.productsSubject.next(list);
+  // Keep favorites list in sync with server flags
+  const serverFavIds = list.filter(p => p.isFavorited === true).map(p => p.id);
+  const isFavMode = !!params?.myFavorites;
+  // If server returned only favorites but didn't flag is_favorited, fall back to treating all returned IDs as favorites
+  const derivedFavIds = isFavMode && serverFavIds.length === 0 ? list.map(p => p.id) : serverFavIds;
+  this.favoritesSubject.next(derivedFavIds);
+  if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(derivedFavIds));
       // Meta and categories/tags support
       const meta: StoreMeta | undefined = res?.meta ? {
         loggedIn: res.meta.loggedIn,
@@ -132,11 +139,9 @@ export class StoreService {
       const serverFavorited = typeof resp?.is_favorited === 'boolean'
         ? resp.is_favorited
         : (typeof resp?.favorited === 'boolean' ? resp.favorited : undefined);
-      // Update local favorites set
+      // Update local favorites set and product snapshot aligned to server
       const fav = new Set(this.favoritesSubject.value);
-      const shouldBeFav = serverFavorited != null
-        ? serverFavorited
-        : !fav.has(productId); // fallback to toggle
+      const shouldBeFav = serverFavorited != null ? serverFavorited : !fav.has(productId);
       if (shouldBeFav) {
         fav.add(productId);
         this.toast.success('Adicionado aos favoritos');
@@ -149,11 +154,21 @@ export class StoreService {
       if (this.isBrowser()) {
         localStorage.setItem('favorites', JSON.stringify(arr));
       }
-      // Optionally sync product snapshot with favoritesCount and isFavorited
+      // Sync product snapshot with favoritesCount and isFavorited
       const list = this.productsSubject.value.map(p => {
         if (p.id !== productId) return p;
         const updated: ShopProduct = { ...p };
-        if (typeof resp?.favoritos === 'number') updated.favoritesCount = resp.favoritos;
+        if (typeof resp?.favoritos === 'number') {
+          updated.favoritesCount = resp.favoritos;
+        } else if (serverFavorited != null) {
+          // Fallback: infer delta from previous state when server doesn't send count
+          const prev = !!p.isFavorited;
+          if (prev !== serverFavorited) {
+            const delta = serverFavorited ? 1 : -1;
+            const base = typeof p.favoritesCount === 'number' ? p.favoritesCount : 0;
+            updated.favoritesCount = Math.max(0, base + delta);
+          }
+        }
         if (serverFavorited != null) updated.isFavorited = serverFavorited;
         return updated;
       });

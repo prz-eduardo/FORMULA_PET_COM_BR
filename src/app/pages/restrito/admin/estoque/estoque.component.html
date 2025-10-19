@@ -1,37 +1,61 @@
 <div class="estoque-wrapper" [formGroup]="form">
-  <h2>Estoque de Ativos</h2>
+  <h2>Estoque de Itens (Ativos e Insumos)</h2>
 
   <div class="stepper">
-    <div class="step" [class.active]="step()===0" (click)="goToStep(0)">1. Escolher ativo</div>
+  <div class="step" [class.active]="step()===0" (click)="goToStep(0)">1. Escolher item</div>
     <div class="step" [class.active]="step()===1" (click)="goToStep(1)">2. Criar/editar lote</div>
   </div>
 
   <div *ngIf="step()===0">
-    <div class="field form-group full-width">
-      <label>Ativo</label>
-      <input type="text" placeholder="Digite para buscar o ativo"
-             [value]="ativoSelecionado?.ativo_nome || ativoQuery()"
-             (input)="onAtivoQueryChange($any($event.target).value)" />
-      <div class="sugestoes" *ngIf="ativosSugestoes.length > 0">
-        <div class="sugestao" *ngFor="let a of ativosSugestoes" (click)="selecionarAtivo(a)">{{ a.ativo_nome }}</div>
+    <div class="grid">
+      <div class="field">
+        <label>Tipo</label>
+        <select formControlName="tipoSelecionado">
+          <option [ngValue]="'ativo'">Ativo</option>
+          <option [ngValue]="'insumo'">Insumo</option>
+        </select>
       </div>
-      <div class="hint">Selecione um ativo para visualizar lotes e criar novos.</div>
+      <div class="field form-group full-width" *ngIf="form.value.tipoSelecionado==='ativo'">
+        <label>Ativo</label>
+        <input type="text" placeholder="Digite para buscar o ativo"
+               [value]="ativoSelecionado?.ativo_nome || ativoQuery()"
+               (input)="onAtivoQueryChange($any($event.target).value)" />
+        <div class="sugestoes" *ngIf="ativosSugestoes.length > 0">
+          <div class="sugestao" *ngFor="let a of ativosSugestoes" (click)="selecionarAtivo(a)">{{ a.ativo_nome }}</div>
+        </div>
+        <div class="hint">Selecione um ativo para visualizar lotes e criar novos.</div>
+      </div>
+      <div class="field form-group full-width" *ngIf="form.value.tipoSelecionado==='insumo'">
+        <label>Insumo</label>
+        <input type="text" placeholder="Digite para buscar o insumo"
+               [value]="insumoSelecionado?.nome || insumoQuery()"
+               (input)="onInsumoQueryChange($any($event.target).value)" />
+        <div class="sugestoes" *ngIf="insumosSugestoes.length > 0">
+          <div class="sugestao" *ngFor="let i of insumosSugestoes" (click)="selecionarInsumo(i)">{{ i.nome }}</div>
+        </div>
+        <div class="hint">Selecione um insumo para visualizar lotes e criar novos.</div>
+      </div>
     </div>
 
-    <div *ngIf="ativoSelecionado">
-      <h3>Lotes do ativo selecionado</h3>
+    <div *ngIf="ativoSelecionado || insumoSelecionado">
+      <h3>Lotes do {{ form.value.tipoSelecionado==='insumo' ? 'insumo' : 'ativo' }} selecionado</h3>
       <div *ngIf="(lotes() || []).length; else semLotes">
         <div class="lote-card" *ngFor="let l of lotes()" (click)="selecionarLoteExistente(l)">
           <div><strong>ID:</strong> {{ l.id }}</div>
           <div><strong>Qtd:</strong> {{ l.quantity }} {{ l.unit_code }}</div>
           <div><strong>Lote:</strong> {{ l.lote || '—' }}</div>
-          <div><strong>Validade:</strong> {{ l.validade || '—' }}</div>
+          <div>
+            <strong>Validade:</strong>
+            <span [style.color]="isVencido(l.validade) ? '#f87171' : (isEmBreve(l.validade) ? '#f59e0b' : '')">
+              {{ humanizeValidade(l.validade) }}
+            </span>
+          </div>
           <div *ngIf="l.preco_unit != null"><strong>Preço:</strong> {{ l.preco_unit | currency:'BRL':'symbol-narrow' }} / {{ l.unit_code }}</div>
           <div *ngIf="l.preco_por_kg != null"><strong>Preço/kg:</strong> {{ l.preco_por_kg | currency:'BRL':'symbol-narrow' }}</div>
           <div *ngIf="l.fornecedor_nome"><strong>Fornecedor:</strong> {{ l.fornecedor_nome }}</div>
         </div>
       </div>
-      <ng-template #semLotes><div class="empty">Nenhum lote para este ativo.</div></ng-template>
+  <ng-template #semLotes><div class="empty">Nenhum lote para este {{ form.value.tipoSelecionado==='insumo' ? 'insumo' : 'ativo' }}.</div></ng-template>
 
       <div class="actions">
         <button type="button" class="btn" (click)="step.set(1)">Criar novo lote</button>
@@ -62,8 +86,12 @@
           </select>
         </div>
         <div class="field">
-          <label>Somente ativo selecionado</label>
-          <select [formControl]="filterForm.controls.onlySelectedAtivo" (change)="onFilterChange()">
+          <label>Somente selecionado</label>
+          <select [formControl]="filterForm.controls.onlySelectedAtivo" (change)="onFilterChange()" *ngIf="form.value.tipoSelecionado==='ativo'">
+            <option [ngValue]="false">Não</option>
+            <option [ngValue]="true">Sim</option>
+          </select>
+          <select [formControl]="filterForm.controls.onlySelectedInsumo" (change)="onFilterChange()" *ngIf="form.value.tipoSelecionado==='insumo'">
             <option [ngValue]="false">Não</option>
             <option [ngValue]="true">Sim</option>
           </select>
@@ -79,7 +107,7 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Ativo</th>
+              <th>Item</th>
               <th>Qtd</th>
               <th>Un</th>
               <th>Fornecedor</th>
@@ -94,12 +122,16 @@
           <tbody>
             <tr *ngFor="let r of tableRows()">
               <td>{{ r.id }}</td>
-              <td>{{ r.ativo_nome || r.ativo_id }}</td>
+              <td>{{ r.insumo_nome || r.ativo_nome || r.insumo_id || r.ativo_id }}</td>
               <td>{{ r.quantity }}</td>
               <td>{{ r.unit_code }}</td>
               <td>{{ r.fornecedor_nome || '—' }}</td>
               <td>{{ r.lote || '—' }}</td>
-              <td>{{ r.validade || '—' }}</td>
+              <td>
+                <span [style.color]="isVencido(r.validade) ? '#f87171' : (isEmBreve(r.validade) ? '#f59e0b' : '')">
+                  {{ humanizeValidade(r.validade) }}
+                </span>
+              </td>
               <td>{{ r.location || '—' }}</td>
               <td>
                 <span *ngIf="r.preco_unit != null">{{ r.preco_unit | currency:'BRL':'symbol-narrow' }}/{{ r.unit_code }}</span>
@@ -178,8 +210,8 @@
       </div>
 
       <div class="field">
-        <label>Ativo</label>
-        <input type="text" [value]="ativoSelecionado?.ativo_nome || createdLote()?.ativo_nome || ('ID '+(createdLote()?.ativo_id||''))" disabled />
+        <label>{{ form.value.tipoSelecionado==='insumo' ? 'Insumo' : 'Ativo' }}</label>
+        <input type="text" [value]="form.value.tipoSelecionado==='insumo' ? (insumoSelecionado?.nome || createdLote()?.insumo_nome || ('ID '+(createdLote()?.insumo_id||''))) : (ativoSelecionado?.ativo_nome || createdLote()?.ativo_nome || ('ID '+(createdLote()?.ativo_id||'')))" disabled />
       </div>
 
       <div class="field">
@@ -205,13 +237,18 @@
       <h3>Detalhes do lote</h3>
       <div class="lote-card selected">
         <div><strong>ID:</strong> {{ lote.id }}</div>
-        <div><strong>Ativo ID:</strong> {{ lote.ativo_id }}</div>
+  <div><strong>{{ lote.insumo_id ? 'Insumo ID' : 'Ativo ID' }}:</strong> {{ lote.insumo_id || lote.ativo_id }}</div>
         <div><strong>Quantidade:</strong> {{ lote.quantity }} {{ lote.unit_code }}</div>
         <div *ngIf="lote.preco_unit != null"><strong>Preço:</strong> {{ lote.preco_unit | currency:'BRL':'symbol-narrow' }} / {{ lote.unit_code }}</div>
         <div *ngIf="lote.preco_por_kg != null"><strong>Preço/kg:</strong> {{ lote.preco_por_kg | currency:'BRL':'symbol-narrow' }}</div>
         <div *ngIf="lote.fornecedor_nome"><strong>Fornecedor:</strong> {{ lote.fornecedor_nome }}</div>
         <div><strong>Lote:</strong> {{ lote.lote || '—' }}</div>
-        <div><strong>Validade:</strong> {{ lote.validade || '—' }}</div>
+        <div>
+          <strong>Validade:</strong>
+          <span [style.color]="isVencido(lote.validade) ? '#f87171' : (isEmBreve(lote.validade) ? '#f59e0b' : '')">
+            {{ humanizeValidade(lote.validade) }}
+          </span>
+        </div>
         <div><strong>Local:</strong> {{ lote.location || '—' }}</div>
       </div>
 

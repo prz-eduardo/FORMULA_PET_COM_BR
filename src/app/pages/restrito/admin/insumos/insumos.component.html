@@ -1,0 +1,110 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <h2>Insumos</h2>
+    <div class="actions">
+      <button class="btn" (click)="openCreate()">Novo Insumo</button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <input type="text" placeholder="Buscar por nome ou descrição" (input)="onQ($event)">
+  </section>
+
+  <section class="list" *ngIf="!loading(); else loadingTpl">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Unidade</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let it of items()">
+          <td>{{it.id}}</td>
+          <td>{{it.nome}}</td>
+          <td>{{it.unit_code || '—'}}</td>
+          <td><span [style.color]="it.active ? '#22c55e' : '#f59e0b'">{{ it.active ? 'Ativo' : 'Inativo' }}</span></td>
+          <td><button class="btn secondary" (click)="view(it)">Editar</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager">
+      <button class="btn secondary" (click)="prev()" [disabled]="!canPrev()">Anterior</button>
+      <span>Página {{page()}} / {{ totalPages() }}</span>
+      <button class="btn secondary" (click)="next()" [disabled]="!canNext()">Próxima</button>
+    </div>
+  </section>
+  <ng-template #loadingTpl><div class="empty">Carregando...</div></ng-template>
+
+  <section class="detail" *ngIf="selected() as s">
+    <h3>Editar Insumo #{{s.id}}</h3>
+    <form [formGroup]="form">
+      <div class="grid">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" formControlName="nome">
+        </div>
+        <div class="field">
+          <label>Unidade</label>
+          <select formControlName="unit_code">
+            <option [ngValue]="''">—</option>
+            <option *ngFor="let u of units" [ngValue]="u.code">{{u.name}} ({{u.code}})</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Descrição</label>
+          <textarea formControlName="descricao" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select formControlName="active">
+            <option [ngValue]="1">Ativo</option>
+            <option [ngValue]="0">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" (click)="save()">Salvar</button>
+        <button class="btn danger" type="button" (click)="remove()">Excluir</button>
+        <button class="btn secondary" type="button" (click)="closeDetail()">Fechar</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="create" *ngIf="showCreate()">
+    <h3>Novo Insumo</h3>
+    <form [formGroup]="createForm">
+      <div class="grid">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" formControlName="nome">
+        </div>
+        <div class="field">
+          <label>Unidade</label>
+          <select formControlName="unit_code">
+            <option [ngValue]="''">—</option>
+            <option *ngFor="let u of units" [ngValue]="u.code">{{u.name}} ({{u.code}})</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Descrição</label>
+          <textarea formControlName="descricao" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select formControlName="active">
+            <option [ngValue]="1">Ativo</option>
+            <option [ngValue]="0">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" (click)="create()">Criar</button>
+        <button class="btn secondary" type="button" (click)="cancelCreate()">Cancelar</button>
+      </div>
+    </form>
+  </section>
+</div>

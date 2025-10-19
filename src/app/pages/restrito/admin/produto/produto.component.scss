@@ -171,6 +171,24 @@ button:hover { background: #27EF9F; }
     button:hover { background:#27EF9F; color:#000; }
   }
 }
+.promo-card{border:1px solid #0DB8DE;background:#0E151A;border-radius:10px;padding:10px;margin-top:6px}
+.promo-card .promo-header{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.promo-card .valor{color:#27EF9F;font-weight:700}
+.promo-card .promo-actions{display:flex;gap:8px;margin-top:8px}
+.promo-card .promo-meta{font-size:12px;color:#9ca3af;margin-top:6px;display:flex;gap:12px}
+.promo-list{display:flex;flex-direction:column;gap:10px;max-height:50vh;overflow:auto;margin:8px 0}
+.promo-item{border:1px solid #0DB8DE;background:#0E151A;border-radius:10px;padding:10px}
+.promo-item .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.promo-item .row.small{font-size:12px;color:#9ca3af;justify-content:flex-start}
+.promo-item .row.actions{justify-content:flex-end}
+.promo-detail .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+.promo-detail .detail-header{display:flex;gap:10px;align-items:center}
+.promo-detail .valor{color:#27EF9F;font-weight:700}
+.badge.active{background:rgba(39,239,159,0.2)}
+.badge.upcoming{background:rgba(13,184,222,0.2)}
+.badge.expired{background:rgba(239,39,39,0.2)}
+.badge.inactive{background:rgba(156,163,175,0.2)}
+@media(max-width:768px){.promo-detail .grid{grid-template-columns:1fr}}
 .badge {
   position: relative;
   display: inline-flex;
@@ -207,6 +225,16 @@ button:hover { background: #27EF9F; }
 .sugestoes{background:#0E151A;border:1px solid #0DB8DE;border-radius:8px;margin-top:6px;max-height:220px;overflow:auto}
 .sugestao{padding:8px 10px;cursor:pointer}
 .sugestao:hover{background:#102028}
+
+/* Fórmula availability */
+.availability{margin:10px 0}
+.availability-grid{display:grid;grid-template-columns:1fr}
+.avail-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;padding:6px 8px;border-bottom:1px solid #0DB8DE}
+.avail-row.header{font-weight:700;background:#0E151A}
+.lots-by-ativo{margin:12px 0}
+.ativo-block{margin-bottom:10px}
+.ativo-block h5{margin:6px 0}
+@media(max-width:768px){.avail-row{grid-template-columns:1fr 1fr;grid-auto-rows:auto}.avail-row div:nth-child(3),.avail-row div:nth-child(4){display:none}}
 
 /* Produtos existentes cards */
 .existing{margin:12px 0;padding:10px;border:1px dashed #16dae3;border-radius:12px;background:#0E151A}

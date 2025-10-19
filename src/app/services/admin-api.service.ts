@@ -9,6 +9,9 @@ export type TaxonomyType = 'categorias' | 'tags' | 'dosages' | 'embalagens';
 
 export interface ProdutoDto {
   id?: string | number;
+  // Aliases to support newer backend fields
+  nome?: string; // alias of name
+  preco?: number | string; // alias of price
   name: string;
   description: string;
   price: number;
@@ -61,6 +64,13 @@ export interface EstoqueAtivoDto {
   nota_fiscal?: string | null;
   preco_unit?: number | null;
   preco_por_kg?: number | null;
+  // Fatores de conversão opcionalmente retornados no availability
+  f_stock?: number | null;
+  f_req?: number | null;
+  // Suporte a insumos no estoque
+  insumo_id?: number | null;
+  insumo_nome?: string | null;
+  tipo?: 'ativo' | 'insumo';
 }
 
 export interface EstoqueMovimentoDto {
@@ -119,6 +129,15 @@ export interface PessoaDocDto {
 }
 
 export interface FornecedorDto { id: number; nome: string }
+export interface InsumoDto {
+  id: number;
+  nome: string;
+  descricao?: string | null;
+  unit_code?: string | null;
+  active?: 0 | 1;
+  created_at?: string;
+  updated_at?: string;
+}
 export interface AdminFornecedorDto {
   id?: number;
   nome: string;
@@ -138,6 +157,7 @@ export interface FormulaDto {
   id?: number;
   name: string;
   form_id: number;
+  form_name?: string; // opcional: nome da forma (ex.: cápsula) vindo do backend
   output_unit_code: string;
   dose_amount?: number | null;
   dose_unit_code?: string | null;
@@ -156,6 +176,22 @@ export interface FormulaItemDto {
   insumo_nome?: string; // quando tipo = 'insumo'
   quantity: number;
   unit_code: string;
+}
+
+// Disponibilidade por fórmula
+export interface FormulaAvailabilityItem {
+  ativo_id: number;
+  ativo_nome: string;
+  required_per_unit: number; // quantidade requerida por unidade do produto
+  unit_code: string; // unidade requerida
+  available_converted: number; // soma convertida para a unidade requerida
+  producible_units: number; // floor(available_converted / required_per_unit)
+}
+export interface FormulaAvailabilityResponse {
+  formula_id: number;
+  items: FormulaAvailabilityItem[];
+  missing: Array<{ ativo_id: number; ativo_nome?: string }>;
+  lots: Record<string, EstoqueAtivoDto[]>; // chave: ativo_id como string
 }
 
 // Marketplace Customizações
@@ -179,6 +215,14 @@ export interface MarketplaceCustomizacoesList { categorias: MarketplaceCategoria
 
 // Promoções
 export type PromocaoTipo = 'percentual' | 'valor';
+export interface PromocaoUiInfo {
+  tipo_simbolo: 'R$' | '%';
+  valor_label: string; // Ex.: "R$ 10,00" ou "10%"
+  status: 'upcoming' | 'active' | 'expired' | 'inactive';
+  start?: { iso: string | null; human: string } | null;
+  end?: { iso: string | null; human: string } | null;
+  active_now?: boolean;
+}
 export interface PromocaoDto {
   id?: number;
   nome: string;
@@ -190,7 +234,8 @@ export interface PromocaoDto {
   ativo?: boolean | number;
   created_at?: string;
   updated_at?: string;
-  produtos?: Array<{ id: number; name: string; price?: number }>; // resumo
+  ui?: PromocaoUiInfo; // payload de UI calculado no backend
+  produtos?: Array<{ id: number; nome?: string; name?: string; preco?: string | number; price?: string | number }>; // resumo
 }
 
 @Injectable({ providedIn: 'root' })
@@ -206,10 +251,10 @@ export class AdminApiService {
   }
 
   // Configuração para novo cadastro de produto (formas, unidades, ativos)
-  getConfigNewProduct(params?: { q?: string }): Observable<{ forms: ProductFormDto[]; units: UnitDto[]; ativos: Array<{ id: number; nome: string }> }> {
+  getConfigNewProduct(params?: { q?: string }): Observable<{ forms: ProductFormDto[]; units: UnitDto[]; ativos: Array<{ id: number; nome: string }>; insumos?: Array<{ id: number; nome: string }> }> {
     let httpParams = new HttpParams();
     if (params?.q) httpParams = httpParams.set('q', params.q);
-    return this.http.get<{ forms: ProductFormDto[]; units: UnitDto[]; ativos: Array<{ id: number; nome: string }> }>(
+    return this.http.get<{ forms: ProductFormDto[]; units: UnitDto[]; ativos: Array<{ id: number; nome: string }>; insumos?: Array<{ id: number; nome: string }> }>(
       `${this.baseUrl}/config-new-product`,
       { headers: this.headers(), params: httpParams }
     );
@@ -314,11 +359,36 @@ export class AdminApiService {
     return this.http.post<{ imported: number }>(`${this.baseUrl}/ativos/scrap-forvets`, {}, { headers: this.headers() });
   }
 
+  // Insumos
+  listInsumos(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<InsumoDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+    }
+    return this.http.get<Paged<InsumoDto>>(`${this.baseUrl}/insumos`, { headers: this.headers(), params: httpParams });
+  }
+  getInsumo(id: string | number): Observable<InsumoDto> {
+    return this.http.get<InsumoDto>(`${this.baseUrl}/insumos/${id}`, { headers: this.headers() });
+  }
+  createInsumo(body: Partial<InsumoDto> & { nome: string }): Observable<InsumoDto> {
+    return this.http.post<InsumoDto>(`${this.baseUrl}/insumos`, body, { headers: this.headers() });
+  }
+  updateInsumo(id: string | number, body: Partial<InsumoDto>): Observable<InsumoDto> {
+    return this.http.put<InsumoDto>(`${this.baseUrl}/insumos/${id}`, body, { headers: this.headers() });
+  }
+  deleteInsumo(id: string | number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/insumos/${id}`, { headers: this.headers() });
+  }
+
   // Estoque de ativos (lotes)
-  listEstoque(params?: { ativo_id?: string | number; q?: string; fornecedor_id?: string | number; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<EstoqueAtivoDto>> {
+  listEstoque(params?: { ativo_id?: string | number; insumo_id?: string | number; q?: string; fornecedor_id?: string | number; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<EstoqueAtivoDto>> {
     let httpParams = new HttpParams();
     if (params) {
       if (params.ativo_id != null) httpParams = httpParams.set('ativo_id', String(params.ativo_id));
+      if (params.insumo_id != null) httpParams = httpParams.set('insumo_id', String(params.insumo_id));
       if (params.q) httpParams = httpParams.set('q', params.q);
       if (params.fornecedor_id != null) httpParams = httpParams.set('fornecedor_id', String(params.fornecedor_id));
       if (params.page) httpParams = httpParams.set('page', String(params.page));
@@ -332,11 +402,11 @@ export class AdminApiService {
     return this.http.get<EstoqueAtivoDto>(`${this.baseUrl}/estoque/${id}`, { headers: this.headers() });
   }
 
-  createEstoque(body: { ativo_id: number | string; quantity: number; unit_code: string; lote?: string; validade?: string; location?: string; fornecedor_id?: number | string; nota_fiscal?: string; preco_unit?: number }): Observable<EstoqueAtivoDto> {
+  createEstoque(body: { ativo_id?: number | string; insumo_id?: number | string; quantity: number; unit_code: string; lote?: string; validade?: string; location?: string; fornecedor_id?: number | string; nota_fiscal?: string; preco_unit?: number }): Observable<EstoqueAtivoDto> {
     return this.http.post<EstoqueAtivoDto>(`${this.baseUrl}/estoque`, body, { headers: this.headers() });
   }
 
-  updateEstoque(id: string | number, body: Partial<{ ativo_id: number | string; quantity: number; unit_code: string; lote?: string; validade?: string; location?: string; active?: 0 | 1; fornecedor_id?: number | string; nota_fiscal?: string; preco_unit?: number }>): Observable<EstoqueAtivoDto> {
+  updateEstoque(id: string | number, body: Partial<{ ativo_id: number | string; insumo_id?: number | string; quantity: number; unit_code: string; lote?: string; validade?: string; location?: string; active?: 0 | 1; fornecedor_id?: number | string; nota_fiscal?: string; preco_unit?: number }>): Observable<EstoqueAtivoDto> {
     return this.http.put<EstoqueAtivoDto>(`${this.baseUrl}/estoque/${id}`, body, { headers: this.headers() });
   }
 
@@ -362,7 +432,18 @@ export class AdminApiService {
 
   // Units (opcional, além do config)
   listUnits(): Observable<UnitDto[]> {
-    return this.http.get<UnitDto[]>(`${this.baseUrl}/units`, { headers: this.headers() });
+    return this.http.get<any>(`${this.baseUrl}/units`, { headers: this.headers() })
+      .pipe(
+        map((res) => {
+          const arr: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+          return arr.map((u) => ({
+            code: u.code,
+            name: u.name,
+            kind: u.kind,
+            factor_to_base: typeof u.factor_to_base === 'string' ? Number(u.factor_to_base) : (u.factor_to_base ?? 0)
+          })) as UnitDto[];
+        })
+      );
   }
 
   // Fornecedores (lista para selects)
@@ -478,15 +559,25 @@ export class AdminApiService {
   estimateFormula(id: number | string): Observable<{ producible_units: number; limiting?: any }> {
     return this.http.get<{ producible_units: number; limiting?: any }>(`${this.baseUrl}/formulas/${id}/estimate`, { headers: this.headers() });
   }
-  listFormulas(params?: { includeEstimates?: 0 | 1; q?: string; page?: number; pageSize?: number }): Observable<Paged<FormulaDto & { estimate?: { producible_units: number; limiting?: any } }>> {
+  listFormulas(params?: { includeEstimates?: 0 | 1; q?: string; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<FormulaDto & { estimate?: { producible_units: number; limiting?: any } }>> {
     let httpParams = new HttpParams();
     if (params) {
       if (typeof params.includeEstimates === 'number') httpParams = httpParams.set('includeEstimates', String(params.includeEstimates));
       if (params.q) httpParams = httpParams.set('q', params.q);
       if (params.page) httpParams = httpParams.set('page', String(params.page));
       if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
     }
     return this.http.get<Paged<FormulaDto & { estimate?: { producible_units: number; limiting?: any } }>>(`${this.baseUrl}/formulas`, { headers: this.headers(), params: httpParams });
+  }
+  // Disponibilidade da fórmula (itens, lotes e faltas)
+  getFormulaAvailability(id: number): Observable<FormulaAvailabilityResponse> {
+    return this.http.get<FormulaAvailabilityResponse>(`${this.baseUrl}/formulas/${id}/availability`, { headers: this.headers() });
+  }
+  // Estoques sugeridos para uma fórmula (ativos integrantes + lotes disponíveis)
+  estoquesPorFormula(formulaId: number): Observable<{ lotes: EstoqueAtivoDto[]; faltando?: Array<{ ativo_id: number; ativo_nome?: string }> }> {
+    // Endpoint assumido; ajuste se necessário
+    return this.http.get<{ lotes: EstoqueAtivoDto[]; faltando?: Array<{ ativo_id: number; ativo_nome?: string }> }>(`${this.baseUrl}/formulas/${formulaId}/estoques`, { headers: this.headers() });
   }
   // Marketplace - criação full referenciando fórmula
   createMarketplaceProdutoFull(body: any): Observable<any> {
@@ -501,13 +592,14 @@ export class AdminApiService {
   }
 
   // Admin - Promoções
-  listPromocoes(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<PromocaoDto>> {
+  listPromocoes(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1; ativo_id?: number | string }): Observable<Paged<PromocaoDto>> {
     let httpParams = new HttpParams();
     if (params) {
       if (params.q) httpParams = httpParams.set('q', params.q);
       if (params.page) httpParams = httpParams.set('page', String(params.page));
       if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
       if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+      if (params.ativo_id != null) httpParams = httpParams.set('ativo_id', String(params.ativo_id));
     }
     return this.http.get<Paged<PromocaoDto>>(`${this.baseUrl}/promocoes`, { headers: this.headers(), params: httpParams });
   }

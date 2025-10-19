@@ -19,6 +19,7 @@ export class NavmenuComponent implements AfterViewInit {
   currentRoute: string = '';
   cartCount = 0;
   menuOpen = false;
+  isCliente = false;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService) {}
 
@@ -49,6 +50,11 @@ export class NavmenuComponent implements AfterViewInit {
       this.store.cart$.subscribe(items => {
         this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
       });
+
+      // Detect cliente session to control UI visibility (cart etc.)
+      this.store.isClienteLoggedSilent()
+        .then(ok => this.isCliente = ok)
+        .catch(() => this.isCliente = false);
 
       // Initialize metaballs animation behind logo (scoped to logo-container)
       this.initMetaBalls();

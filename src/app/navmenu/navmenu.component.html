@@ -59,8 +59,8 @@
           <a [routerLink]="'/loja'" title="Ir para a loja" aria-label="Ir para a loja">
             <i class="icon-second"><img src="/icones/loja.png" class="icones-menu" width="22" height="22" alt="Loja"></i>
           </a>
-          <!-- Carrinho (com badge) -->
-          <a [routerLink]="'/carrinho'" class="cart-link" title="Ir para o carrinho" aria-label="Ir para o carrinho">
+          <!-- Carrinho (com badge) - visível apenas logado como cliente -->
+          <a *ngIf="isCliente" [routerLink]="'/carrinho'" class="cart-link" title="Ir para o carrinho" aria-label="Ir para o carrinho">
             <i class="icon-second"><img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho"></i>
             <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
           </a>

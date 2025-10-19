@@ -1,4 +1,4 @@
-.p-card { display: flex; flex-direction: column; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; }
+.p-card { display: flex; flex-direction: column; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; position: relative; z-index: 2; }
 .thumb { position: relative; }
 .thumb img { width: 100%; height: 180px; object-fit: cover; display: block; }
 .badge { position: absolute; top: 8px; left: 8px; background: #10b981; color: #fff; border-radius: 999px; padding: 4px 8px; font-size: 12px; }
@@ -8,6 +8,23 @@
 .fav .count { font-size: 12px; color: #374151; }
 .add { position: absolute; right: 8px; bottom: 8px; width: 44px; height: 44px; border-radius: 999px; border: none; background: var(--primary, #2563eb); color: #fff; box-shadow: 0 6px 14px rgba(37,99,235,0.35); cursor: pointer; display: grid; place-items: center; }
 .add:active { transform: scale(.96); }
+.add::after {
+	content: "+";
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	width: 18px;
+	height: 18px;
+	border-radius: 999px;
+	background: #22c55e; /* green accent */
+	color: #fff;
+	font-weight: 900;
+	font-size: 12px;
+	line-height: 18px;
+	text-align: center;
+	border: 2px solid #fff;
+	box-shadow: 0 4px 10px rgba(0,0,0,.15);
+}
 .info { padding: 10px; display: grid; gap: 6px; }
 .nome { font-size: 15px; font-weight: 700; color: #111827; margin: 0; }
 .linha { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

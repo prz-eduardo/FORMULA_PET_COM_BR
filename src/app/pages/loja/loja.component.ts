@@ -40,6 +40,23 @@ export class LojaComponent implements OnInit {
   popoverTop = 0;
   popoverLeft = 0;
   private pendingProduct: ShopProduct | null = null;
+  // Filters modal state
+  showFilters = false;
+  filtroDraft = '';
+  categoriaDraft = '';
+  sortDraft: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'popularity' | 'my_favorites' = 'relevance';
+  // Extra filters (applied)
+  minPrice?: number;
+  maxPrice?: number;
+  promoOnly = false;
+  inStockOnly = false;
+  minRating?: number;
+  // Drafts for modal
+  minPriceDraft?: number;
+  maxPriceDraft?: number;
+  promoOnlyDraft = false;
+  inStockOnlyDraft = false;
+  minRatingDraft?: number;
 
   @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('profileBtn') profileBtn?: ElementRef<HTMLButtonElement>;
@@ -84,6 +101,14 @@ export class LojaComponent implements OnInit {
       // Em modo favoritos, ainda assim buscamos no servidor, mas caso venha tudo, garantimos estado local coerente
       base = base.filter(p => this.isFav(p));
     }
+    // Local filters (complementares ao servidor)
+    const minP = typeof this.minPrice === 'number' ? this.minPrice : undefined;
+    const maxP = typeof this.maxPrice === 'number' ? this.maxPrice : undefined;
+    if (minP != null) base = base.filter(p => this.price(p) >= minP);
+    if (maxP != null) base = base.filter(p => this.price(p) <= maxP);
+    if (this.promoOnly) base = base.filter(p => (p.discount || 0) > 0);
+    if (typeof this.minRating === 'number' && this.minRating > 0) base = base.filter(p => (p.rating || 0) >= this.minRating!);
+    if (this.inStockOnly) base = base.filter(p => p.stock != null && p.stock > 0);
     return base;
   }
 
@@ -114,6 +139,43 @@ export class LojaComponent implements OnInit {
   async toggleFav(p: ShopProduct) {
     const ok = await this.store.toggleFavorite(p.id);
     if (!ok) this.openLoginNearProfile();
+  }
+  openFilters() {
+    // seed drafts with current
+    this.filtroDraft = this.filtro;
+    this.categoriaDraft = this.categoria;
+    this.sortDraft = this.sort;
+    this.minPriceDraft = this.minPrice;
+    this.maxPriceDraft = this.maxPrice;
+    this.promoOnlyDraft = this.promoOnly;
+    this.inStockOnlyDraft = this.inStockOnly;
+    this.minRatingDraft = this.minRating;
+    this.showFilters = true;
+  }
+  closeFilters() { this.showFilters = false; }
+  clearFilters() {
+    this.filtroDraft = '';
+    this.categoriaDraft = '';
+    this.sortDraft = 'relevance';
+    this.minPriceDraft = undefined;
+    this.maxPriceDraft = undefined;
+    this.promoOnlyDraft = false;
+    this.inStockOnlyDraft = false;
+    this.minRatingDraft = undefined;
+  }
+  async applyFilters() {
+    this.filtro = this.filtroDraft;
+    this.categoria = this.categoriaDraft;
+    this.sort = this.sortDraft;
+    this.minPrice = this.minPriceDraft;
+    this.maxPrice = this.maxPriceDraft;
+    this.promoOnly = this.promoOnlyDraft;
+    this.inStockOnly = this.inStockOnlyDraft;
+    this.minRating = this.minRatingDraft;
+    this.page = 1;
+    await this.fetchProducts();
+    this.persistQueryParams();
+    this.closeFilters();
   }
   async addToCart(p: ShopProduct): Promise<boolean> {
     const ok = await this.store.addToCart(p, 1);
@@ -188,20 +250,43 @@ export class LojaComponent implements OnInit {
         el.clientHeight;
         this.renderer.setStyle(el, 'transform', `translate(${translateX}px, ${translateY}px) scale(0.2)`);
         this.renderer.setStyle(el, 'opacity', `0`);
-        setTimeout(() => el.remove(), durationMs + delayMs + 120);
+        setTimeout(() => el.remove(), durationMs + delayMs + 240);
       };
 
-      // Main dot (bigger, brighter)
-      spawn('', 18, 1.25, 1, 0, 1100);
-      // Trail dots
-      spawn('ghost', 14, 1.15, 0.8, 60, 1200);
-      spawn('tail', 10, 1.05, 0.6, 120, 1300);
+      // Origin ring for extra feedback
+      const spawnRing = (size: number, durationMs: number) => {
+        const el = this.renderer.createElement('div');
+        this.renderer.addClass(el, 'fly-dot');
+        this.renderer.addClass(el, 'ring');
+        this.renderer.setStyle(el, 'width', `${size}px`);
+        this.renderer.setStyle(el, 'height', `${size}px`);
+        this.renderer.setStyle(el, 'left', `${centerX - size / 2}px`);
+        this.renderer.setStyle(el, 'top', `${centerY - size / 2}px`);
+        this.renderer.setStyle(el, 'opacity', `0.9`);
+        this.renderer.setStyle(el, 'transform', `translate(0,0) scale(0.4)`);
+        this.renderer.setStyle(el, 'transition', `transform ${durationMs}ms ease-out, opacity ${durationMs}ms ease-out`);
+        document.body.appendChild(el);
+        // Force layout
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        el.clientHeight;
+        this.renderer.setStyle(el, 'transform', `translate(0,0) scale(1.6)`);
+        this.renderer.setStyle(el, 'opacity', `0`);
+        setTimeout(() => el.remove(), durationMs + 120);
+      };
+
+      // Spawn a subtle ring at origin
+      spawnRing(26, 700);
+      // Main dot (bigger, brighter) - slower
+      spawn('', 22, 1.35, 1, 0, 1400);
+      // Trail dots - longer and more visible
+      spawn('ghost', 16, 1.2, 0.85, 100, 1600);
+      spawn('tail', 12, 1.08, 0.7, 220, 1800);
 
       // Pulse cart button on arrival
-      const pulseDelay = 900;
+      const pulseDelay = 1300;
       setTimeout(() => {
         this.renderer.addClass(this.cartBtn!.nativeElement, 'pulse');
-        setTimeout(() => this.renderer.removeClass(this.cartBtn!.nativeElement, 'pulse'), 500);
+        setTimeout(() => this.renderer.removeClass(this.cartBtn!.nativeElement, 'pulse'), 800);
       }, pulseDelay);
     } catch {
       // ignore animation errors silently
@@ -245,7 +330,9 @@ export class LojaComponent implements OnInit {
         const maxLeft = window.scrollX + window.innerWidth - w - 8;
         const maxTop = window.scrollY + window.innerHeight - h - 8;
         this.popoverLeft = Math.max(window.scrollX + 8, Math.min(left, maxLeft));
-        this.popoverTop = Math.max(window.scrollY + 8, Math.min(top, maxTop));
+        // On mobile we slide in from right; align top to the login button with small offset
+        const desiredTop = rect.top + window.scrollY - 8; // slightly above button center
+        this.popoverTop = Math.max(window.scrollY + 8, Math.min(desiredTop, maxTop));
       };
       clamp(roughW, roughH);
       // next tick: measure and re-clamp
@@ -281,8 +368,18 @@ export class LojaComponent implements OnInit {
       this.loading = true;
       const useFavs = this.onlyFavorites ? true : undefined;
       const effectiveSort = this.onlyFavorites ? 'my_favorites' : sortMap[this.sort];
-  const selected = this.categorias.find(c => c.nome === this.categoria);
-  const res = await this.store.loadProducts({ page: this.page, pageSize: this.pageSize, category: this.categoria || undefined, categoryId: selected?.id, q: this.filtro || undefined, myFavorites: useFavs, sort: effectiveSort });
+      const selected = this.categorias.find(c => c.nome === this.categoria);
+      const res = await this.store.loadProducts({
+        page: this.page,
+        pageSize: this.pageSize,
+        category: this.categoria || undefined,
+        categoryId: selected?.id,
+        q: this.filtro || undefined,
+        myFavorites: useFavs,
+        sort: effectiveSort,
+        minPrice: typeof this.minPrice === 'number' ? this.minPrice : undefined,
+        maxPrice: typeof this.maxPrice === 'number' ? this.maxPrice : undefined
+      });
       this.total = res.total;
       this.totalPagesSrv = res.totalPages;
       this.page = res.page; // in case server adjusted

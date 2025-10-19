@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { AdminApiService, EstoqueAtivoDto, EstoqueMovimentoDto, UnitDto, FornecedorDto } from '../../../../services/admin-api.service';
+import { AdminApiService, EstoqueAtivoDto, EstoqueMovimentoDto, UnitDto, FornecedorDto, InsumoDto } from '../../../../services/admin-api.service';
 // removed reusable search import to use literal markup/logic
 
 @Component({
@@ -19,8 +19,11 @@ export class EstoqueAdminComponent implements OnInit {
   // form principal (criar lote)
   form = this.fb.group({
     id: [null as number | null],
+    tipoSelecionado: ['ativo' as 'ativo' | 'insumo'],
     ativoBusca: [''],
     ativoSelecionado: [null as null | { id: number | string; nome?: string; ativo_nome?: string }],
+    insumoBusca: [''],
+    insumoSelecionado: [null as null | { id: number | string; nome: string }],
     quantity: [null as number | null, [Validators.required, Validators.min(0.000001)]],
     unit_code: ['', Validators.required],
     fornecedor_id: [null as number | null],
@@ -40,6 +43,10 @@ export class EstoqueAdminComponent implements OnInit {
   ativosAll: Array<{ id: number | string; nome: string; descricao?: string }> = [];
   ativosSugestoes: Array<{ id: number|string; ativo_nome: string }> = [];
   ativoSelecionado: { id: number|string; ativo_nome: string } | null = null;
+  insumoQuery = signal('');
+  insumosAll: Array<{ id: number | string; nome: string; descricao?: string }> = [];
+  insumosSugestoes: Array<{ id: number|string; nome: string }> = [];
+  insumoSelecionado: { id: number|string; nome: string } | null = null;
   createdLote = signal<EstoqueAtivoDto | null>(null);
   lotes = signal<EstoqueAtivoDto[]>([]);
   movimentos = signal<EstoqueMovimentoDto[] | null>(null);
@@ -53,7 +60,8 @@ export class EstoqueAdminComponent implements OnInit {
     q: [''],
     fornecedor_id: [null as number | null],
     active: ['all' as 'all' | '1' | '0'],
-    onlySelectedAtivo: [false]
+    onlySelectedAtivo: [false],
+    onlySelectedInsumo: [false]
   });
   tablePage = signal(1);
   tablePageSize = signal(10);
@@ -69,17 +77,28 @@ export class EstoqueAdminComponent implements OnInit {
   ngOnInit(): void {
     // carregar fornecedores
     this.api.listFornecedores().subscribe({ next: f => this.fornecedores = f || [], error: () => this.fornecedores = [] });
-    // carregar config consolidada (units + ativos básicos)
+    // carregar config consolidada (units + ativos básicos + insumos)
     this.api.getConfigNewProduct().subscribe({
       next: (res) => {
         this.units = res.units || [];
         this.ativosAll = Array.isArray(res.ativos) ? res.ativos.map(a => ({ id: a.id, nome: a.nome })) : [];
+        this.insumosAll = Array.isArray(res.insumos) ? res.insumos.map(i => ({ id: i.id, nome: i.nome })) : [];
       },
-      error: () => { this.units = []; this.ativosAll = []; }
+      error: () => { this.units = []; this.ativosAll = []; this.insumosAll = []; }
     });
 
     // carregar tabela inicial
     this.loadEstoqueTable(1);
+  }
+
+  private goHomeAndReload() {
+    try {
+      this.step.set(0);
+      this.createdLote.set(null);
+      this.movimentos.set(null);
+    } catch {}
+    // Força recarregar a rota atual para resetar todo o estado
+    try { window.location.reload(); } catch { /* noop */ }
   }
 
   // Busca de ativo - igual produto
@@ -103,16 +122,41 @@ export class EstoqueAdminComponent implements OnInit {
     if (this.filterForm.value.onlySelectedAtivo) this.loadEstoqueTable(1);
   }
 
+  onInsumoQueryChange(q: string) {
+    this.insumoQuery.set(q);
+    const term = (q || '').trim();
+    if (!term) { this.insumosSugestoes = []; this.insumoSelecionado = null; this.form.patchValue({ insumoSelecionado: null }); return; }
+    const lower = term.toLowerCase();
+    this.insumosSugestoes = (this.insumosAll || [])
+      .filter(i => (i.nome || '').toLowerCase().includes(lower) || ((i as any).descricao || '').toLowerCase().includes(lower))
+      .slice(0, 20)
+      .map(i => ({ id: i.id as any, nome: (i as any).nome }));
+  }
+  selecionarInsumo(op: { id: number|string; nome: string }) {
+    this.insumoSelecionado = op;
+    this.form.patchValue({ insumoSelecionado: op });
+    this.insumosSugestoes = [];
+    // carregar lotes existentes para o insumo
+    this.loadLotesByInsumo(op.id);
+    if (this.filterForm.value.onlySelectedInsumo) this.loadEstoqueTable(1);
+  }
+
   async criarLote() {
     this.error.set(null);
-    if (this.form.invalid || !this.form.value.ativoSelecionado) {
-      this.error.set('Preencha ativo, quantidade e unidade.');
+    const tipo = this.form.value.tipoSelecionado;
+    const isAtivo = tipo === 'ativo';
+    const isInsumo = tipo === 'insumo';
+    const ativoSel = this.form.value.ativoSelecionado;
+    const insumoSel = this.form.value.insumoSelecionado;
+    if (this.form.invalid || (isAtivo && !ativoSel) || (isInsumo && !insumoSel)) {
+      this.error.set(isInsumo ? 'Preencha insumo, quantidade e unidade.' : 'Preencha ativo, quantidade e unidade.');
       return;
     }
     this.saving.set(true);
-    const { ativoSelecionado, quantity, unit_code, lote, validade, location, fornecedor_id, nota_fiscal, preco_unit } = this.form.value;
+    const { quantity, unit_code, lote, validade, location, fornecedor_id, nota_fiscal, preco_unit } = this.form.value;
     this.api.createEstoque({
-      ativo_id: Number(ativoSelecionado!.id),
+      ativo_id: isAtivo ? Number(ativoSel!.id) : undefined,
+      insumo_id: isInsumo ? Number(insumoSel!.id) : undefined,
       quantity: Number(quantity),
       unit_code: String(unit_code),
       fornecedor_id: fornecedor_id != null ? Number(fornecedor_id) : undefined,
@@ -126,14 +170,8 @@ export class EstoqueAdminComponent implements OnInit {
         this.createdLote.set(res);
         this.form.patchValue({ id: res.id, active: (res.active as any) ?? 1 });
         this.saving.set(false);
-        // carregar movimentos iniciais
-        this.api.movimentosEstoque(res.id).subscribe({ next: mv => this.movimentos.set(mv), error: () => this.movimentos.set([]) });
-        // atualizar listagem de lotes
-        if (this.ativoSelecionado) this.loadLotesByAtivo(this.ativoSelecionado.id);
-        // atualizar tabela de gestão
-        this.reloadTable();
-        // ir para etapa 1 se ainda não estiver
-        this.step.set(1);
+        // Após salvar, voltar e recarregar a tela para garantir estado dinâmico
+        this.goHomeAndReload();
       },
       error: (e) => { console.error(e); this.error.set('Não foi possível criar o lote.'); this.saving.set(false); }
     });
@@ -191,10 +229,8 @@ export class EstoqueAdminComponent implements OnInit {
       next: (res) => {
         this.createdLote.set(res);
         this.saving.set(false);
-        // refresh movimentos e listagem
-        this.api.movimentosEstoque(res.id).subscribe({ next: mv => this.movimentos.set(mv), error: () => this.movimentos.set([]) });
-        if (this.ativoSelecionado) this.loadLotesByAtivo(this.ativoSelecionado.id);
-        this.reloadTable();
+        // Após terminar de editar, voltar e recarregar a tela
+        this.goHomeAndReload();
       },
       error: (e) => { console.error(e); this.error.set('Falha ao salvar alterações do lote.'); this.saving.set(false); }
     });
@@ -254,9 +290,53 @@ export class EstoqueAdminComponent implements OnInit {
   // Template helpers
   toNumber(v: any): number { return v === '' || v == null ? 0 : Number(v); }
 
+  humanizeValidade(v?: string | null): string {
+    if (!v) return '—';
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    const today = new Date();
+    // normalize to local midnight for day diff
+    const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    const dd = startOf(d).getTime();
+    const td = startOf(today).getTime();
+    const diffDays = Math.round((dd - td) / 86400000);
+    const fmt = new Intl.DateTimeFormat('pt-BR').format(d);
+    if (diffDays === 0) return `${fmt} (hoje)`;
+    if (diffDays > 0) return `${fmt} (em ${diffDays} dia${diffDays === 1 ? '' : 's'})`;
+    const abs = Math.abs(diffDays);
+    return `${fmt} (vencido há ${abs} dia${abs === 1 ? '' : 's'})`;
+  }
+
+  isVencido(v?: string | null): boolean {
+    if (!v) return false;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return false;
+    const today = new Date();
+    const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    return startOf(d).getTime() < startOf(today).getTime();
+  }
+
+  isEmBreve(v?: string | null, dias: number = 30): boolean {
+    if (!v) return false;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return false;
+    const today = new Date();
+    const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    const diffDays = Math.round((startOf(d).getTime() - startOf(today).getTime()) / 86400000);
+    return diffDays >= 0 && diffDays <= dias;
+  }
+
   // carregar lotes por ativo
   private loadLotesByAtivo(ativoId: number | string) {
     this.api.listEstoque({ ativo_id: ativoId, page: 1, pageSize: 100, active: 1 }).subscribe({
+      next: (res) => this.lotes.set(res.data || []),
+      error: () => this.lotes.set([])
+    });
+  }
+
+  // carregar lotes por insumo
+  private loadLotesByInsumo(insumoId: number | string) {
+    this.api.listEstoque({ insumo_id: insumoId, page: 1, pageSize: 100, active: 1 }).subscribe({
       next: (res) => this.lotes.set(res.data || []),
       error: () => this.lotes.set([])
     });
@@ -272,7 +352,8 @@ export class EstoqueAdminComponent implements OnInit {
     if (f.q && f.q.trim()) params.q = f.q.trim();
     if (f.fornecedor_id != null) params.fornecedor_id = Number(f.fornecedor_id);
     if (f.active === '1') params.active = 1; else if (f.active === '0') params.active = 0;
-    if (f.onlySelectedAtivo && this.ativoSelecionado) params.ativo_id = this.ativoSelecionado.id;
+  if (f.onlySelectedAtivo && this.ativoSelecionado) params.ativo_id = this.ativoSelecionado.id;
+  if ((this.filterForm.value as any).onlySelectedInsumo && this.insumoSelecionado) params.insumo_id = this.insumoSelecionado.id;
     this.tableLoading.set(true);
     this.api.listEstoque(params).subscribe({
       next: (res) => {
@@ -305,8 +386,9 @@ export class EstoqueAdminComponent implements OnInit {
   // navegação stepper
   goToStep(i: number) {
     if (i < 0 || i > 1) return;
-    // só deixa ir pra etapa 1 se tiver ativo selecionado
-    if (i === 1 && !this.ativoSelecionado) return;
+    // só deixa ir pra etapa 1 se tiver ativo/insumo selecionado
+    const tipo = this.form.value.tipoSelecionado;
+    if (i === 1 && ((tipo === 'ativo' && !this.ativoSelecionado) || (tipo === 'insumo' && !this.insumoSelecionado))) return;
     this.step.set(i);
   }
   nextStep() { this.goToStep(this.step() + 1); }

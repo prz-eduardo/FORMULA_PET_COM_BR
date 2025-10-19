@@ -15,12 +15,13 @@
 .sugestao{padding:8px 10px;cursor:pointer}
 .sugestao:hover{background:#1b2b43}
 .selecionado{margin-top:6px}
-.actions{display:flex;align-items:center;gap:10px;margin-top:12px}
+.actions{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
 .btn{background:#2563eb;border:1px solid transparent;color:#fff;padding:8px 12px;border-radius:6px;cursor:pointer;transition:all .15s}
 .btn:hover{filter:brightness(1.1)}
 .btn[disabled]{opacity:.6;cursor:not-allowed}
 .btn.secondary{background:#0b1220;border-color:#263241;color:#e5e7eb}
 .btn.outline{background:transparent;border-color:#2563eb;color:#e0ecff}
+.table-wrap .btn{margin-right:6px}
 .err{color:#ff6666}
 .resultado{margin-top:24px}
 .lote-card{background:#0f2135;border:1px solid #263241;border-radius:8px;padding:12px;margin:8px 0}
