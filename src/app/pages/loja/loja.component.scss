@@ -5,7 +5,7 @@
 .titulo { margin: 0 0 4px; padding-top: 0; font-size: 32px; font-weight: 800; color: #fff; text-align: center; text-shadow: 0 2px 8px rgba(0,0,0,0.35); }
 .subtitle { margin: 0; font-size: 14px; opacity: .95; }
 .card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-.filtros { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; -webkit-backdrop-filter: saturate(120%); backdrop-filter: saturate(120%);
+.filtros { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; -webkit-backdrop-filter: saturate(120%); backdrop-filter: saturate(120%); position: relative; z-index: 10;
 	.cta { position: relative; display: flex; gap: 8px; align-items: center; padding: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.05); }
 	.perfil { position: relative; }
 		.popover { position: absolute; top: 48px; left: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.12); padding: 12px; width: 260px; z-index: 2000; }
@@ -19,10 +19,10 @@
 .btn.light { background: #f3f4f6; color: #111827; box-shadow: none; border: 1px solid #e5e7eb; }
 .btn.light.active { background: #fde68a; border-color: #f59e0b; }
 .fav-toggle { margin-right: 4px; }
-.cart-link { margin-left: auto; text-decoration: none; }
-.cart-link.with-badge { position: relative; padding-right: 34px; }
-.cart-link .cart-badge { position: absolute; right: 8px; top: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 11px; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px #fff; }
-.cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+.cart-link { margin-left: auto; text-decoration: none; width: 40px; height: 40px; padding: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
+.cart-link.with-badge { position: relative; padding-right: 0; }
+.cart-link .cart-badge { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 11px; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px #fff; }
+.cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; position: relative; z-index: 10; }
 .sec-title { margin: 16px 0 8px; font-size: 18px; font-weight: 800; color: #111827; }
 .catalogo { margin-bottom: 24px; }
 .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid #e5e7eb; background: #fff; color: #111827; cursor: pointer; font-weight: 600; }
@@ -108,18 +108,20 @@
 		right: 0 !important;
 			left: auto !important;
 			/* top is controlled by TS to align with login button */
-			width: min(380px, 90vw) !important;
+			width: min(340px, 88vw) !important;
 			max-width: none !important;
 			height: auto !important;
-			max-height: min(70vh, calc(100vh - 24px)) !important;
-			min-height: 280px;
-			padding: 12px 14px;
+			max-height: min(60vh, calc(100vh - 24px)) !important;
+			min-height: 220px;
+			padding: 10px 12px;
 		border-radius: 12px 0 0 12px;
 		transform: translateX(104%);
-			animation: loginSlideIn .65s cubic-bezier(.22,.61,.36,1) forwards;
+			animation: loginSlideIn .9s cubic-bezier(.22,.61,.36,1) forwards;
 		will-change: transform;
 	}
+	.login-popover.closing { animation: loginSlideOut .9s cubic-bezier(.22,.61,.36,1) forwards; }
 		@keyframes loginSlideIn { from { transform: translate(108%, 0); opacity: .98; } to { transform: translateX(20px); opacity: 1; } }
+		@keyframes loginSlideOut { from { transform: translateX(20px); opacity: 1; } to { transform: translate(108%, 0); opacity: .98; } }
 }
 
 	/* Buttons helpers */
@@ -132,20 +134,24 @@ app-footer { display: block; margin-top: 16px; }
 
 /* Global fixed overlay + popover for login */
 .login-overlay {
-	position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 4000;
+	position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 4000; opacity: 0;
+	animation: overlayFadeIn .3s ease forwards;
 }
+.login-overlay.closing { animation: overlayFadeOut .3s ease forwards; }
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlayFadeOut { from { opacity: 1; } to { opacity: 0; } }
 .login-popover {
 	position: absolute; /* positioned by TS with page scroll offsets */
 	background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
 	box-shadow: 0 16px 40px rgba(0,0,0,0.2);
-	padding: 10px; width: 300px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px);
+	padding: 10px; width: 300px; max-width: calc(100vw - 24px); max-height: min(60vh, calc(100vh - 24px));
 	overflow: auto; z-index: 5000;
 }
-.login-popover .popover-header { font-weight: 700; margin-bottom: 6px; color: #111827; }
-.login-popover .popover-body { display: grid; gap: 6px; }
+.login-popover .popover-header { font-weight: 700; margin-bottom: 4px; color: #111827; padding-bottom: 30px; }
+.login-popover .popover-body { display: grid; gap: 6px; padding-bottom: 2px; }
 .login-popover .btn.google { background: #fff; color: #111827; border: 1px solid #e5e7eb; }
 .login-popover .btn.light.full { background: #f3f4f6; color: #111827; width: 100%; text-align: center; min-height: 38px; padding: 8px 12px; }
-.login-popover .divider { height: 1px; background: #e5e7eb; margin: 6px 0; }
+.login-popover .divider { height: 1px; background: #e5e7eb; margin: 4px 0; }
 .g-img { width: 18px; height: 18px; margin-right: 6px; }
 
 /* CTA WhatsApp */
@@ -172,4 +178,7 @@ app-footer { display: block; margin-top: 16px; }
 
 @media (max-width: 640px) {
 	.filters-modal .body { padding-right: 16px; }
+
+	/* Modal buttons wider on mobile */
+	.login-popover .popover-body .btn { width: 90% !important; margin-left: auto; margin-right: auto; }
 }

@@ -33,6 +33,7 @@ export class LojaComponent implements OnInit {
   loading = false;
   // Auth UI
   showLogin = false;
+  closingLogin = false;
   showEmailLogin = false;
   email = '';
   senha = '';
@@ -304,9 +305,13 @@ export class LojaComponent implements OnInit {
   }
 
   toggleLogin(ev?: MouseEvent) {
-    this.showLogin = !this.showLogin;
-    if (!this.showLogin) this.showEmailLogin = false; // reset when closing
-    if (this.showLogin) this.positionPopover();
+    if (this.showLogin || this.closingLogin) {
+      this.closeLogin();
+    } else {
+      this.showLogin = true;
+      this.closingLogin = false;
+      this.positionPopover();
+    }
     ev?.stopPropagation();
   }
 
@@ -346,10 +351,21 @@ export class LojaComponent implements OnInit {
     } catch { this.popoverTop = 100; this.popoverLeft = 100; }
   }
 
-  closeLogin() { this.showLogin = false; }
+  closeLogin() {
+    if (!this.showLogin || this.closingLogin) return;
+    this.closingLogin = true;
+    this.showEmailLogin = false;
+  // Match the CSS mobile closing duration (.9s). Desktop closes immediately visually.
+  const durationMs = 900;
+    setTimeout(() => {
+      this.showLogin = false;
+      this.closingLogin = false;
+    }, durationMs);
+  }
 
   private openLoginNearProfile() {
     this.showLogin = true;
+    this.closingLogin = false;
     this.positionPopover();
   }
 
@@ -401,6 +417,9 @@ export class LojaComponent implements OnInit {
         this.senha = '';
         this.store.resetClienteGate();
         await this.fetchMe();
+        // Refresh favorites and products so hearts turn red
+        await this.store.refreshFavorites();
+        await this.fetchProducts();
         if (this.pendingProduct) {
           await this.store.addToCart(this.pendingProduct, 1);
           this.pendingProduct = null;
@@ -445,6 +464,8 @@ export class LojaComponent implements OnInit {
         this.showLogin = false;
         this.store.resetClienteGate();
         await this.fetchMe();
+        await this.store.refreshFavorites();
+        await this.fetchProducts();
         if (this.pendingProduct) {
           await this.store.addToCart(this.pendingProduct, 1);
           this.pendingProduct = null;

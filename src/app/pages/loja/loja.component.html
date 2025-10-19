@@ -55,7 +55,7 @@
         [product]="p"
         [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
         [supportsRatings]="storeMeta?.supports?.ratings ?? true"
-        [favoriteActive]="p.isFavorited"
+        [favoriteActive]="isFav(p)"
         (toggleFav)="toggleFav(p)"
         (add)="onAddToCart(p, $event)"
       ></app-product-card-v2>
@@ -152,8 +152,8 @@
   </section>
 
   <!-- Login Overlay & Popover (fixed, acima de tudo) -->
-  <div class="login-overlay" *ngIf="showLogin" (click)="closeLogin()"></div>
-  <div class="login-popover" *ngIf="showLogin" [ngStyle]="{ top: popoverTop + 'px', left: popoverLeft + 'px' }" (click)="$event.stopPropagation()" role="dialog" aria-label="Login do cliente">
+  <div class="login-overlay" *ngIf="showLogin" [class.closing]="closingLogin" (click)="closeLogin()"></div>
+  <div class="login-popover" *ngIf="showLogin" [class.closing]="closingLogin" [ngStyle]="{ top: popoverTop + 'px', left: popoverLeft + 'px' }" (click)="$event.stopPropagation()" role="dialog" aria-label="Login do cliente">
     <div class="popover-header">
       <div *ngIf="!me">Entrar</div>
       <div *ngIf="me">Olá, {{ me?.nome?.split(' ')[0] || 'cliente' }} 👋</div>

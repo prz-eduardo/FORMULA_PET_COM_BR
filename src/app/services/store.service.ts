@@ -184,6 +184,24 @@ export class StoreService {
     return this.favoritesSubject.value.includes(productId);
   }
 
+  /**
+   * Refresh favorites list from server without replacing current products grid.
+   * Useful right after login or when opening the favorites route directly.
+   */
+  async refreshFavorites(): Promise<void> {
+    try {
+      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      if (!token) return;
+      const res: any = await this.api.listStoreProducts({ myFavorites: true, page: 1, pageSize: 9999 }, token).toPromise();
+      const list = (res?.data || []) as any[];
+      const favIds = list.map((it: any) => Number(it.id)).filter((n: any) => Number.isFinite(n));
+      this.favoritesSubject.next(favIds);
+      if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(favIds));
+    } catch {
+      // ignore; keep local favorites
+    }
+  }
+
   // Cart
   get cartSnapshot() { return this.cartSubject.value; }
 

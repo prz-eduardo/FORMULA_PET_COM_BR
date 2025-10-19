@@ -18,7 +18,10 @@ export class FavoritosComponent implements OnInit {
   constructor(private store: StoreService) {}
 
   async ngOnInit() {
-    await this.store.loadProducts();
+    // First, refresh the server favorites list so local store has the IDs
+    await this.store.refreshFavorites();
+    // Then, load products with myFavorites to get only those and also sync flags
+    await this.store.loadProducts({ myFavorites: true, page: 1, pageSize: 60, sort: 'my_favorites' });
     this.store.products$.subscribe(p => this.produtos = p);
     this.store.favorites$.subscribe(f => this.favoritos = f);
   }
