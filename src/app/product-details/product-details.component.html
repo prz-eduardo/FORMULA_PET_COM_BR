@@ -1,1 +1,66 @@
-<p>product-details works!</p>
+<app-navmenu></app-navmenu>
+<div class="pd-wrap" *ngIf="!loading && product; else loadingTpl">
+	<header class="pd-header">
+		<a class="back" (click)="back()">← Voltar</a>
+		<h1 class="title" [title]="product!.name">{{ product!.name }}</h1>
+		<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho">🛒</button>
+	</header>
+
+	<section class="pd-main">
+		<div class="media">
+			<div class="thumb">
+					<img [src]="displayImageUrl" [alt]="product!.name" />
+			</div>
+				<div class="thumbs" *ngIf="product!.images?.length"> 
+					<img *ngFor="let im of product!.images; let i = index" [src]="im.url" [alt]="product!.name"
+							 [class.active]="i === selectedImageIndex" (click)="selectImage(i)" />
+			</div>
+		</div>
+		<div class="info">
+			<div class="price-line">
+				<div class="price-now">{{ priceNow() | currency:'BRL' }}</div>
+				<div class="price-old" *ngIf="product!.discount">{{ product!.price | currency:'BRL' }}</div>
+				<div class="badge tipo" *ngIf="product!.tipo">{{ product!.tipo }}</div>
+			</div>
+			<div class="meta">
+				<div class="rating" *ngIf="product!.rating != null">
+					⭐ {{ product!.rating | number:'1.1-1' }} <span class="r-total" *ngIf="product!.ratingsCount">({{ product!.ratingsCount }})</span>
+				</div>
+				<div class="fav" *ngIf="product!.favoritesCount != null">❤ {{ product!.favoritesCount }}</div>
+			</div>
+			<p class="desc" *ngIf="product!.description">{{ product!.description }}</p>
+			<div class="chips" *ngIf="product!.tags?.length">
+				<span class="chip" *ngFor="let t of product!.tags">#{{ t }}</span>
+			</div>
+
+			<div class="actions">
+						<div class="qty">
+							<button class="btn light" (click)="qty = qty > 1 ? qty - 1 : 1">−</button>
+							<input type="number" min="1" [(ngModel)]="qty" />
+							<button class="btn light" (click)="qty = qty + 1">+</button>
+						</div>
+				<button class="btn primary" (click)="buyNow($event)">Comprar agora</button>
+				<button class="btn" (click)="addToCart($event)">Adicionar ao carrinho</button>
+				<button class="btn light" (click)="toggleFav()">{{ isFavLocal ? 'Remover dos favoritos' : 'Favoritar' }}</button>
+			</div>
+		</div>
+	</section>
+
+	<section class="pd-extra">
+		<h2>Informações</h2>
+		<ul>
+			<li><strong>Disponibilidade:</strong> {{ availabilityLabel }}</li>
+			<li *ngIf="product!.category"><strong>Categoria:</strong> {{ product!.category }}</li>
+			<li *ngIf="product!.tipo"><strong>Tipo:</strong> {{ product!.tipo }}</li>
+		</ul>
+	</section>
+</div>
+
+<ng-template #loadingTpl>
+	<div class="pd-loading">Carregando produto...</div>
+	<header class="pd-header">
+		<a class="back" (click)="back()">← Voltar</a>
+		<h1 class="title">Produto</h1>
+		<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho">🛒</button>
+	</header>
+</ng-template>

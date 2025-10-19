@@ -52,20 +52,13 @@
           <div class="kpi"><span>Novos clientes</span><strong>{{ d.kpis?.novos_clientes || 0 }}</strong></div>
           <div class="kpi"><span>Recorrentes</span><strong>{{ d.kpis?.recorrentes_clientes || 0 }}</strong></div>
         </section>
-        <!-- Quick charts -->
-        <section class="charts two">
+        <!-- Resumo: Vendas 30 dias -->
+        <section class="charts one">
           <div class="panel">
-            <h3>Receitas (7 dias)</h3>
+            <h3>Vendas (30 dias)</h3>
             <div class="chart-box">
-              <canvas id="chart-receitas7" *ngIf="(d?.receitas_last7?.length || 0) > 0"></canvas>
-              <div class="empty" *ngIf="!(d?.receitas_last7?.length)">Sem dados</div>
-            </div>
-          </div>
-          <div class="panel">
-            <h3>Receitas (30 dias)</h3>
-            <div class="chart-box">
-              <canvas id="chart-receitas30" *ngIf="(d?.receitas_last30?.length || 0) > 0"></canvas>
-              <div class="empty" *ngIf="!(d?.receitas_last30?.length)">Sem dados</div>
+              <canvas id="chart-resumo-sales-30d" *ngIf="(d?.sales_30d?.by_day?.length || 0) > 0"></canvas>
+              <div class="empty" *ngIf="!((d?.sales_30d?.by_day?.length))">Sem dados</div>
             </div>
           </div>
         </section>

@@ -189,7 +189,7 @@
     <a routerLink="/loja" class="btn link-all">Ir para a loja</a>
   </div>
   <div class="hp-grid upgraded">
-    <a class="hp-card pro" *ngFor="let p of produtos" [routerLink]="['/produto', p.id]">
+  <a class="hp-card pro" *ngFor="let p of produtos" [routerLink]="['/produto', p.id]" [queryParams]="{ src: 'home' }">
       <div class="hp-media">
         <img [src]="p.image || '/imagens/image.png'" alt="{{p.name}}" loading="lazy" decoding="async" />
         <div class="media-title" title="{{p.name}}">{{ p.name }}</div>

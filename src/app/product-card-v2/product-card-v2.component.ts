@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ShopProduct } from '../services/store.service';
 
 @Component({
   selector: 'app-product-card-v2',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, RouterLink],
   templateUrl: './product-card-v2.component.html',
   styleUrls: ['./product-card-v2.component.scss']
 })
@@ -24,7 +25,14 @@ export class ProductCardV2Component {
     this.toggleFav.emit();
   }
 
+  onAddClick(ev: MouseEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.add.emit(ev);
+  }
+
   get priceNow() {
+    if (this.product.promoPrice != null) return this.product.promoPrice;
     const price = this.product.price || 0;
     const disc = this.product.discount || 0;
     return Math.max(0, price - price * disc / 100);

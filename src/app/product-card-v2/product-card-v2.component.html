@@ -1,13 +1,12 @@
-<article class="p-card">
+<a class="p-card" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }">
   <div class="thumb">
     <img [src]="product.image" [alt]="product.name" width="320" height="200" />
-    <div class="badge" *ngIf="product.discount">{{ product.discount }}% OFF</div>
-    <div class="tipo" *ngIf="product.tipo">{{ product.tipo }}</div>
+    <div class="badge" *ngIf="product.discount && product.discount > 0">-{{ product.discount | number:'1.0-0' }}%</div>
     <button class="fav" *ngIf="supportsFavorites" (click)="onFavClick($event)" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
       <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>
       <span class="count" *ngIf="product.favoritesCount != null">{{ product.favoritesCount }}</span>
     </button>
-    <button class="add" (click)="add.emit($event)" title="Adicionar ao carrinho">🛒</button>
+    <button class="add" (click)="onAddClick($event)" title="Adicionar ao carrinho">🛒</button>
   </div>
   <div class="info">
     <h3 class="nome" [title]="product.name">{{ product.name }}</h3>
@@ -26,7 +25,7 @@
     <p class="desc" *ngIf="product.description">{{ product.description }}</p>
     <div class="preco">
       <span class="atual">{{ priceNow | currency:'BRL' }}</span>
-      <span class="old" *ngIf="product.discount">{{ product.price | currency:'BRL' }}</span>
+      <span class="old" *ngIf="product.promoPrice != null || (product.discount && product.discount > 0)">{{ product.price | currency:'BRL' }}</span>
     </div>
   </div>
-</article>
+</a>

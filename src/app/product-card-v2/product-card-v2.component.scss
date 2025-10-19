@@ -1,8 +1,7 @@
-.p-card { display: flex; flex-direction: column; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; position: relative; z-index: 2; }
+.p-card { display: flex; flex-direction: column; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; position: relative; z-index: 2; text-decoration: none; color: inherit; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
 .thumb { position: relative; }
 .thumb img { width: 100%; height: 180px; object-fit: cover; display: block; }
-.badge { position: absolute; top: 8px; left: 8px; background: #10b981; color: #fff; border-radius: 999px; padding: 4px 8px; font-size: 12px; }
-.tipo { position: absolute; left: 8px; top: 8px; background: #111827; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 4px 8px; border-radius: 6px; opacity: .9; }
+.badge { position: absolute; top: 8px; left: 8px; background: #ef4444; color: #fff; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; box-shadow: 0 6px 14px rgba(239,68,68,0.25); }
 .fav { position: absolute; right: 8px; top: 8px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.95); border: 1px solid #e5e7eb; border-radius: 999px; padding: 6px 10px; cursor: pointer; }
 .fav .heart { font-size: 16px; line-height: 1; }
 .fav .count { font-size: 12px; color: #374151; }

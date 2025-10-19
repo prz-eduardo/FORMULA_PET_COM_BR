@@ -142,6 +142,24 @@ export class DashboardAdminComponent implements OnInit {
     this.destroyCharts();
     const get = (id: string) => document.getElementById(id) as HTMLCanvasElement | null;
 
+    // Summary: sales_30d.by_day
+    if (this.section() === 'resumo' && res?.sales_30d?.by_day?.length) {
+      const ctx = get('chart-resumo-sales-30d');
+      if (ctx) {
+        const labels = res.sales_30d.by_day.map((d: any) => this.date.transform(d.dia, 'dd/MM') || d.dia);
+        const receita = res.sales_30d.by_day.map((d: any) => Number(d.receita) || 0);
+        const pedidos = res.sales_30d.by_day.map((d: any) => Number(d.pedidos) || 0);
+        this.salesByDayChart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [
+            { type: 'bar', label: 'Receita', data: receita, backgroundColor: 'rgba(37,99,235,.6)', yAxisID: 'y' },
+            { type: 'line', label: 'Pedidos', data: pedidos, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.2)', yAxisID: 'y1', tension: .3 }
+          ]},
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true }, y1: { position: 'right', beginAtZero: true } } }
+        });
+      }
+    }
+
     // receitas last 7 days
     if (this.isOn('receitas7') && res?.receitas_last7?.length) {
       const ctx = get('chart-receitas7');

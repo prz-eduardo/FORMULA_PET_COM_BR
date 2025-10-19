@@ -23,6 +23,11 @@ export interface ShopProduct {
   requiresPrescription?: boolean;
   isFavorited?: boolean;
   favoritesCount?: number;
+  // Details
+  promoPrice?: number | null;
+  inStock?: boolean | number | null;
+  imageUrl?: string | null;
+  images?: Array<{ id: number; url: string; posicao?: number | null }>
 }
 export interface StoreCategory { id: number; nome: string; produtos: number; }
 export interface StoreTag { id: number; nome: string; produtos: number; }
@@ -105,35 +110,41 @@ export class StoreService {
     // Try server endpoint if available
     try {
       const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
-  const res = await this.api.listStoreProducts(params, token).toPromise();
-      const list = (res?.data || []).map((it: any) => ({
-        id: it.id,
-        name: it.nome || it.name,
-        description: it.descricao || it.description || '',
-        price: Number(it.preco ?? it.price ?? 0),
-        image: it.imagem_url || it.image || '',
-        category: it.categoria || it.category || '',
-        tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
-        discount: it.desconto || 0,
-        rating: typeof it.rating_media === 'number' ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : undefined),
-        ratingsCount: typeof it.rating_total === 'number' ? it.rating_total : undefined,
-        isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : (it.is_favorited === 1 ? true : (it.is_favorited === 0 ? false : undefined)),
-        favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
-        stock: undefined,
-        tags: undefined,
-        weight: undefined,
-        requiresPrescription: undefined
-      })) as ShopProduct[];
-  this.productsSubject.next(list);
-  // Keep favorites list in sync with server flags
-  const serverFavIds = list.filter(p => p.isFavorited === true).map(p => p.id);
-  const isFavMode = !!params?.myFavorites;
-  // If server returned only favorites but didn't flag is_favorited, fall back to treating all returned IDs as favorites
-  const derivedFavIds = isFavMode && serverFavIds.length === 0 ? list.map(p => p.id) : serverFavIds;
-  this.favoritesSubject.next(derivedFavIds);
-  if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(derivedFavIds));
+      const res = await this.api.listStoreProducts(params, token).toPromise();
+  const raw = Array.isArray(res) ? res : ((res as any)?.data || (res as any)?.items || []);
+      const list: ShopProduct[] = (raw || []).map((it: any) => {
+        const price = Number(it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0));
+        const promoPrice = it.promo_price != null ? Number(it.promo_price) : (it.promoPrice != null ? Number(it.promoPrice) : null);
+        const discountFromPromo = (promoPrice != null && price > 0) ? Math.max(0, (1 - promoPrice / price) * 100) : 0;
+        const desconto = Number(it.desconto ?? it.discount ?? 0) || discountFromPromo;
+        return {
+          id: Number(it.id),
+          name: it.nome || it.name,
+          description: it.descricao || it.description || '',
+          price,
+          promoPrice,
+          image: it.imagem_url || it.image || it.imageUrl || '',
+          category: it.categoria || it.category || '',
+          tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
+          discount: Math.max(0, Math.round(desconto * 100) / 100),
+          rating: (typeof it.rating_media === 'number') ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : (it.rating?.media ?? undefined)),
+          ratingsCount: (typeof it.rating_total === 'number') ? it.rating_total : (it.rating?.total ?? undefined),
+          isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : (it.is_favorited === 1 ? true : (it.is_favorited === 0 ? false : undefined)),
+          favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
+        } as ShopProduct;
+      });
+
+      this.productsSubject.next(list);
+      // Keep favorites list in sync with server flags
+      const serverFavIds = list.filter(p => p.isFavorited === true).map(p => p.id);
+      const isFavMode = !!params?.myFavorites;
+      // If server returned only favorites but didn't flag is_favorited, fall back to treating all returned IDs as favorites
+      const derivedFavIds = isFavMode && serverFavIds.length === 0 ? list.map(p => p.id) : serverFavIds;
+      this.favoritesSubject.next(derivedFavIds);
+      if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(derivedFavIds));
+
       // Meta and categories/tags support
-      const meta: StoreMeta | undefined = res?.meta ? {
+      const meta: StoreMeta | undefined = (res && !Array.isArray(res) && res.meta) ? {
         loggedIn: res.meta.loggedIn,
         userType: res.meta.userType,
         favoritesPersonalization: res.meta.favoritesPersonalization,
@@ -144,7 +155,7 @@ export class StoreService {
       this.metaSubject.next(meta || null);
       const cats = meta?.categories || [];
       this.categoriesSubject.next(cats);
-      return { total: res?.total || list.length, totalPages: res?.totalPages || 1, page: res?.page || (params?.page || 1), pageSize: res?.pageSize || (params?.pageSize || 20), meta };
+      return { total: (!Array.isArray(res) ? (res?.total || list.length) : list.length), totalPages: (!Array.isArray(res) ? (res?.totalPages || 1) : 1), page: (!Array.isArray(res) ? (res?.page || (params?.page || 1)) : (params?.page || 1)), pageSize: (!Array.isArray(res) ? (res?.pageSize || (params?.pageSize || 20)) : (params?.pageSize || 20)), meta };
     } catch {
       this.toast.error('Não foi possível carregar os produtos.', 'Erro');
       this.productsSubject.next([]);
@@ -274,9 +285,43 @@ export class StoreService {
   }
 
   getPriceWithDiscount(p: ShopProduct) {
+    if (p.promoPrice != null) return p.promoPrice;
     const price = p.price || 0;
     const disc = p.discount || 0;
     return Math.max(0, price - price * disc / 100);
+  }
+
+  // Load full product details by ID
+  async loadProductDetails(id: number | string): Promise<ShopProduct | null> {
+    try {
+      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const it = await this.api.getProductById(id, token).toPromise();
+      if (!it) return null;
+      const p: ShopProduct = {
+        id: Number(it.id),
+        name: it.nome || it.name,
+        description: it.descricao || it.description || it.shortDescription || '',
+        price: Number(it.preco ?? it.price ?? 0),
+  promoPrice: (it.promoPrice != null ? Number(it.promoPrice) : (it.promo_price != null ? Number(it.promo_price) : null)),
+        image: it.imagem_url || it.image || it.imageUrl || '',
+        imageUrl: it.imageUrl ?? (it.imagem_url || it.image || null),
+        images: Array.isArray(it.images) ? it.images.map((im: any) => ({ id: Number(im.id), url: im.url, posicao: im.posicao ?? null })) : [],
+        category: it.categoria || it.category || '',
+        tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
+        discount: it.desconto || (it.promoPrice != null ? Math.max(0, ((Number(it.price ?? it.preco) - Number(it.promoPrice)) / Number(it.price ?? it.preco)) * 100) : 0),
+        rating: it.rating?.media ?? it.rating_media ?? undefined,
+        ratingsCount: it.rating?.total ?? it.rating_total ?? undefined,
+        isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : undefined,
+        favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
+        stock: typeof it.inStock === 'number' ? it.inStock : (typeof it.in_stock === 'number' ? it.in_stock : undefined),
+        tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
+        requiresPrescription: it.requiresPrescription ?? undefined,
+      };
+      return p;
+    } catch {
+      this.toast.error('Não foi possível carregar o produto.', 'Erro');
+      return null;
+    }
   }
 
   // Session helpers

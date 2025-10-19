@@ -246,6 +246,13 @@ export class ApiService {
     return this.http.get<any>(url, { headers });
   }
 
+  // Produto - detalhes completos por ID (novo endpoint)
+  getProductById(id: number | string, token?: string): Observable<any> {
+    const url = `${this.baseUrl}/products/${encodeURIComponent(String(id))}`;
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(url, { headers });
+  }
+
   // Ativos (busca por termo, se o backend suportar ?q=)
   searchAtivos(q: string): Observable<Ativo[]> {
     const term = (q || '').trim();
