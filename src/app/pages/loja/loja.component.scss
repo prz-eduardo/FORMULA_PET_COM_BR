@@ -75,6 +75,10 @@
 .paginacao .left { display: flex; align-items: center; gap: 10px; color: #6b7280; font-size: 12px; }
 .paginacao .right { display: flex; align-items: center; gap: 8px; }
 .paginacao select { padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 8px; }
+.paginacao .range { color: #374151; font-size: 12px; }
+.paginacao .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; color: #111827; display: inline-grid; place-items: center; cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.06); }
+.paginacao .icon-btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.paginacao .counter { min-width: 62px; text-align: center; font-weight: 700; color: #111827; }
 
 /* Fly-to-cart anim dot */
 .fly-dot {

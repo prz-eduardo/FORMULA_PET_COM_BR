@@ -1,8 +1,68 @@
-.checkout-wrap{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px}
+/* Checkout page styles - clean and modern */
+.checkout-wrap{max-width:1100px;margin:0 auto;padding:96px 24px 72px;display:block}
+@media (max-width: 640px){
+	.checkout-wrap{padding-top:120px}
+}
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin:8px 0 16px}
+.header h1{margin:0 0 6px;font-size:28px}
+.header .sub{margin:0;color:#4b5563}
+.header .right{display:flex;gap:12px;align-items:center}
+.header .code{background:#f3f4f6;border:1px solid #e5e7eb;padding:6px 10px;border-radius:8px;color:#374151}
+.header .status{padding:6px 10px;border-radius:8px;background:#fff;border:1px solid #e5e7eb}
+.header .status.ok{background:#ecfdf5;border-color:#10b981;color:#065f46}
+
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+@media (max-width: 900px){.grid{grid-template-columns:1fr}}
+
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
-.card h3{margin:0 0 8px 0}
-.card.acoes{display:flex;gap:12px;align-items:center}
+.card h3{margin:0 0 10px}
+
+.items .row{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:10px 0;border-bottom:1px dashed #e5e7eb}
+.items .row:last-child{border-bottom:0}
+.items .n{font-weight:600}
+.items .qtd{color:#6b7280}
+.items .val{font-weight:700}
+
+.entrega{display:flex;gap:12px;align-items:flex-start}
+.entrega .emoji{font-size:22px}
+.entrega .tt{font-weight:700;margin-bottom:4px}
+.frete{margin-top:8px;color:#374151;display:flex;gap:8px;align-items:center}
+.frete .badge{background:#eef2ff;color:#3730a3;padding:2px 8px;border-radius:999px;border:1px solid #e0e7ff}
+.frete .sep{color:#9ca3af}
+
+.cupom{margin:8px 0 16px}
+.cupom .row{display:flex;gap:8px}
+.cupom input{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+
+.pay-methods{display:flex;gap:12px;margin:8px 0 10px;flex-wrap:wrap}
+.method{display:flex;gap:8px;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;background:#fafafa;cursor:pointer}
+.method input{margin:0}
+
 .btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
 .btn.primary{background:#10b981;border-color:#10b981;color:#fff}
 .btn.success{background:#2563eb;border-color:#2563eb;color:#fff}
-.grand{font-weight:800;font-size:18px}
+.btn.light{background:#f9fafb;border-color:#e5e7eb}
+.acoes{display:flex;gap:12px;align-items:center;margin-top:12px}
+
+.alert-simulado{margin-top:12px;padding:10px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+
+.resumo .line{display:flex;justify-content:space-between;margin:8px 0;color:#374151}
+.resumo .line strong.neg{color:#b91c1c}
+.resumo .total{display:flex;justify-content:space-between;border-top:1px dashed #e5e7eb;margin-top:12px;padding-top:12px;font-size:18px;font-weight:800}
+
+.dicas ul{margin:0;padding-left:18px;color:#4b5563}
+.dicas li{margin:6px 0}
+
+/* Modals */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:saturate(60%) blur(2px);z-index:50}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:16px;max-width:560px;width:92%}
+.modal h3{margin:0 0 8px}
+.modal .qr{display:flex;align-items:center;justify-content:center;padding:10px;border:1px dashed #e5e7eb;border-radius:12px;background:#f8fafc}
+.modal .copy{display:flex;gap:8px;margin-top:10px}
+.modal .copy input{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+.modal .acoes{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.modal .simulado{margin-top:8px;color:#334155;font-size:12px;background:#eff6ff;border:1px solid #bfdbfe;padding:6px 8px;border-radius:8px}
+
+.modal.card .card-form{display:grid;gap:10px;margin-top:8px}
+.modal.card .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal.card input{border:1px solid #e5e7eb;border-radius:10px;padding:10px;width:100%}

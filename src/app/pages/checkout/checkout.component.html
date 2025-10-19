@@ -1,68 +1,154 @@
 <div class="checkout-wrap">
   <app-navmenu></app-navmenu>
-  <h1>Checkout</h1>
-
-  <div class="card">
-    <h3>Resumo</h3>
-    <div>Subtotal: {{ store.getCartTotals().subtotal | currency:'BRL' }}</div>
-    <div *ngIf="entregaModo==='entrega'">Frete: {{ freteSelecionado?.valor || 0 | currency:'BRL' }}</div>
-    <div class="grand">Total: {{ totalComFrete | currency:'BRL' }}</div>
-  </div>
-
-  <div class="card">
-    <h3>Entrega</h3>
-    <div *ngIf="entregaModo==='retirada'">
-      <div><strong>Retirada na loja</strong></div>
-      <div>{{ lojaInfo.nome }} — {{ lojaInfo.endereco }} — CEP {{ lojaInfo.cep }}</div>
-      <div>Horário: {{ lojaInfo.horario }}</div>
+  <header class="header">
+    <div class="left">
+      <h1>Finalizar compra</h1>
+      <p class="sub">Revise seus dados e escolha a forma de pagamento. Assim que o pagamento for aprovado, começaremos a preparar seu pedido.</p>
     </div>
-    <div *ngIf="entregaModo==='entrega'">
-      <div><strong>Endereço de entrega</strong></div>
-      <div *ngIf="enderecoSelecionado; else noEnd">
-        {{ enderecoSelecionado.logradouro }}, {{ enderecoSelecionado.numero }}
-        <span *ngIf="enderecoSelecionado.complemento"> - {{ enderecoSelecionado.complemento }}</span>
-        — {{ enderecoSelecionado.bairro }} — {{ enderecoSelecionado.cidade }}/{{ enderecoSelecionado.estado }} — CEP {{ enderecoSelecionado.cep }}
+    <div class="right">
+      <div class="code" *ngIf="pedidoCodigo">Pedido #{{ pedidoCodigo }}</div>
+      <div class="status" [class.ok]="pagamentoStatus==='pago'">Pagamento: {{ pagamentoStatus || 'aguardando' }}</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="col main">
+      <!-- Itens do pedido -->
+      <div class="card">
+        <h3>Itens do seu pedido</h3>
+        <div class="items" *ngIf="pedido?.itens?.length; else noItems">
+          <div class="row" *ngFor="let i of pedido.itens">
+            <div class="n">{{ i.nome }}</div>
+            <div class="qtd">× {{ i.quantidade }}</div>
+            <div class="val">{{ i.subtotal | currency:'BRL' }}</div>
+          </div>
+        </div>
+        <ng-template #noItems>
+          <div class="muted">Não foi possível carregar os itens do pedido. Você ainda pode concluir o pagamento abaixo.</div>
+        </ng-template>
       </div>
-      <ng-template #noEnd><em>Nenhum endereço selecionado — será considerada retirada na loja.</em></ng-template>
-      <div class="frete" *ngIf="freteSelecionado">
-        <div>Serviço: {{ freteSelecionado.nome || freteSelecionado.servico }}</div>
-        <div>Valor: {{ freteSelecionado.valor || 0 | currency:'BRL' }}</div>
-        <div *ngIf="freteSelecionado.prazo_dias != null">Prazo: {{ freteSelecionado.prazo_dias }} dia(s)</div>
+
+      <!-- Entrega/Retirada -->
+      <div class="card">
+        <h3>Entrega</h3>
+        <div *ngIf="entregaModo==='retirada'" class="entrega">
+          <div class="emoji">🏪</div>
+          <div class="txt">
+            <div class="tt">Retirada na loja</div>
+            <div>{{ lojaInfo.nome }} — {{ lojaInfo.endereco }} — CEP {{ lojaInfo.cep }}</div>
+            <div>Horário: {{ lojaInfo.horario }}</div>
+          </div>
+        </div>
+        <div *ngIf="entregaModo==='entrega'" class="entrega">
+          <div class="emoji">📦</div>
+          <div class="txt">
+            <div class="tt">Entrega no endereço</div>
+            <div *ngIf="enderecoSelecionado; else noEnd">
+              {{ enderecoSelecionado.logradouro }}, {{ enderecoSelecionado.numero }}
+              <span *ngIf="enderecoSelecionado.complemento"> - {{ enderecoSelecionado.complemento }}</span>
+              — {{ enderecoSelecionado.bairro }} — {{ enderecoSelecionado.cidade }}/{{ enderecoSelecionado.estado }} — CEP {{ enderecoSelecionado.cep }}
+            </div>
+            <ng-template #noEnd><em>Endereço não informado — este pedido será separado para retirada na loja.</em></ng-template>
+            <div class="frete" *ngIf="freteSelecionado">
+              <span class="badge">{{ freteSelecionado.nome || freteSelecionado.servico }}</span>
+              <span class="sep">•</span>
+              <span>{{ freteSelecionado.valor || 0 | currency:'BRL' }}</span>
+              <span *ngIf="freteSelecionado.prazo_dias != null" class="sep">•</span>
+              <span *ngIf="freteSelecionado.prazo_dias != null">{{ freteSelecionado.prazo_dias }} dia(s)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagamento -->
+      <div class="card">
+        <h3>Pagamento</h3>
+        <div class="cupom">
+          <label for="cupom">Possui cupom?</label>
+          <div class="row">
+            <input id="cupom" [(ngModel)]="cupomCodigo" placeholder="DIGITE SEU CUPOM" />
+            <button class="btn" (click)="aplicarCupom()" [disabled]="carregando || !cupomCodigo">Aplicar</button>
+          </div>
+        </div>
+        <label for="metodo">Como deseja pagar?</label>
+        <div class="pay-methods">
+          <label class="method" *ngFor="let p of pagamentoOpcoes">
+            <input type="radio" name="pg" [value]="p.metodo" [(ngModel)]="pagamentoMetodo" />
+            <span>{{ p.label || p.metodo | titlecase }}</span>
+          </label>
+        </div>
+        <div class="hint" *ngIf="pagamentoMetodo==='pix'">Pix confirma rapidinho. Você verá um QR Code e o código copia e cola. Fluxo de pagamento simulado.</div>
+        <div class="hint" *ngIf="pagamentoMetodo==='cartao'">Pagamento no cartão é simulado. Informe dados fictícios para concluir.</div>
+        <div class="acoes">
+          <button class="btn" (click)="voltarCarrinho()">Alterar carrinho</button>
+          <button class="btn primary" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">Pagar {{ resumo.total | currency:'BRL' }}</button>
+        </div>
+        <div class="alert-simulado">Ambiente de teste: pagamentos e comprovantes são apenas simulações.</div>
+      </div>
+    </section>
+
+    <aside class="col side">
+      <div class="card resumo">
+        <h3>Resumo do pedido</h3>
+        <div class="line"><span>Itens</span><strong>{{ resumo.item_count }}</strong></div>
+        <div class="line"><span>Subtotal</span><strong>{{ resumo.subtotal | currency:'BRL' }}</strong></div>
+        <div class="line" *ngIf="resumo.desconto>0"><span>Descontos</span><strong class="neg">-{{ resumo.desconto | currency:'BRL' }}</strong></div>
+        <div class="line" *ngIf="resumo.cupom>0"><span>Cupom</span><strong class="neg">-{{ resumo.cupom | currency:'BRL' }}</strong></div>
+        <div class="line"><span>Frete</span><strong>{{ resumo.frete | currency:'BRL' }}</strong></div>
+        <div class="total"><span>Total a pagar</span><strong>{{ resumo.total | currency:'BRL' }}</strong></div>
+      </div>
+      <div class="card dicas">
+        <h3>Informações importantes</h3>
+        <ul>
+          <li>Produtos manipulados são preparados sob demanda. O prazo de entrega começa após a produção.</li>
+          <li>Você receberá atualizações por e-mail/WhatsApp quando seu pedido estiver pronto.</li>
+          <li>Qualquer dúvida, fale com a gente: (41) 9 9999-9999.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal PIX (simulado) -->
+  <div class="overlay" *ngIf="showPixModal" (click)="closePixModal()"></div>
+  <div class="modal pix" *ngIf="showPixModal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <h3>Pagamento via PIX (simulado)</h3>
+    <p>Escaneie o QR Code abaixo no aplicativo do seu banco ou use o botão de copiar para pagar por Pix copia e cola.</p>
+    <div class="qr"><img [src]="pixMock?.qrDataUrl" alt="QR Code PIX simulado"/></div>
+    <div class="copy">
+      <input [value]="pixMock?.copiaCola" readonly />
+      <button class="btn" (click)="copiar(pixMock?.copiaCola || '')">Copiar código</button>
+    </div>
+    <div class="acoes">
+      <button class="btn light" (click)="closePixModal()">Fechar</button>
+      <button class="btn success" (click)="confirmarPixPago()">Já paguei</button>
+    </div>
+    <div class="simulado">Transação simulada — nenhum valor será cobrado.</div>
+  </div>
+
+  <!-- Modal Cartão (simulado) -->
+  <div class="overlay" *ngIf="showCardModal" (click)="closeCardModal()"></div>
+  <div class="modal card" *ngIf="showCardModal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <h3>Cartão de crédito (simulado)</h3>
+    <div class="card-form">
+      <label>Nome impresso
+        <input [(ngModel)]="cardMock.nome" placeholder="FULANO DE TAL"/>
+      </label>
+      <label>Número do cartão
+        <input [(ngModel)]="cardMock.numero" placeholder="4111 1111 1111 1111"/>
+      </label>
+      <div class="grid2">
+        <label>Validade
+          <input [(ngModel)]="cardMock.validade" placeholder="12/30"/>
+        </label>
+        <label>CVV
+          <input [(ngModel)]="cardMock.cvv" placeholder="123"/>
+        </label>
       </div>
     </div>
-  </div>
-
-  <div class="card">
-    <h3>Etapas</h3>
-    <ol>
-      <li>1. Criar pedido com itens do carrinho</li>
-      <li>2. Realizar pagamento</li>
-      <li>3. Atualizar pedido e registrar pagamento</li>
-    </ol>
-  </div>
-
-  <div class="card" *ngIf="pedidoCodigo">
-    <h3>Pagamento</h3>
-    <div *ngIf="pagamentoOpcoes?.length; else simples">
-      <label for="metodo">Método</label>
-      <select id="metodo" [(ngModel)]="pagamentoMetodo">
-        <option *ngFor="let p of pagamentoOpcoes" [value]="p.metodo">{{ p.label || p.metodo }}</option>
-      </select>
+    <div class="acoes">
+      <button class="btn light" (click)="closeCardModal()">Cancelar</button>
+      <button class="btn success" (click)="confirmarCartaoPago()">Pagar {{ resumo.total | currency:'BRL' }}</button>
     </div>
-    <ng-template #simples>
-      <div>Método: {{ pagamentoMetodo | uppercase }}</div>
-    </ng-template>
-  </div>
-
-  <div class="card acoes">
-    <button class="btn" (click)="voltarCarrinho()">Voltar ao carrinho</button>
-    <button class="btn primary" [disabled]="carregando || !!pedidoCodigo" (click)="criarPedido()">Criar pedido</button>
-    <button class="btn success" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">Pagar</button>
-  </div>
-
-  <div class="card" *ngIf="pedidoCodigo">
-    <h3>Pedido</h3>
-    <div>Código do pedido: <strong>{{ pedidoCodigo }}</strong></div>
-    <div>Status pagamento: <strong>{{ pagamentoStatus || 'pendente' }}</strong></div>
+    <div class="simulado">Pagamento simulado — use dados fictícios.</div>
   </div>
 </div>

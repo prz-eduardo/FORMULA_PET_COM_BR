@@ -593,36 +593,21 @@ export class CarrinhoComponent implements OnInit {
         }
       };
       const res = await this.api.criarPedido(token, payload).toPromise();
-      this.pedidoCodigo = res?.codigo || res?.id || res?.numero || undefined;
-      // Carrega opções de pagamento se disponíveis
-      const opcoes = res?.paymentOptions || res?.pagamento_opcoes || res?.opcoesPagamento || [];
-      if (Array.isArray(opcoes) && opcoes.length) {
-        this.pagamentoOpcoes = opcoes.map((o: any) => ({ metodo: o.metodo || o.method || String(o), label: o.label || o.nome || String(o), detalhes: o }));
-        this.pagamentoMetodo = this.pagamentoOpcoes[0].metodo;
-      }
+      // Persiste o pedido criado e contexto de checkout; segue para checkout
+      this.store.setCreatedOrder(res);
+      this.store.setCheckoutContext({
+        entregaModo: this.entregaModo,
+        enderecoSelecionado: this.enderecoSelecionado,
+        freteSelecionado: this.freteSelecionado || (this.freteValor ? { valor: this.freteValor } : null),
+        freteOpcoes: this.freteOpcoes,
+        freteOrigem: this.freteOrigem,
+        freteDestino: this.freteDestino
+      });
+      this.router.navigate(['/checkout']);
     } catch (e) {
       // feedback simples; ToastService está disponível via StoreService? já utilizado em StoreService. Mantemos silencioso aqui ou integramos toast quando necessário.
     } finally {
       this.criandoPedido = false;
-    }
-  }
-
-  async pagarPedido() {
-    if (!this.pedidoCodigo) return;
-    try {
-      this.pagando = true;
-  const token = this.getToken() || '';
-      const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
-        metodo: this.pagamentoMetodo || 'pix',
-        valor: this.totalComFrete,
-      }).toPromise();
-      await this.api.atualizarPedido(token, this.pedidoCodigo, { status: 'pago', pagamento }).toPromise();
-      this.pagamentoStatus = 'pago';
-      this.store.clearCart();
-    } catch (e) {
-      this.pagamentoStatus = 'falhou';
-    } finally {
-      this.pagando = false;
     }
   }
 }

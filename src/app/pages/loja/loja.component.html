@@ -71,7 +71,7 @@
         (add)="onAddToCart(p, $event)"
       ></app-product-card-v2>
     </div>
-    <div class="paginacao" *ngIf="filtered.length > pageSize">
+    <div class="paginacao" *ngIf="totalPages() > 1 || total > pageSize">
       <div class="left">
         <label>Itens por página
           <select [ngModel]="pageSize" (ngModelChange)="onChangePageSize($event)">
@@ -80,12 +80,22 @@
             <option [ngValue]="60">60</option>
           </select>
         </label>
-  <span class="range">{{ pageStart() }}–{{ pageEnd() }} de {{ filtered.length }}</span>
+        <span class="range">{{ pageStart() }}–{{ pageEnd() }} de {{ total }}</span>
       </div>
       <div class="right">
-        <button class="btn light" (click)="prevPage()" [disabled]="!canPrev()">Anterior</button>
-        <span>Página {{ page }} de {{ totalPages() }}</span>
-        <button class="btn light" (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
+        <button class="icon-btn" (click)="goToPage(1)" [disabled]="!canPrev()" aria-label="Primeira página" title="Primeira página">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M18 6l-6 6 6 6M6 6v12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" (click)="prevPage()" [disabled]="!canPrev()" aria-label="Página anterior" title="Anterior">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span class="counter" aria-live="polite">{{ page }} / {{ totalPages() }}</span>
+        <button class="icon-btn" (click)="nextPage()" [disabled]="!canNext()" aria-label="Próxima página" title="Próxima">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" (click)="goToPage(totalPages())" [disabled]="!canNext()" aria-label="Última página" title="Última página">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l6 6-6 6M18 6v12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
   </section>

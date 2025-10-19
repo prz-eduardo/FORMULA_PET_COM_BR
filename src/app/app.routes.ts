@@ -52,7 +52,8 @@ export const routes: Routes = [
   { path: 'produto/:id', loadComponent: () => import('./product-details/product-details.component').then(m => m.ProductDetailsComponent)},
   { path: 'favoritos', loadComponent: () => import('./pages/favoritos/favoritos.component').then(m => m.FavoritosComponent)},
   { path: 'carrinho', loadComponent: () => import('./pages/carrinho/carrinho.component').then(m => m.CarrinhoComponent)},
-  // Checkout foi migrado para finalização no carrinho; rota removida enquanto o componente não é utilizado
+  // Checkout: página dedicada de pagamento/resumo após criação do pedido
+  { path: 'checkout', loadComponent: () => import('./pages/checkout/checkout.component').then(m => m.CheckoutComponent)},
   {path: 'restrito/admin/guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/estoque', loadComponent: () => import('./pages/restrito/admin/estoque/estoque.component').then(m => m.EstoqueAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/formulas', loadComponent: () => import('./pages/restrito/admin/formulas/formulas.component').then(m => m.FormulasAdminComponent), canActivate: [authGuard]},

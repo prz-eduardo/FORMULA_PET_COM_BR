@@ -162,38 +162,34 @@
         <div class="totais">
           <ng-container *ngIf="totalsNorm as tn; else legacyTotals">
             <div>Itens: {{ tn.item_count ?? total().count }}</div>
-            <div>Subtotal original: {{ (tn.original_subtotal ?? total().subtotal) | currency:'BRL' }}</div>
-            <div class="discount" *ngIf="tn.discount_total && tn.discount_total > 0">Descontos: -{{ tn.discount_total | currency:'BRL' }}</div>
-            <div>Itens (após descontos): {{ (tn.items_total ?? total().subtotal) | currency:'BRL' }}</div>
-            <div class="frete" *ngIf="entregaModo==='entrega'">Frete: {{ (tn.frete_total ?? freteValor) | currency:'BRL' }}</div>
+            <div>Subtotal (sem descontos): {{ (tn.original_subtotal ?? total().subtotal) | currency:'BRL' }}</div>
+            <div class="discount" *ngIf="tn.discount_total && tn.discount_total > 0">Descontos aplicados: -{{ tn.discount_total | currency:'BRL' }}</div>
+            <div>Subtotal com descontos: {{ (tn.items_total ?? total().subtotal) | currency:'BRL' }}</div>
+            <div class="frete" *ngIf="entregaModo==='entrega'">
+              Frete ({{ freteSelecionado?.nome || 'Entrega' }}):
+              {{ (tn.frete_total ?? freteSelecionado?.valor ?? freteValor) | currency:'BRL' }}
+              <span class="prazo" *ngIf="freteSelecionado?.prazo_dias != null">• {{ freteSelecionado?.prazo_dias }} dia{{ freteSelecionado?.prazo_dias === 1 ? '' : 's' }}</span>
+            </div>
+            <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
             <div class="discount" *ngIf="tn.coupon_total && tn.coupon_total > 0">Cupom: -{{ tn.coupon_total | currency:'BRL' }}</div>
-            <div class="grand">Total: {{ (tn.grand_total ?? totalComFrete) | currency:'BRL' }}</div>
+            <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
           </ng-container>
           <ng-template #legacyTotals>
             <div>Itens: {{ total().count }}</div>
-            <div>Subtotal: {{ total().subtotal | currency:'BRL' }}</div>
+            <div>Subtotal (sem descontos): {{ total().subtotal | currency:'BRL' }}</div>
             <ng-container *ngIf="validarTotals as vt2">
-              <div class="discount" *ngIf="vt2.discount_total && vt2.discount_total > 0">Descontos: -{{ vt2.discount_total | currency:'BRL' }}</div>
+              <div class="discount" *ngIf="vt2.discount_total && vt2.discount_total > 0">Descontos aplicados: -{{ vt2.discount_total | currency:'BRL' }}</div>
             </ng-container>
-            <div class="frete" *ngIf="entregaModo==='entrega'">Frete: {{ freteValor | currency:'BRL' }}</div>
-            <div class="grand">Total: {{ totalComFrete | currency:'BRL' }}</div>
+            <div class="frete" *ngIf="entregaModo==='entrega'">
+              Frete ({{ freteSelecionado?.nome || 'Entrega' }}): {{ (freteSelecionado?.valor ?? freteValor) | currency:'BRL' }}
+              <span class="prazo" *ngIf="freteSelecionado?.prazo_dias != null">• {{ freteSelecionado?.prazo_dias }} dia{{ freteSelecionado?.prazo_dias === 1 ? '' : 's' }}</span>
+            </div>
+            <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
+            <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
           </ng-template>
         </div>
         <div class="acoes">
           <button class="btn primary" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar pedido' }}</button>
-        </div>
-        <div class="pagamento" *ngIf="pedidoCodigo">
-          <h4>Pagamento</h4>
-          <div class="linha-pag">
-            <label for="metodo">Método</label>
-            <select id="metodo" [(ngModel)]="pagamentoMetodo">
-              <option *ngFor="let p of pagamentoOpcoes" [value]="p.metodo">{{ p.label || p.metodo }}</option>
-            </select>
-          </div>
-          <div class="linha-pag acoes">
-            <button class="btn" [disabled]="pagando" (click)="pagarPedido()">{{ pagando ? 'Processando...' : 'Pagar' }}</button>
-          </div>
-          <div class="muted" *ngIf="pagamentoStatus">Status: {{ pagamentoStatus }}</div>
         </div>
       </div>
     </div>
@@ -234,8 +230,8 @@
   <div class="checkout-bar mobile-only" *ngIf="(store.cart$ | async)?.length">
     <div class="bar-content">
       <div class="bar-total">
-        <strong>Total</strong>
-        <span>{{ total().total | currency:'BRL' }}</span>
+        <strong>Total com frete</strong>
+        <span>{{ totalComFrete | currency:'BRL' }}</span>
         <small class="count">{{ total().count }} itens</small>
       </div>
       <button class="btn primary" aria-label="Finalizar" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar' }}</button>

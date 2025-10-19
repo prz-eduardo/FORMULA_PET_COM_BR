@@ -72,6 +72,10 @@ export class StoreService {
   private checkoutContextSubject = new BehaviorSubject<any | null>(null);
   checkoutContext$ = this.checkoutContextSubject.asObservable();
 
+  // Created order snapshot (for checkout page)
+  private createdOrderSubject = new BehaviorSubject<any | null>(null);
+  createdOrder$ = this.createdOrderSubject.asObservable();
+
   constructor(
     private http: HttpClient,
     private api: ApiService,
@@ -435,5 +439,19 @@ export class StoreService {
   setCart(cart: CartItem[]) {
     this.cartSubject.next(cart);
     this.persistCart(cart);
+  }
+
+  // Order storage helpers
+  setCreatedOrder(order: any | null) {
+    this.createdOrderSubject.next(order);
+    if (this.isBrowser()) localStorage.setItem('createdOrder', JSON.stringify(order));
+  }
+  getCreatedOrder(): any | null {
+    const cur = this.createdOrderSubject.value;
+    if (cur) return cur;
+    if (this.isBrowser()) {
+      try { return JSON.parse(localStorage.getItem('createdOrder') || 'null'); } catch { return null; }
+    }
+    return null;
   }
 }
