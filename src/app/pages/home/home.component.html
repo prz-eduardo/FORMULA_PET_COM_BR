@@ -184,19 +184,26 @@
 
     <!-- Seção de Produtos em Destaque (Home) -->
 <section id="products-highlight" class="home-products" *ngIf="produtos?.length">
-  <h3 class="hp-title">Em destaque</h3>
-  <div class="hp-grid">
-    <div class="hp-card" *ngFor="let p of produtos">
-      <img [src]="p.image" alt="{{p.name}}" />
-      <div class="hp-info">
-        <div class="hp-name">{{ p.name }}</div>
-        <div class="hp-price">{{ (p.price - (p.price * (p.discount || 0) / 100)) | currency:'BRL' }}</div>
+  <div class="highlight-header">
+    <h3 class="hp-title">Em destaque</h3>
+    <a routerLink="/loja" class="btn link-all">Ir para a loja</a>
+  </div>
+  <div class="hp-grid upgraded">
+    <a class="hp-card pro" *ngFor="let p of produtos" [routerLink]="['/produto', p.id]">
+      <div class="hp-media">
+        <img [src]="p.image || '/imagens/image.png'" alt="{{p.name}}" loading="lazy" decoding="async" />
+        <div class="media-title" title="{{p.name}}">{{ p.name }}</div>
       </div>
-      <div class="hp-actions">
-        <a [routerLink]="['/loja']" [queryParams]="{ q: p.name }" class="btn light">Ver na loja</a>
-        <button class="btn" (click)="store.addToCart(p, 1)">Adicionar</button>
+      <div class="hp-body">
+        <p class="hp-desc" *ngIf="p.description">{{ p.description }}</p>
+        <div class="hp-bottom">
+          <div class="hp-price">
+            <span class="price">{{ (p.price - (p.price * (p.discount || 0) / 100)) | currency:'BRL' }}</span>
+            <span class="badge" *ngIf="p.discount">-{{ p.discount }}%</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </a>
   </div>
 </section>
 
@@ -259,16 +266,4 @@
   .text-center { text-align: center; }
 </style>
 
-<style>
-  .home-products { padding: 8px 16px; }
-  .hp-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; }
-  .hp-card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; }
-  .hp-card img { width: 100%; height: 140px; object-fit: cover; }
-  .hp-info { padding: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .hp-name { font-weight: 700; color: #111827; font-size: 14px; }
-  .hp-price { font-weight: 800; color: #111827; font-size: 15px; }
-  .hp-actions { display: flex; gap: 8px; padding: 10px; margin-top: auto; }
-  .btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); text-decoration: none; text-align: center; }
-  .btn.light { background: #e5e7eb; color: #111827; }
-  @media (max-width:640px){ .hp-card img{ height: 120px;} }
-</style>
+<!-- Removed inline styles for .home-products and card elements to avoid conflicts with SCSS -->

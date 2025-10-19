@@ -17,10 +17,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <script>
     (function(){
-      // Create overlay container for paw prints
-      var trail = document.createElement('div');
-      trail.id = 'paw-trail';
-      document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(trail); });
+  // Create overlay container for paw prints (fixed) and an inner layer that we translate to mimic scroll
+  var trail = document.createElement('div');
+  trail.id = 'paw-trail';
+  var layer = document.createElement('div');
+  layer.id = 'paw-layer';
+  trail.appendChild(layer);
+  document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(trail); });
 
       // Random starting corner and direction (diagonal walk)
       function pickStart(){
@@ -55,8 +58,8 @@
       }
       function canPlaceAt(x, y){
         var minDist = getPawSize() * 0.9; // require at least ~1 footprint apart
-        for (var i = 0; i < trail.children.length; i++){
-          var c = trail.children[i];
+        for (var i = 0; i < layer.children.length; i++){
+          var c = layer.children[i];
           var px = parseFloat(c.getAttribute('data-x'));
           var py = parseFloat(c.getAttribute('data-y'));
           if (!isNaN(px) && !isNaN(py)){
@@ -107,7 +110,7 @@
             var alt = left ? -12 : 12;   // subtle alternation for steps
             var angle = facing + alt;
             el.style.transform = 'translate(-50%, -50%) rotate(' + angle + 'deg)';
-            trail.appendChild(el);
+            layer.appendChild(el);
           }
 
           // Fade in
@@ -130,15 +133,15 @@
           left = !left;
 
           // Limit total nodes to avoid memory leaks (higher cap for more prints)
-          if (trail.childElementCount > 500){
-            for (var i=0;i<80;i++) if (trail.firstChild) trail.removeChild(trail.firstChild);
+          if (layer.childElementCount > 500){
+            for (var i=0;i<80;i++) if (layer.firstChild) layer.removeChild(layer.firstChild);
           }
         }catch(e){}
         setTimeout(spawnPrint, stepMs);
       }
 
       // Prefill prints below the fold so you see paws even before scrolling
-      function prefillBelowFold(screens, perScreen){
+  function prefillBelowFold(screens, perScreen){
         try{
           var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
           var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
@@ -166,7 +169,7 @@
               el.setAttribute('data-x', String(cx));
               el.setAttribute('data-y', String(cy));
               el.style.transform = 'translate(-50%, -50%) rotate(' + angle + 'deg)';
-              trail.appendChild(el);
+              layer.appendChild(el);
               // Fade in and schedule fade out
               requestAnimationFrame((function(node){ return function(){ node.classList.add('show'); }; })(el));
               (function(node){
@@ -194,6 +197,11 @@
         var scrollTimer = null;
         function onScroll(){
           spawnPaused = true; // pause spawning while scrolling
+          // translate layer opposite to page scroll so prints appear to move with content
+          try{
+            var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
+            layer.style.transform = 'translateY(' + (-sy) + 'px)';
+          }catch(e){}
           if (scrollTimer) clearTimeout(scrollTimer);
           scrollTimer = setTimeout(function(){
             // scrolling stopped

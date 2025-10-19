@@ -36,11 +36,14 @@ img, video, canvas, svg {
 }
 
 #paw-trail{
-    position: absolute;
+    position: fixed;
     inset: 0;
     pointer-events: none; /* don't block clicks */
     z-index: 0;           /* stays behind regular content */
 }
+
+/* Inner layer that we translate with scroll so prints move with page but don't affect document height */
+#paw-layer{ position: absolute; inset: 0; will-change: transform; }
 
 .paw-print{
     position: absolute;

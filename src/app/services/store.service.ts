@@ -79,12 +79,13 @@ export class StoreService {
     try {
       const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
       const res = await this.api.getHomeHighlights(token).toPromise();
-      const items = (res?.data || res || []).map((it: any) => ({
+      const arr = Array.isArray(res) ? res : (res?.data || res?.items || []);
+      const items = (arr || []).map((it: any) => ({
         id: it.id,
         name: it.nome || it.name,
-        description: it.descricao || it.description || '',
-        price: Number(it.preco ?? it.price ?? 0),
-        image: it.imagem_url || it.image || '',
+        description: it.descricao || it.description || it.shortDescription || '',
+        price: Number(it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0)),
+        image: it.imagem_url || it.image || it.imageUrl || '',
         category: it.categoria || it.category || '',
         discount: it.desconto || 0,
         rating: typeof it.rating_media === 'number' ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : undefined),
