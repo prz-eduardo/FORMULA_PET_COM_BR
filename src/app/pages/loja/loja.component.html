@@ -19,11 +19,11 @@
       <button class="btn light icon icon-only fav-toggle" *ngIf="me" [class.active]="onlyFavorites" (click)="toggleFavoritesOnly()" [attr.aria-pressed]="onlyFavorites" aria-label="Mostrar apenas favoritos" title="Favoritos">
         ❤
       </button>
-      <div class="active-badges" *ngIf="activeFiltersDetailed.length">
-        <ng-container *ngFor="let f of activeFiltersDetailed">
-          <button type="button" class="mini-badge closable" (click)="onClearFilter($event, f.key)" [attr.aria-label]="'Remover ' + f.label" [title]="'Remover ' + f.label">
+      <div class="active-badges" *ngIf="activeFiltersDetailed.length" (click)="onBadgesContainerClick($event)">
+        <ng-container *ngFor="let f of activeFiltersDetailed; trackBy: trackFilter">
+          <button type="button" class="mini-badge closable" [attr.data-key]="f.key" [attr.aria-label]="'Remover ' + f.label" [title]="'Remover ' + f.label">
             {{ f.label }}
-            <span class="x" aria-hidden="true" (click)="onClearFilter($event, f.key)">×</span>
+            <span class="x" aria-hidden="true">×</span>
           </button>
         </ng-container>
       </div>

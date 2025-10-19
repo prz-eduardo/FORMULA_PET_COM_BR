@@ -4,11 +4,12 @@ import { StoreService, ShopProduct } from '../../services/store.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, Receita } from '../../services/api.service';
 import { PrescriptionPickerComponent } from '../../components/prescription-picker/prescription-picker.component';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-carrinho',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent],
+  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule],
   templateUrl: './carrinho.component.html',
   styleUrls: ['./carrinho.component.scss']
 })
@@ -23,11 +24,26 @@ export class CarrinhoComponent implements OnInit {
   confirmTargetId: number | null = null;
   confirmTargetName: string | null = null;
 
+  // Entrega/Retirada
+  entregaModo: 'retirada' | 'entrega' = 'retirada';
+  enderecos: any[] = [];
+  enderecoSelecionado: any | null = null;
+  mostrandoEnderecos = false; // modal
+  freteValor: number = 0;
+  fretePrazo?: string;
+  lojaInfo = {
+    nome: 'Fórmula Pet',
+    endereco: 'Rua Treze de Maio, 506, Conjunto 04 - São Francisco, Curitiba/PR',
+    cep: '80510-030',
+    horario: 'Seg a Sex 09:00–18:00, Sáb 09:00–13:00'
+  };
+
   constructor(public store: StoreService, private api: ApiService) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();
     await this.loadHighlights();
+    await this.loadEnderecos();
   }
 
   async loadReceitasDisponiveis() {
@@ -119,5 +135,61 @@ export class CarrinhoComponent implements OnInit {
   onUploadPrescriptionFileDirect(productId: number, file: File) {
     if (!file) return;
     this.store.setItemPrescriptionById(productId, { prescriptionFileName: file.name, prescriptionId: undefined });
+  }
+
+  // Endereços e frete
+  async loadEnderecos() {
+    try {
+      const token = localStorage.getItem('token');
+      const userType = localStorage.getItem('userType');
+      if (!token || userType !== 'cliente') { this.enderecos = []; return; }
+  this.enderecos = (await this.api.listEnderecosCliente(token).toPromise()) || [];
+      if (this.enderecos?.length) this.enderecoSelecionado = this.enderecos[0];
+    } catch {
+      this.enderecos = [];
+    }
+  }
+
+  abrirModalEnderecos() { this.mostrandoEnderecos = true; }
+  fecharModalEnderecos() { this.mostrandoEnderecos = false; }
+
+  selecionarEndereco(e: any) {
+    this.enderecoSelecionado = e;
+    this.mostrandoEnderecos = false;
+    this.calcularFrete();
+  }
+
+  async cadastrarEndereco(novo: { cep: string; logradouro: string; numero: string; complemento?: string; bairro: string; cidade: string; estado: string; }) {
+    try {
+      const token = localStorage.getItem('token') || '';
+      const created = await this.api.createEnderecoCliente(token, novo).toPromise();
+      this.enderecos = [created, ...this.enderecos];
+      this.enderecoSelecionado = created;
+      this.mostrandoEnderecos = false;
+      this.calcularFrete();
+    } catch {}
+  }
+
+  async calcularFrete() {
+    this.freteValor = 0; this.fretePrazo = undefined;
+    try {
+      if (this.entregaModo !== 'entrega' || !this.enderecoSelecionado) return;
+      const token = localStorage.getItem('token') || undefined;
+      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product) }));
+      const cep = this.enderecoSelecionado?.cep || '';
+      if (!cep) return;
+      const resp = await this.api.cotarFrete(token, { cep, itens }).toPromise();
+      if (resp && typeof resp.valor === 'number') {
+        this.freteValor = Math.max(0, resp.valor);
+        this.fretePrazo = resp.prazo;
+      }
+    } catch {
+      // fallback: zero ou mensagem pode ser mostrada na UI
+    }
+  }
+
+  get totalComFrete() {
+    const t = this.store.getCartTotals();
+    return t.subtotal + (this.entregaModo === 'entrega' ? this.freteValor : 0);
   }
 }

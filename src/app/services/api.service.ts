@@ -441,5 +441,24 @@ export class ApiService {
     return this.http.get<PacienteDetail>(`${this.baseUrl}/pacientes/${petId}`, { headers: { Authorization: `Bearer ${token}` } });
   }
 
+  // Endereços do cliente (suportado por backend; se indisponível, o caller deve tratar gracefully)
+  listEnderecosCliente(token: string): Observable<any[]> {
+    const url = `${this.baseUrl}/clientes/me/enderecos`;
+    return this.http.get<any[]>(url, { headers: { Authorization: `Bearer ${token}` } });
+  }
 
+  createEnderecoCliente(token: string, body: {
+    cep: string; logradouro: string; numero: string; complemento?: string;
+    bairro: string; cidade: string; estado: string;
+  }): Observable<any> {
+    const url = `${this.baseUrl}/clientes/me/enderecos`;
+    return this.http.post<any>(url, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  // Cálculo de frete (caso o backend exista)
+  cotarFrete(token: string | undefined, payload: { cep: string; itens: Array<{ id: number; qtd: number; preco?: number }> }): Observable<{ valor: number; prazo?: string }> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    const url = `${this.baseUrl}/frete/cotar`;
+    return this.http.post<{ valor: number; prazo?: string }>(url, payload, { headers });
+  }
 }

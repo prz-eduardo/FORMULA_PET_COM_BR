@@ -127,17 +127,39 @@ export class ProductDetailsComponent implements OnInit {
         setTimeout(() => el.remove(), durationMs + 160);
       };
 
-      // Visuals similar to loja
-      spawnRing(26, 700);
-      spawn('', 22, 1.35, 1, 0, 1400);
-      spawn('ghost', 16, 1.2, 0.85, 100, 1600);
-      spawn('tail', 12, 1.08, 0.7, 220, 1800);
+      // Destination burst near the cart
+      const spawnDestBurst = (size: number, durationMs: number) => {
+        const el = this.renderer.createElement('div');
+        this.renderer.addClass(el, 'fly-dot');
+        this.renderer.addClass(el, 'ring');
+        this.renderer.setStyle(el, 'width', `${size}px`);
+        this.renderer.setStyle(el, 'height', `${size}px`);
+        this.renderer.setStyle(el, 'left', `${destX - size / 2}px`);
+        this.renderer.setStyle(el, 'top', `${destY - size / 2}px`);
+        document.body.appendChild(el);
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        el.clientHeight;
+        this.renderer.setStyle(el, 'opacity', `0`);
+        this.renderer.setStyle(el, 'transform', `scale(1.7)`);
+        this.renderer.setStyle(el, 'transition', `transform ${durationMs}ms ease-out, opacity ${durationMs}ms ease-out`);
+        setTimeout(() => el.remove(), durationMs + 120);
+      };
 
-      const pulseDelay = 1300;
+      // Visuals similar to loja
+  spawnRing(30, 900);
+  spawn('spark', 26, 1.35, 1, 0, 2000);
+  spawn('ghost', 20, 1.24, 0.92, 120, 2200);
+  spawn('tail', 16, 1.14, 0.84, 240, 2350);
+  spawn('ghost', 14, 1.10, 0.76, 360, 2450);
+  spawn('tail', 12, 1.06, 0.68, 480, 2550);
+  spawn('ghost', 10, 1.04, 0.6, 600, 2650);
+
+      const pulseDelay = 2000;
       setTimeout(() => {
         this.renderer.addClass(this.cartBtn!.nativeElement, 'pulse');
         setTimeout(() => this.renderer.removeClass(this.cartBtn!.nativeElement, 'pulse'), 800);
       }, pulseDelay);
+      setTimeout(() => spawnDestBurst(30, 700), pulseDelay - 120);
     } catch {}
   }
 

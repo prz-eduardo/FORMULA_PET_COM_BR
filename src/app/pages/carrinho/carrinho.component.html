@@ -1,9 +1,12 @@
 <div class="carrinho-wrap">
   <app-navmenu></app-navmenu>
-  <h1 class="titulo">Seu Carrinho</h1>
+  <h1 class="titulo">
+    <span class="cart-ico" aria-hidden="true">🛒</span>
+    Seu Carrinho
+  </h1>
 
   <div class="layout" *ngIf="(store.cart$ | async)?.length; else vazio">
-    <div class="card itens">
+  <div class="card itens highlighted">
       <div class="item" *ngFor="let it of (store.cart$ | async)">
       <img [src]="it.product.image" alt="{{ it.product.name }}" />
       <div class="info">
@@ -32,6 +35,48 @@
     </div>
 
     <div class="aside">
+      <!-- Modo de entrega / retirada -->
+      <div class="card entrega">
+        <h3>Entrega ou retirada</h3>
+        <div class="radio-group">
+          <label class="radio-pill">
+            <input type="radio" name="entrega" value="retirada" [(ngModel)]="entregaModo" (change)="calcularFrete()" />
+            <span class="dot"></span>
+            <span class="lbl">Retirar na loja</span>
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="entrega" value="entrega" [(ngModel)]="entregaModo" (change)="calcularFrete()" />
+            <span class="dot"></span>
+            <span class="lbl">Entrega no endereço</span>
+          </label>
+        </div>
+
+        <!-- Se retirada: mostra endereço e horário da loja -->
+        <div class="retirada-info" *ngIf="entregaModo==='retirada'">
+          <div class="loja">{{ lojaInfo.nome }}</div>
+          <div class="end">{{ lojaInfo.endereco }}</div>
+          <div class="cep">CEP {{ lojaInfo.cep }}</div>
+          <div class="horario">Horário: {{ lojaInfo.horario }}</div>
+        </div>
+
+        <!-- Se entrega: seleção de endereço -->
+        <div class="entrega-info" *ngIf="entregaModo==='entrega'">
+          <div class="addr-resumo" *ngIf="enderecoSelecionado; else noAddr">
+            <div class="linha"><strong>{{ enderecoSelecionado?.logradouro }}, {{ enderecoSelecionado?.numero }}</strong></div>
+            <div class="linha">{{ enderecoSelecionado?.bairro }} - {{ enderecoSelecionado?.cidade }}/{{ enderecoSelecionado?.estado }}</div>
+            <div class="linha">CEP {{ enderecoSelecionado?.cep }}</div>
+          </div>
+          <ng-template #noAddr>
+            <div class="muted">Nenhum endereço selecionado.</div>
+          </ng-template>
+          <div class="acoes">
+            <button class="btn light" (click)="abrirModalEnderecos()">Escolher endereço</button>
+          </div>
+          <div class="frete-ret" *ngIf="freteValor>0 || fretePrazo">
+            <div class="linha">Frete: <strong>{{ freteValor | currency:'BRL' }}</strong> <span class="prazo" *ngIf="fretePrazo">({{ fretePrazo }})</span></div>
+          </div>
+        </div>
+      </div>
       <div class="card frete">
         <h3>Calcular frete</h3>
         <div class="linha">
@@ -41,11 +86,13 @@
         <p class="muted">Entrega: valores e prazos serão exibidos aqui.</p>
       </div>
       <div class="card resumo">
-        <h3>Resumo</h3>
+        <h3>Resumo do pedido</h3>
         <div class="totais">
           <div>Itens: {{ total().count }}</div>
           <div>Subtotal: {{ total().subtotal | currency:'BRL' }}</div>
+          <div *ngIf="entregaModo==='entrega'" class="frete">Frete: {{ freteValor | currency:'BRL' }}</div>
           <div class="grand">Total: {{ total().total | currency:'BRL' }}</div>
+          <div class="grand" *ngIf="entregaModo==='entrega'">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
         </div>
         <div class="acoes">
           <button class="btn" (click)="clear()">Limpar carrinho</button>
@@ -59,18 +106,27 @@
   <section class="cart-highlights" *ngIf="(store.cart$ | async)?.length && !loadingHighlights && highlights?.length">
     <div class="card">
       <div class="ch-header">
-        <h3>Continue descobrindo</h3>
-        <p>Selecionamos alguns itens que combinam com a sua compra. Que tal dar uma olhada?</p>
+        <h3>Continue descobrindo 🐾</h3>
+        <p>Selecionamos itens que combinam com o seu pedido. Complete seu carrinho com essas sugestões favoritas.</p>
       </div>
       <div class="ch-grid">
         <div class="ch-item" *ngFor="let p of highlights | slice:0:6">
           <div class="ch-img-box">
             <img [src]="p.image" [alt]="p.name" />
+            <div class="ch-badge" *ngIf="p.discount && p.discount > 0">-{{ p.discount | number:'1.0-0' }}%</div>
           </div>
           <div class="ch-name">{{ p.name }}</div>
+          <div class="ch-rating" *ngIf="p.rating != null || p.ratingsCount">
+            <span class="stars">
+              <ng-container *ngFor="let s of [1,2,3,4,5]">
+                <span class="star">{{ s <= (p.rating || 0) ? '★' : '☆' }}</span>
+              </ng-container>
+            </span>
+            <span class="r-total" *ngIf="p.ratingsCount">({{ p.ratingsCount }})</span>
+          </div>
           <div class="ch-bottom">
             <div class="ch-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
-            <button class="btn add" (click)="store.addToCart(p, 1)">Adicionar</button>
+            <button class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'">Adicionar</button>
           </div>
         </div>
       </div>
@@ -118,9 +174,46 @@
     <h3>Remover do carrinho?</h3>
     <p class="msg">{{ confirmTargetName || 'Este item' }} será removido do seu carrinho.</p>
     <div class="actions">
-      <button class="btn light" (click)="cancelRemove()">Cancelar</button>
       <!-- Botão destrutivo com menor destaque -->
       <button class="btn subtle-danger" (click)="confirmRemoveNow()" title="Remover definitivamente">Remover mesmo</button>
+      <!-- Cancelar com maior destaque para incentivar o retorno -->
+      <button class="btn primary" (click)="cancelRemove()">Cancelar</button>
     </div>
+  </div>
+
+  <!-- Modal de endereços -->
+  <div class="overlay" *ngIf="mostrandoEnderecos" (click)="fecharModalEnderecos()"></div>
+  <div class="addr-modal" *ngIf="mostrandoEnderecos" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Selecionar endereço">
+    <h3>Endereços de entrega</h3>
+    <div class="lista" *ngIf="enderecos?.length; else cadNovo">
+      <label class="addr-item" *ngFor="let e of enderecos" (click)="selecionarEndereco(e)">
+        <span class="dot"></span>
+        <div class="dados">
+          <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
+          <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
+          <div class="linha">CEP {{ e.cep }}</div>
+        </div>
+      </label>
+      <div class="acoes">
+        <button class="btn light" (click)="fecharModalEnderecos()">Fechar</button>
+      </div>
+    </div>
+    <ng-template #cadNovo>
+      <form class="cad-form" #f="ngForm" (ngSubmit)="cadastrarEndereco(f.value)" autocomplete="on">
+        <div class="grid">
+          <input name="cep" ngModel required placeholder="CEP" />
+          <input name="logradouro" ngModel required placeholder="Logradouro" />
+          <input name="numero" ngModel required placeholder="Número" />
+          <input name="complemento" ngModel placeholder="Complemento" />
+          <input name="bairro" ngModel required placeholder="Bairro" />
+          <input name="cidade" ngModel required placeholder="Cidade" />
+          <input name="estado" ngModel required placeholder="UF" />
+        </div>
+        <div class="acoes">
+          <button type="button" class="btn light" (click)="fecharModalEnderecos()">Cancelar</button>
+          <button type="submit" class="btn">Salvar endereço</button>
+        </div>
+      </form>
+    </ng-template>
   </div>
 </div>
