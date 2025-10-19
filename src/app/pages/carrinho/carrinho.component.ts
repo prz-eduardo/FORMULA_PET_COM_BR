@@ -25,17 +25,29 @@ export class CarrinhoComponent implements OnInit {
   confirmTargetName: string | null = null;
 
   // Entrega/Retirada
-  entregaModo: 'retirada' | 'entrega' = 'retirada';
+  entregaModo: 'retirada' | 'entrega' = 'entrega';
   enderecos: any[] = [];
   enderecoSelecionado: any | null = null;
   mostrandoEnderecos = false; // modal
+  mostrandoCadastroEndereco = false; // dentro do modal: alterna entre lista e form
   freteValor: number = 0;
   fretePrazo?: string;
+  // Novo modelo de frete com múltiplas opções
+  freteOpcoes: Array<{ servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string }> = [];
+  freteSelecionado?: { servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string };
+  freteOrigem?: { cep: string; endereco?: string; cidade?: string; uf?: string };
+  freteDestino?: { cep: string; city?: string; state?: string; neighborhood?: string; street?: string; fonte?: string };
+  // CEP digitado para cálculo de frete
+  cepInput: string = '';
   lojaInfo = {
     nome: 'Fórmula Pet',
     endereco: 'Rua Treze de Maio, 506, Conjunto 04 - São Francisco, Curitiba/PR',
     cep: '80510-030',
     horario: 'Seg a Sex 09:00–18:00, Sáb 09:00–13:00'
+  };
+  // Novo endereço (form)
+  novoEndereco: { cep: string; logradouro: string; numero: string; complemento?: string; bairro: string; cidade: string; estado: string; nome?: string; tipo?: string } = {
+    cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', nome: 'Casa', tipo: 'casa'
   };
 
   constructor(public store: StoreService, private api: ApiService) {}
@@ -44,6 +56,11 @@ export class CarrinhoComponent implements OnInit {
     await this.loadReceitasDisponiveis();
     await this.loadHighlights();
     await this.loadEnderecos();
+    // Se já estiver em modo entrega e há endereços, seleciona o primeiro e calcula
+    if (this.entregaModo === 'entrega' && this.enderecos?.length) {
+      this.enderecoSelecionado = this.enderecos[0];
+      this.calcularFrete();
+    }
   }
 
   async loadReceitasDisponiveis() {
@@ -143,53 +160,170 @@ export class CarrinhoComponent implements OnInit {
       const token = localStorage.getItem('token');
       const userType = localStorage.getItem('userType');
       if (!token || userType !== 'cliente') { this.enderecos = []; return; }
-  this.enderecos = (await this.api.listEnderecosCliente(token).toPromise()) || [];
-      if (this.enderecos?.length) this.enderecoSelecionado = this.enderecos[0];
+      this.enderecos = (await this.api.listEnderecosCliente(token).toPromise()) || [];
+      if (this.enderecos?.length) {
+        this.enderecoSelecionado = this.enderecos[0];
+        this.cepInput = this.enderecos[0]?.cep || '';
+        if (this.entregaModo === 'entrega') await this.calcularFrete();
+      }
     } catch {
       this.enderecos = [];
     }
   }
 
-  abrirModalEnderecos() { this.mostrandoEnderecos = true; }
-  fecharModalEnderecos() { this.mostrandoEnderecos = false; }
+  abrirModalEnderecos() { this.mostrandoEnderecos = true; this.mostrandoCadastroEndereco = !this.enderecos?.length; }
+  fecharModalEnderecos() { this.mostrandoEnderecos = false; this.mostrandoCadastroEndereco = false; }
+  mostrarFormNovoEndereco() {
+    this.mostrandoCadastroEndereco = true;
+    // Reset com defaults amigáveis
+    this.novoEndereco = { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', nome: 'Casa', tipo: 'casa' };
+  }
+  mostrarListaEnderecos() { this.mostrandoCadastroEndereco = false; }
 
   selecionarEndereco(e: any) {
     this.enderecoSelecionado = e;
+    // Seleção aplicada imediatamente (sem botão)
     this.mostrandoEnderecos = false;
+    // Alimenta input de CEP com o CEP do endereço
+    this.cepInput = e?.cep || '';
     this.calcularFrete();
+  }
+
+  // Seleção inline (cards dentro da seção de entrega)
+  selecionarEnderecoInline(e: any) {
+    this.enderecoSelecionado = e;
+    this.cepInput = e?.cep || '';
+    this.calcularFrete();
+  }
+
+  onToggleEntregaModo(mode: 'retirada' | 'entrega') {
+    this.entregaModo = mode;
+    if (mode === 'retirada') {
+      // Zera frete e destaca retirada
+      this.freteOpcoes = [];
+      this.freteSelecionado = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco };
+      this.freteValor = 0;
+      this.fretePrazo = undefined;
+    } else {
+      // Garante um endereço e calcula
+      if (!this.enderecoSelecionado && this.enderecos?.length) {
+        this.enderecoSelecionado = this.enderecos[0];
+        this.cepInput = this.enderecos[0]?.cep || '';
+      }
+      this.calcularFrete();
+    }
   }
 
   async cadastrarEndereco(novo: { cep: string; logradouro: string; numero: string; complemento?: string; bairro: string; cidade: string; estado: string; }) {
     try {
       const token = localStorage.getItem('token') || '';
-      const created = await this.api.createEnderecoCliente(token, novo).toPromise();
+      const payload = { ...novo, cep: (novo.cep || '').replace(/\D/g, '') };
+      const created = await this.api.createEnderecoCliente(token, payload).toPromise();
       this.enderecos = [created, ...this.enderecos];
       this.enderecoSelecionado = created;
+      this.cepInput = created?.cep || this.cepInput;
       this.mostrandoEnderecos = false;
       this.calcularFrete();
     } catch {}
   }
 
-  async calcularFrete() {
-    this.freteValor = 0; this.fretePrazo = undefined;
+  // Máscara e busca CEP no formulário de novo endereço
+  onCepInputMask(ev: any) {
+    const raw = (ev?.target?.value ?? '').toString();
+    const dig = raw.replace(/\D/g, '').slice(0, 8);
+    const masked = dig.length > 5 ? `${dig.slice(0,5)}-${dig.slice(5)}` : dig;
+    this.novoEndereco.cep = masked;
+  }
+
+  async onCepBlurLookup() {
+    const cep = (this.novoEndereco.cep || '').replace(/\D/g, '');
+    if (cep.length !== 8) return;
     try {
-      if (this.entregaModo !== 'entrega' || !this.enderecoSelecionado) return;
-      const token = localStorage.getItem('token') || undefined;
-      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product) }));
-      const cep = this.enderecoSelecionado?.cep || '';
-      if (!cep) return;
-      const resp = await this.api.cotarFrete(token, { cep, itens }).toPromise();
-      if (resp && typeof resp.valor === 'number') {
-        this.freteValor = Math.max(0, resp.valor);
-        this.fretePrazo = resp.prazo;
+      // Tenta ViaCEP
+      const via = await this.api.buscarCepViaCep(cep).toPromise();
+      if (via && !via.erro) {
+        this.novoEndereco.logradouro = via.logradouro || this.novoEndereco.logradouro;
+        this.novoEndereco.bairro = via.bairro || this.novoEndereco.bairro;
+        this.novoEndereco.cidade = via.localidade || this.novoEndereco.cidade;
+        this.novoEndereco.estado = via.uf || this.novoEndereco.estado;
+        return;
+      }
+      // Fallback BrasilAPI
+      const br = await this.api.buscarCepBrasilAPI(cep).toPromise();
+      if (br) {
+        this.novoEndereco.logradouro = br.street || this.novoEndereco.logradouro;
+        this.novoEndereco.bairro = br.neighborhood || this.novoEndereco.bairro;
+        this.novoEndereco.cidade = br.city || this.novoEndereco.cidade;
+        this.novoEndereco.estado = br.state || this.novoEndereco.estado;
       }
     } catch {
-      // fallback: zero ou mensagem pode ser mostrada na UI
+      // silencioso; usuário pode preencher manualmente
+    }
+  }
+
+  async calcularFrete() {
+    this.freteValor = 0; this.fretePrazo = undefined;
+    this.freteOpcoes = []; this.freteSelecionado = undefined; this.freteOrigem = undefined; this.freteDestino = undefined;
+    try {
+      if (this.entregaModo !== 'entrega') return;
+      // Auto-seleciona o primeiro endereço se nenhum estiver selecionado
+      if (!this.enderecoSelecionado && this.enderecos?.length) this.enderecoSelecionado = this.enderecos[0];
+      // Define CEP a partir do input ou do endereço selecionado
+      const cep = (this.cepInput || this.enderecoSelecionado?.cep || '').trim();
+      if (!cep) return;
+      const token = localStorage.getItem('token') || undefined;
+      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product) }));
+      const resp = await this.api.cotarFrete(token, { cep, itens }).toPromise();
+      // Suporta tanto resposta antiga { valor, prazo } quanto nova com { origem, destino, pacote, opcoes }
+      if (resp) {
+        // Nova resposta com múltiplas opções
+        if ((resp as any).opcoes && Array.isArray((resp as any).opcoes)) {
+          const r: any = resp as any;
+          this.freteOrigem = r.origem;
+          this.freteDestino = r.destino;
+          this.freteOpcoes = r.opcoes || [];
+          // Seleciona a mais barata por padrão
+          if (this.freteOpcoes.length) {
+            this.freteSelecionado = this.freteOpcoes.slice().sort((a,b) => a.valor - b.valor)[0];
+            this.freteValor = Math.max(0, this.freteSelecionado.valor);
+            this.fretePrazo = this.freteSelecionado.prazo_dias != null ? `${this.freteSelecionado.prazo_dias} dia${this.freteSelecionado.prazo_dias === 1 ? '' : 's'}` : undefined;
+          }
+        } else if (typeof (resp as any).valor === 'number') {
+          // Resposta antiga
+          this.freteValor = Math.max(0, (resp as any).valor);
+          this.fretePrazo = (resp as any).prazo;
+        }
+      }
+    } catch {
+      // Fallback genérico de frete se o endpoint não estiver disponível
+      const subtotal = this.store.getCartTotals().subtotal;
+      // Estimativa simples: 8% do subtotal, min 12, max 40
+      const estimado = Math.min(40, Math.max(12, subtotal * 0.08));
+      this.freteValor = Math.round(estimado * 100) / 100;
+      this.fretePrazo = '3–7 dias úteis';
     }
   }
 
   get totalComFrete() {
     const t = this.store.getCartTotals();
-    return t.subtotal + (this.entregaModo === 'entrega' ? this.freteValor : 0);
+    const freteSel = this.freteSelecionado?.valor ?? this.freteValor;
+    return t.subtotal + (this.entregaModo === 'entrega' ? (freteSel || 0) : 0);
+  }
+
+  selecionarOpcaoFrete(opt: { servico: string; nome: string; prazo_dias: number; valor: number; observacao?: string }) {
+    this.freteSelecionado = opt;
+    this.freteValor = Math.max(0, opt?.valor || 0);
+    this.fretePrazo = opt?.prazo_dias != null ? `${opt.prazo_dias} dia${opt.prazo_dias === 1 ? '' : 's'}` : undefined;
+  }
+
+  tipoEmoji(tipo?: string): string {
+    const t = (tipo || '').toLowerCase().trim();
+    switch (t) {
+      case 'casa': return '🏠';
+      case 'trabalho': return '💼';
+      case 'entrega': return '📦';
+      case 'cobranca': return '🧾';
+      default: return '📍';
+    }
   }
 }

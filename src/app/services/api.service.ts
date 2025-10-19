@@ -449,7 +449,7 @@ export class ApiService {
 
   createEnderecoCliente(token: string, body: {
     cep: string; logradouro: string; numero: string; complemento?: string;
-    bairro: string; cidade: string; estado: string;
+    bairro: string; cidade: string; estado: string; nome?: string; tipo?: string;
   }): Observable<any> {
     const url = `${this.baseUrl}/clientes/me/enderecos`;
     return this.http.post<any>(url, body, { headers: { Authorization: `Bearer ${token}` } });
@@ -460,5 +460,16 @@ export class ApiService {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
     const url = `${this.baseUrl}/frete/cotar`;
     return this.http.post<{ valor: number; prazo?: string }>(url, payload, { headers });
+  }
+
+  // CEP lookups em APIs públicas gratuitas
+  buscarCepViaCep(cep: string): Observable<any> {
+    const clean = (cep || '').replace(/\D/g, '');
+    return this.http.get(`https://viacep.com.br/ws/${clean}/json/`);
+  }
+
+  buscarCepBrasilAPI(cep: string): Observable<any> {
+    const clean = (cep || '').replace(/\D/g, '');
+    return this.http.get(`https://brasilapi.com.br/api/cep/v1/${clean}`);
   }
 }

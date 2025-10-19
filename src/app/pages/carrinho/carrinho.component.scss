@@ -135,16 +135,71 @@
 /* Address modal */
 .addr-modal { position: fixed; z-index: 4700; left: 50%; top: 16vh; transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); padding: 14px; }
 .addr-modal h3 { margin: 0 0 8px; color: #111827; }
+.addr-modal .help { margin: -4px 0 8px; color: #6b7280; font-size: 12px; }
 .addr-modal .lista { display: grid; gap: 8px; max-height: min(60vh, 420px); overflow: auto; padding-right: 4px; }
-.addr-item { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; cursor: pointer; }
-.addr-item:hover { background: #f9fafb; }
-.addr-item .dot { width: 14px; height: 14px; background: #2563eb; border-radius: 999px; box-shadow: 0 0 0 4px rgba(37,99,235,0.15); margin-top: 4px; }
-.addr-item .dados .linha { color: #111827; }
+.addr-modal .addr-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.addr-modal .addr-topbar .top-actions { display: inline-flex; gap: 8px; }
+.addr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.addr-card { position: relative; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; display: grid; gap: 4px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.addr-card:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.06); }
+.addr-card.selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.addr-card .tipo { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: #111827; margin-bottom: 2px; }
+.addr-card .tipo .emoji { font-size: 18px; }
+.addr-card .linha { color: #111827; font-size: 13px; }
+.addr-card .sel-mark { position: absolute; right: 8px; top: 8px; width: 20px; height: 20px; border-radius: 999px; background: #10b981; color: #fff; display: grid; place-items: center; font-weight: 900; box-shadow: 0 2px 8px rgba(16,185,129,0.3); opacity: 0; transform: scale(0.8); transition: opacity .15s ease, transform .15s ease; }
+.addr-card.selected .sel-mark { opacity: 1; transform: scale(1); }
 .addr-modal .cad-form .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.addr-modal .cad-form input { height: 40px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 10px; }
+.addr-modal .cad-form input { height: 40px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 10px; width: 90%; }
 .addr-modal .acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.addr-modal .cad-form .lbl { display: block; font-size: 12px; color: #6b7280; margin: 6px 0 4px; }
+.addr-modal .tipo-wrap { margin-bottom: 6px; }
+.addr-modal .tipo-selectors { display: flex; flex-wrap: wrap; gap: 8px; }
+.addr-modal .tipo-selectors .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; cursor: pointer; user-select: none; background: #f9fafb; }
+.addr-modal .tipo-selectors .pill input { appearance: none; width: 0; height: 0; opacity: 0; position: absolute; }
+.addr-modal .tipo-selectors .pill .emoji { font-size: 18px; }
+.addr-modal .tipo-selectors .pill.on { border-color: #2563eb; background: #eef2ff; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.addr-modal .nome-wrap input { width: 95%; }
+/* Extra spacing at the bottom of the form */
+.addr-modal .cad-form { padding-bottom: 8px; }
 
 @media (max-width: 768px) {
 	.addr-modal { top: 10vh; width: calc(100vw - 16px); }
 	.radio-group { gap: 6px; }
 }
+
+/* Inline address cards inside entrega section */
+.entrega-info .acoes { margin-top: 8px; display: flex; justify-content: flex-end; }
+.entrega-info .addr-inline { margin-top: 8px; }
+.entrega-info .addr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.entrega-info .addr-card { position: relative; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; display: grid; gap: 4px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.entrega-info .addr-card:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.06); }
+.entrega-info .addr-card.selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.entrega-info .addr-card .tipo { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: #111827; margin-bottom: 2px; }
+.entrega-info .addr-card .tipo .emoji { font-size: 18px; }
+.entrega-info .addr-card .linha { color: #111827; font-size: 13px; }
+.entrega-info .addr-card .sel-mark { position: absolute; right: 8px; top: 8px; width: 20px; height: 20px; border-radius: 999px; background: #10b981; color: #fff; display: grid; place-items: center; font-weight: 900; box-shadow: 0 2px 8px rgba(16,185,129,0.3); opacity: 0; transform: scale(0.8); transition: opacity .15s ease, transform .15s ease; }
+.entrega-info .addr-card.selected .sel-mark { opacity: 1; transform: scale(1); }
+
+/* Small button variant */
+.btn.small { padding: 8px 12px; font-size: 14px; }
+
+/* Freight result inside frete card */
+.frete .resultado { margin-top: 8px; color: #111827; }
+.frete .resultado .prazo { color: #6b7280; font-size: 12px; margin-left: 6px; }
+/* Info note under shipping options */
+.frete .muted.info { margin-top: 6px; }
+/* Frete origem/destino summary and options list */
+.frete .origem-destino { margin-top: 8px; display: grid; gap: 4px; }
+.frete .origem-destino .od-linha { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #374151; }
+.frete .origem-destino .lbl { font-weight: 800; color: #111827; min-width: 54px; }
+.frete .origem-destino .val { color: #374151; }
+.frete .opcoes { margin-top: 8px; display: grid; gap: 8px; }
+.frete .opt { display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.frete .opt:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.06); }
+.frete .opt.sel { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.frete .opt .bullet { width: 14px; height: 14px; border-radius: 999px; border: 2px solid #9ca3af; background: #fff; display: inline-block; }
+.frete .opt.sel .bullet { border-color: #2563eb; background: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,0.15); }
+.frete .opt .nome { font-weight: 800; color: #111827; }
+.frete .opt .obs { font-size: 12px; color: #6b7280; }
+.frete .opt .valor { font-weight: 900; color: #111827; }
+.frete .opt .prazo { font-size: 12px; color: #6b7280; text-align: right; }

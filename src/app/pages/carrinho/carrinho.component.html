@@ -35,23 +35,9 @@
     </div>
 
     <div class="aside">
-      <!-- Modo de entrega / retirada -->
-      <div class="card entrega">
-        <h3>Entrega ou retirada</h3>
-        <div class="radio-group">
-          <label class="radio-pill">
-            <input type="radio" name="entrega" value="retirada" [(ngModel)]="entregaModo" (change)="calcularFrete()" />
-            <span class="dot"></span>
-            <span class="lbl">Retirar na loja</span>
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="entrega" value="entrega" [(ngModel)]="entregaModo" (change)="calcularFrete()" />
-            <span class="dot"></span>
-            <span class="lbl">Entrega no endereço</span>
-          </label>
-        </div>
-
-        <!-- Se retirada: mostra endereço e horário da loja -->
+      <div class="card frete">
+        <h3>Calcular frete</h3>
+        <!-- Info da loja quando for retirada -->
         <div class="retirada-info" *ngIf="entregaModo==='retirada'">
           <div class="loja">{{ lojaInfo.nome }}</div>
           <div class="end">{{ lojaInfo.endereco }}</div>
@@ -59,31 +45,69 @@
           <div class="horario">Horário: {{ lojaInfo.horario }}</div>
         </div>
 
-        <!-- Se entrega: seleção de endereço -->
-        <div class="entrega-info" *ngIf="entregaModo==='entrega'">
-          <div class="addr-resumo" *ngIf="enderecoSelecionado; else noAddr">
-            <div class="linha"><strong>{{ enderecoSelecionado?.logradouro }}, {{ enderecoSelecionado?.numero }}</strong></div>
-            <div class="linha">{{ enderecoSelecionado?.bairro }} - {{ enderecoSelecionado?.cidade }}/{{ enderecoSelecionado?.estado }}</div>
-            <div class="linha">CEP {{ enderecoSelecionado?.cep }}</div>
+        <!-- Endereços inline quando entrega -->
+        <div class="addr-inline" *ngIf="entregaModo==='entrega'">
+          <div *ngIf="enderecos?.length; else noAddrInline2">
+            <div class="addr-grid">
+              <div class="addr-card" *ngFor="let e of enderecos | slice:0:3" [class.selected]="enderecoSelecionado?.id === e.id" (click)="selecionarEnderecoInline(e)">
+                <div class="tipo">
+                  <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
+                  <span class="nome">{{ e.nome || (e.tipo | titlecase) || 'Endereço' }}</span>
+                </div>
+                <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
+                <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
+                <div class="linha">CEP {{ e.cep }}</div>
+                <div class="sel-mark" aria-hidden="true">✓</div>
+              </div>
+            </div>
+            <div class="acoes">
+              <button class="btn light small" (click)="abrirModalEnderecos()">Outro endereço</button>
+            </div>
           </div>
-          <ng-template #noAddr>
-            <div class="muted">Nenhum endereço selecionado.</div>
+          <ng-template #noAddrInline2>
+            <div class="muted">Nenhum endereço cadastrado.</div>
+            <div class="acoes">
+              <button class="btn light small" (click)="abrirModalEnderecos()">Adicionar endereço</button>
+            </div>
           </ng-template>
-          <div class="acoes">
-            <button class="btn light" (click)="abrirModalEnderecos()">Escolher endereço</button>
-          </div>
-          <div class="frete-ret" *ngIf="freteValor>0 || fretePrazo">
-            <div class="linha">Frete: <strong>{{ freteValor | currency:'BRL' }}</strong> <span class="prazo" *ngIf="fretePrazo">({{ fretePrazo }})</span></div>
-          </div>
         </div>
-      </div>
-      <div class="card frete">
-        <h3>Calcular frete</h3>
         <div class="linha">
-          <input type="text" class="input" placeholder="CEP" aria-label="CEP" />
-          <button class="btn">Calcular</button>
+          <input type="text" class="input" placeholder="CEP" aria-label="CEP" [(ngModel)]="cepInput" (keyup.enter)="calcularFrete()" />
+          <button class="btn" (click)="calcularFrete()">Calcular</button>
         </div>
-        <p class="muted">Entrega: valores e prazos serão exibidos aqui.</p>
+        <div class="origem-destino" *ngIf="freteOrigem || freteDestino">
+          <div class="od-linha" *ngIf="freteOrigem as o">
+            <span class="lbl">Origem</span>
+            <span class="val">{{ o.cidade }}/{{ o.uf }} • CEP {{ o.cep }}</span>
+          </div>
+          <div class="od-linha" *ngIf="freteDestino as d">
+            <span class="lbl">Destino</span>
+            <span class="val">{{ d.city }}/{{ d.state }} • CEP {{ d.cep }}</span>
+          </div>
+        </div>
+        <div class="opcoes" *ngIf="freteOpcoes?.length; else freteSimples">
+          <div class="opt" *ngFor="let op of freteOpcoes" (click)="selecionarOpcaoFrete(op)" [class.sel]="freteSelecionado?.servico===op.servico" role="radio" [attr.aria-checked]="freteSelecionado?.servico===op.servico">
+            <div class="col-1">
+              <span class="bullet"></span>
+            </div>
+            <div class="col-2">
+              <div class="nome">{{ op.nome }}</div>
+              <div class="obs" *ngIf="op.observacao">{{ op.observacao }}</div>
+            </div>
+            <div class="col-3">
+              <div class="valor">{{ op.valor | currency:'BRL' }}</div>
+              <div class="prazo">{{ op.prazo_dias }} dia{{ op.prazo_dias === 1 ? '' : 's' }}</div>
+            </div>
+          </div>
+          <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
+        </div>
+        <ng-template #freteSimples>
+          <div class="resultado" *ngIf="freteValor>0 || fretePrazo">
+            <div>Frete: <strong>{{ freteValor | currency:'BRL' }}</strong> <span class="prazo" *ngIf="fretePrazo">({{ fretePrazo }})</span></div>
+          </div>
+          <p class="muted" *ngIf="!(freteValor>0 || fretePrazo)">Entrega: valores e prazos serão exibidos aqui.</p>
+          <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
+        </ng-template>
       </div>
       <div class="card resumo">
         <h3>Resumo do pedido</h3>
@@ -95,7 +119,6 @@
           <div class="grand" *ngIf="entregaModo==='entrega'">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
         </div>
         <div class="acoes">
-          <button class="btn" (click)="clear()">Limpar carrinho</button>
           <button class="btn primary" [disabled]="!store.isCheckoutAllowed()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">Finalizar compra</button>
         </div>
       </div>
@@ -184,30 +207,72 @@
   <!-- Modal de endereços -->
   <div class="overlay" *ngIf="mostrandoEnderecos" (click)="fecharModalEnderecos()"></div>
   <div class="addr-modal" *ngIf="mostrandoEnderecos" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Selecionar endereço">
-    <h3>Endereços de entrega</h3>
-    <div class="lista" *ngIf="enderecos?.length; else cadNovo">
-      <label class="addr-item" *ngFor="let e of enderecos" (click)="selecionarEndereco(e)">
-        <span class="dot"></span>
-        <div class="dados">
+    <div class="addr-topbar">
+      <h3>Endereços de entrega</h3>
+    </div>
+    <p class="help" *ngIf="!mostrandoCadastroEndereco">Clique em um card para selecionar e calcular o frete automaticamente.</p>
+
+    <div class="lista" *ngIf="enderecos?.length && !mostrandoCadastroEndereco; else cadNovo">
+      <div class="addr-grid">
+        <div class="addr-card" *ngFor="let e of enderecos" [class.selected]="enderecoSelecionado?.id === e.id" (click)="selecionarEndereco(e)">
+          <div class="tipo">
+            <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
+            <span class="nome">{{ e.nome || (e.tipo | titlecase) || 'Endereço' }}</span>
+          </div>
           <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
           <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
           <div class="linha">CEP {{ e.cep }}</div>
+          <div class="sel-mark" aria-hidden="true">✓</div>
         </div>
-      </label>
-      <div class="acoes">
-        <button class="btn light" (click)="fecharModalEnderecos()">Fechar</button>
+        <!-- Card para adicionar novo endereço -->
+        <div class="addr-card add-new" (click)="mostrarFormNovoEndereco()">
+          <div class="tipo">
+            <span class="emoji">➕</span>
+            <span class="nome">Adicionar novo endereço</span>
+          </div>
+          <div class="linha">Cadastre um novo local de entrega</div>
+        </div>
       </div>
     </div>
     <ng-template #cadNovo>
-      <form class="cad-form" #f="ngForm" (ngSubmit)="cadastrarEndereco(f.value)" autocomplete="on">
+      <form class="cad-form" #f="ngForm" (ngSubmit)="cadastrarEndereco(novoEndereco)" autocomplete="on">
+        <div class="tipo-wrap">
+          <label class="lbl">Tipo do endereço</label>
+          <div class="tipo-selectors">
+            <label class="pill" [class.on]="novoEndereco.tipo==='casa'">
+              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="casa" />
+              <span class="emoji">🏠</span>
+              <span>Casa</span>
+            </label>
+            <label class="pill" [class.on]="novoEndereco.tipo==='trabalho'">
+              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="trabalho" />
+              <span class="emoji">💼</span>
+              <span>Trabalho</span>
+            </label>
+            <label class="pill" [class.on]="novoEndereco.tipo==='entrega'">
+              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="entrega" />
+              <span class="emoji">📦</span>
+              <span>Entrega</span>
+            </label>
+            <label class="pill" [class.on]="novoEndereco.tipo==='cobranca'">
+              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="cobranca" />
+              <span class="emoji">🧾</span>
+              <span>Cobrança</span>
+            </label>
+          </div>
+        </div>
+        <div class="nome-wrap">
+          <label class="lbl" for="nome-end">Nome do endereço (opcional)</label>
+          <input id="nome-end" name="nome" [(ngModel)]="novoEndereco.nome" placeholder="Ex.: Casa dos pais, Ap 301, Depósito" />
+        </div>
         <div class="grid">
-          <input name="cep" ngModel required placeholder="CEP" />
-          <input name="logradouro" ngModel required placeholder="Logradouro" />
-          <input name="numero" ngModel required placeholder="Número" />
-          <input name="complemento" ngModel placeholder="Complemento" />
-          <input name="bairro" ngModel required placeholder="Bairro" />
-          <input name="cidade" ngModel required placeholder="Cidade" />
-          <input name="estado" ngModel required placeholder="UF" />
+          <input name="cep" [(ngModel)]="novoEndereco.cep" (input)="onCepInputMask($event)" (blur)="onCepBlurLookup()" required placeholder="CEP" />
+          <input name="logradouro" [(ngModel)]="novoEndereco.logradouro" required placeholder="Logradouro" />
+          <input name="numero" [(ngModel)]="novoEndereco.numero" required placeholder="Número" />
+          <input name="complemento" [(ngModel)]="novoEndereco.complemento" placeholder="Complemento" />
+          <input name="bairro" [(ngModel)]="novoEndereco.bairro" required placeholder="Bairro" />
+          <input name="cidade" [(ngModel)]="novoEndereco.cidade" required placeholder="Cidade" />
+          <input name="estado" [(ngModel)]="novoEndereco.estado" required placeholder="UF" />
         </div>
         <div class="acoes">
           <button type="button" class="btn light" (click)="fecharModalEnderecos()">Cancelar</button>
