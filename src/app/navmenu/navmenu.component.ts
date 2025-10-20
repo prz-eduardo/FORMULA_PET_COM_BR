@@ -4,6 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
+import { AuthService } from '../services/auth.service';
 import { gsap } from 'gsap';
 
 @Component({
@@ -26,8 +27,9 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   private idleTimer: any = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
+  private metaballsPaused = false;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService, private auth: AuthService) {}
 
   ngOnInit(): void {
     // Rota atual e modo do menu devem ser definidos antes da primeira verificação de mudanças
@@ -49,6 +51,14 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.store.isClienteLoggedSilent()
       .then(ok => this.isCliente = ok)
       .catch(() => this.isCliente = false);
+    // Cross-sync: atualiza ícones/estado quando login/logout ocorrer em qualquer lugar
+    this.auth.isLoggedIn$.subscribe(async ok => {
+      if (ok) {
+        this.isCliente = await this.store.isClienteLoggedSilent().catch(() => false);
+      } else {
+        this.isCliente = false;
+      }
+    });
   }
 
   ngAfterViewInit(): void {
@@ -64,8 +74,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
 
-  // Initialize metaballs animation behind logo (scoped to logo-container)
-      this.initMetaBalls();
+    // Initialize metaballs animation behind logo (scoped to logo-container)
+    this.initMetaBalls();
 
       // Inicia o timer de inatividade (sem scroll) para auto-ocultar a navbar
       this.resetIdleTimer();
@@ -176,13 +186,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       iconMenu.classList.remove('icon-closed');
       this.menuOpen = false;
       try { document.body.style.overflow = ''; } catch {}
-      // Clear any inline randomized durations/opacities
-      const linksClose: NodeListOf<HTMLElement> = menu.querySelectorAll('.menu-link');
-      linksClose.forEach(l => {
-        l.style.removeProperty('animation-duration');
-        l.style.removeProperty('opacity');
-        l.style.removeProperty('transition');
-      });
+      // Resume metaballs when menu is closed
+      this.metaballsPaused = false;
       setTimeout(() => menu.classList.remove('open'), 1300);
     } else {
       menu.classList.remove('close');
@@ -193,17 +198,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   this.isVisible = true;
   if (this.idleTimer) clearTimeout(this.idleTimer);
       try { document.body.style.overflow = 'hidden'; } catch {}
-      // Randomization (all devices): duration and opacity fade from 0 to 1
-      const linksOpen: NodeListOf<HTMLElement> = menu.querySelectorAll('.menu-link');
-      const min = 1.2; // slower min
-      const max = 2.4; // slower max
-      linksOpen.forEach(l => {
-        const dur = (min + Math.random() * (max - min)).toFixed(2);
-        l.style.animationDuration = `${dur}s`;
-        l.style.opacity = '0';
-        l.style.transition = `opacity ${dur}s ease`;
-        requestAnimationFrame(() => { l.style.opacity = '1'; });
-      });
+      // Pause metaballs while menu is open to reduce paint/layout work
+      this.metaballsPaused = true;
     }
   }
 
@@ -231,8 +227,9 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!ball) return;
 
     let i = 0;
+    const self = this;
     const raf = () => {
-      if (i % 25 === 0) createBall();
+      if (!self.metaballsPaused && i % 25 === 0) createBall();
       i++;
       requestAnimationFrame(raf);
     };

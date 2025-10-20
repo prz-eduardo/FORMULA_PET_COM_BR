@@ -78,7 +78,11 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
 
   async ngOnInit() {
-    this.store.products$.subscribe(p => this.produtos = p);
+    this.store.products$.subscribe(p => {
+      this.produtos = p;
+      // Sempre que a store atualizar (ex.: favoritos otimistas), realinhar as referências
+      this.refreshProductRefs();
+    });
   this.store.categories$.subscribe(c => this.categorias = c);
   this.store.meta$.subscribe(m => this.storeMeta = m);
     // React to global auth changes: apenas atualiza perfil; não refaz produtos
@@ -87,6 +91,10 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.lastLoggedIn = ok ?? false;
       if (ok) {
         await this.fetchMe();
+      } else {
+        // On logout from anywhere (Loja or Área do Cliente), reflect immediately
+        this.me = null;
+        this.store.resetClienteGate();
       }
     });
     // try fetch me silently
@@ -199,6 +207,23 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   trackProduct = (_: number, p: ShopProduct) => p.id;
   trackCategory = (_: number, c: StoreCategory) => c.id ?? c.nome;
   trackFilter = (_: number, f: { key: string; label: string }) => f.key;
+
+  // Mantém interleaved/chunks/accum apontando para os objetos de produto mais recentes vindos da Store
+  private refreshProductRefs() {
+    if (!this.produtos || this.produtos.length === 0) return;
+    const map = new Map<number, ShopProduct>(this.produtos.map(p => [p.id, p]));
+    if (this.accum && this.accum.length) {
+      this.accum = this.accum.map(p => map.get(p.id) || p);
+    }
+    if (this.chunks && this.chunks.length) {
+      this.chunks = this.chunks.map(ch => ({
+        items: (ch.items || []).map(p => map.get(p.id) || p),
+        banners: (ch.banners || []).map(b => map.get(b.id) || b)
+      }));
+    }
+    // Reconstroi listas de renderização para refletir counts/flags atualizados
+    this.rebuildInterleavedAndFeatured();
+  }
 
   onToggleFavFromCard(p: ShopProduct, ev: Event) {
     ev.preventDefault(); ev.stopPropagation();
@@ -751,7 +776,8 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const resp = await this.api.loginCliente({ email: this.email, senha: this.senha }).toPromise();
       if (resp?.token) {
-        localStorage.setItem('token', resp.token);
+        // Broadcast login to the whole app
+        this.auth.login(resp.token, true);
         localStorage.setItem('userType', 'cliente');
         this.toast.success('Login realizado com sucesso');
         this.showLogin = false;
@@ -773,10 +799,14 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   logout() {
-    localStorage.removeItem('token');
+    // Use AuthService to centralize token/state cleanup
+    try { this.auth.logout(); } catch {}
     this.me = null;
+    // Clear session-scoped data
     this.store.clearCart();
     this.store.resetClienteGate();
+    // Close the login popover after logout
+    this.closeLogin();
     this.toast.info('Você saiu da conta');
   }
 
@@ -798,7 +828,8 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
       const idToken = await res.user.getIdToken();
       const resp = await this.api.loginCliente({ idToken }).toPromise();
       if (resp?.token) {
-        localStorage.setItem('token', resp.token);
+        // Broadcast login to the whole app
+        this.auth.login(resp.token, true);
         localStorage.setItem('userType', 'cliente');
         this.toast.success('Login com Google realizado');
         this.showLogin = false;

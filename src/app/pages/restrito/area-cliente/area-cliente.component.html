@@ -16,7 +16,7 @@
   <!-- Painel Cliente -->
   <div *ngIf="hasAuth" class="cliente-panel">
     <div class="cliente-info">
-      <img *ngIf="clienteData?.photoURL" [src]="clienteData.photoURL" class="cliente-photo" />
+  <img *ngIf="clienteData?.photoURL" [src]="clienteData.photoURL" class="cliente-photo" [attr.alt]="clienteData?.nome ? ('Foto de ' + clienteData.nome) : 'Foto do cliente'" title="Foto do cliente" />
       <span class="cliente-nome">{{ clienteData?.nome }}</span>
     </div>
     <div class="cliente-actions" (click)="$event.stopPropagation()">
@@ -30,7 +30,7 @@
 
   <!-- Navegação interna quando em modal: barra de voltar -->
   <div *ngIf="modal && internalView" class="internal-back">
-    <button class="btn btn-sec" (click)="goBack()"></button>
+  <button class="btn btn-sec" (click)="goBack()" aria-label="Voltar">Voltar</button>
   </div>
 
   <!-- Widgets do Cliente -->
@@ -40,10 +40,6 @@
         <div class="card-icon">🛒</div>
         <div class="card-title">Meus Pedidos</div>
       </div>
-      <div class="menu-card" (click)="open('consultar-pedidos')">
-        <div class="card-icon">🩺</div>
-        <div class="card-title">Histórico de receitas</div>
-      </div>
       <div class="menu-card" (click)="open('meus-pets')">
         <div class="card-icon">🐶🐱</div>
         <div class="card-title">Meus Pets</div>
@@ -51,7 +47,23 @@
       <div class="menu-card" (click)="open('novo-pet')">
         <div class="card-icon">➕</div>
         <div class="card-title">Cadastrar Pet</div>
-      </div>      
+      </div>
+      <div class="menu-card" (click)="open('perfil')">
+        <div class="card-icon">👤</div>
+        <div class="card-title">Perfil</div>
+      </div>
+      <div class="menu-card" (click)="open('favoritos')">
+        <div class="card-icon">⭐</div>
+        <div class="card-title">Favoritos</div>
+      </div>
+      <div class="menu-card" (click)="open('carrinho')">
+        <div class="card-icon">🧺</div>
+        <div class="card-title">Carrinho</div>
+      </div>
+      <div class="menu-card" (click)="open('loja')">
+        <div class="card-icon">🏬</div>
+        <div class="card-title">Loja</div>
+      </div>
     </div>
 
     <!-- overlay se algum widget estiver bloqueado -->

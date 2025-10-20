@@ -135,6 +135,21 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       this.loadProfile(token);
     }
 
+    // Cross-sync with global auth: react when login/logout happens elsewhere (e.g., Loja popover)
+    this.sub = this.auth.isLoggedIn$.subscribe(ok => {
+      const tokenNow = this.auth.getToken();
+      const typeNow = this.getStoredUserType();
+      this.hasAuth = !!ok && !!tokenNow && !!typeNow;
+      if (this.hasAuth && tokenNow) {
+        // refresh profile quickly
+        this.loadProfile(tokenNow);
+      } else {
+        // reflect logout immediately in the modal
+        this.clienteData = null;
+        this.pets = [];
+      }
+    });
+
     // Abrir modais conforme query params
     if (this.isBrowser) {
       this.route.queryParamMap.subscribe(pm => {
@@ -206,13 +221,15 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
 
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho') {
     if (!this.modal) {
       // Navigate normally when not in modal
       if (view === 'meus-pedidos') return this.router.navigateByUrl('/meus-pedidos');
       if (view === 'meus-pets') return this.router.navigateByUrl('/meus-pets');
       if (view === 'novo-pet') return this.router.navigateByUrl('/novo-pet');
       if (view === 'perfil') return this.router.navigateByUrl('/editar-perfil');
+      if (view === 'favoritos') return this.router.navigateByUrl('/favoritos');
+      if (view === 'carrinho') return this.router.navigateByUrl('/carrinho');
       if (view === 'loja') return this.router.navigateByUrl('/loja');
       if (view === 'consultar-pedidos') {
         return this.router.navigate([{ outlets: { modal: ['consultar-pedidos'] } }], { relativeTo: this.route });
@@ -222,6 +239,14 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     if (view === 'loja') {
       // Close modal entirely and go to loja
       window.location.href = '/loja';
+      return;
+    }
+    if (view === 'favoritos') {
+      window.location.href = '/favoritos';
+      return;
+    }
+    if (view === 'carrinho') {
+      window.location.href = '/carrinho';
       return;
     }
     if (view === 'consultar-pedidos') {
