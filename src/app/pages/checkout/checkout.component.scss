@@ -3,8 +3,10 @@
 @media (max-width: 640px){
 	.checkout-wrap{padding-top:120px}
 }
-.header{display:flex;align-items:flex-start;justify-content:space-between;margin:8px 0 16px}
-.header h1{margin:0 0 6px;font-size:28px}
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin:8px 0 18px}
+.header h1{margin:0 0 6px;font-size:28px;font-weight:800;color:#111827}
+.header .title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header .order-pill{display:inline-flex;align-items:center;gap:6px;background:#eef2ff;border:1px solid #e0e7ff;color:#3730a3;padding:4px 10px;border-radius:999px;font-weight:800}
 .header .sub{margin:0;color:#4b5563}
 .header .right{display:flex;gap:12px;align-items:center}
 .header .code{background:#f3f4f6;border:1px solid #e5e7eb;padding:6px 10px;border-radius:8px;color:#374151}
@@ -33,15 +35,36 @@
 .cupom{margin:8px 0 16px}
 .cupom .row{display:flex;gap:8px}
 .cupom input{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+.cupom-feedback{margin-top:8px}
+.cupom-feedback .msg{padding:8px 10px;border-radius:10px;border:1px solid transparent;display:flex;align-items:center;gap:8px}
+.cupom-feedback .msg.ok{background:#ecfdf5;border-color:#bbf7d0;color:#065f46;font-weight:700}
+.cupom-feedback .msg.ok .desc{font-weight:600;margin-left:6px}
+.cupom-feedback .msg.erro{background:#fef2f2;border-color:#fecaca;color:#991b1b}
 
-.pay-methods{display:flex;gap:12px;margin:8px 0 10px;flex-wrap:wrap}
-.method{display:flex;gap:8px;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;background:#fafafa;cursor:pointer}
-.method input{margin:0}
+.pay-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0 8px}
+.pay-title{font-weight:800;color:#111827}
+.pay-methods{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin:10px 0;position:relative;z-index:20}
+.method-card{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;grid-column-gap:10px;align-items:center;border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#ffffff;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.05)}
+.method-card:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,0,0,.08)}
+.method-card input{position:absolute;inset:0;opacity:0}
+.method-card .icon{width:28px;height:28px;display:inline-grid;place-items:center}
+.method-card .icon img{display:block;width:72px;height:auto}
+.method-card .label{font-weight:800;color:#111827}
+.method-card .desc{grid-column:2; font-size:12px;color:#6b7280;margin-top:2px}
+.method-card.selected{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,0.12)}
+
+/* Pix 10% badge */
+.pix-badge{display:flex;align-items:center;gap:8px;background:#ecfdf5;border:1px dashed #86efac;color:#065f46;padding:8px 10px;border-radius:10px;margin:-2px 0 8px}
+.pix-badge .ico{font-size:16px}
+.pix-badge .muted{color:#047857;font-size:12px}
 
 .btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
 .btn.primary{background:#10b981;border-color:#10b981;color:#fff}
 .btn.success{background:#2563eb;border-color:#2563eb;color:#fff}
 .btn.light{background:#f9fafb;border-color:#e5e7eb}
+.btn.cta{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:900;font-size:16px;line-height:1;border-radius:999px;padding:14px 20px;box-shadow:0 10px 24px rgba(22,163,74,.25)}
+.btn.cta:hover{filter:brightness(0.95)}
+.btn.cta:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
 .acoes{display:flex;gap:12px;align-items:center;margin-top:12px}
 
 .alert-simulado{margin-top:12px;padding:10px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
@@ -49,15 +72,37 @@
 .resumo .line{display:flex;justify-content:space-between;margin:8px 0;color:#374151}
 .resumo .line strong.neg{color:#b91c1c}
 .resumo .total{display:flex;justify-content:space-between;border-top:1px dashed #e5e7eb;margin-top:12px;padding-top:12px;font-size:18px;font-weight:800}
+.resumo.anim-gain .total strong,.sticky-paybar.bump .amt{animation:popgain .45s ease}
+.resumo.anim-lose .total strong{animation:poplose .45s ease}
+@keyframes popgain{0%{transform:scale(1)}30%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes poplose{0%{transform:scale(1)}30%{transform:scale(0.94)}100%{transform:scale(1)}}
 
 .dicas ul{margin:0;padding-left:18px;color:#4b5563}
 .dicas li{margin:6px 0}
+.dicas .duvidas .wa-link{display:inline-flex;align-items:center;gap:6px;color:#16a34a;text-decoration:none}
+.dicas .duvidas .wa-link:hover{text-decoration:underline}
+.wa-ico{display:inline-block;width:16px;height:16px;background-image:url('/imagens/whatsapp-xxl.png');background-size:contain;background-repeat:no-repeat}
+
+/* Inline WhatsApp help block near payment methods */
+.help-wa{display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#065f46;padding:8px 10px;border-radius:10px;margin:6px 0 8px}
+.help-wa .wa-ico{width:18px;height:18px}
+.help-wa .wa-link{color:#16a34a;text-decoration:none;font-weight:700}
+.help-wa .wa-link:hover{text-decoration:underline}
 
 /* Modals */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:saturate(60%) blur(2px);z-index:50}
 .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:16px;max-width:560px;width:92%}
 .modal h3{margin:0 0 8px}
 .modal .qr{display:flex;align-items:center;justify-content:center;padding:10px;border:1px dashed #e5e7eb;border-radius:12px;background:#f8fafc}
+.modal.pix .pix-powered{display:flex;justify-content:center;margin-top:10px}
+.modal.pix .pix-powered img{width:220px;height:auto;display:block}
+
+/* Compact status badges */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-weight:700}
+.badge.wait{background:#f8fafc;border-color:#e5e7eb}
+.badge.ok{background:#ecfdf5;border-color:#10b981;color:#065f46}
+.spinner{width:14px;height:14px;border-radius:999px;border:2px solid #e5e7eb;border-top-color:#2563eb;display:inline-block;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .modal .copy{display:flex;gap:8px;margin-top:10px}
 .modal .copy input{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
 .modal .acoes{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
@@ -66,3 +111,20 @@
 .modal.card .card-form{display:grid;gap:10px;margin-top:8px}
 .modal.card .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .modal.card input{border:1px solid #e5e7eb;border-radius:10px;padding:10px;width:100%}
+
+/* Desktop method CTA spacing */
+.method-cta{margin-top:10px}
+@media (max-width: 640px){
+	.method-cta{display:none}
+	.checkout-wrap{padding-bottom:110px}
+}
+
+/* Sticky pay bar (mobile) */
+.sticky-paybar{position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:space-between;gap:12px;background:#ffffff;border-top:1px solid #e5e7eb;box-shadow:0 -10px 24px rgba(0,0,0,.06);padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom));z-index:70}
+.sticky-paybar .sum{display:flex;flex-direction:column}
+.sticky-paybar .sum .lbl{font-size:12px;color:#6b7280}
+.sticky-paybar .sum .amt{font-size:18px;font-weight:900;color:#111827}
+.sticky-paybar .btn.cta{min-width:46%;text-align:center}
+@media (max-width: 640px){
+	.sticky-paybar{display:flex}
+}

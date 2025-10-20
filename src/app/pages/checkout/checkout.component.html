@@ -2,13 +2,18 @@
   <app-navmenu></app-navmenu>
   <header class="header">
     <div class="left">
-      <h1>Finalizar compra</h1>
+      <div class="title-row">
+        <h1>Finalizar compra</h1>
+        <span class="order-pill" *ngIf="pedidoCodigo">#{{ pedidoCodigo }}</span>
+      </div>
       <p class="sub">Revise seus dados e escolha a forma de pagamento. Assim que o pagamento for aprovado, começaremos a preparar seu pedido.</p>
     </div>
-    <div class="right">
-      <div class="code" *ngIf="pedidoCodigo">Pedido #{{ pedidoCodigo }}</div>
-      <div class="status" [class.ok]="pagamentoStatus==='pago'">Pagamento: {{ pagamentoStatus || 'aguardando' }}</div>
-    </div>
+      <div class="right">
+        <div *ngIf="pagamentoStatus==='pago'; else aguardandoBadge" class="status ok badge">Pago</div>
+        <ng-template #aguardandoBadge>
+          <div class="status wait badge">Aguardando pagamento</div>
+        </ng-template>
+      </div>
   </header>
 
   <div class="grid">
@@ -69,40 +74,70 @@
             <input id="cupom" [(ngModel)]="cupomCodigo" placeholder="DIGITE SEU CUPOM" />
             <button class="btn" (click)="aplicarCupom()" [disabled]="carregando || !cupomCodigo">Aplicar</button>
           </div>
+          <div class="cupom-feedback" *ngIf="cupomErro">
+            <div class="msg erro">{{ cupomErro }}</div>
+          </div>
+          <div class="cupom-feedback" *ngIf="cupomAplicado as cupomApl">
+            <div class="msg ok">
+              <strong>🎉 Cupom {{ cupomApl.codigo }} aplicado!</strong>
+              <span *ngIf="((cupomApl.valor || 0) || (resumo.cupom || 0)) > 0" class="desc">Desconto: -{{ (cupomApl.valor || resumo.cupom || 0) | currency:'BRL' }}</span>
+            </div>
+          </div>
         </div>
-        <label for="metodo">Como deseja pagar?</label>
+        <div class="pay-head">
+          <div class="pay-title">Como deseja pagar?</div>
+        </div>
         <div class="pay-methods">
-          <label class="method" *ngFor="let p of pagamentoOpcoes">
+          <label class="method-card" *ngFor="let p of pagamentoOpcoes" [class.selected]="pagamentoMetodo===p.metodo">
             <input type="radio" name="pg" [value]="p.metodo" [(ngModel)]="pagamentoMetodo" />
-            <span>{{ p.label || p.metodo | titlecase }}</span>
+            <span class="icon" [ngClass]="p.metodo" aria-hidden="true">
+                <img *ngIf="p.metodo==='pix'" src="imagens/pix-icon.png" alt="PIX" />
+              <svg *ngIf="p.metodo==='cartao'" viewBox="0 0 24 24" width="26" height="26"><rect x="3" y="5" width="18" height="14" rx="2" fill="#2563eb"/><rect x="3" y="8" width="18" height="3" fill="#1e40af"/></svg>
+            </span>
+            <span class="label">{{ p.label || (p.metodo | titlecase) }}</span>
+            <span class="desc" *ngIf="p.metodo==='pix'">Confirma rapidinho</span>
+            <span class="desc" *ngIf="p.metodo==='cartao'">Cartão de crédito</span>
           </label>
         </div>
-        <div class="hint" *ngIf="pagamentoMetodo==='pix'">Pix confirma rapidinho. Você verá um QR Code e o código copia e cola. Fluxo de pagamento simulado.</div>
-        <div class="hint" *ngIf="pagamentoMetodo==='cartao'">Pagamento no cartão é simulado. Informe dados fictícios para concluir.</div>
-        <div class="acoes">
-          <button class="btn" (click)="voltarCarrinho()">Alterar carrinho</button>
-          <button class="btn primary" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">Pagar {{ resumo.total | currency:'BRL' }}</button>
+        <div class="pix-badge" *ngIf="temDescontoPix">
+          <span class="ico">💚</span>
+          <strong>10% OFF no PIX</strong>
+          <span class="muted">Desconto visual aplicado aqui, confirmado no pagamento</span>
         </div>
+        <div class="help-wa">
+          <span class="wa-ico" aria-hidden="true"></span>
+          <span>Em caso de dúvidas, fale com a gente no WhatsApp: 
+            <a class="wa-link" href="https://wa.me/554132051910" target="_blank" rel="noopener">(41) 3205-1910</a>
+          </span>
+        </div>
+          <div class="method-cta">
+            <button class="btn cta" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">
+              {{ pagamentoMetodo==='pix' ? 'Pagar com Pix' : (pagamentoMetodo==='cartao' ? 'Pagar com Cartão' : 'Continuar') }}
+            </button>
+          </div>
+        <div class="hint" *ngIf="pagamentoMetodo==='pix'">Pix confirma rapidinho. Você verá um QR Code e o código copia e cola. Fluxo de pagamento simulado.</div>
+  <div class="hint" *ngIf="pagamentoMetodo==='cartao'">Pagamento no cartão é simulado. Informe dados fictícios para concluir.</div>
         <div class="alert-simulado">Ambiente de teste: pagamentos e comprovantes são apenas simulações.</div>
       </div>
     </section>
 
     <aside class="col side">
-      <div class="card resumo">
+      <div class="card resumo" [class.anim-gain]="animacaoValor==='gain'" [class.anim-lose]="animacaoValor==='lose'">
         <h3>Resumo do pedido</h3>
         <div class="line"><span>Itens</span><strong>{{ resumo.item_count }}</strong></div>
         <div class="line"><span>Subtotal</span><strong>{{ resumo.subtotal | currency:'BRL' }}</strong></div>
         <div class="line" *ngIf="resumo.desconto>0"><span>Descontos</span><strong class="neg">-{{ resumo.desconto | currency:'BRL' }}</strong></div>
         <div class="line" *ngIf="resumo.cupom>0"><span>Cupom</span><strong class="neg">-{{ resumo.cupom | currency:'BRL' }}</strong></div>
         <div class="line"><span>Frete</span><strong>{{ resumo.frete | currency:'BRL' }}</strong></div>
-        <div class="total"><span>Total a pagar</span><strong>{{ resumo.total | currency:'BRL' }}</strong></div>
+        <div class="line" *ngIf="temDescontoPix"><span>PIX 10% OFF</span><strong class="neg">-{{ pixValorDesconto | currency:'BRL' }}</strong></div>
+        <div class="total" [class.bump]="animacaoValor!==''"><span>Total a pagar</span><strong>{{ totalVisual | currency:'BRL' }}</strong></div>
       </div>
       <div class="card dicas">
         <h3>Informações importantes</h3>
         <ul>
           <li>Produtos manipulados são preparados sob demanda. O prazo de entrega começa após a produção.</li>
           <li>Você receberá atualizações por e-mail/WhatsApp quando seu pedido estiver pronto.</li>
-          <li>Qualquer dúvida, fale com a gente: (41) 9 9999-9999.</li>
+          <li class="duvidas">Dúvidas? <a class="wa-link" href="https://wa.me/554132051910" target="_blank" rel="noopener"><span class="wa-ico" aria-hidden="true"></span> (41) 3205-1910</a></li>
         </ul>
       </div>
     </aside>
@@ -113,7 +148,8 @@
   <div class="modal pix" *ngIf="showPixModal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
     <h3>Pagamento via PIX (simulado)</h3>
     <p>Escaneie o QR Code abaixo no aplicativo do seu banco ou use o botão de copiar para pagar por Pix copia e cola.</p>
-    <div class="qr"><img [src]="pixMock?.qrDataUrl" alt="QR Code PIX simulado"/></div>
+  <div class="qr"><img [src]="pixMock?.qrDataUrl" alt="QR Code PIX simulado"/></div>
+  <div class="pix-powered"><img src="imagens/logo-pix.png" alt="Pix"/></div>
     <div class="copy">
       <input [value]="pixMock?.copiaCola" readonly />
       <button class="btn" (click)="copiar(pixMock?.copiaCola || '')">Copiar código</button>
@@ -151,4 +187,15 @@
     </div>
     <div class="simulado">Pagamento simulado — use dados fictícios.</div>
   </div>
+</div>
+
+<!-- Mobile sticky pay bar -->
+<div class="sticky-paybar" [class.bump]="animacaoValor!==''">
+  <div class="sum">
+    <div class="lbl">Total</div>
+    <div class="amt">{{ totalVisual | currency:'BRL' }}</div>
+  </div>
+  <button class="btn cta" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">
+    {{ pagamentoMetodo==='pix' ? 'Pagar com Pix' : (pagamentoMetodo==='cartao' ? 'Pagar com Cartão' : 'Pagar') }}
+  </button>
 </div>

@@ -22,25 +22,48 @@ export class CheckoutComponent implements OnInit {
   // Capturas simples vindas do carrinho (poderíamos recuperar do store/cart e do localStorage)
   // Resumo calculado a partir do pedido criado (sempre retorna o mesmo shape)
   get resumo(): { subtotal: number; frete: number; desconto: number; cupom: number; total: number; item_count: number } {
-    // Preferir o snapshot detalhado
+    // 1) Novo contrato do backend: preferir pedido.totals
+    if (this.pedido && this.pedido.totals) {
+      const t = this.pedido.totals;
+      const cupom = Number(t.cupom_total ?? 0) || 0;
+      const discountTotal = Number(t.discount_total ?? 0) || 0;
+      // Evita dupla contagem: "Descontos" mostra apenas o que não for cupom
+      const outrosDescontos = Math.max(discountTotal - cupom, 0);
+      return {
+        subtotal: Number(t.items_total ?? t.original_subtotal ?? 0) || 0,
+        frete: Number(t.frete_total ?? this.pedido?.frete_valor) || 0,
+        desconto: outrosDescontos,
+        cupom,
+        total: Number(t.grand_total ?? this.pedido?.total_liquido ?? this.pedido?.total_bruto) || 0,
+        item_count: Array.isArray(this.pedido.itens) ? this.pedido.itens.reduce((n: number, i: any) => n + Number(i.quantidade || 0), 0) : 0,
+      };
+    }
+    // 2) Snapshot antigo usado anteriormente
     if (this.pedido && this.pedido.raw_snapshot?.input?.totais) {
       const t = this.pedido.raw_snapshot.input.totais;
+      const cupom = Number(t.coupon_total ?? t.cupom_total ?? 0) || 0;
+      const discountTotal = Number(t.discount_total ?? this.pedido?.desconto_total ?? 0) || 0;
+      const outrosDescontos = Math.max(discountTotal - cupom, 0);
       return {
         subtotal: Number(t.items_total ?? t.subtotal ?? t.original_subtotal ?? 0) || 0,
         frete: Number(t.frete ?? t.frete_total ?? this.pedido?.frete_valor) || 0,
-        desconto: Number(t.discount_total ?? this.pedido?.desconto_total) || 0,
-        cupom: Number(t.coupon_total ?? t.cupom_total ?? 0) || 0,
+        desconto: outrosDescontos,
+        cupom,
         total: Number(t.grand_total ?? t.total ?? this.pedido?.total_liquido ?? this.pedido?.total_bruto) || 0,
-        item_count: Number(t.item_count ?? 0) || 0,
+        item_count: Array.isArray(this.pedido.itens) ? this.pedido.itens.reduce((n: number, i: any) => n + Number(i.quantidade || 0), 0) : Number(t.item_count ?? 0) || 0,
       };
     }
     // Fallback: usar campos de topo do pedido
     if (this.pedido) {
+      const discountTotal = Number(this.pedido.desconto_total ?? 0) || 0;
+      // Se houver info de cupom, usar para separar descontos
+      const cupom = Number(this.pedido.cupom?.desconto_aplicado ?? 0) || 0;
+      const outrosDescontos = Math.max(discountTotal - cupom, 0);
       return {
         subtotal: Number(this.pedido.total_bruto) || 0,
         frete: Number(this.pedido.frete_valor) || 0,
-        desconto: Number(this.pedido.desconto_total) || 0,
-        cupom: 0,
+        desconto: outrosDescontos,
+        cupom,
         total: Number(this.pedido.total_liquido ?? this.pedido.total_bruto) || 0,
         item_count: Array.isArray(this.pedido.itens) ? this.pedido.itens.reduce((n: number, i: any) => n + Number(i.quantidade || 0), 0) : 0,
       };
@@ -52,6 +75,8 @@ export class CheckoutComponent implements OnInit {
 
   pedido: any | null = null; // objeto retornado pelo backend na criação
   cupomCodigo: string = '';
+  cupomAplicado: { codigo: string; valor?: number; tipo?: string } | null = null;
+  cupomErro: string | null = null;
 
   entregaModo: 'retirada'|'entrega' = 'entrega';
   enderecoSelecionado: any | null = null;
@@ -63,7 +88,17 @@ export class CheckoutComponent implements OnInit {
 
   // Opções de pagamento retornadas pelo backend ao criar pedido
   pagamentoOpcoes: Array<{ metodo: string; label?: string; detalhes?: any }> = [];
-  pagamentoMetodo: string = 'pix';
+  private _pagamentoMetodo: string = 'pix';
+  get pagamentoMetodo() { return this._pagamentoMetodo; }
+  set pagamentoMetodo(v: string) {
+    if (v === this._pagamentoMetodo) return;
+    const wasPix = this._pagamentoMetodo === 'pix';
+    this._pagamentoMetodo = v;
+    const nowPix = v === 'pix';
+    this.animacaoValor = nowPix ? 'gain' : (wasPix ? 'lose' : '');
+    if (this.animacaoValor) setTimeout(() => this.animacaoValor = '', 450);
+  }
+  animacaoValor: ''|'gain'|'lose' = '';
   showPixModal = false;
   showCardModal = false;
   pixMock: { copiaCola: string; qrDataUrl: string } | null = null;
@@ -99,13 +134,13 @@ export class CheckoutComponent implements OnInit {
     const opcoes = created?.paymentOptions || created?.pagamento_opcoes || created?.opcoesPagamento || [];
     if (Array.isArray(opcoes) && opcoes.length) {
       this.pagamentoOpcoes = opcoes.map((o: any) => ({ metodo: o.metodo || o.method || String(o), label: o.label || o.nome || String(o), detalhes: o }));
-      this.pagamentoMetodo = this.pagamentoOpcoes[0]?.metodo || 'pix';
+      this._pagamentoMetodo = this.pagamentoOpcoes[0]?.metodo || 'pix';
     } else {
       this.pagamentoOpcoes = [
         { metodo: 'pix', label: 'PIX (instantâneo)' },
         { metodo: 'cartao', label: 'Cartão de crédito' },
       ];
-      this.pagamentoMetodo = 'pix';
+      this._pagamentoMetodo = 'pix';
     }
     // Carrega contexto salvo do carrinho (se disponível)
     const ctx = this.store.getCheckoutContext();
@@ -141,6 +176,19 @@ export class CheckoutComponent implements OnInit {
     return base + frete;
   }
 
+  // Visual: Pix dá 10% de desconto (somente exibição)
+  get temDescontoPix(): boolean {
+    return this._pagamentoMetodo === 'pix';
+  }
+  get totalVisual(): number {
+    const t = this.resumo.total || 0;
+    return this.temDescontoPix ? t * 0.9 : t;
+  }
+  get pixValorDesconto(): number {
+    const t = this.resumo.total || 0;
+    return this.temDescontoPix ? t * 0.1 : 0;
+  }
+
   // Aplicar cupom: atualiza o pedido no backend e espelha no resumo local
   async aplicarCupom() {
     if (!this.pedidoCodigo || !this.cupomCodigo?.trim()) return;
@@ -152,10 +200,30 @@ export class CheckoutComponent implements OnInit {
       if (up && (up.id || up.codigo || up.numero)) {
         this.pedido = up;
         this.store.setCreatedOrder(up);
+        // Extrai info do cupom aplicado (preferir novo contrato)
+        const codigo = up?.cupom?.codigo || this.cupomCodigo.trim();
+        const valor = Number(
+          up?.totals?.cupom_total ??
+          up?.cupom?.desconto_aplicado ??
+          up?.raw_snapshot?.input?.totais?.coupon_total ??
+          up?.coupon_total ?? up?.cupom_total ?? up?.cupom?.valor ?? 0
+        ) || 0;
+        const tipo = up?.cupom?.tipo || undefined;
+        this.cupomAplicado = { codigo, valor, tipo };
+        this.cupomErro = null;
+        this.fireConfetti();
+        this.toast.success(`Cupom ${codigo} aplicado.`);
+        return;
       }
+      this.cupomAplicado = { codigo: this.cupomCodigo.trim() };
+      this.cupomErro = null;
+      this.fireConfetti();
       this.toast.success('Cupom aplicado.');
     } catch(e) {
-      this.toast.error('Não foi possível aplicar o cupom.');
+      const err: any = e as any;
+      const msg = (err?.error && (err.error.message || err.error.error)) || err?.message || 'Não foi possível aplicar o cupom.';
+      this.cupomErro = String(msg);
+      this.toast.error(this.cupomErro);
     } finally {
       this.carregando = false;
     }
@@ -197,6 +265,44 @@ export class CheckoutComponent implements OnInit {
       this.toast.error('Falha ao processar o pagamento.');
     } finally {
       this.carregando = false;
+    }
+  }
+
+  // Dispara confete ao aplicar cupom (tenta importar canvas-confetti, cai em fallback simples se não houver)
+  private async fireConfetti() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    try {
+      const mod = await import('canvas-confetti');
+      const confetti = mod.default || (mod as any);
+      confetti({
+        particleCount: 160,
+        spread: 70,
+        origin: { y: 0.2 },
+        ticks: 200
+      });
+      setTimeout(() => confetti({ particleCount: 120, spread: 90, origin: { x: 0.1, y: 0.3 } }), 150);
+      setTimeout(() => confetti({ particleCount: 120, spread: 90, origin: { x: 0.9, y: 0.3 } }), 300);
+    } catch {
+      // Fallback: pequenos confetes emoji temporários
+      const body = document.body;
+      const create = (x: number) => {
+        const el = document.createElement('div');
+        el.textContent = '🎉';
+        el.style.position = 'fixed';
+        el.style.left = x + 'px';
+        el.style.top = '0px';
+        el.style.fontSize = '22px';
+        el.style.zIndex = '9999';
+        el.style.transition = 'transform 1.2s ease, opacity 1.2s ease';
+        body.appendChild(el);
+        requestAnimationFrame(() => {
+          el.style.transform = `translateY(${window.innerHeight - 80}px) rotate(${(Math.random()*360)|0}deg)`;
+          el.style.opacity = '0';
+        });
+        setTimeout(() => body.removeChild(el), 1400);
+      };
+      const w = window.innerWidth;
+      [0.15, 0.35, 0.55, 0.75, 0.9].forEach(p => create(w * p));
     }
   }
 
