@@ -45,8 +45,9 @@
 .chip.promo { border-color: #f9a8d4; color: #9d174d; background: #fff7fb; }
 .chip.promo.active { background: var(--primary, #0ea5e9); color: #fff; border-color: transparent; }
 .meta { font-size: 13px; color: #6b7280; margin: 4px 0 12px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: stretch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: stretch; grid-auto-flow: dense; }
 .grid .d-card.banner { grid-column: span 2; }
+.grid .d-card.mobile-feature { display: none; }
 .grid .empty-state { grid-column: 1 / -1; text-align: center; background: #fff; border: 1px dashed #d1d5db; border-radius: 12px; padding: 24px 16px; color: #374151; }
 .grid .empty-state .icon { font-size: 28px; margin-bottom: 6px; color: #ef4444; }
 .grid .empty-state h3 { margin: 0 0 4px; font-size: 16px; color: #111827; }
@@ -160,7 +161,7 @@
 @media (max-width: 640px) {
 	.filtros { flex-wrap: wrap; }
 	.cart-link { margin-left: 0; }
-	.grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; }
 	.produto img { height: 140px; }
   .hero { height: 160px; border-radius: 12px; }
   .titulo { font-size: 24px; }
@@ -170,6 +171,8 @@
 		.destaque-row { display: none; }
 	.d-title { font-size: 16px; }
 	.d-price .new { font-size: 16px; }
+	/* Show mobile feature as full-width banner (spans 2 cols) */
+	.grid .d-card.mobile-feature { display: block; grid-column: 1 / -1; min-height: 180px; }
 
 
 @media (min-width: 641px) {
@@ -254,7 +257,7 @@ app-footer { display: block; margin-top: 16px; }
 
 /* Ensure badges are clickable above neighbors on desktop */
 .filtros .active-badges { position: relative; z-index: 20; }
-.filtros .active-badges .mini-badge { pointer-events: auto; user-select: none; }
+.filtros .active-badges .mini-badge { pointer-events: auto; -webkit-user-select: none; user-select: none; }
 .filtros .active-badges .mini-badge .x { pointer-events: auto; }
 .filters-modal .body { display: grid; gap: 10px; padding: 12px; }
 .filters-modal .body .active-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }

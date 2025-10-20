@@ -2,7 +2,7 @@
   <app-navmenu></app-navmenu>
   <!-- Hero/Banner -->
   <section class="hero">
-    <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" />
+  <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" loading="lazy" decoding="async" />
     <div class="hero-overlay">
       <h1 class="titulo">Formula Pet</h1>
       <p class="subtitle">Do focinho ao rabinho a dose certa de carinho!💓</p>
@@ -45,18 +45,18 @@
   <div class="cats" *ngIf="categorias.length">
     <button class="chip" [class.active]="!categoria" (click)="onCategoryChange('')">Todas</button>
     <button class="chip promo" [class.active]="promoOnly" (click)="selectPromotions()">Promoções</button>
-    <button class="chip" *ngFor="let c of categorias" [class.active]="categoria===c.nome" (click)="onCategoryChange(c.nome)">{{ c.nome }} <span class="count">({{ c.produtos }})</span></button>
+    <button class="chip" *ngFor="let c of categorias; trackBy: trackCategory" [class.active]="categoria===c.nome" (click)="onCategoryChange(c.nome)">{{ c.nome }} <span class="count">({{ c.produtos }})</span></button>
   </div>
 
   <div class="meta" aria-live="polite">{{ onlyFavorites ? filtered.length : total }} itens</div>
 
   <!-- Seção Destaques (PC only; até 5 por página) -->
-  <section class="destaques desktop-only" *ngIf="featuredTop.length > 0">
+  <section class="destaques desktop-only" *ngIf="featuredTopList.length > 0">
     <h2 class="sec-title">Destaques</h2>
     <!-- faixa horizontal com alguns cards em destaque -->
     <div class="destaque-row">
-  <a class="d-card" *ngFor="let p of featuredRow" [routerLink]="'/produto/' + p.id" [queryParams]="{ src: 'loja' }" [title]="p.name">
-        <img class="d-img" [src]="p.image || p.imageUrl" [alt]="p.name" />
+  <a class="d-card" *ngFor="let p of featuredRowList; trackBy: trackProduct" [routerLink]="'/produto/' + p.id" [queryParams]="{ src: 'loja' }" [title]="p.name">
+  <img class="d-img" [src]="p.image || p.imageUrl" loading="lazy" decoding="async" [alt]="p.name" title="{{ p.name }}" />
         <div class="d-overlay">
           <div class="d-topline">
             <span class="d-badge" *ngIf="(p.discount || 0) > 0">-{{ (p.discount || 0) | number:'1.0-0' }}%</span>
@@ -92,10 +92,27 @@
       <div class="grid-loader" *ngIf="loading">
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
       </div>
-      <ng-container *ngFor="let it of interleaved">
-        <ng-container [ngSwitch]="it.type">
+      <!-- Mobile: destaque do primeiro produto -->
+      <ng-container *ngIf="interleavedList.length > 0 && interleavedList[0].type === 'product'">
+        <a class="d-card banner mobile-feature" [routerLink]="'/produto/' + interleavedList[0].product.id" [queryParams]="{ src: 'loja' }" [title]="interleavedList[0].product.name">
+          <img class="d-img" [src]="interleavedList[0].product.image || interleavedList[0].product.imageUrl" loading="lazy" decoding="async" [alt]="interleavedList[0].product.name" title="{{ interleavedList[0].product.name }}" />
+          <div class="d-overlay">
+            <div class="d-topline">
+              <span class="d-badge" *ngIf="(interleavedList[0].product.discount || 0) > 0">-{{ (interleavedList[0].product.discount || 0) | number:'1.0-0' }}%</span>
+              <span class="d-type" *ngIf="interleavedList[0].product.tipo === 'manipulado'">Manipulado</span>
+            </div>
+            <h3 class="d-title">{{ interleavedList[0].product.name }}</h3>
+            <div class="d-price">
+              <span class="new">{{ price(interleavedList[0].product) | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
+              <span class="old" *ngIf="interleavedList[0].product.promoPrice != null || (interleavedList[0].product.discount || 0) > 0">{{ interleavedList[0].product.price | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
+            </div>
+          </div>
+        </a>
+      </ng-container>
+      <ng-container *ngFor="let it of interleavedList; let i = index; trackBy: trackInterleaved">
+        <ng-container *ngIf="!(i === 0 && it.type === 'product')" [ngSwitch]="it.type">
           <a *ngSwitchCase="'banner'" class="d-card banner" [routerLink]="'/produto/' + it.product.id" [queryParams]="{ src: 'loja' }" [title]="it.product.name">
-            <img class="d-img" [src]="it.product.image || it.product.imageUrl" [alt]="it.product.name" />
+            <img class="d-img" [src]="it.product.image || it.product.imageUrl" loading="lazy" decoding="async" [alt]="it.product.name" title="{{ it.product.name }}" />
             <div class="d-overlay">
               <div class="d-topline">
                 <span class="d-badge" *ngIf="(it.product.discount || 0) > 0">-{{ (it.product.discount || 0) | number:'1.0-0' }}%</span>

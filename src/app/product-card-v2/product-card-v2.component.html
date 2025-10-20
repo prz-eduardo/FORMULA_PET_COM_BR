@@ -1,6 +1,6 @@
 <a class="p-card" [class.has-discount]="product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }">
   <div class="thumb">
-    <img [src]="product.image" [alt]="product.name" width="320" height="200" />
+  <img [src]="product.image" [alt]="product.name" title="{{ product.name }}" width="320" height="200" loading="lazy" decoding="async" />
     <div class="badge" *ngIf="product.discount && product.discount > 0">-{{ product.discount | number:'1.0-0' }}%</div>
     <button class="fav" *ngIf="supportsFavorites" (click)="onFavClick($event)" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
       <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>

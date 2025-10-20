@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef } from '@angular/core';
+import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -13,7 +13,7 @@ import { gsap } from 'gsap';
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })
-export class NavmenuComponent implements AfterViewInit, OnDestroy {
+export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   previousScroll: number = 0;
   isVisible = true;
   currentRoute: string = '';
@@ -29,19 +29,30 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService) {}
 
+  ngOnInit(): void {
+    // Rota atual e modo do menu devem ser definidos antes da primeira verificação de mudanças
+    this.currentRoute = this.router.url;
+    this.updateMenuMode();
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: any) => {
+        this.currentRoute = event.urlAfterRedirects;
+        this.updateMenuMode();
+      });
+
+    // Assina carrinho para badge
+    this.store.cart$.subscribe(items => {
+      this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
+    });
+
+    // Detecta sessão de cliente (assíncrono, não afeta o primeiro ciclo)
+    this.store.isClienteLoggedSilent()
+      .then(ok => this.isCliente = ok)
+      .catch(() => this.isCliente = false);
+  }
+
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      // Inicializa a rota atual
-      this.currentRoute = this.router.url;
-
-      // Atualiza a rota ao navegar
-      this.router.events
-        .pipe(filter(event => event instanceof NavigationEnd))
-        .subscribe((event: any) => {
-          this.currentRoute = event.urlAfterRedirects;
-          this.updateMenuMode();
-        });
-
       const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
       const menu: HTMLElement | null = document.querySelector('.menu');
       const menuLink: NodeListOf<HTMLElement> = document.querySelectorAll('.menu-link.sub');
@@ -53,24 +64,11 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
         });
       }
 
-      // Subscribe to cart to update count badge
-      this.store.cart$.subscribe(items => {
-        this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
-      });
-
-      // Detect cliente session to control UI visibility (cart etc.)
-      this.store.isClienteLoggedSilent()
-        .then(ok => this.isCliente = ok)
-        .catch(() => this.isCliente = false);
-
   // Initialize metaballs animation behind logo (scoped to logo-container)
       this.initMetaBalls();
 
       // Inicia o timer de inatividade (sem scroll) para auto-ocultar a navbar
       this.resetIdleTimer();
-
-      // Eval initial mode
-      this.updateMenuMode();
     }
   }
 
@@ -90,7 +88,7 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
     // Menu completo na home (ancora #0) e na área vet; nas demais páginas, ícone que abre modal
     // Considera URLs com hash (#0) e rotas /area-vet
     const url = this.currentRoute || '';
-    const isHomeHash = typeof window !== 'undefined' && (window.location.hash === '#0' || window.location.hash === '#');
+    const isHomeHash = isPlatformBrowser(this.platformId) && (window.location.hash === '#0' || window.location.hash === '#');
     const isAreaVet = url.includes('/area-vet');
     const isHomeRoute = url === '/' || url.startsWith('/#') || url.includes('index.html');
     this.showFullMenu = isAreaVet || isHomeHash || isHomeRoute;

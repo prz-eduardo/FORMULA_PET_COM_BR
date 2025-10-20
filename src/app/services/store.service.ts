@@ -204,6 +204,30 @@ export class StoreService {
   }
 
   // Favorites
+  /**
+   * Optimistically set favorite state locally and update counts/icons immediately.
+   * Call this before hitting the server; if the server fails, revert by calling again with previous state.
+   */
+  optimisticFavorite(productId: number, favorited: boolean): void {
+    // Update favorites set
+    const fav = new Set(this.favoritesSubject.value);
+    if (favorited) fav.add(productId); else fav.delete(productId);
+    const arr = Array.from(fav);
+    this.favoritesSubject.next(arr);
+    if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(arr));
+
+    // Update products snapshot (isFavorited + count)
+    const list = this.productsSubject.value.map(p => {
+      if (p.id !== productId) return p;
+      const updated: ShopProduct = { ...p, isFavorited: favorited };
+      const base = typeof p.favoritesCount === 'number' ? p.favoritesCount : 0;
+      const delta = favorited ? 1 : -1;
+      updated.favoritesCount = Math.max(0, base + delta);
+      return updated;
+    });
+    this.productsSubject.next(list);
+  }
+
   async toggleFavorite(productId: number): Promise<boolean> {
     const ok = await this.ensureClienteSession();
     if (!ok) return false;

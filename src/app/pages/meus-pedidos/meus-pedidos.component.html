@@ -46,11 +46,11 @@
         </div>
         <div class="field">
           <label>De</label>
-          <input type="date" [(ngModel)]="filtroFrom" />
+          <input type="date" [(ngModel)]="filtroFrom" placeholder="AAAA-MM-DD" title="Data inicial" />
         </div>
         <div class="field">
           <label>Até</label>
-          <input type="date" [(ngModel)]="filtroTo" />
+          <input type="date" [(ngModel)]="filtroTo" placeholder="AAAA-MM-DD" title="Data final" />
         </div>
         <div class="field align-end">
           <label class="muted">&nbsp;</label>
@@ -64,7 +64,7 @@
     </div>
 
     <section class="order-list" *ngIf="!carregando && pedidos.length; else stateBlock">
-      <article class="order-card" *ngFor="let p of pedidos">
+      <article class="order-card" *ngFor="let p of pedidos" [attr.data-id]="p.id">
         <header class="order-head" (click)="toggleExpand(p.id)" [attr.aria-expanded]="expanded[p.id] ? 'true' : 'false'">
           <div class="left">
             <div class="codigo">#{{ p.id }}</div>
@@ -75,7 +75,10 @@
               <div><span class="label">Criado</span> <span class="value">{{ p.created_at | date:'short' }}</span></div>
               <div><span class="label">Atualizado</span> <span class="value">{{ p.updated_at | date:'short' }}</span></div>
             </div>
-            <button class="btn" (click)="$event.stopPropagation(); toggleExpand(p.id)">{{ expanded[p.id] ? 'Fechar' : 'Ver detalhes' }}</button>
+            <button class="btn" (click)="$event.stopPropagation(); toggleExpand(p.id)" [attr.aria-label]="expanded[p.id] ? 'Fechar detalhes' : 'Ver detalhes'">
+              <ng-container *ngIf="!expanded[p.id]">Ver detalhes</ng-container>
+              <ng-container *ngIf="expanded[p.id]">×</ng-container>
+            </button>
           </div>
         </header>
         <div class="summary">
@@ -91,43 +94,47 @@
           </div>
         </div>
         
-        <!-- Timeline de status -->
-  <div class="timeline" *ngIf="!isConcluido(p) && !isCancelado(p)">
-          <div class="step" *ngFor="let s of statusSteps(p)" [class.done]="s.done" [class.active]="s.active">
-            <div class="dot"></div>
-            <div class="text">{{ s.label }}</div>
+        <!-- Novo indicador de status -->
+        <div class="status-progress" *ngIf="!isConcluido(p) && !isCancelado(p)" aria-label="Status do pedido">
+          <div class="segments">
+            <div class="seg" *ngFor="let s of statusSteps(p); let i = index" [class.done]="s.done" [class.active]="s.active"></div>
+          </div>
+          <div class="labels">
+            <div class="lab" *ngFor="let s of statusSteps(p)" [class.done]="s.done" [class.active]="s.active">{{ s.label }}</div>
           </div>
         </div>
 
         <!-- Corpo expandido com detalhes bonitos -->
         <section class="order-body" *ngIf="expanded[p.id]">
           <div class="grid">
-            <div class="card">
-              <h3>Entrega</h3>
-              <div class="linha"><span class="muted">Tipo</span> <span>{{ p.raw_shipping?.frete?.nome || p.raw_shipping?.frete?.servico || '—' }}</span></div>
-              <div class="linha"><span class="muted">Prazo</span> <span *ngIf="p.raw_shipping?.frete?.prazo_dias">{{ p.raw_shipping?.frete?.prazo_dias }} dia(s)</span><span *ngIf="!p.raw_shipping?.frete?.prazo_dias">—</span></div>
-              <div class="linha"><span class="muted">Valor</span> <span>R$ {{ p.totals?.frete_total | number:'1.2-2' }}</span></div>
-              <div class="linha" *ngIf="p.endereco_entrega">
-                <span class="muted">Endereço</span>
-                <span>{{ p.endereco_entrega.logradouro }}, {{ p.endereco_entrega.numero }} - {{ p.endereco_entrega.bairro }}, {{ p.endereco_entrega.cidade }}/{{ p.endereco_entrega.estado }} • CEP {{ p.endereco_entrega.cep }}</span>
+            <div class="card compact entrega">
+              <div class="card-head">
+                <div class="tt">📦 Entrega</div>
+              </div>
+              <div class="kv"><span class="k">Tipo</span><span class="v">{{ p.raw_shipping?.frete?.nome || p.raw_shipping?.frete?.servico || '—' }}</span></div>
+              <div class="kv"><span class="k">Prazo</span><span class="v">{{ p.raw_shipping?.frete?.prazo_dias ? (p.raw_shipping?.frete?.prazo_dias + ' dia(s)') : '—' }}</span></div>
+              <div class="kv"><span class="k">Frete</span><span class="v">R$ {{ p.totals?.frete_total | number:'1.2-2' }}</span></div>
+              <div class="addr" *ngIf="p.endereco_entrega">
+                <div class="name" *ngIf="p.endereco_entrega.nome || p.endereco_entrega.destinatario">{{ p.endereco_entrega.nome || p.endereco_entrega.destinatario }}</div>
+                <div class="line">{{ p.endereco_entrega.logradouro }}, {{ p.endereco_entrega.numero }}<span *ngIf="p.endereco_entrega.complemento"> - {{ p.endereco_entrega.complemento }}</span></div>
+                <div class="line">{{ p.endereco_entrega.bairro }} - {{ p.endereco_entrega.cidade }}/{{ p.endereco_entrega.estado }}</div>
+                <div class="line">CEP {{ p.endereco_entrega.cep }}</div>
               </div>
             </div>
-            <div class="card">
-              <h3>Pagamento</h3>
-              <div class="linha"><span class="muted">Forma</span> <span>{{ p.pagamento_forma || '—' }}</span></div>
-              <div class="linha"><span class="muted">Status</span> <span>{{ p.pagamento_status || '—' }}</span></div>
-              <div class="linha"><span class="muted">Total</span> <span>R$ {{ p.totals?.grand_total | number:'1.2-2' }}</span></div>
+            <div class="card compact">
+              <div class="card-head">
+                <div class="tt">Pagamento</div>
+              </div>
+              <div class="kv"><span class="k">Forma</span><span class="v">{{ p.pagamento_forma || '—' }}</span></div>
+              <div class="kv"><span class="k">Status</span><span class="v">{{ p.pagamento_status || '—' }}</span></div>
+              <div class="kv"><span class="k">Total</span><span class="v">R$ {{ p.totals?.grand_total | number:'1.2-2' }}</span></div>
             </div>
-            <div class="card itens">
-              <h3>Itens</h3>
-              <ul>
-                <li *ngFor="let it of (p.itens || [])">
-                  <div class="nome">{{ it.nome || it.produto_nome || 'Item' }}</div>
-                  <div class="meta">Qtd: {{ it.quantidade || 1 }} • R$ {{ it.valor_unitario || it.preco | number:'1.2-2' }}</div>
-                  <div class="pos" *ngIf="it.subtotal">Subtotal: R$ {{ it.subtotal | number:'1.2-2' }}</div>
-                </li>
-              </ul>
-              <button class="btn" *ngIf="!includeDetails" (click)="$event.stopPropagation(); carregarDetalhes()">Carregar detalhes</button>
+            <div class="card itens compact">
+              <div class="card-head">
+                <button class="btn ghost icon-left" (click)="$event.stopPropagation(); openItemsModal(p)" aria-label="Ver itens do pedido">
+                  🛍️ <span>Itens</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -150,3 +157,26 @@
 
 <!-- Named outlet para abrir o modal de status -->
 <router-outlet name="modal"></router-outlet>
+
+<!-- Modal de Itens do Pedido -->
+<div class="overlay" *ngIf="showItemsModal" (click)="closeItemsModal()" aria-hidden="true"></div>
+<div class="itens-modal" *ngIf="showItemsModal" role="dialog" aria-label="Itens do pedido" (click)="$event.stopPropagation()">
+  <header>
+    <h3>Pedido #{{ modalPedido?.id }}</h3>
+    <button class="close" (click)="closeItemsModal()" aria-label="Fechar">×</button>
+  </header>
+  <div class="body">
+    <ng-container *ngIf="(modalItems?.length || 0) > 0; else vazioModal">
+      <ul class="lista-itens">
+        <li *ngFor="let it of modalItems">
+          <div class="nome">{{ it.nome }}</div>
+          <div class="meta">Qtd: {{ it.quantidade }} • R$ {{ it.unit | number:'1.2-2' }}</div>
+          <div class="pos">Subtotal: R$ {{ it.subtotal | number:'1.2-2' }}</div>
+        </li>
+      </ul>
+    </ng-container>
+    <ng-template #vazioModal>
+      <div class="vazio">Nenhum item encontrado para este pedido.</div>
+    </ng-template>
+  </div>
+</div>

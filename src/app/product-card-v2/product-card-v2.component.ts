@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShopProduct } from '../services/store.service';
@@ -8,7 +8,8 @@ import { ShopProduct } from '../services/store.service';
   standalone: true,
   imports: [CommonModule, CurrencyPipe, RouterLink],
   templateUrl: './product-card-v2.component.html',
-  styleUrls: ['./product-card-v2.component.scss']
+  styleUrls: ['./product-card-v2.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductCardV2Component {
   @Input() product!: ShopProduct;

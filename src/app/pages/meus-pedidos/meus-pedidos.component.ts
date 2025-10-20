@@ -34,6 +34,10 @@ export class MeusPedidosComponent {
   filtroFrom = '';
   filtroTo = '';
   includeDetails = false;
+  // Modal de itens
+  showItemsModal = false;
+  modalItems: any[] = [];
+  modalPedido: any = null;
 
   constructor(
     private router: Router,
@@ -108,7 +112,16 @@ export class MeusPedidosComponent {
   nextPage(){ if (this.page < this.totalPages){ this.page++; this.load(); } }
 
   // UI helpers
-  toggleExpand(id: number){ this.expanded[id] = !this.expanded[id]; }
+  toggleExpand(id: number){
+    // Fecha todos os outros (um só aberto por vez)
+    const openNow = !!this.expanded[id];
+    this.expanded = {}; // reset total
+    this.expanded[id] = !openNow;
+    // Se abrimos, recentra timeline no status ativo
+    if (this.expanded[id]) {
+      setTimeout(() => this.scrollTimelineIntoView(id), 0);
+    }
+  }
   isConcluido(p: any){ return (p?.status || '').toLowerCase() === 'concluido'; }
   isCancelado(p: any){ return (p?.status || '').toLowerCase() === 'cancelado'; }
 
@@ -148,6 +161,88 @@ export class MeusPedidosComponent {
       case 'concluido': return 'Concluído';
       case 'cancelado': return 'Cancelado';
       default: return s || '—';
+    }
+  }
+
+  private scrollTimelineIntoView(orderId: number){
+    try {
+      const card = document.querySelector(`article.order-card[data-id="${orderId}"]`) as HTMLElement | null;
+      if (!card) return;
+      const sp = card.querySelector('.status-progress') as HTMLElement | null;
+      if (!sp) return;
+      // Prefer label centering; fallback to active segment
+      const activeLabel = sp.querySelector('.labels .lab.active') as HTMLElement | null;
+      const target = activeLabel || (sp.querySelector('.segments .seg.active') as HTMLElement | null);
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const cr = sp.getBoundingClientRect();
+      const center = rect.left + rect.width / 2 - cr.left - cr.width / 2;
+      sp.scrollBy({ left: center, behavior: 'smooth' });
+    } catch {}
+  }
+
+  // Modal de itens
+  openItemsModal(p: any){
+    this.modalPedido = p;
+    this.modalItems = this.extractItems(p);
+    this.showItemsModal = true;
+  }
+  closeItemsModal(){ this.showItemsModal = false; }
+
+  private extractItems(p: any): any[] {
+    // Tenta várias formas comuns vindas do backend
+    const direct = Array.isArray(p?.itens) ? p.itens : [];
+    const snapInput = Array.isArray(p?.raw_snapshot?.input?.itens) ? p.raw_snapshot.input.itens : [];
+    const snapItens = Array.isArray(p?.raw_snapshot?.itens) ? p.raw_snapshot.itens : [];
+    const anyAlt = Array.isArray((p as any)?.items) ? (p as any).items : [];
+    const arr = direct.length ? direct : (snapInput.length ? snapInput : (snapItens.length ? snapItens : anyAlt));
+    // Normaliza campos para UI
+    return arr.map((it: any) => {
+      const nome = it?.nome || it?.produto_nome || it?.name || 'Item';
+      const quantidade = it?.quantidade ?? it?.qty ?? it?.qtd ?? 1;
+      const unit = (it?.valor_unitario ?? it?.preco ?? it?.preco_unit ?? it?.precoUnit ?? it?.price ?? 0);
+      const subtotal = it?.subtotal != null ? it.subtotal : (Number(unit) * Number(quantidade));
+      return { nome, quantidade, unit, subtotal };
+    });
+  }
+
+  // Utilitários: endereço
+  mapUrl(end: any): string {
+    try{
+      const parts = [
+        end?.logradouro,
+        end?.numero,
+        end?.bairro,
+        end?.cidade,
+        end?.estado,
+        end?.cep ? `CEP ${String(end.cep)}` : ''
+      ].filter(Boolean).join(', ');
+      const q = encodeURIComponent(parts);
+      return `https://www.google.com/maps/search/?api=1&query=${q}`;
+    } catch {
+      return 'https://maps.google.com';
+    }
+  }
+
+  async copyEndereco(end: any){
+    try{
+      const texto = [
+        end?.nome || end?.destinatario,
+        `${end?.logradouro || ''}, ${end?.numero || ''}${end?.complemento ? ' - ' + end.complemento : ''}`.trim(),
+        `${end?.bairro || ''} - ${end?.cidade || ''}/${end?.estado || ''}`.trim(),
+        end?.cep ? `CEP ${String(end.cep)}` : ''
+      ].filter(v => !!v && String(v).trim().length).join('\n');
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(texto);
+      } else {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = texto; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      this.toast.success('Endereço copiado');
+    } catch(err){
+      this.toast.info('Não foi possível copiar o endereço');
     }
   }
 }
