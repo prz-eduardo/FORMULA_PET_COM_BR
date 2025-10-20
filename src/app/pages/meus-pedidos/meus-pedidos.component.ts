@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
@@ -13,6 +13,9 @@ import { Router } from '@angular/router';
   styleUrls: ['./meus-pedidos.component.scss']
 })
 export class MeusPedidosComponent {
+  @Input() modal: boolean = false;
+  @Output() close = new EventEmitter<void>();
+  @Output() openStatus = new EventEmitter<string>();
   pedidos: any[] = [];
   buscaCodigo = '';
   constructor(private router: Router){
@@ -79,6 +82,10 @@ export class MeusPedidosComponent {
   }
 
   abrirStatus(codigo: string){
+    if (this.modal) {
+      this.openStatus.emit(codigo);
+      return;
+    }
     // Abre o named outlet 'modal' com o componente de consulta e passa o código via query param
     this.router.navigate([
       '/meus-pedidos',
@@ -93,6 +100,10 @@ export class MeusPedidosComponent {
   }
 
   voltar(){
+    if (this.modal) {
+      this.close.emit();
+      return;
+    }
     // Fecha qualquer modal aberto e volta para área do cliente
     this.router.navigateByUrl('/area-cliente');
   }

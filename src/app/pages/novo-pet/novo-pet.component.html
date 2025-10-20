@@ -1,8 +1,8 @@
-<app-navmenu></app-navmenu>
+<app-navmenu *ngIf="!modal"></app-navmenu>
 
 <div class="novo-pet-wrapper">
   <main class="container">
-    <h1 class="titulo">Cadastrar novo Pet</h1>
+  <h1 class="titulo" *ngIf="!modal">Cadastrar novo Pet</h1>
 
     <div class="form-card">
       <div class="grid">
@@ -74,7 +74,7 @@
       </div>
 
       <div class="acoes">
-        <button class="btn btn-sec" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
+        <button class="btn btn-sec" *ngIf="!modal" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
         <button class="btn" (click)="salvar()" [disabled]="carregando">{{ carregando ? 'Salvando...' : 'Salvar' }}</button>
       </div>
     </div>

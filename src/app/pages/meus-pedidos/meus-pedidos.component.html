@@ -1,11 +1,11 @@
-<app-navmenu></app-navmenu>
+<app-navmenu *ngIf="!modal"></app-navmenu>
 
 <div class="area-like-wrapper">
   <main class="container">
-    <div class="top-actions">
+    <div class="top-actions" *ngIf="!modal">
       <button class="btn-back" (click)="voltar()">← Voltar</button>
     </div>
-    <h1 class="titulo">Meus Pedidos</h1>
+  <h1 class="titulo" *ngIf="!modal">Meus Pedidos</h1>
     <div class="searchbar">
       <input type="text" placeholder="Buscar por código (ex: FP-12345)" [(ngModel)]="buscaCodigo" (keyup.enter)="consultarPorCodigo()" />
       <button class="btn" (click)="consultarPorCodigo()">Consultar</button>

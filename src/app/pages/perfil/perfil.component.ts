@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,6 +18,9 @@ import { HttpClient } from '@angular/common/http';
   providers: [provideNgxMask()]
 })
 export class PerfilComponent {
+  @Input() modal: boolean = false;
+  @Input() readOnly: boolean = false;
+  @Output() close = new EventEmitter<void>();
   me: ClienteMeResponse | null = null;
   carregando = true;
   salvando = false;
@@ -208,4 +211,6 @@ export class PerfilComponent {
   onUfInput(){
     this.endereco.estado = (this.endereco.estado || '').toUpperCase().slice(0,2);
   }
+
+  fechar(){ if (this.modal) this.close.emit(); }
 }

@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService, ClienteMeResponse } from '../../services/api.service';
@@ -14,6 +14,8 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
   styleUrls: ['./meus-pets.component.scss']
 })
 export class MeusPetsComponent {
+  @Input() modal: boolean = false;
+  @Output() close = new EventEmitter<void>();
   clienteMe: ClienteMeResponse | null = null;
   pets: any[] = [];
   carregando = true;
@@ -45,5 +47,9 @@ export class MeusPetsComponent {
       },
       error: () => { this.carregando = false; }
     });
+  }
+
+  voltar(){
+    if (this.modal) this.close.emit();
   }
 }

@@ -1,15 +1,48 @@
-<app-navmenu></app-navmenu>
+<app-navmenu *ngIf="!modal"></app-navmenu>
 
 <div class="perfil-wrapper">
   <main class="container">
-    <div class="top-actions">
+    <div class="top-actions" *ngIf="!modal">
       <a class="btn btn-sec" routerLink="/area-cliente">← Voltar</a>
     </div>
-    <h1 class="titulo">Meu Perfil</h1>
+  <h1 class="titulo" *ngIf="!modal">{{ readOnly ? 'Perfil' : 'Meu Perfil' }}</h1>
 
     <div *ngIf="carregando" class="card">Carregando...</div>
 
-    <div class="grid" *ngIf="!carregando">
+    <!-- Read-only pretty view -->
+    <div class="grid" *ngIf="!carregando && readOnly">
+      <section class="card">
+        <h2>Informações</h2>
+        <div class="info-grid">
+          <div class="info-row"><span class="label">Nome</span><span class="value">{{ nome || '-' }}</span></div>
+          <div class="info-row"><span class="label">Email</span><span class="value">{{ email || '-' }}</span></div>
+          <div class="info-row"><span class="label">Telefone</span><span class="value">{{ telefone || '-' }}</span></div>
+          <div class="info-row"><span class="label">CPF</span><span class="value">{{ cpf || '-' }}</span></div>
+          <div class="info-row"><span class="label">Nascimento</span><span class="value">{{ dataNascimento || '-' }}</span></div>
+          <div class="info-row"><span class="label">Gênero</span><span class="value">{{ genero || '-' }}</span></div>
+          <div class="info-row"><span class="label">Estado civil</span><span class="value">{{ estadoCivil || '-' }}</span></div>
+          <div class="info-row"><span class="label">Profissão</span><span class="value">{{ profissao || '-' }}</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Endereço</h2>
+        <div class="info-grid">
+          <div class="info-row"><span class="label">CEP</span><span class="value">{{ endereco.cep || '-' }}</span></div>
+          <div class="info-row"><span class="label">Endereço</span><span class="value">{{ endereco.logradouro || '-' }}, {{ endereco.numero || '-' }}</span></div>
+          <div class="info-row"><span class="label">Complemento</span><span class="value">{{ endereco.complemento || '-' }}</span></div>
+          <div class="info-row"><span class="label">Bairro</span><span class="value">{{ endereco.bairro || '-' }}</span></div>
+          <div class="info-row"><span class="label">Cidade/UF</span><span class="value">{{ endereco.cidade || '-' }}/{{ endereco.estado || '-' }}</span></div>
+          <div class="info-row"><span class="label">Referência</span><span class="value">{{ endereco.referencia || '-' }}</span></div>
+        </div>
+        <div class="acoes" style="margin-top:12px">
+          <button class="btn btn-sec">Endereços</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Editable form view -->
+    <div class="grid" *ngIf="!carregando && !readOnly">
       <section class="card">
         <h2>Dados do usuário</h2>
         <div class="form-grid">
@@ -161,7 +194,7 @@
       </section>
     </div>
 
-    <div class="acoes" *ngIf="!carregando">
+    <div class="acoes" *ngIf="!carregando && !readOnly">
       <a class="btn btn-sec" routerLink="/area-cliente">Cancelar</a>
       <button class="btn" (click)="salvar()" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
     </div>

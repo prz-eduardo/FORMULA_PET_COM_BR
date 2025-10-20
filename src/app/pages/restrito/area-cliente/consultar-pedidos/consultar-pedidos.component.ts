@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
@@ -11,7 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="modal-overlay" (click)="fechar()"></div>
+    <div class="modal-overlay" *ngIf="!modal" (click)="fechar()"></div>
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Status do Pedido</h2>
@@ -219,6 +219,8 @@ import { ActivatedRoute, Router } from '@angular/router';
   `
 })
 export class ConsultarPedidosComponent {
+    @Input() modal: boolean = false; // when embedded inside another modal, skip its own overlay
+    @Output() close = new EventEmitter<void>();
   codigo = '';
   carregando = false;
   consultado = false;
@@ -265,6 +267,10 @@ export class ConsultarPedidosComponent {
   }
 
   fechar(){
+    if (this.modal) {
+      this.close.emit();
+      return;
+    }
     // Fecha o named outlet 'modal' relativo à rota pai (funciona tanto em /area-cliente quanto em /meus-pedidos)
     if (this.route && this.route.parent) {
       this.router.navigate([{ outlets: { modal: null } }], { relativeTo: this.route.parent });

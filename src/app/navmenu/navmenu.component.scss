@@ -300,6 +300,13 @@ nav {
           box-shadow: 0 0 0 2px #fff;
         }
       }
+
+      .user-trigger{
+        display:inline-flex;align-items:center;justify-content:center;
+        width:36px;height:36px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;
+        margin-left:8px;box-shadow:0 6px 16px rgba(0,0,0,.06)
+      }
+      .user-trigger:hover{filter:brightness(.96)}
     }
   }
 
@@ -634,6 +641,21 @@ nav {
     }
   }
 }
+
+/* Compact single icon menu (cliente modal trigger) */
+.menu-compact{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.menu-compact .menu-link{background:transparent !important;height:auto !important;width:auto !important}
+.menu-compact .icon-only{background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;padding:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.menu-compact .icon-only:hover{filter:brightness(.96)}
+
+/* Area Cliente modal container */
+.cliente-modal{position:fixed;inset:auto 10px 10px 10px;top:80px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 30px 60px rgba(0,0,0,.25);z-index:1001;max-height:calc(100vh - 110px);overflow:auto;padding:10px}
+.cliente-close{position:fixed;top:86px;right:18px;z-index:1002;background:#111827;color:#fff;border:0;border-radius:999px;width:34px;height:34px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+
 
 @keyframes overlayIn {
   0% {

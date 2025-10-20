@@ -1,12 +1,12 @@
 .area-cliente-wrapper {
   font-family: 'Inter', sans-serif;
-  color: #ecf0f5;
+  color: #e9eef6;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0d151f, #1a2230);
-  padding: 40px;
+  background: linear-gradient(135deg, #0f1724, #1a2331); /* mais suave */
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 28px;
 }
 
 .titulo {
@@ -18,14 +18,37 @@
   font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif;
 }
 
+.internal-back {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: -10px;
+  button.btn.btn-sec {
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #2a364a, #1f2a38);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: .2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 12px rgba(0,0,0,.35);
+    transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
+    &:before{ content: '←'; display:inline-block; }
+    &:hover { background: linear-gradient(180deg, var(--primary), #0c3a63); transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,0,0,.45); }
+    &:active { transform: translateY(0); }
+  }
+}
+
 /* Login Card */
 .card.login-card {
-  background: #1f2a38;
+  background: #1c2636;
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
   text-align: center;
-  color: #ecf0f5;
+  color: #e9eef6;
 
   .acoes {
     display: flex;
@@ -52,10 +75,7 @@
     }
   }
 
-  .btn.btn-sec {
-    background: #444c5c;
-    color: #f0f0f0;
-  }
+  .btn.btn-sec { background: #2a3446; color: #e9eef6; }
 }
 
 /* Painel Cliente */
@@ -63,10 +83,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1f2a38;
+  background: #1c2636;
   padding: 15px 25px;
   border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
 
   .cliente-info {
     display: flex;
@@ -94,22 +114,22 @@
     align-items: center;
 
     .btn-gear {
-      background: linear-gradient(180deg, #2a364a, #1f2a38);
-      color: #fff;
+      background: linear-gradient(180deg, #273245, #1b2636);
+      color: #f7fbff;
       border: 1px solid rgba(255,255,255,0.08);
       padding: 8px 12px;
       border-radius: 10px;
       cursor: pointer;
       transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
-      box-shadow: 0 3px 10px rgba(0,0,0,.25);
+      box-shadow: 0 3px 10px rgba(0,0,0,.22);
       backdrop-filter: blur(4px);
-      &:hover { background: linear-gradient(180deg, var(--primary), #0c3a63); box-shadow: 0 6px 16px rgba(0,0,0,.35); transform: translateY(-1px); }
+      &:hover { background: linear-gradient(180deg, #2f3b50, #203049); box-shadow: 0 6px 14px rgba(0,0,0,.28); transform: translateY(-1px); }
       &:active { transform: translateY(0); }
     }
 
     .popover {
       position: fixed; /* fixado na viewport para evitar extrapolar containers */
-      background: rgba(35, 48, 70, 0.9);
+  background: rgba(29, 39, 55, 0.92);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
       box-shadow: 0 12px 28px rgba(0,0,0,0.5);
@@ -152,7 +172,7 @@
         font-weight: 600;
         letter-spacing: .2px;
         transition: background .15s ease, transform .08s ease;
-        &:hover { background: rgba(255,255,255,0.08); }
+  &:hover { background: rgba(255,255,255,0.07); }
         &:active { transform: scale(0.99); }
 
         &::before {
@@ -171,8 +191,8 @@
           content: '🚪';
         }
 
-        &.danger { color: #ffb3ad; }
-        &.danger:hover { background: rgba(255, 59, 48, 0.15); }
+  &.danger { color: #ffbbb4; }
+  &.danger:hover { background: rgba(255, 59, 48, 0.12); }
       }
     }
   }
@@ -187,23 +207,23 @@
 .menu-cards-wrapper {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 20px;
-  padding: 20px;
+  gap: 18px;
+  padding: 16px;
 
   .menu-card {
-    background: #1f2a38;
-    color: #ecf0f5;
+  background: #1c2636;
+  color: #e9eef6;
     border-radius: 12px;
-    padding: 20px;
+  padding: 18px;
     text-align: center;
     cursor: pointer;
     position: relative;
     transition: all 0.3s ease;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
 
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 18px rgba(0,0,0,0.45);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 16px rgba(0,0,0,0.38);
     }
 
     .card-icon { font-size: 36px; margin-bottom: 10px; }
@@ -213,10 +233,10 @@
 
 /* Pets Cards */
 .pets-wrapper {
-  background: #1f2a38;
+  background: #1c2636;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
 
   h2 { color: var(--primary); margin-bottom: 15px; }
 
@@ -268,7 +288,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   z-index: 999;
 }
 .modal-content {
@@ -276,8 +296,8 @@
   top:50%;
   left:50%;
   transform: translate(-50%, -50%);
-  background: #1f2a38;
-  color: #ecf0f5;
+  background: #1c2636;
+  color: #e9eef6;
   padding: 25px;
   border-radius: 12px;
   width: 90%;

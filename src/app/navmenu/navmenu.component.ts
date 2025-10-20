@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -20,6 +20,9 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
   cartCount = 0;
   menuOpen = false;
   isCliente = false;
+  showFullMenu = true;
+  showClienteModal = false;
+  @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   private idleTimer: any = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
 
@@ -35,6 +38,7 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
         .pipe(filter(event => event instanceof NavigationEnd))
         .subscribe((event: any) => {
           this.currentRoute = event.urlAfterRedirects;
+          this.updateMenuMode();
         });
 
       const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
@@ -58,11 +62,14 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
         .then(ok => this.isCliente = ok)
         .catch(() => this.isCliente = false);
 
-      // Initialize metaballs animation behind logo (scoped to logo-container)
+  // Initialize metaballs animation behind logo (scoped to logo-container)
       this.initMetaBalls();
 
       // Inicia o timer de inatividade (sem scroll) para auto-ocultar a navbar
       this.resetIdleTimer();
+
+      // Eval initial mode
+      this.updateMenuMode();
     }
   }
 
@@ -76,6 +83,42 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
       // Reinicia o timer de ociosidade sempre que houver scroll
       this.resetIdleTimer();
     }
+  }
+
+  private updateMenuMode() {
+    // Menu completo na home (ancora #0) e na área vet; nas demais páginas, ícone que abre modal
+    // Considera URLs com hash (#0) e rotas /area-vet
+    const url = this.currentRoute || '';
+    const isHomeHash = typeof window !== 'undefined' && (window.location.hash === '#0' || window.location.hash === '#');
+    const isAreaVet = url.includes('/area-vet');
+    const isHomeRoute = url === '/' || url.startsWith('/#') || url.includes('index.html');
+    this.showFullMenu = isAreaVet || isHomeHash || isHomeRoute;
+  }
+
+  async abrirClienteModal() {
+    this.showClienteModal = true;
+    // Carrega AreaCliente de forma dinâmica para evitar dependência circular
+    try {
+      // Aguarda o container do modal estar na tela
+      setTimeout(async () => {
+        if (!this.clienteHost) return;
+        this.clienteHost.clear();
+        const mod = await import('../pages/restrito/area-cliente/area-cliente.component');
+        const Cmp = (mod as any).AreaClienteComponent;
+        if (Cmp) {
+          const ref = this.clienteHost.createComponent(Cmp);
+          if (ref?.instance) {
+            (ref.instance as any).modal = true;
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Falha ao carregar Área do Cliente', e);
+    }
+  }
+  fecharClienteModal() {
+    this.showClienteModal = false;
+    try { this.clienteHost?.clear(); } catch {}
   }
 
   ngOnDestroy(): void {

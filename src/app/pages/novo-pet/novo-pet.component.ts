@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -15,6 +15,8 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
   styleUrls: ['./novo-pet.component.scss']
 })
 export class NovoPetComponent {
+  @Input() modal: boolean = false;
+  @Output() close = new EventEmitter<void>();
   // form fields
   nome = '';
   especie = '';
@@ -107,6 +109,10 @@ export class NovoPetComponent {
     this.carregarListaAlergias();
     // Buscar item predefinido "Outras" para mapear legados
     this.buscarOutrasPredefinida();
+  }
+
+  cancelar(){
+    if (this.modal) this.close.emit();
   }
 
   carregarListaAlergias() {

@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ElementRef, ViewChild, Input, ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NavmenuComponent } from '../../../navmenu/navmenu.component';
 import { LoginClienteComponent } from './login-cliente/login-cliente.component';
 import { CrieSuaContaClienteComponent } from './crie-sua-conta-cliente/crie-sua-conta-cliente.component';
@@ -26,12 +26,19 @@ interface Pet {
   styleUrls: ['./area-cliente.component.scss']
 })
 export class AreaClienteComponent implements OnInit, OnDestroy {
+  @Input() modal: boolean = false;
+  @ViewChild('internalHost', { read: ViewContainerRef }) internalHost?: ViewContainerRef;
+  @ViewChild('overlayHost', { read: ViewContainerRef }) overlayHost?: ViewContainerRef;
   // Render gating and auth state (storage-based)
   ready = false;
   hasAuth = false;
+  titulo = 'Bem-vindo!';
   clienteData: any = null;
   pets: Pet[] = [];
   private sub?: Subscription;
+
+  // Internal navigation state when in modal
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | null = null;
 
   modalLoginAberto = false;
   modalCadastroAberto = false;
@@ -83,7 +90,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     private toast: ToastService,
     public auth: AuthService,
     private api: ApiService,
-    private route: ActivatedRoute,
+  private route: ActivatedRoute,
+  private router: Router,
     private el: ElementRef,
     private store: StoreService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -197,4 +205,152 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.toast.info(`Detalhes do pet: ${pet.nome}`);
   }
 
+  // ---- Internal modal navigation helpers ----
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil') {
+    if (!this.modal) {
+      // Navigate normally when not in modal
+      if (view === 'meus-pedidos') return this.router.navigateByUrl('/meus-pedidos');
+      if (view === 'meus-pets') return this.router.navigateByUrl('/meus-pets');
+      if (view === 'novo-pet') return this.router.navigateByUrl('/novo-pet');
+      if (view === 'perfil') return this.router.navigateByUrl('/editar-perfil');
+      if (view === 'loja') return this.router.navigateByUrl('/loja');
+      if (view === 'consultar-pedidos') {
+        return this.router.navigate([{ outlets: { modal: ['consultar-pedidos'] } }], { relativeTo: this.route });
+      }
+      return;
+    }
+    if (view === 'loja') {
+      // Close modal entirely and go to loja
+      window.location.href = '/loja';
+      return;
+    }
+    if (view === 'consultar-pedidos') {
+      this.titulo = 'Histórico de receitas';
+      return this.openConsultarPedidosOverlay();
+    }
+    this.internalView = view as any;
+    // Update title by selection
+    const titles: Record<string,string> = {
+      'meus-pedidos': 'Meus Pedidos',
+      'meus-pets': 'Meus Pets',
+      'novo-pet': 'Cadastrar Pet',
+      'perfil': 'Perfil',
+    };
+    this.titulo = titles[view] || 'Área do Cliente';
+    if (!this.internalHost) return;
+    this.internalHost.clear();
+    try {
+      if (view === 'meus-pedidos') {
+        const mod = await import('../../../pages/meus-pedidos/meus-pedidos.component');
+        const Cmp = (mod as any).MeusPedidosComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+          if ((ref.instance as any).openStatus) {
+            (ref.instance as any).openStatus.subscribe((codigo: string) => {
+              this.openConsultarPedidosOverlayWithCode(codigo);
+            });
+          }
+        }
+      } else if (view === 'meus-pets') {
+        const mod = await import('../../../pages/meus-pets/meus-pets.component');
+        const Cmp = (mod as any).MeusPetsComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      } else if (view === 'novo-pet') {
+        const mod = await import('../../../pages/novo-pet/novo-pet.component');
+        const Cmp = (mod as any).NovoPetComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      } else if (view === 'perfil') {
+        const mod = await import('../../../pages/perfil/perfil.component');
+        const Cmp = (mod as any).PerfilComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          (ref.instance as any).readOnly = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Falha ao abrir view interna', e);
+      this.toast.error('Não foi possível abrir agora');
+    }
+  }
+
+  async openConsultarPedidosOverlay() {
+    if (!this.modal) return;
+    if (!this.overlayHost) return;
+    try {
+      const mod = await import('./consultar-pedidos/consultar-pedidos.component');
+      const Cmp = (mod as any).ConsultarPedidosComponent;
+      this.overlayHost.clear();
+      const ref = this.overlayHost.createComponent(Cmp);
+      // Mark as embedded modal so it hides own overlay and emits close
+      if (ref?.instance) {
+        (ref.instance as any).modal = true;
+        if ((ref.instance as any).close) {
+          (ref.instance as any).close.subscribe(() => this.overlayHost?.clear());
+        }
+      }
+    } catch (e) {
+      console.error('Falha ao abrir status do pedido', e);
+    }
+  }
+
+  async openConsultarPedidosOverlayWithCode(codigo: string) {
+    await this.openConsultarPedidosOverlay();
+    // Try to pass initial code by setting the input directly
+    try {
+      const view = this.overlayHost as ViewContainerRef;
+      const compRef: any = (view && (view as any)._lView && (view as any)._viewRef) ? null : null; // placeholder: not reliable
+    } catch {}
+    // As a simpler approach, after component is created, search last created and set property
+    try {
+      // this.overlayHost?.get would require index; easiest: recreate and set immediately
+      if (!this.overlayHost) return;
+      this.overlayHost.clear();
+      const mod = await import('./consultar-pedidos/consultar-pedidos.component');
+      const Cmp = (mod as any).ConsultarPedidosComponent;
+      const ref = this.overlayHost.createComponent(Cmp);
+      if (ref?.instance) {
+        (ref.instance as any).modal = true;
+        (ref.instance as any).codigo = (codigo || '').toUpperCase();
+        if (typeof (ref.instance as any).consultar === 'function') {
+          setTimeout(() => (ref.instance as any).consultar());
+        }
+        if ((ref.instance as any).close) {
+          (ref.instance as any).close.subscribe(() => this.overlayHost?.clear());
+        }
+      }
+    } catch (e) {
+      console.error('Falha ao prefilling código do status', e);
+    }
+  }
+
+  goBack(){
+    if (this.overlayHost) {
+      try { this.overlayHost.clear(); } catch {}
+    }
+    if (this.internalHost) {
+      try { this.internalHost.clear(); } catch {}
+    }
+    this.internalView = null;
+    this.titulo = 'Bem-vindo!';
+  }
 }

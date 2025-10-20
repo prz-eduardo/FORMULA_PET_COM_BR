@@ -1,11 +1,11 @@
-<app-navmenu></app-navmenu>
+<app-navmenu *ngIf="!modal"></app-navmenu>
 
 <div class="meus-pets-wrapper">
   <main class="container">
-    <div class="top-actions">
+    <div class="top-actions" *ngIf="!modal">
       <button class="btn btn-sec" routerLink="/area-cliente">← Voltar</button>
     </div>
-    <h1 class="titulo">Meus Pets</h1>
+  <h1 class="titulo" *ngIf="!modal">Meus Pets</h1>
 
     <div *ngIf="carregando" class="card">Carregando...</div>
 

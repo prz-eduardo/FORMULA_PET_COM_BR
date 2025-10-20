@@ -65,10 +65,13 @@
             <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
           </a>
         </div>
-  <i class="icon-menu"><span></span></i>
+  <i class="icon-menu" *ngIf="showFullMenu"><span></span></i>
+  <button *ngIf="!showFullMenu" class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="#111827"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="#111827"/></svg>
+  </button>
       </div>
     </div>
-    <ul class="menu">
+  <ul class="menu" *ngIf="showFullMenu">
       
     <li class="menu-link">
       <a [routerLink]="currentRoute === '/' ? '/sobre-nos' : '/'" class="text-item">
@@ -85,10 +88,23 @@
           <li class="sub-item"><a href="#0">Item C</a></li>
         </ul>
       </li>
-      <li class="menu-link"><a href="area-vet" class="text-item">Área vet 🐾</a></li>
-      <li class="menu-link"><a href="area-cliente" class="text-item">Área cliente</a></li>
+      <li class="menu-link"><a [routerLink]="'/area-vet'" class="text-item">Área vet 🐾</a></li>
       <li class="menu-link"><a [routerLink]="'/loja'" class="text-item">Loja</a></li>
+      <li class="menu-link">
+        <a href="https://www.instagram.com/farmaformulapet/" target="_blank" rel="noopener" class="text-item" title="Instagram">
+          <img src="/imagens/icons8-instagram-500.png" alt="Instagram" width="36" height="36" />
+        </a>
+      </li>
     </ul>
   </nav>
 </div>
 </nav>
+
+<!-- Modal de Área do Cliente (renderiza o componente como modal) -->
+<ng-container *ngIf="showClienteModal">
+  <div class="nav-overlay" (click)="fecharClienteModal()" aria-hidden="true"></div>
+  <div class="cliente-modal" (click)="$event.stopPropagation()">
+    <ng-template #clienteHost></ng-template>
+  </div>
+  <button class="cliente-close" (click)="fecharClienteModal()" aria-label="Fechar">✕</button>
+</ng-container>
