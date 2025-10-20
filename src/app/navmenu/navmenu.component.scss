@@ -708,6 +708,8 @@ nav {
   --origin-x: .5; --origin-y: 0;
   transform-origin: calc(var(--origin-x)*100%) calc(var(--origin-y)*100%);
   will-change: transform, opacity, clip-path;
+  /* Default fully-revealed shape for when animations aren't running */
+  clip-path: circle(150% at calc(var(--origin-x)*100%) calc(var(--origin-y)*100%));
 }
 
 .cliente-modal-inner{
@@ -717,6 +719,8 @@ nav {
   overflow:auto;
   max-height:inherit;
   padding:10px; /* maintain existing inner padding */
+  min-height: 360px; /* stable height while loading */
+  min-width: 320px; /* avoid thin stripe visual glitch */
 }
 
 /* Subtle inner edge fade so overlay can "eat" a bit of the panel */
@@ -752,21 +756,57 @@ nav {
   z-index:1000;
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
-  animation: overlayIn .18s ease forwards;
+  animation: overlayIn .32s ease forwards;
 }
 
 /* Appear as if coming out of the trigger button */
-.cliente-modal.anim-enter{ animation: modalPopIn .42s cubic-bezier(.2,.65,.2,1) both }
-.cliente-modal.anim-exit{ animation: modalPopOut .28s cubic-bezier(.4,.0,.2,1) both }
+.cliente-modal.anim-enter{ animation: modalPopIn .72s cubic-bezier(.2,.75,.2,1) both }
+.cliente-modal.anim-exit{ animation: modalPopOut .50s cubic-bezier(.4,.0,.2,1) both }
 
 @keyframes modalPopIn{
-  0%{ transform: translate3d(0, -8px, 0) scale(.6); opacity: 0; filter: blur(4px) }
-  60%{ transform: translate3d(0, 2px, 0) scale(1.02); opacity: 1; filter: blur(0) }
-  100%{ transform: translate3d(0, 0, 0) scale(1); opacity: 1 }
+  0%{
+    transform: translate3d(0, -8px, 0) scale(.6);
+    opacity: 0;
+    filter: blur(4px);
+    clip-path: circle(0 at calc(var(--origin-x)*100%) calc(var(--origin-y)*100%));
+  }
+  55%{
+    transform: translate3d(0, 4px, 0) scale(1.03);
+    opacity: 1;
+    filter: blur(0);
+    clip-path: circle(120% at calc(var(--origin-x)*100%) calc(var(--origin-y)*100%));
+  }
+  100%{
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+    clip-path: circle(150% at calc(var(--origin-x)*100%) calc(var(--origin-y)*100%));
+  }
 }
 @keyframes modalPopOut{
-  0%{ transform: translate3d(0, 0, 0) scale(1); opacity: 1 }
-  100%{ transform: translate3d(0, -6px, 0) scale(.6); opacity: 0; filter: blur(3px) }
+  0%{
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+    clip-path: circle(150% at calc(var(--origin-x)*100%) calc(var(--origin-y)*100%));
+  }
+  100%{
+    transform: translate3d(0, -6px, 0) scale(.6);
+    opacity: 0;
+    filter: blur(3px);
+    clip-path: circle(0 at calc(var(--origin-x)*100%) calc(var(--origin-y)*100%));
+  }
+}
+
+/* Inner content staged animations to avoid 'loading in parts' feel */
+.cliente-modal.anim-enter .cliente-modal-inner{ animation: innerFadeIn .56s cubic-bezier(.2,.65,.2,1) .10s both }
+.cliente-modal.anim-exit .cliente-modal-inner{ animation: innerFadeOut .38s ease both }
+
+@keyframes innerFadeIn{
+  0%{ opacity: 0; transform: translate3d(0, 8px, 0) }
+  100%{ opacity: 1; transform: translate3d(0, 0, 0) }
+}
+@keyframes innerFadeOut{
+  0%{ opacity: 1; transform: translate3d(0, 0, 0) }
+  100%{ opacity: 0; transform: translate3d(0, -6px, 0) }
 }
 
 
@@ -780,6 +820,30 @@ nav {
     background: rgba(0,0,0,0.35);
     -webkit-backdrop-filter: blur(1.5px);
     backdrop-filter: blur(1.5px);
+  }
+}
+
+/* Loader styles */
+.cliente-loader{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  min-height: 320px; color:#e5e7eb;
+}
+.cliente-loader .loader-text{font-size:14px;opacity:.8}
+.cliente-loader .spinner{width:36px;height:36px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.25); border-top-color:#fff; animation: spin 1s linear infinite}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+.cliente-overlay.anim-exit{ animation: overlayOut .30s ease forwards }
+@keyframes overlayOut {
+  0% {
+    background: rgba(0,0,0,0.35);
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+  }
+  100% {
+    background: rgba(0,0,0,0);
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
   }
 }
 

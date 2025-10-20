@@ -105,6 +105,10 @@
   <div class="cliente-overlay" (click)="fecharClienteModal()" aria-hidden="true"></div>
   <div class="cliente-modal" (click)="$event.stopPropagation()">
     <div class="cliente-modal-inner">
+      <div class="cliente-loader" *ngIf="clienteLoading" aria-live="polite" aria-busy="true">
+        <div class="spinner"></div>
+        <div class="loader-text">Carregando área do cliente…</div>
+      </div>
       <ng-template #clienteHost></ng-template>
       <div class="edge-fade" aria-hidden="true"></div>
     </div>

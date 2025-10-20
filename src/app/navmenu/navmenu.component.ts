@@ -23,6 +23,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   isCliente = false;
   showFullMenu = true;
   showClienteModal = false;
+  clienteLoading = false;
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   private idleTimer: any = null;
@@ -106,6 +107,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async abrirClienteModal() {
     this.showClienteModal = true;
+    this.clienteLoading = true;
     // Prepare animation origin based on user button position
     requestAnimationFrame(() => {
       try {
@@ -138,25 +140,34 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           if (ref?.instance) {
             (ref.instance as any).modal = true;
           }
+          // Quando o conteúdo for resolvido/renderizado, removemos o loader em um próximo tick
+          setTimeout(() => { this.clienteLoading = false; }, 0);
         }
       });
     } catch (e) {
       console.error('Falha ao carregar Área do Cliente', e);
+      this.clienteLoading = false;
     }
   }
   fecharClienteModal() {
     try {
       const modal = document.querySelector('.cliente-modal') as HTMLElement | null;
+      const overlay = document.querySelector('.cliente-overlay') as HTMLElement | null;
       if (modal) {
         modal.classList.add('anim-exit');
+        if (overlay) overlay.classList.add('anim-exit');
         setTimeout(() => {
           modal.classList.remove('anim-exit');
+          if (overlay) overlay.classList.remove('anim-exit');
           this.showClienteModal = false;
+          this.clienteLoading = false;
+          try { this.clienteHost?.clear(); } catch {}
         }, 320);
         return;
       }
     } catch {}
     this.showClienteModal = false;
+    this.clienteLoading = false;
     try { this.clienteHost?.clear(); } catch {}
   }
 
