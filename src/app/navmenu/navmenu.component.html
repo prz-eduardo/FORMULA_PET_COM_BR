@@ -102,9 +102,12 @@
 
 <!-- Modal de Área do Cliente (renderiza o componente como modal) -->
 <ng-container *ngIf="showClienteModal">
-  <div class="nav-overlay" (click)="fecharClienteModal()" aria-hidden="true"></div>
+  <div class="cliente-overlay" (click)="fecharClienteModal()" aria-hidden="true"></div>
   <div class="cliente-modal" (click)="$event.stopPropagation()">
-    <ng-template #clienteHost></ng-template>
+    <div class="cliente-modal-inner">
+      <ng-template #clienteHost></ng-template>
+      <div class="edge-fade" aria-hidden="true"></div>
+    </div>
   </div>
   <button class="cliente-close" (click)="fecharClienteModal()" aria-label="Fechar">✕</button>
 </ng-container>

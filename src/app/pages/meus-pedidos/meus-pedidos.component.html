@@ -6,33 +6,114 @@
       <button class="btn-back" (click)="voltar()">← Voltar</button>
     </div>
   <h1 class="titulo" *ngIf="!modal">Meus Pedidos</h1>
-    <div class="searchbar">
-      <input type="text" placeholder="Buscar por código (ex: FP-12345)" [(ngModel)]="buscaCodigo" (keyup.enter)="consultarPorCodigo()" />
-      <button class="btn" (click)="consultarPorCodigo()">Consultar</button>
+    <!-- filtros -->
+    <div class="filters">
+      <div class="row">
+        <input type="text" placeholder="Buscar (id, cupom, observação)" [(ngModel)]="buscaCodigo" (keyup.enter)="consultarPorCodigo()" />
+        <select [(ngModel)]="filtroStatus" title="Status do pedido" aria-label="Status do pedido">
+          <option value="">Status</option>
+          <option value="criado">Criado</option>
+          <option value="pago">Pago</option>
+          <option value="em_preparo">Em preparo</option>
+          <option value="enviado">Enviado</option>
+          <option value="concluido">Concluído</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <select [(ngModel)]="filtroPgStatus" title="Status do pagamento" aria-label="Status do pagamento">
+          <option value="">Pgto Status</option>
+          <option value="aprovado">Aprovado</option>
+          <option value="pendente">Pendente</option>
+          <option value="recusado">Recusado</option>
+        </select>
+        <select [(ngModel)]="filtroPgForma" title="Forma de pagamento" aria-label="Forma de pagamento">
+          <option value="">Forma</option>
+          <option value="pix">PIX</option>
+          <option value="cartao">Cartão</option>
+          <option value="boleto">Boleto</option>
+        </select>
+        <input type="date" [(ngModel)]="filtroFrom" title="De" />
+        <input type="date" [(ngModel)]="filtroTo" title="Até" />
+        <label class="toggle-details"><input type="checkbox" [(ngModel)]="includeDetails" (change)="page=1; load()" /> detalhes</label>
+        <button class="btn" (click)="page=1; load()" [disabled]="carregando">Filtrar</button>
+        <button class="btn btn-sec" (click)="filtroStatus='';filtroPgStatus='';filtroPgForma='';filtroFrom='';filtroTo='';buscaCodigo='';page=1;load()" [disabled]="carregando">Limpar</button>
+      </div>
     </div>
 
-    <section class="order-list" *ngIf="pedidos.length; else vazio">
+    <section class="order-list" *ngIf="!carregando && pedidos.length; else stateBlock">
       <article class="order-card" *ngFor="let p of pedidos">
         <header class="order-head">
           <div class="left">
-            <div class="codigo">{{ p.codigo }}</div>
-            <div class="badge" [ngClass]="p.statusKey">{{ p.status }}</div>
+            <div class="codigo">#{{ p.id }}</div>
+            <div class="badge">{{ p.status }}</div>
           </div>
           <div class="right">
             <div class="datas">
-              <div><span class="label">Criado</span> <span class="value">{{ p.criadoEm | date:'short' }}</span></div>
-              <div><span class="label">Atualizado</span> <span class="value">{{ p.atualizadoEm | date:'short' }}</span></div>
+              <div><span class="label">Criado</span> <span class="value">{{ p.created_at | date:'short' }}</span></div>
+              <div><span class="label">Atualizado</span> <span class="value">{{ p.updated_at | date:'short' }}</span></div>
             </div>
-            <button class="btn" (click)="abrirStatus(p.codigo)">Ver status</button>
+            <button class="btn" (click)="abrirStatus(p.id)">Ver status</button>
           </div>
         </header>
+        <div class="summary">
+          <div class="line"><span class="label">Pagamento</span><span class="value">{{ p.pagamento_forma || '-' }} • {{ p.pagamento_status || '-' }}</span></div>
+          <div class="totais">
+            <span>Itens: R$ {{ p.totals?.items_total | number:'1.2-2' }}</span>
+            <span>Frete: R$ {{ p.totals?.frete_total | number:'1.2-2' }}</span>
+            <span *ngIf="p.totals?.discount_total && p.totals?.discount_total > 0">Desconto: -R$ {{ p.totals?.discount_total | number:'1.2-2' }}</span>
+            <span class="grand">Total: R$ {{ p.totals?.grand_total | number:'1.2-2' }}</span>
+          </div>
+          <div class="cupom" *ngIf="p.cupom?.codigo">
+            Cupom: <strong>{{ p.cupom.codigo }}</strong> (−R$ {{ p.cupom.desconto_aplicado | number:'1.2-2' }})
+          </div>
+        </div>
 
+        <details *ngIf="includeDetails">
+          <summary>Detalhes</summary>
+          <div class="detalhes">
+            <div class="col">
+              <h4>Itens</h4>
+              <ul>
+                <li *ngFor="let it of (p.itens || [])">
+                  <span>{{ it.nome || it.produto_nome || 'Item' }}</span>
+                  <span class="muted" *ngIf="it.quantidade">× {{ it.quantidade }}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="col">
+              <h4>Pagamentos</h4>
+              <ul>
+                <li *ngFor="let pg of (p.pagamentos || [])">
+                  <span>{{ pg.forma || p.pagamento_forma || '—' }}</span>
+                  <span class="muted">{{ pg.status || '—' }}</span>
+                  <span class="muted" *ngIf="pg.valor">R$ {{ pg.valor | number:'1.2-2' }}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="col">
+              <h4>Envios</h4>
+              <ul>
+                <li *ngFor="let ev of (p.envios || [])">
+                  <span>{{ ev.tipo || 'Envio' }}</span>
+                  <span class="muted" *ngIf="ev.codigo_rastreio">({{ ev.codigo_rastreio }})</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </details>
       </article>
     </section>
 
-    <ng-template #vazio>
-      <div class="vazio">Você ainda não possui pedidos.</div>
+    <ng-template #stateBlock>
+      <div class="loading" *ngIf="carregando">Carregando...</div>
+      <div class="vazio" *ngIf="!carregando && !pedidos.length">Nenhum pedido encontrado.</div>
+      <div class="erro" *ngIf="!carregando && erro">{{ erro }}</div>
     </ng-template>
+
+    <div class="paginacao" *ngIf="totalPages > 1">
+      <button class="btn btn-sec" (click)="prevPage()" [disabled]="page<=1">Anterior</button>
+      <span class="muted">Página {{ page }} / {{ totalPages }}</span>
+      <button class="btn" (click)="nextPage()" [disabled]="page>=totalPages">Próxima</button>
+    </div>
   </main>
 </div>
 

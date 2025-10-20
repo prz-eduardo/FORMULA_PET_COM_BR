@@ -653,8 +653,63 @@ nav {
 .menu-compact .icon-only:hover{filter:brightness(.96)}
 
 /* Area Cliente modal container */
-.cliente-modal{position:fixed;inset:auto 10px 10px 10px;top:80px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 30px 60px rgba(0,0,0,.25);z-index:1001;max-height:calc(100vh - 110px);overflow:auto;padding:10px}
-.cliente-close{position:fixed;top:86px;right:18px;z-index:1002;background:#111827;color:#fff;border:0;border-radius:999px;width:34px;height:34px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.cliente-modal{
+  position:fixed;
+  inset:auto 10px 10px 10px;
+  top:80px;
+  background: transparent; /* let inner handle background to avoid white frame clash */
+  border:0; /* remove white border */
+  border-radius:20px; /* nicer rounded outer corners */
+  box-shadow:0 30px 60px rgba(0,0,0,.28);
+  z-index:1001;
+  max-height:calc(100vh - 110px);
+  overflow:hidden; /* clip inner rounded corners */
+  padding:0;
+}
+
+.cliente-modal-inner{
+  position:relative;
+  background:#111827; /* dark area-cliente surface base */
+  border-radius:20px;
+  overflow:auto;
+  max-height:inherit;
+  padding:10px; /* maintain existing inner padding */
+}
+
+/* Subtle inner edge fade so overlay can "eat" a bit of the panel */
+.cliente-modal-inner .edge-fade{
+  pointer-events:none;
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04),
+              inset 0 0 40px rgba(0,0,0,0.35);
+}
+
+.cliente-close{
+  position:fixed;
+  top:88px;
+  right:18px;
+  z-index:1002;
+  background:#111827;
+  color:#fff;
+  border:0;
+  border-radius:999px;
+  width:34px;
+  height:34px;
+  cursor:pointer;
+  box-shadow:0 10px 24px rgba(0,0,0,.18)
+}
+
+/* Dedicated overlay for cliente modal to avoid nav stacking quirks */
+.cliente-overlay{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,0.35);
+  z-index:1000;
+  backdrop-filter: blur(2px);
+  animation: overlayIn .18s ease forwards;
+}
 
 
 @keyframes overlayIn {

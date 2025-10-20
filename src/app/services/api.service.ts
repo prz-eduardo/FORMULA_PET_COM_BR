@@ -400,6 +400,35 @@ export class ApiService {
     });
   }
 
+  // Meus pedidos (cliente autenticado) — com filtros, paginação e include=details
+  listMyOrders(
+    token: string,
+    params?: {
+      page?: number; pageSize?: number;
+      status?: string; pagamento_status?: string; pagamento_forma?: string;
+      from?: string; to?: string; q?: string; include?: 'details' | 'all';
+    }
+  ): Observable<{
+    data: any[];
+    page: number; pageSize: number; total: number; totalPages: number;
+  }> {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    if (params?.status) search.set('status', params.status);
+    if (params?.pagamento_status) search.set('pagamento_status', params.pagamento_status);
+    if (params?.pagamento_forma) search.set('pagamento_forma', params.pagamento_forma);
+    if (params?.from) search.set('from', params.from);
+    if (params?.to) search.set('to', params.to);
+    if (params?.q) search.set('q', params.q);
+    if (params?.include) search.set('include', params.include);
+    const qp = search.toString();
+    const url = `${this.baseUrl}/clientes/me/pedidos${qp ? `?${qp}` : ''}`;
+    return this.http.get<{ data: any[]; page: number; pageSize: number; total: number; totalPages: number }>(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
   // Lista predefinida de alergias
   getListaAlergias(token: string, q?: string): Observable<AlergiaLookup[]> {
     const query = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';

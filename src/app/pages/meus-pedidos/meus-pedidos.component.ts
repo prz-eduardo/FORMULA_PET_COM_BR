@@ -1,9 +1,13 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { RouterOutlet } from '@angular/router';
 import { Router } from '@angular/router';
+import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-meus-pedidos',
@@ -18,85 +22,76 @@ export class MeusPedidosComponent {
   @Output() openStatus = new EventEmitter<string>();
   pedidos: any[] = [];
   buscaCodigo = '';
-  constructor(private router: Router){
-    // Mock do FP-12345 (mesma base do modal)
-    const now = new Date();
-    const earlier = new Date(now.getTime() - 1000 * 60 * 60 * 24); // -1 dia
-    const mid = new Date(now.getTime() - 1000 * 60 * 60 * 6); // -6 horas
+  carregando = false;
+  erro = '';
+  // controle de expansão por pedido
+  expanded: Record<number, boolean> = {};
+  // filtros & paginação
+  page = 1; pageSize = 20; total = 0; totalPages = 1;
+  filtroStatus = '';
+  filtroPgStatus = '';
+  filtroPgForma = '';
+  filtroFrom = '';
+  filtroTo = '';
+  includeDetails = false;
 
-    this.pedidos = [
-      {
-        codigo: 'FP-12345',
-        status: 'Em manipulação',
-        statusKey: 'em-manipulacao',
-        criadoEm: earlier.toISOString(),
-        atualizadoEm: mid.toISOString(),
-        cliente: {
-          nome: 'Maria Oliveira',
-          cpf: '111.111.111-11',
-          telefone: '(11) 98888-7777',
-          email: 'maria.oliveira@example.com'
-        },
-        pet: {
-          nome: 'Rex',
-          especie: 'Cachorro',
-          raca: 'Labrador',
-          pesoKg: 24.8,
-          idadeAnos: 5,
-          sexo: 'Macho',
-          alergias: 'Nenhuma conhecida'
-        },
-        veterinario: {
-          nome: 'Dr. João Silva',
-          crmv: 'SP-12345',
-          telefone: '(11) 95555-4444',
-          email: 'joao.silva@vetclinic.com'
-        },
-        pagamento: {
-          metodo: 'PIX',
-          status: 'Aprovado',
-          valorTotal: 189.9
-        },
-        entrega: {
-          tipo: 'Retirada na loja',
-          prazo: 'Hoje após as 17h'
-        },
-        itens: [
-          {
-            nome: 'Suspensão de Metronidazol 50 mg/mL',
-            forma: 'Suspensão oral',
-            volumeMl: 100,
-            concentracao: '50 mg/mL',
-            posologia: '5 mL a cada 12 horas por 7 dias'
-          },
-          {
-            nome: 'Cápsulas de Fluoxetina 10 mg',
-            forma: 'Cápsulas gelatinosas',
-            quantidade: 30,
-            dosagem: '10 mg',
-            posologia: '1 cápsula ao dia por 30 dias'
-          }
-        ]
-      }
-    ];
+  constructor(
+    private router: Router,
+    private api: ApiService,
+    private auth: AuthService,
+    private toast: ToastService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ){}
+
+  private get token(): string | null {
+    return isPlatformBrowser(this.platformId) ? this.auth.getToken() : null;
+  }
+
+  ngOnInit(){
+    this.load();
+  }
+
+  load(){
+    const t = this.token;
+    if (!t) { this.pedidos = []; this.total = 0; this.totalPages = 1; return; }
+    this.carregando = true; this.erro = '';
+    this.api.listMyOrders(t, {
+      page: this.page,
+      pageSize: this.pageSize,
+      status: this.filtroStatus || undefined,
+      pagamento_status: this.filtroPgStatus || undefined,
+      pagamento_forma: this.filtroPgForma || undefined,
+      from: this.filtroFrom || undefined,
+      to: this.filtroTo || undefined,
+      q: this.buscaCodigo || undefined,
+      include: this.includeDetails ? 'details' : undefined
+    }).subscribe({
+      next: (res) => {
+        this.pedidos = Array.isArray(res?.data) ? res.data : [];
+        this.page = res?.page ?? this.page;
+        this.pageSize = res?.pageSize ?? this.pageSize;
+        this.total = res?.total ?? 0;
+        this.totalPages = res?.totalPages ?? 1;
+      },
+      error: (err) => {
+        this.erro = err?.error?.message || err?.message || 'Erro ao carregar pedidos';
+        this.toast.error(this.erro);
+      },
+      complete: () => this.carregando = false
+    });
   }
 
   abrirStatus(codigo: string){
-    if (this.modal) {
-      this.openStatus.emit(codigo);
-      return;
-    }
-    // Abre o named outlet 'modal' com o componente de consulta e passa o código via query param
-    this.router.navigate([
-      '/meus-pedidos',
-      { outlets: { modal: ['consultar-pedidos'] } }
-    ], { queryParams: { codigo } });
+    // Não abrimos mais o modal de consulta; alterna expansão do card
+    const id = Number(codigo);
+    if (!isNaN(id)) this.toggleExpand(id);
   }
 
   consultarPorCodigo(){
     const code = (this.buscaCodigo || '').trim();
     if (!code) return;
-    this.abrirStatus(code.toUpperCase());
+    this.page = 1; // reseta paginação
+    this.load();
   }
 
   voltar(){
@@ -106,5 +101,46 @@ export class MeusPedidosComponent {
     }
     // Fecha qualquer modal aberto e volta para área do cliente
     this.router.navigateByUrl('/area-cliente');
+  }
+
+  // paginação simples
+  prevPage(){ if (this.page > 1){ this.page--; this.load(); } }
+  nextPage(){ if (this.page < this.totalPages){ this.page++; this.load(); } }
+
+  // UI helpers
+  toggleExpand(id: number){ this.expanded[id] = !this.expanded[id]; }
+  isConcluido(p: any){ return (p?.status || '').toLowerCase() === 'concluido'; }
+  isCancelado(p: any){ return (p?.status || '').toLowerCase() === 'cancelado'; }
+
+  carregarDetalhes(){
+    if (!this.includeDetails){
+      this.includeDetails = true;
+      this.load();
+    }
+  }
+
+  statusSteps(p: any){
+    const status = (p?.status || '').toLowerCase();
+    const pg = (p?.pagamento_status || '').toLowerCase();
+    // Mapa de ordem de progresso
+    const orderIndex: Record<string, number> = {
+      'criado': 0,
+      'pago': 2, // após pagamento consideramos preparo ativo
+      'em_preparo': 2,
+      'enviado': 3,
+      'concluido': 4,
+      'cancelado': 0
+    };
+    const idx = status in orderIndex ? orderIndex[status] : 0;
+    const pagamentoDone = pg === 'aprovado' || idx >= 2;
+    const pagamentoActive = !pagamentoDone && (pg === 'pendente' || pg === 'aguardando');
+    const steps = [
+      { key: 'criado', label: 'Criado', done: idx >= 0, active: idx === 0 && !pagamentoActive },
+      { key: 'pagamento', label: 'Pagamento', done: pagamentoDone, active: pagamentoActive },
+      { key: 'preparo', label: 'Em preparo', done: idx >= 2, active: idx === 2 },
+      { key: 'envio', label: 'Enviado', done: idx >= 3, active: idx === 3 },
+      { key: 'concluido', label: 'Concluído', done: idx >= 4, active: idx === 4 }
+    ];
+    return steps;
   }
 }

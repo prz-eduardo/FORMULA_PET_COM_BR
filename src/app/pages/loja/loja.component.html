@@ -32,7 +32,7 @@
     <div class="cta">
       <div class="perfil">
         <button #profileBtn class="btn light" (click)="toggleLogin($event)" aria-haspopup="dialog" [attr.aria-expanded]="showLogin">
-            {{ me ? '👤 ' + (me?.nome?.split(' ')[0] || 'Cliente') : '👤 Entrar' }}
+            {{ me ? '👤 ' + (me?.nome?.split(' ')[0] || 'Cliente') : 'Login' }}
         </button>
       </div>
         <button #cartBtn type="button" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho" aria-label="Carrinho">
