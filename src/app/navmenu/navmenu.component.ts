@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -23,6 +23,7 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
   showFullMenu = true;
   showClienteModal = false;
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
+  @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   private idleTimer: any = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
 
@@ -97,6 +98,25 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
 
   async abrirClienteModal() {
     this.showClienteModal = true;
+    // Prepare animation origin based on user button position
+    requestAnimationFrame(() => {
+      try {
+        const btn = this.userBtn?.nativeElement;
+        const modal = document.querySelector('.cliente-modal') as HTMLElement | null;
+        if (btn && modal) {
+          const br = btn.getBoundingClientRect();
+          const mr = modal.getBoundingClientRect();
+          // Compute relative origin inside modal box (0-1)
+          const ox = (br.left + br.width / 2 - mr.left) / Math.max(mr.width, 1);
+          const oy = (br.top + br.height / 2 - mr.top) / Math.max(mr.height, 1);
+          modal.style.setProperty('--origin-x', `${Math.min(Math.max(ox, 0), 1)}`);
+          modal.style.setProperty('--origin-y', `${Math.min(Math.max(oy, 0), 1)}`);
+          modal.classList.add('anim-enter');
+          // clean-up the class after animation
+          setTimeout(() => modal.classList.remove('anim-enter'), 450);
+        }
+      } catch {}
+    });
     // Carrega AreaCliente de forma dinâmica para evitar dependência circular
     try {
       // Aguarda o container do modal estar na tela
@@ -117,6 +137,17 @@ export class NavmenuComponent implements AfterViewInit, OnDestroy {
     }
   }
   fecharClienteModal() {
+    try {
+      const modal = document.querySelector('.cliente-modal') as HTMLElement | null;
+      if (modal) {
+        modal.classList.add('anim-exit');
+        setTimeout(() => {
+          modal.classList.remove('anim-exit');
+          this.showClienteModal = false;
+        }, 320);
+        return;
+      }
+    } catch {}
     this.showClienteModal = false;
     try { this.clienteHost?.clear(); } catch {}
   }

@@ -1,4 +1,4 @@
-<div class="loja-wrap">
+<div class="loja-wrap loja-container">
   <app-navmenu></app-navmenu>
   <!-- Hero/Banner -->
   <section class="hero">
@@ -50,54 +50,81 @@
 
   <div class="meta" aria-live="polite">{{ onlyFavorites ? filtered.length : total }} itens</div>
 
+  <!-- Seção Destaques (PC only; até 5 por página) -->
+  <section class="destaques desktop-only" *ngIf="featuredTop.length > 0">
+    <h2 class="sec-title">Destaques</h2>
+    <!-- faixa horizontal com alguns cards em destaque -->
+    <div class="destaque-row">
+  <a class="d-card" *ngFor="let p of featuredRow" [routerLink]="'/produto/' + p.id" [queryParams]="{ src: 'loja' }" [title]="p.name">
+        <img class="d-img" [src]="p.image || p.imageUrl" [alt]="p.name" />
+        <div class="d-overlay">
+          <div class="d-topline">
+            <span class="d-badge" *ngIf="(p.discount || 0) > 0">-{{ (p.discount || 0) | number:'1.0-0' }}%</span>
+            <span class="d-type" *ngIf="p.tipo === 'manipulado'">Manipulado</span>
+          </div>
+          <h3 class="d-title">{{ p.name }}</h3>
+          <div class="d-price">
+            <span class="new">{{ price(p) | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
+            <span class="old" *ngIf="p.promoPrice != null || (p.discount || 0) > 0">{{ p.price | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
+          </div>
+          <button type="button" class="fav" (click)="onToggleFavFromCard(p, $event)" [attr.aria-pressed]="isFav(p)">
+            <span class="heart">{{ isFav(p) ? '❤️' : '🤍' }}</span>
+            <span class="count" *ngIf="p.favoritesCount != null">{{ p.favoritesCount }}</span>
+          </button>
+          <button type="button" class="add" (click)="onAddToCartFromCard(p, $event)" title="Adicionar ao carrinho">🛒</button>
+        </div>
+      </a>
+    </div>
+  </section>
+
   <section class="catalogo">
     <h2 class="sec-title">{{ onlyFavorites ? 'Favoritos' : 'Produtos' }}</h2>
-    <div class="grid" [class.loading]="loading">
-      <div class="empty-state" *ngIf="!loading && onlyFavorites && filtered.length === 0">
-        <div class="icon">❤</div>
-        <h3>Você ainda não favoritou nenhum produto</h3>
-        <p>Comece a favoritar para que eles apareçam aqui.</p>
-        <div class="tips">Dica: toque no coração nos cards de produto para adicionar aos favoritos.</div>
-      </div>
+  <!-- Lista intercalada com banner por paginação (mobile e desktop) -->
+  <div class="grid" [class.loading]="loading">
+  <ng-container *ngIf="!loading && onlyFavorites && filtered.length === 0">
+        <div class="empty-state">
+          <div class="icon">❤</div>
+          <h3>Você ainda não favoritou nenhum produto</h3>
+          <p>Comece a favoritar para que eles apareçam aqui.</p>
+          <div class="tips">Dica: toque no coração nos cards de produto para adicionar aos favoritos.</div>
+        </div>
+      </ng-container>
       <div class="grid-loader" *ngIf="loading">
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
       </div>
-      <app-product-card-v2 *ngFor="let p of paginated"
-        [product]="p"
-        [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
-        [supportsRatings]="storeMeta?.supports?.ratings ?? true"
-        [favoriteActive]="isFav(p)"
-        (toggleFav)="toggleFav(p)"
-        (add)="onAddToCart(p, $event)"
-      ></app-product-card-v2>
+      <ng-container *ngFor="let it of interleaved">
+        <ng-container [ngSwitch]="it.type">
+          <a *ngSwitchCase="'banner'" class="d-card banner" [routerLink]="'/produto/' + it.product.id" [queryParams]="{ src: 'loja' }" [title]="it.product.name">
+            <img class="d-img" [src]="it.product.image || it.product.imageUrl" [alt]="it.product.name" />
+            <div class="d-overlay">
+              <div class="d-topline">
+                <span class="d-badge" *ngIf="(it.product.discount || 0) > 0">-{{ (it.product.discount || 0) | number:'1.0-0' }}%</span>
+                <span class="d-type" *ngIf="it.product.tipo === 'manipulado'">Manipulado</span>
+              </div>
+              <h3 class="d-title">{{ it.product.name }}</h3>
+              <div class="d-price">
+                <span class="new">{{ price(it.product) | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
+                <span class="old" *ngIf="it.product.promoPrice != null || (it.product.discount || 0) > 0">{{ it.product.price | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
+              </div>
+              <div class="d-actions">
+                <button type="button" class="btn fav" [class.active]="isFav(it.product)" (click)="onToggleFavFromCard(it.product, $event)" aria-label="Favoritar">❤</button>
+                <button type="button" class="btn add" (click)="onAddToCartFromCard(it.product, $event)" aria-label="Adicionar ao carrinho">🛒</button>
+              </div>
+            </div>
+          </a>
+          <app-product-card-v2 *ngSwitchCase="'product'"
+            [product]="it.product"
+            [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+            [supportsRatings]="storeMeta?.supports?.ratings ?? true"
+            [favoriteActive]="isFav(it.product)"
+            (toggleFav)="toggleFav(it.product)"
+            (add)="onAddToCart(it.product, $event)"
+          ></app-product-card-v2>
+        </ng-container>
+      </ng-container>
+      <div #infiniteAnchor class="infinite-anchor" aria-hidden="true"></div>
     </div>
-    <div class="paginacao" *ngIf="totalPages() > 1 || total > pageSize">
-      <div class="left">
-        <label>Itens por página
-          <select [ngModel]="pageSize" (ngModelChange)="onChangePageSize($event)">
-            <option [ngValue]="20">20</option>
-            <option [ngValue]="40">40</option>
-            <option [ngValue]="60">60</option>
-          </select>
-        </label>
-        <span class="range">{{ pageStart() }}–{{ pageEnd() }} de {{ total }}</span>
-      </div>
-      <div class="right">
-        <button class="icon-btn" (click)="goToPage(1)" [disabled]="!canPrev()" aria-label="Primeira página" title="Primeira página">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M18 6l-6 6 6 6M6 6v12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="icon-btn" (click)="prevPage()" [disabled]="!canPrev()" aria-label="Página anterior" title="Anterior">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <span class="counter" aria-live="polite">{{ page }} / {{ totalPages() }}</span>
-        <button class="icon-btn" (click)="nextPage()" [disabled]="!canNext()" aria-label="Próxima página" title="Próxima">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="icon-btn" (click)="goToPage(totalPages())" [disabled]="!canNext()" aria-label="Última página" title="Última página">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l6 6-6 6M18 6v12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-    </div>
+    <!-- Paginação clássica removida por conta do infinite scroll -->
   </section>
 
   <!-- Modal de Filtros -->

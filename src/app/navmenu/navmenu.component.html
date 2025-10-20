@@ -66,7 +66,7 @@
           </a>
         </div>
   <i class="icon-menu" *ngIf="showFullMenu"><span></span></i>
-  <button *ngIf="!showFullMenu" class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
+  <button *ngIf="!showFullMenu" #userBtn class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="#111827"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="#111827"/></svg>
   </button>
       </div>

@@ -306,7 +306,7 @@ nav {
         width:36px;height:36px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;
         margin-left:8px;box-shadow:0 6px 16px rgba(0,0,0,.06)
       }
-      .user-trigger:hover{filter:brightness(.96)}
+      .user-trigger:hover{filter:brightness(.96); transform: translateZ(0) scale(1.03)}
     }
   }
 
@@ -665,6 +665,10 @@ nav {
   max-height:calc(100vh - 110px);
   overflow:hidden; /* clip inner rounded corners */
   padding:0;
+  /* Animation origin set from TS using --origin-x / --origin-y in [0..1] */
+  --origin-x: .5; --origin-y: 0;
+  transform-origin: calc(var(--origin-x)*100%) calc(var(--origin-y)*100%);
+  will-change: transform, opacity, clip-path;
 }
 
 .cliente-modal-inner{
@@ -709,6 +713,20 @@ nav {
   z-index:1000;
   backdrop-filter: blur(2px);
   animation: overlayIn .18s ease forwards;
+}
+
+/* Appear as if coming out of the trigger button */
+.cliente-modal.anim-enter{ animation: modalPopIn .42s cubic-bezier(.2,.65,.2,1) both }
+.cliente-modal.anim-exit{ animation: modalPopOut .28s cubic-bezier(.4,.0,.2,1) both }
+
+@keyframes modalPopIn{
+  0%{ transform: translate3d(0, -8px, 0) scale(.6); opacity: 0; filter: blur(4px) }
+  60%{ transform: translate3d(0, 2px, 0) scale(1.02); opacity: 1; filter: blur(0) }
+  100%{ transform: translate3d(0, 0, 0) scale(1); opacity: 1 }
+}
+@keyframes modalPopOut{
+  0%{ transform: translate3d(0, 0, 0) scale(1); opacity: 1 }
+  100%{ transform: translate3d(0, -6px, 0) scale(.6); opacity: 0; filter: blur(3px) }
 }
 
 

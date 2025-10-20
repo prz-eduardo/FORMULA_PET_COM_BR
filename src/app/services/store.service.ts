@@ -23,6 +23,8 @@ export interface ShopProduct {
   requiresPrescription?: boolean;
   isFavorited?: boolean;
   favoritesCount?: number;
+  /** Marcado como destaque pelo backend (ou inferido por tag). */
+  featured?: boolean;
   // Details
   promoPrice?: number | null;
   inStock?: boolean | number | null;
@@ -129,6 +131,12 @@ export class StoreService {
         const discountPercent = (it.discount && typeof it.discount.percent === 'number') ? Number(it.discount.percent)
                               : (typeof it.desconto === 'number' ? Number(it.desconto) : 0);
         const desconto = discountPercent || discountFromPromo;
+        // Detecta destaque: campo dedicado ou via tag/flag comum
+        const flagDestaque = (it.destaque ?? it.featured ?? it.highlight ?? it.destaque_home ?? it.destacado);
+        const hasTagDestaque = Array.isArray(it.tags) && it.tags.some((t: any) => {
+          const s = (t?.nome || t?.name || t || '').toString().toLowerCase();
+          return s.includes('destaque') || s.includes('featured') || s.includes('highlight');
+        });
         return {
           id: Number(it.id),
           name: it.nome || it.name,
@@ -144,17 +152,34 @@ export class StoreService {
           isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : (it.is_favorited === 1 ? true : (it.is_favorited === 0 ? false : undefined)),
           favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
           tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
+          featured: typeof flagDestaque === 'boolean' ? flagDestaque
+                    : (flagDestaque === 1 || flagDestaque === '1' ? true : (hasTagDestaque || false)),
         } as ShopProduct;
       });
 
       this.productsSubject.next(list);
-      // Keep favorites list in sync with server flags
+      // Keep favorites list in sync with server flags; merge across paginated loads
       const serverFavIds = list.filter(p => p.isFavorited === true).map(p => p.id);
       const isFavMode = !!params?.myFavorites;
-      // If server returned only favorites but didn't flag is_favorited, fall back to treating all returned IDs as favorites
-      const derivedFavIds = isFavMode && serverFavIds.length === 0 ? list.map(p => p.id) : serverFavIds;
-      this.favoritesSubject.next(derivedFavIds);
-      if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(derivedFavIds));
+      // If listing only favorites, replace entirely; otherwise, merge union with current
+      const currentFavs = new Set(this.favoritesSubject.value);
+      if (isFavMode) {
+        const derivedFavIds = serverFavIds.length === 0 ? list.map(p => p.id) : serverFavIds;
+        this.favoritesSubject.next(derivedFavIds);
+        if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(derivedFavIds));
+      } else {
+        for (const id of serverFavIds) currentFavs.add(id);
+        const merged = Array.from(currentFavs);
+        this.favoritesSubject.next(merged);
+        if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(merged));
+      }
+
+      // Align current products snapshot isFavorited flags to favorites set, so icons render correctly
+      {
+        const favSet = new Set(this.favoritesSubject.value);
+        const aligned = this.productsSubject.value.map(p => ({ ...p, isFavorited: favSet.has(p.id) }));
+        this.productsSubject.next(aligned);
+      }
 
       // Meta and categories/tags support
       const meta: StoreMeta | undefined = (res && !Array.isArray(res) && res.meta) ? {
@@ -247,6 +272,10 @@ export class StoreService {
       const favIds = list.map((it: any) => Number(it.id)).filter((n: any) => Number.isFinite(n));
       this.favoritesSubject.next(favIds);
       if (this.isBrowser()) localStorage.setItem('favorites', JSON.stringify(favIds));
+      // Align product flags with refreshed favorites
+      const favSet = new Set(this.favoritesSubject.value);
+      const aligned = this.productsSubject.value.map(p => ({ ...p, isFavorited: favSet.has(p.id) }));
+      this.productsSubject.next(aligned);
     } catch {
       // ignore; keep local favorites
     }

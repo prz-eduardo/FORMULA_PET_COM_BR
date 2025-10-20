@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, Renderer2 } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, Renderer2, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,9 +17,13 @@ import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.co
   templateUrl: './loja.component.html',
   styleUrls: ['./loja.component.scss']
 })
-export class LojaComponent implements OnInit {
+export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   categorias: StoreCategory[] = [];
   produtos: ShopProduct[] = [];
+  // Infinite scroll accumulation
+  private accum: ShopProduct[] = [];
+  private chunks: Array<{ items: ShopProduct[]; banner?: ShopProduct | null }> = [];
+  private usedFeatured = new Set<number>();
   storeMeta: StoreMeta | null = null;
   filtro = '';
   categoria = '';
@@ -61,6 +65,8 @@ export class LojaComponent implements OnInit {
 
   @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('profileBtn') profileBtn?: ElementRef<HTMLButtonElement>;
+  @ViewChild('infiniteAnchor') infiniteAnchor?: ElementRef<HTMLDivElement>;
+  private io?: IntersectionObserver;
 
   constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
 
@@ -68,6 +74,14 @@ export class LojaComponent implements OnInit {
     this.store.products$.subscribe(p => this.produtos = p);
   this.store.categories$.subscribe(c => this.categorias = c);
   this.store.meta$.subscribe(m => this.storeMeta = m);
+    // React to global auth changes (login from Área do Cliente modal, etc.)
+    this.auth.isLoggedIn$.subscribe(async ok => {
+      if (ok) {
+        await this.fetchMe();
+        await this.store.refreshFavorites();
+        await this.fetchProducts(true); // reset and reload with personalization
+      }
+    });
     // try fetch me silently
     await this.fetchMe();
     // If not logged in, clear cart as requested
@@ -91,16 +105,39 @@ export class LojaComponent implements OnInit {
         if ((valid as readonly string[]).includes(srt)) this.sort = srt as any;
       }
       // fetch with current params
-      await this.fetchProducts();
+      await this.fetchProducts(true);
     });
     // initial fetch (in case there are no query params)
-    await this.fetchProducts();
+    await this.fetchProducts(true);
+  }
+
+  ngAfterViewInit(): void {
+    // Set up infinite scroll observer in browser only
+    if (typeof window === 'undefined') return;
+    if (!('IntersectionObserver' in window)) return;
+    this.io = new IntersectionObserver(entries => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          this.loadNextPageIfNeeded();
+        }
+      }
+    }, { rootMargin: '240px' });
+    if (this.infiniteAnchor?.nativeElement) this.io.observe(this.infiniteAnchor.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    try { this.io?.disconnect(); } catch {}
+  }
+
+  // Base list to display: accumulated (infinite) if present, else latest page
+  private baseList(): ShopProduct[] {
+    return (this.accum.length ? this.accum : this.produtos) || [];
   }
 
   get filtered(): ShopProduct[] {
     // Deixe o servidor cuidar de categoria, busca e ordenação.
     // Mantemos a lista como veio do backend; local só faz favoritos quando necessário.
-    let base = this.produtos;
+    let base = this.baseList();
     if (this.onlyFavorites) {
       // Em modo favoritos, ainda assim buscamos no servidor, mas caso venha tudo, garantimos estado local coerente
       base = base.filter(p => this.isFav(p));
@@ -119,6 +156,45 @@ export class LojaComponent implements OnInit {
   // Paginated slice of filtered (server paginates; local slice only if we truly filtered local-only)
   get paginated(): ShopProduct[] {
     return this.filtered;
+  }
+
+  // Destaques: seleciona até 5 itens marcados como featured nesta página, priorizando maior desconto
+  // Build a unified list interleaving a big banner (featured) once per loaded page chunk
+  get interleaved(): Array<{ type: 'product'|'banner'; product: ShopProduct }>{
+    const out: Array<{ type: 'product'|'banner'; product: ShopProduct }> = [];
+    for (const ch of this.chunks) {
+      const items = [...ch.items];
+      if (!items.length && ch.banner) {
+        out.push({ type: 'banner', product: ch.banner });
+        continue;
+      }
+      const insertIndex = Math.max(1, Math.floor(items.length / 2));
+      const before = items.slice(0, insertIndex);
+      const after = items.slice(insertIndex);
+      for (const p of before) out.push({ type: 'product', product: p });
+      if (ch.banner) out.push({ type: 'banner', product: ch.banner });
+      for (const p of after) out.push({ type: 'product', product: p });
+    }
+    return out;
+  }
+
+  // Top highlights section (desktop-only): featured items limited and sorted
+  get featuredTop(): ShopProduct[] {
+    const feats = this.baseList().filter(p => (p as any).featured && this.passesLocalFilters(p));
+    if (!feats.length) return [];
+    const sorted = [...feats].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    return sorted.slice(0, 5);
+  }
+
+  get featuredRow(): ShopProduct[] { return this.featuredTop.slice(0, 3); }
+
+  onToggleFavFromCard(p: ShopProduct, ev: Event) {
+    ev.preventDefault(); ev.stopPropagation();
+    this.toggleFav(p);
+  }
+  onAddToCartFromCard(p: ShopProduct, ev: Event) {
+    ev.preventDefault(); ev.stopPropagation();
+    this.onAddToCart(p, ev);
   }
   totalPages(): number { return this.totalPagesSrv; }
   pageStart(): number { return (this.page - 1) * this.pageSize + 1; }
@@ -245,7 +321,7 @@ export class LojaComponent implements OnInit {
     // Selecting a normal category disables promo-only mode
     this.promoOnly = false;
     this.page = 1;
-    await this.fetchProducts();
+    await this.fetchProducts(true);
     this.persistQueryParams();
   }
   async selectPromotions() {
@@ -253,11 +329,11 @@ export class LojaComponent implements OnInit {
     this.promoOnly = true;
     this.categoria = '';
     this.page = 1;
-    await this.fetchProducts();
+    await this.fetchProducts(true);
     this.persistQueryParams();
   }
-  async onSortChange(val: 'relevance'|'newest'|'price_asc'|'price_desc'|'rating'|'popularity') { this.sort = val; this.page = 1; await this.fetchProducts(); this.persistQueryParams(); }
-  async onQueryChange(val: string) { this.filtro = val; this.page = 1; await this.fetchProducts(); this.persistQueryParams(); }
+  async onSortChange(val: 'relevance'|'newest'|'price_asc'|'price_desc'|'rating'|'popularity') { this.sort = val; this.page = 1; await this.fetchProducts(true); this.persistQueryParams(); }
+  async onQueryChange(val: string) { this.filtro = val; this.page = 1; await this.fetchProducts(true); this.persistQueryParams(); }
 
   isFav(p: ShopProduct) { return this.store.isFavorite(p.id); }
   async toggleFav(p: ShopProduct) {
@@ -337,7 +413,7 @@ export class LojaComponent implements OnInit {
     if (!this.onlyFavorites) {
       // back to server pagination
       this.page = 1;
-      this.fetchProducts();
+      this.fetchProducts(true);
     }
   }
 
@@ -528,10 +604,16 @@ export class LojaComponent implements OnInit {
     this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
   }
 
-  private async fetchProducts() {
+  private async fetchProducts(reset: boolean = false) {
     const sortMap = { relevance: 'relevance', newest: 'newest', price_asc: 'price_asc', price_desc: 'price_desc', rating: 'rating', popularity: 'popularity', my_favorites: 'my_favorites' } as const;
     try {
       this.loading = true;
+      if (reset) {
+        this.accum = [];
+        this.chunks = [];
+        this.usedFeatured.clear();
+        this.page = 1;
+      }
       const useFavs = this.onlyFavorites ? true : undefined;
       const effectiveSort = this.onlyFavorites ? 'my_favorites' : sortMap[this.sort];
       const selected = this.categorias.find(c => c.nome === this.categoria);
@@ -551,9 +633,50 @@ export class LojaComponent implements OnInit {
       this.totalPagesSrv = res.totalPages;
       this.page = res.page; // in case server adjusted
       this.pageSize = res.pageSize;
+      // Current page items as provided by store
+      const current = (this.produtos || []).slice();
+      // Append to accumulation (dedupe by id)
+      const seen = new Set(this.accum.map(p => p.id));
+      for (const p of current) { if (!seen.has(p.id)) { this.accum.push(p); seen.add(p.id); } }
+      // Build chunk: normal products (non-featured) with local filters applied
+      const items = current.filter(p => !((p as any).featured) && this.passesLocalFilters(p));
+      const banner = this.pickBanner(current);
+      this.chunks.push({ items, banner });
     } finally {
       this.loading = false;
     }
+  }
+
+  private async loadNextPageIfNeeded() {
+    if (this.loading) return;
+    if (!this.canNext()) return;
+    this.page++;
+    await this.fetchProducts(false);
+  }
+
+  private passesLocalFilters(p: ShopProduct): boolean {
+    const minP = typeof this.minPrice === 'number' ? this.minPrice : undefined;
+    const maxP = typeof this.maxPrice === 'number' ? this.maxPrice : undefined;
+    if (minP != null && this.price(p) < minP) return false;
+    if (maxP != null && this.price(p) > maxP) return false;
+    if (this.promoOnly && !((p.discount || 0) > 0)) return false;
+    if (typeof this.minRating === 'number' && this.minRating > 0 && (p.rating || 0) < this.minRating) return false;
+    if (this.inStockOnly && !(p.stock != null && p.stock > 0)) return false;
+    if (this.onlyFavorites && !this.isFav(p)) return false;
+    return true;
+  }
+
+  private pickBanner(pageItems: ShopProduct[]): ShopProduct | null {
+    // Prefer featured in this page that pass local filters and not used yet; pick highest discount
+    const candidates = pageItems.filter(p => (p as any).featured && this.passesLocalFilters(p) && !this.usedFeatured.has(p.id));
+    const sorted = candidates.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    const pick = sorted[0];
+    if (pick) { this.usedFeatured.add(pick.id); return pick; }
+    // Fallback: pick any global featured not used yet from accumulation
+    const global = this.accum.filter(p => (p as any).featured && this.passesLocalFilters(p) && !this.usedFeatured.has(p.id));
+    const pick2 = global.sort((a, b) => (b.discount || 0) - (a.discount || 0))[0];
+    if (pick2) { this.usedFeatured.add(pick2.id); return pick2; }
+    return null;
   }
 
   async doLogin() {

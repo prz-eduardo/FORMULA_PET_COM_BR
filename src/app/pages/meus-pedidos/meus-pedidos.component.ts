@@ -121,26 +121,33 @@ export class MeusPedidosComponent {
 
   statusSteps(p: any){
     const status = (p?.status || '').toLowerCase();
-    const pg = (p?.pagamento_status || '').toLowerCase();
-    // Mapa de ordem de progresso
-    const orderIndex: Record<string, number> = {
-      'criado': 0,
-      'pago': 2, // após pagamento consideramos preparo ativo
-      'em_preparo': 2,
-      'enviado': 3,
-      'concluido': 4,
-      'cancelado': 0
-    };
-    const idx = status in orderIndex ? orderIndex[status] : 0;
-    const pagamentoDone = pg === 'aprovado' || idx >= 2;
-    const pagamentoActive = !pagamentoDone && (pg === 'pendente' || pg === 'aguardando');
-    const steps = [
-      { key: 'criado', label: 'Criado', done: idx >= 0, active: idx === 0 && !pagamentoActive },
-      { key: 'pagamento', label: 'Pagamento', done: pagamentoDone, active: pagamentoActive },
-      { key: 'preparo', label: 'Em preparo', done: idx >= 2, active: idx === 2 },
-      { key: 'envio', label: 'Enviado', done: idx >= 3, active: idx === 3 },
-      { key: 'concluido', label: 'Concluído', done: idx >= 4, active: idx === 4 }
-    ];
+    // Ordem oficial:
+    const flow = ['criado','aguardando_pagamento','pago','em_preparo','enviado','concluido'];
+    const idx = Math.max(0, flow.indexOf(status));
+    const steps = flow.map((k, i) => ({
+      key: k,
+      label: this.statusLabel(k),
+      done: idx >= i,
+      active: idx === i
+    }));
+    // Se cancelado, marca apenas 'criado' como done e desativa os demais
+    if (status === 'cancelado'){
+      return steps.map((s, i) => ({ ...s, done: i === 0, active: false }));
+    }
     return steps;
+  }
+
+  statusLabel(s: string){
+    const k = (s || '').toLowerCase();
+    switch(k){
+      case 'criado': return 'Criado';
+      case 'aguardando_pagamento': return 'Aguardando pgto';
+      case 'pago': return 'Pago';
+      case 'em_preparo': return 'Em preparo';
+      case 'enviado': return 'Enviado';
+      case 'concluido': return 'Concluído';
+      case 'cancelado': return 'Cancelado';
+      default: return s || '—';
+    }
   }
 }
