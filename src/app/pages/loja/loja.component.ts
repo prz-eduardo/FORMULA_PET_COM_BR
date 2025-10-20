@@ -105,7 +105,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.route.queryParamMap.subscribe(async params => {
       const q = params.get('q');
       const cat = params.get('cat');
-      const login = params.get('login');
+  const login = params.get('login');
       const fav = params.get('fav');
       const srt = params.get('sort');
       const prom = params.get('promo');
@@ -113,7 +113,9 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
       if (cat !== null) this.categoria = cat;
       // promo flag from URL
       this.promoOnly = prom === '1';
-      if (login === '1') this.openLoginNearProfile();
+      if (login === '1') {
+        if (!this.me) this.openLoginAfterScrollTop(); else this.openLoginNearProfile();
+      }
       this.onlyFavorites = fav === '1';
       if (srt) {
         const valid = ['relevance','newest','price_asc','price_desc','rating','popularity','my_favorites'] as const;
@@ -389,8 +391,8 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   isFav(p: ShopProduct) { return this.store.isFavorite(p.id); }
   async toggleFav(p: ShopProduct) {
     // Require login
-    const logged = await this.store.isClienteLoggedSilent();
-    if (!logged) { this.openLoginNearProfile(); return; }
+  const logged = await this.store.isClienteLoggedSilent();
+  if (!logged) { this.openLoginAfterScrollTop(); return; }
     // Optimistic toggle
     const wasFav = this.store.isFavorite(p.id);
     this.store.optimisticFavorite(p.id, !wasFav);
@@ -441,7 +443,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     const ok = await this.store.addToCart(p, 1);
     if (!ok) {
       this.pendingProduct = p;
-      this.openLoginNearProfile();
+      this.openLoginAfterScrollTop();
     }
     return ok;
   }
@@ -454,7 +456,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async onAddToCart(p: ShopProduct, ev: Event) {
     // If not logged in, clicking cart should trigger login
-    if (!this.me) { this.openLoginNearProfile(); return; }
+  if (!this.me) { this.openLoginAfterScrollTop(); return; }
     const ok = await this.addToCart(p);
     if (ok) this.flyToCart(ev);
   }
@@ -462,7 +464,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   // If user clicks cart link and is not logged in, intercept to open login
   onCartClick(ev: MouseEvent) {
     ev.preventDefault();
-    if (!this.me) { this.openLoginNearProfile(); return; }
+  if (!this.me) { this.openLoginAfterScrollTop(); return; }
     this.router.navigate(['/carrinho']);
   }
 
@@ -654,6 +656,31 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showLogin = true;
     this.closingLogin = false;
     this.positionPopover();
+  }
+
+  // When logged out and an action requires login: scroll to top, then open popover
+  private openLoginAfterScrollTop() {
+    try {
+      if (typeof window === 'undefined') { this.openLoginNearProfile(); return; }
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const open = () => setTimeout(() => this.openLoginNearProfile(), 20);
+      // If already at top, just open
+      if (window.scrollY <= 4) { open(); return; }
+      if (prefersReduced) { window.scrollTo({ top: 0 }); open(); return; }
+      let done = false;
+      const onScroll = () => {
+        if (done) return;
+        if (window.scrollY <= 4) {
+          done = true;
+          window.removeEventListener('scroll', onScroll);
+          open();
+        }
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      // Fallback in case the scroll event doesn't fire
+      setTimeout(() => { if (!done) { done = true; window.removeEventListener('scroll', onScroll); open(); } }, 700);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch { this.openLoginNearProfile(); }
   }
 
   private persistQueryParams() {
