@@ -42,6 +42,60 @@
 .icon-pencil{ background:transparent; border:1px solid rgba(255,255,255,0.06); padding:6px 8px; border-radius:8px; margin-left:8px }
 .icon-pencil:hover{ background:rgba(255,255,255,0.02) }
 
+/* Info grid: make read-only rows match form field layout and spacing */
+.info-grid{ display: grid; gap:12px }
+.info-row{ display: grid; grid-template-columns: 220px 1fr; align-items: center; gap:14px }
+.info-row .label{ display:block; font-weight:700; color:rgba(230,238,248,0.9); font-size:14px }
+.info-row .value{ display:block; color:#e6eef8; font-weight:600; }
+
+/* Make values feel less like system inputs: softer rounded background, subtle inset */
+.inline-input{ padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:#e6eef8; box-sizing:border-box; box-shadow: none }
+.inline-input:focus{ outline: none; box-shadow: 0 6px 18px rgba(2,6,23,0.28); border-color: rgba(96,165,250,0.6) }
+.inline-input[disabled], .inline-input[readonly]{ opacity:0.85 }
+
+/* When narrow screens stack label above value/input */
+@media (max-width: 900px){
+  .info-row{ grid-template-columns: 1fr; }
+  .info-row .label{ margin-bottom:8px }
+}
+
+/* Styled select controls that match theme (remove default white box appearance) */
+.field select, select.inline-input, .detail-modal select, .inline-input[type="select"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: rgba(255,255,255,0.02);
+  color: #e6eef8;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 36px 10px 12px;
+  border-radius: 12px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'><path fill='%23e6eef8' d='M7 10L0 0h14z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.field select:focus, select.inline-input:focus { box-shadow: 0 8px 22px rgba(2,6,23,0.18); border-color: rgba(96,165,250,0.6); }
+/* hide IE/Edge expand */
+select::-ms-expand{ display:none }
+
+/* Style native option list where supported (some browsers ignore these) */
+.field select option, .inline-input option {
+  background: linear-gradient(180deg, rgba(15,23,36,0.96), rgba(18,32,50,0.96));
+  color: #e6eef8;
+}
+.field select:focus, .inline-input:focus { outline: none }
+
+/* soften avatar area */
+.avatar-card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.04); }
+.avatar{ width:140px; height:140px; border-radius:18px; }
+.avatar-change{ background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.04) }
+
+/* Avatar action list and pending buttons */
+.avatar-actions{ display:flex; gap:8px; margin-top:8px; justify-content:center }
+.avatar-actions .btn.small{ padding:6px 10px; font-size:13px; border-radius:8px }
+.avatar-actions .danger{ background:#e11d48 }
+.avatar-pending{ display:flex; gap:8px; margin-top:10px; justify-content:center }
+.avatar-pending .btn{ padding:8px 12px }
+
 /* Small FAB inside the card (bottom-right) for quick actions like Meus Endereços */
 .fab-enderecos{
   position: absolute;

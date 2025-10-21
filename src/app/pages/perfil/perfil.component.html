@@ -14,10 +14,23 @@
       <div class="avatar-card card">
         <div class="avatar-wrap">
           <img [src]="avatarSrc()" alt="Avatar" class="avatar"/>
-          <label class="avatar-change" title="Alterar foto">
-            <input type="file" accept="image/*" (change)="onAvatarSelected($event)" />
-            <span class="avatar-pencil" aria-hidden="true">✏️</span>
+          <label class="avatar-change" title="Editar foto">
+            <!-- hidden file input; id used to open programmatically -->
+            <input id="perfil-avatar-file" type="file" accept="image/*" (change)="onAvatarSelected($event)" style="display:none" />
+            <button type="button" class="avatar-pencil" (click)="toggleAvatarOptions()">✏️</button>
           </label>
+
+          <!-- small action list shown when avatarOptionsVisible is true -->
+          <div class="avatar-actions" *ngIf="avatarOptionsVisible">
+            <button class="btn small danger" (click)="confirmRemoveAvatar()">Excluir foto</button>
+            <button class="btn small" (click)="chooseChangeAvatar()">Trocar foto</button>
+          </div>
+
+          <!-- when a change is pending, show Cancel / Salvar -->
+          <div class="avatar-pending" *ngIf="avatarChanged">
+            <button class="btn" (click)="saveAvatarChange()">Salvar</button>
+            <button class="btn btn-sec" (click)="cancelAvatarChange()">Cancelar</button>
+          </div>
         </div>
       
       </div>
@@ -60,14 +73,18 @@
         </header>
         <div class="info-grid">
           <div class="info-row">
-            <span class="label">Email</span>
-            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ email || '-' }}</span>
-            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="email" type="email" />
+            <label class="label">Email</label>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'informacoes'">{{ email || '-' }}</span>
+              <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="email" type="email" />
+            </div>
           </div>
           <div class="info-row">
-            <span class="label">Telefone</span>
-            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ telefone || '-' }}</span>
-            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="telefone" mask="(00) 00000-0000" />
+            <label class="label">Telefone</label>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'informacoes'">{{ telefone || '-' }}</span>
+              <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="telefone" mask="(00) 00000-0000" />
+            </div>
           </div>
           <div class="info-row">
             <span class="label">CPF</span>
@@ -129,16 +146,20 @@
         </header>
         <div class="info-grid">
           <div class="info-row">
-            <span class="label">CEP</span>
-            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.cep || '-' }}</span>
-            <input class="inline-input" *ngIf="editingSection === 'endereco'" [(ngModel)]="endereco.cep" mask="00000-000" (ngModelChange)="onCepInput()" />
+            <label class="label">CEP</label>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.cep || '-' }}</span>
+              <input class="inline-input" *ngIf="editingSection === 'endereco'" [(ngModel)]="endereco.cep" mask="00000-000" (ngModelChange)="onCepInput()" />
+            </div>
           </div>
           <div class="info-row">
-            <span class="label">Endereço</span>
-            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.logradouro || '-' }}, {{ endereco.numero || '-' }}</span>
-            <div *ngIf="editingSection === 'endereco'" style="display:flex; gap:8px; align-items:center;">
-              <input class="inline-input" style="flex:1" [(ngModel)]="endereco.logradouro" />
-              <input class="inline-input" style="width:120px" [(ngModel)]="endereco.numero" />
+            <label class="label">Endereço</label>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.logradouro || '-' }}, {{ endereco.numero || '-' }}</span>
+              <div *ngIf="editingSection === 'endereco'" style="display:flex; gap:8px; align-items:center;">
+                <input class="inline-input" style="flex:1" [(ngModel)]="endereco.logradouro" />
+                <input class="inline-input" style="width:120px" [(ngModel)]="endereco.numero" />
+              </div>
             </div>
           </div>
           <div class="info-row">

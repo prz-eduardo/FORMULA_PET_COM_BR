@@ -1,0 +1,100 @@
+.galeria-container{ padding: 72px 20px 28px; max-width:1200px; margin: 0 auto }
+.galeria-header{ margin-top: 6px; margin-bottom: 18px; }
+
+
+/* Fonts: elegant headline + friendly body */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,700&family=Poppins:wght@400;600;700;800&display=swap');
+:root { --gallery-font: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; --gallery-head: 'Playfair Display', Georgia, 'Times New Roman', serif }
+.galeria-title{ font-family: var(--gallery-head); font-size:40px; color: #2b2b2b; margin:0 0 10px; font-weight:700; letter-spacing: -0.6px; line-height:1.02; text-shadow: 0 4px 18px rgba(11,22,33,0.06) }
+.galeria-subtitle{ margin:0; color:#54646b; font-size:15px; line-height:1.45; font-weight:500; font-family: var(--gallery-font) }
+
+/* decorative flourish under headline */
+.galeria-title{ position:relative; padding-bottom:10px }
+.galeria-title::after{ content:''; display:block; width:56px; height:6px; margin-top:10px; background: linear-gradient(90deg, rgba(255,122,162,0.9), rgba(255,77,109,0.9)); border-radius:999px; box-shadow: 0 6px 18px rgba(255,77,109,0.08); transform-origin:center; opacity:0.95 }
+
+/* give the headline a slightly classical feel */
+.galeria-title{ font-style: normal; text-transform: none }
+.galeria-title small{ display:block; font-family: var(--gallery-font); font-weight:600; font-size:14px; color:#7b8b8f; margin-top:6px }
+
+/* entrance animation for header */
+.galeria-header{ opacity:0; transform:translateY(8px); animation: headerIn .52s cubic-bezier(.2,.9,.3,1) forwards }
+@keyframes headerIn { to { opacity:1; transform:none } }
+.cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px }
+.masonry{
+	column-count: 4;
+	column-gap: 8px;
+}
+
+@media screen and (max-width: 767px) {
+	.masonry { column-count: 2; }
+}
+.masonry-item{
+	break-inside: avoid-column;
+	margin-bottom: 8px;
+	border-radius: 12px;
+	overflow: hidden;
+	position: relative;
+	transform-origin: center;
+	transition: transform .26s ease, box-shadow .26s ease;
+}
+.photo-wrap{ position:relative; display:block }
+.pet-photo{ width:100%; display:block; object-fit:cover; transition: transform .4s ease }
+
+.masonry-item.small .pet-photo{ height:160px }
+.masonry-item.medium .pet-photo{ height:240px }
+.masonry-item.large .pet-photo{ height:320px }
+
+.overlay{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:10px; box-sizing:border-box }
+.overlay-top{ display:flex; justify-content:space-between; color:rgba(255,255,255,0.95); font-size:12px; font-weight:700; text-shadow:0 1px 2px rgba(0,0,0,0.6) }
+.overlay-bottom{ display:flex; justify-content:space-between; align-items:center; gap:8px }
+.pet-name{ color:#fff; font-weight:900; text-shadow:0 4px 18px rgba(0,0,0,0.6); font-size:20px }
+.pet-type, .pet-age{ background:rgba(0,0,0,0.35); padding:4px 8px; border-radius:999px }
+
+.actions{ display:flex; gap:8px }
+.btn-like{ border:0; background:rgba(255,255,255,0.12); color:#fff; padding:6px 8px; border-radius:8px; cursor:pointer }
+.btn-like.active{ background: linear-gradient(90deg,#ff7aa2,#ff4d6d); box-shadow:0 6px 18px rgba(255,77,109,0.18) }
+
+/* hover lift */
+.masonry-item:hover{ transform: translateY(-6px); box-shadow: 0 18px 48px rgba(18,38,63,0.12) }
+.masonry-item:hover .pet-photo{ transform: scale(1.03) }
+
+.pet-actions{ width:100%; display:flex; justify-content:flex-end; padding-top:8px }
+.btn-like{ border:0; background:transparent; cursor:pointer; font-size:16px; display:inline-flex; align-items:center; gap:6px; padding:6px 8px; border-radius:8px; transition:all .18s ease }
+.btn-like .likes-count{ font-weight:700 }
+.btn-like.active{ background:rgba(245,0,87,0.08); transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,0.06) }
+
+/* Reaction picker: expands to the left of the heart button */
+.reaction-wrapper{ position:relative; display:inline-flex; align-items:center }
+
+/* default picker: left of the like button with a smooth scale+translate+fade entrance */
+.reaction-picker{ position:absolute; right:100%; bottom:0; display:flex; gap:8px; padding:8px; background:rgba(11,22,33,0.92); border-radius:999px; box-shadow: 0 14px 40px rgba(2,6,23,0.55); transform-origin: right center; animation: pickerOpen .2s cubic-bezier(.2,.9,.3,1) forwards; opacity:0 }
+.reaction-picker::after{ content:''; position:absolute; right:-8px; top:50%; transform:translateY(-50%) rotate(45deg); width:14px; height:14px; background:rgba(11,22,33,0.92); border-radius:2px }
+.reaction-btn{ border:0; background:transparent; color:#fff; font-size:18px; padding:8px; border-radius:999px; cursor:pointer; transition: transform .14s ease, box-shadow .14s ease }
+.reaction-btn:hover{ transform:translateY(-6px) scale(1.08); box-shadow:0 10px 24px rgba(0,0,0,0.36) }
+
+@keyframes pickerOpen {
+	0% { opacity:0; transform: translate(10px,6px) scale(.92); }
+	60% { opacity:1; transform: translate(-4px, -2px) scale(1.04); }
+	100% { opacity:1; transform: translate(0,0) scale(1); }
+}
+
+/* Mobile specific: larger touch targets and position picker above/left of the like button */
+@media screen and (max-width: 640px) {
+	.reaction-btn{ font-size:24px; padding:12px; line-height:1 }
+	/* place the picker slightly above and to the left of the heart so it sits next to the name */
+	.reaction-picker{ right: auto; left: 10px; bottom: calc(100% + 8px); transform-origin: left bottom; padding:10px 14px }
+	.reaction-picker::after{ left:18px; right:auto; top:100%; transform: translateY(-6px) rotate(45deg) }
+	/* shift the name downward so emoji row doesn't overlap */
+	.pet-name{ transition: transform .22s cubic-bezier(.2,.9,.3,1), opacity .18s ease }
+	.pet-name.shifted{ transform: translateY(20px); opacity:0.98 }
+	.reaction-picker{ z-index: 120 }
+}
+
+/* slightly offset name on narrow but not tiny screens */
+@media screen and (min-width: 641px) and (max-width: 900px) {
+	.reaction-picker{ right:100%; bottom:8px }
+	.pet-name.shifted{ transform: translateX(-28px); transition: transform .18s ease }
+}
+
+.loading-more{ text-align:center; padding:12px; color:#374151 }
+.sentinel{ height:1px }

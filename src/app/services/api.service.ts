@@ -399,6 +399,28 @@ export class ApiService {
     });
   }
 
+  // Galeria pública de pets (paginação)
+  getGaleriaPublica(params?: { page?: number; pageSize?: number }) {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/pets/galeria-publica${qp ? `?${qp}` : ''}`;
+    return this.http.get<any>(url);
+  }
+
+  // Reações em pets
+  postPetReaction(petId: string | number, body: { tipo?: string; comentario?: string }, token: string) {
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    return this.http.post<any>(`${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/reacoes`, body, { headers });
+  }
+
+  deletePetReaction(petId: string | number, body?: { tipo?: string }, token?: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    // some backends accept body on DELETE; HttpClient allows it via options.body
+    return this.http.request<any>('delete', `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/reacoes`, { headers, body: body || undefined });
+  }
+
   // Buscar cliente com pets incluídos
   buscarClienteComPets(cpf: string, token: string): Observable<any> {
     const cpfLimpo = cpf.replace(/\D/g, '');

@@ -1,0 +1,47 @@
+<app-navmenu></app-navmenu>
+
+<main class="galeria-container container">
+  <header class="galeria-header">
+    <h1 class="galeria-title">Galeria de Pets 🐾</h1>
+    <p class="galeria-subtitle">Uma curadoria carinhosa das melhores fotos da nossa comunidade. Veja, emocione-se e espalhe afeto.</p>
+  </header>
+  <div *ngIf="loading" class="card">Carregando galeria...</div>
+  <div *ngIf="error" class="card danger">{{ error }}</div>
+
+  <div class="masonry">
+    <div *ngFor="let p of pets" class="masonry-item card" [ngClass]="p.size">
+      <div class="photo-wrap">
+        <img [src]="p.foto || p.photo || p.photoURL || '/imagens/image.png'" alt="Foto do pet" class="pet-photo" />
+        <div class="overlay">
+          <div class="overlay-top">
+            <div class="pet-type" [attr.aria-label]="(p.tipo || p.especie || 'Pet')">{{ typeEmoji(p.tipo || p.especie) }}</div>
+            <div class="pet-age">{{ (p.idade || p.age) ? (p.idade || p.age) + ' anos' : '' }}</div>
+          </div>
+          <div class="overlay-bottom">
+            <div class="pet-name" [class.shifted]="reactionPickerOpenFor === p.id">{{ p.nome || p.name || 'Sem nome' }}</div>
+            <div class="actions">
+              <div class="reaction-wrapper" [attr.data-pet-id]="p.id">
+                <!-- heart opens the reaction picker instead of immediately toggling -->
+                <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p)">
+                  {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : '❤️' }}
+                  <span class="likes-count">{{ p.likes ?? 0 }}</span>
+                </button>
+
+                <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p.id" (click)="$event.stopPropagation()">
+                  <div class="reaction-row">
+                    <button *ngFor="let r of reactionTypes" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo">{{ r.emoji }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="loading-more" *ngIf="loadingMore">Carregando mais pets…</div>
+  <div #sentinel class="sentinel" aria-hidden="true"></div>
+</main>
+
+<app-footer></app-footer>

@@ -18,6 +18,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   previousScroll: number = 0;
   isVisible = true;
   currentRoute: string = '';
+  useGaleriaSvg = false;
   cartCount = 0;
   menuOpen = false;
   isCliente = false;

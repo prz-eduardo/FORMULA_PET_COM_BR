@@ -21,11 +21,11 @@
           <td>{{ getFormName(r.form_id) || r.form_id }}</td>
           <td>
             <span *ngIf="r.dose_amount && r.dose_unit_code">{{ r.dose_amount }} {{ r.dose_unit_code }}</span>
-            <span *ngIf="!r.dose_amount">—</span>
+            <span *ngIf="!r.dose_amount">-</span>
           </td>
           <td>{{ r.output_unit_code }}<span *ngIf="r.output_quantity_per_batch"> · lote {{ r.output_quantity_per_batch }}</span></td>
-          <td>{{ (r.price!=null) ? (r.price | currency:'BRL':'symbol-narrow') : '—' }}</td>
-          <td>{{ r.estimate?.producible_units ?? '—' }}</td>
+          <td>{{ (r.price!=null) ? (r.price | currency:'BRL':'symbol-narrow') : '-' }}</td>
+          <td>{{ r.estimate?.producible_units ?? '-' }}</td>
           <td><span [style.color]="(r.active ? '#22c55e' : '#f59e0b')">{{ r.active ? 'Ativa' : 'Inativa' }}</span></td>
           <td>
             <button class="btn secondary" (click)="editFormula(r)">Editar</button>
@@ -122,7 +122,7 @@
                 <li *ngFor="let op of itemSugestoes[i]" (click)="selecionarItemAtivo(i, op)">{{ op.ativo_nome }}</li>
               </ul>
               <input type="hidden" formControlName="ativo_id" />
-              <small class="muted" *ngIf="c.value?.ativo_id">Selecionado: {{ getAtivoNomeById(c.value?.ativo_id) || '—' }}</small>
+              <small class="muted" *ngIf="c.value?.ativo_id">Selecionado: {{ getAtivoNomeById(c.value?.ativo_id) || '-' }}</small>
             </div>
           </div>
           <div class="field grow" *ngIf="c.value.tipo==='insumo'">

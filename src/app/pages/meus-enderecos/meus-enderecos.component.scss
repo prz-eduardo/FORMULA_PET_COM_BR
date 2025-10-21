@@ -4,8 +4,46 @@
 .top-actions{ display:flex; gap:12px; align-items:center; margin-bottom:16px }
 .spacer{ flex:1 }
 .address-list{ display:grid; gap:12px }
-.address-card{ background: linear-gradient(180deg,#f2f9ff,#eef7ff); color:#0f172a; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 8px 24px rgba(2,6,23,0.06); cursor:pointer }
-.address-card .label{ font-weight:800 }
+.address-card{
+	background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+	color: #e6eef8;
+	border-radius: 14px;
+	padding: 14px 16px;
+	display:flex;
+	gap:12px;
+	align-items:center;
+	box-shadow: 0 12px 30px rgba(2,6,23,0.12);
+	cursor: pointer;
+	border: 1px solid rgba(255,255,255,0.04);
+}
+.address-card .label{ font-weight:800; font-size:16px; color: #e6eef8 }
+.address-card .rua{ color: rgba(230,238,248,0.9); font-size:14px }
+.address-card .meta { color: rgba(230,238,248,0.65); font-size:13px }
+
+/* card actions smaller, subtle */
+.card-actions .icon{ background: rgba(255,255,255,0.03); color: #e6eef8 }
+
+/* detail modal inputs: soften field backgrounds and radii */
+.detail-modal input, .detail-modal textarea, .detail-modal select {
+	background: rgba(255,255,255,0.02);
+	border-radius: 10px;
+	border: 1px solid rgba(255,255,255,0.06);
+	box-shadow: none;
+}
+
+/* Style select to avoid white native dropdown box */
+.detail-modal select, .detail-modal select:focus {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	padding-right: 44px;
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'><path fill='%23e6eef8' d='M7 10L0 0h14z'/></svg>");
+	background-repeat: no-repeat;
+	background-position: right 12px center;
+}
+
+	/* dropdown options color */
+	.detail-modal select option { background: #0f1724; color: #e6eef8 }
 .address-card .rua{ color:#334155 }
 .address-card .meta{ color:#475569; font-size:13px }
 .card-actions{ display:flex; gap:8px }

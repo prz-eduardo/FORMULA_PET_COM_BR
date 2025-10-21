@@ -73,6 +73,12 @@ export class PerfilComponent {
   avatarPreview: string | null = null;
   private _avatarObjectUrl: string | null = null;
 
+  // Avatar edit flow state
+  avatarOptionsVisible = false; // show Excluir / Trocar actions
+  avatarPendingFile: File | null = null; // file chosen but not yet saved
+  avatarOriginalUrl?: string | null = null; // to restore on cancel
+  avatarChanged = false; // whether there's a pending change to save
+
   constructor(
     private api: ApiService,
     private auth: AuthService,
@@ -172,15 +178,99 @@ export class PerfilComponent {
       const input = ev.target as HTMLInputElement;
       if (!input.files || input.files.length === 0) return;
       const file = input.files[0];
+      // keep original so cancel can restore it
+  const _u: any = (this.me && (this.me as any).user) || {};
+  if (!this.avatarOriginalUrl) this.avatarOriginalUrl = _u.photoURL || null;
       if (this._avatarObjectUrl) {
         URL.revokeObjectURL(this._avatarObjectUrl);
         this._avatarObjectUrl = null;
       }
       this._avatarObjectUrl = URL.createObjectURL(file);
       this.avatarPreview = this._avatarObjectUrl;
-      // Note: actual upload/save should be handled in salvar() or a dedicated endpoint.
+      this.avatarPendingFile = file;
+      this.avatarChanged = true;
+      // when a file is chosen, show Save/Cancel (hide basic options)
+      this.avatarOptionsVisible = false;
+      // Note: actual upload/save should be handled in saveAvatarChange() or a dedicated endpoint.
     } catch (e) {
       console.error('Erro ao selecionar avatar', e);
+    }
+  }
+
+  toggleAvatarOptions() {
+    this.avatarOptionsVisible = !this.avatarOptionsVisible;
+  }
+
+  chooseChangeAvatar() {
+    // programmatically open file input
+    const el = document.getElementById('perfil-avatar-file') as HTMLInputElement | null;
+    if (el) el.click();
+  }
+
+  confirmRemoveAvatar() {
+    // mark as changed and clear preview (user intends to remove)
+  const _u2: any = (this.me && (this.me as any).user) || {};
+  if (!this.avatarOriginalUrl) this.avatarOriginalUrl = _u2.photoURL || null;
+    if (this.avatarPreview) {
+      if (this._avatarObjectUrl) {
+        URL.revokeObjectURL(this._avatarObjectUrl);
+        this._avatarObjectUrl = null;
+      }
+      this.avatarPreview = null;
+    }
+    this.avatarPendingFile = null;
+    this.avatarChanged = true;
+    this.avatarOptionsVisible = false;
+  }
+
+  cancelAvatarChange() {
+    // revoke pending preview and restore original
+    if (this._avatarObjectUrl) {
+      URL.revokeObjectURL(this._avatarObjectUrl);
+      this._avatarObjectUrl = null;
+    }
+    this.avatarPendingFile = null;
+    this.avatarChanged = false;
+    // restore original (if any)
+    if (this.avatarOriginalUrl) {
+      this.avatarPreview = this.avatarOriginalUrl;
+      this.avatarOriginalUrl = undefined;
+    }
+  }
+
+  saveAvatarChange() {
+    // integrate with existing salvar/update flow. Here we'll call updateCliente with a FormData if there's a file,
+    // or send a null/empty photoURL to remove the avatar.
+    if (!this.me || !this.me.user) return;
+    if (this.avatarPendingFile) {
+      const fd = new FormData();
+      fd.append('photo', this.avatarPendingFile);
+      // If your API supports multipart upload for photo, call it here. We'll assume updateCliente accepts multipart.
+      this.api.updateCliente(this.me.user.id, fd as any, this.token as string).subscribe({
+        next: (res: any) => {
+          this.toast.show('Foto atualizada');
+          // clear pending state and refresh local user photo
+          (this.me!.user as any).photoURL = res?.photoURL || this.avatarPreview || (this.me!.user as any).photoURL;
+          this.avatarPendingFile = null;
+          this.avatarChanged = false;
+          this.avatarOriginalUrl = undefined;
+        },
+        error: (err: any) => {
+          this.toast.show('Erro ao enviar foto');
+        }
+      });
+    } else if (this.avatarChanged && !this.avatarPendingFile) {
+      // user chose to remove avatar
+      const payload = { photoURL: null } as any;
+      this.api.updateCliente(this.me.user.id, payload, this.token as string).subscribe({
+        next: (res: any) => {
+          this.toast.show('Foto removida');
+          (this.me!.user as any).photoURL = null;
+          this.avatarChanged = false;
+          this.avatarOriginalUrl = undefined;
+        },
+        error: (err: any) => this.toast.show('Erro ao remover foto')
+      });
     }
   }
 

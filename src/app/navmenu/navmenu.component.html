@@ -49,19 +49,27 @@
         <div class="secondary-icons">
           <!-- Mapa (Google Maps) -->
           <a href="https://www.google.com/maps/search/?api=1&query=Rua+Treze+de+Maio,+506,+Conjunto+04,+São+Francisco,+Curitiba,+PR,+CEP+80510-030" target="_blank" rel="noopener" title="Abrir no Google Maps" aria-label="Abrir no Google Maps">
-            <i class="icon-second"><img src="/icones/mapa-pata.png" class="icones-menu" width="24" height="24" alt="Mapa"></i>
+            <i class="icon-second" [class.active]="currentRoute.startsWith('/area-vet')"><img src="/icones/mapa-pata.png" class="icones-menu" width="24" height="24" alt="Mapa"></i>
           </a>
-          <!-- Telefone (liga para a loja) -->
-          <a href="tel:+554132051910" title="Ligar" aria-label="Ligar para a Fórmula Pet">
-            <i class="icon-second"><img src="/icones/telefone-pata.png" class="icones-menu" width="20" height="20" alt="Telefone"></i>
+          <!-- Galeria (ícone substitui telefone) -->
+          <a [routerLink]="'/galeria'" title="Galeria de pets" aria-label="Abrir Galeria de Pets">
+            <i class="icon-second" [class.active]="currentRoute.startsWith('/galeria')">
+              <img *ngIf="!useGaleriaSvg" src="/icones/galeria-pet.png" class="icones-menu" width="20" height="20" alt="Galeria" (error)="useGaleriaSvg = true">
+              <svg *ngIf="useGaleriaSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path d="M12 13.5C13.933 13.5 15.5 11.933 15.5 10C15.5 8.067 13.933 6.5 12 6.5C10.067 6.5 8.5 8.067 8.5 10C8.5 11.933 10.067 13.5 12 13.5Z" fill="#111827"/>
+                <path d="M6.5 14.5C7.328 14.5 8 15.172 8 16C8 16.828 7.328 17.5 6.5 17.5C5.672 17.5 5 16.828 5 16C5 15.172 5.672 14.5 6.5 14.5Z" fill="#111827"/>
+                <path d="M17.5 14.5C18.328 14.5 19 15.172 19 16C19 16.828 18.328 17.5 17.5 17.5C16.672 17.5 16 16.828 16 16C16 15.172 16.672 14.5 17.5 14.5Z" fill="#111827"/>
+                <path d="M9 18.5C9.552 19.771 10.7 20.7 12 20.7C13.3 20.7 14.448 19.771 15 18.5H9Z" fill="#111827"/>
+              </svg>
+            </i>
           </a>
           <!-- Loja -->
           <a [routerLink]="'/loja'" title="Ir para a loja" aria-label="Ir para a loja">
-            <i class="icon-second"><img src="/icones/loja.png" class="icones-menu" width="22" height="22" alt="Loja"></i>
+            <i class="icon-second" [class.active]="currentRoute.startsWith('/loja')"><img src="/icones/loja.png" class="icones-menu" width="22" height="22" alt="Loja"></i>
           </a>
           <!-- Carrinho (com badge) - visível apenas logado como cliente -->
           <a *ngIf="isCliente" [routerLink]="'/carrinho'" class="cart-link" title="Ir para o carrinho" aria-label="Ir para o carrinho">
-            <i class="icon-second"><img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho"></i>
+            <i class="icon-second" [class.active]="currentRoute.startsWith('/carrinho')"><img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho"></i>
             <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
           </a>
         </div>
@@ -95,6 +103,8 @@
           <img src="/imagens/icons8-instagram-500.png" alt="Instagram" width="36" height="36" />
         </a>
       </li>
+  <!-- Galeria moved to top bar -->
+
     </ul>
   </nav>
 </div>

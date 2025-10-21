@@ -25,7 +25,7 @@
         <tr *ngFor="let it of items()">
           <td>{{it.id}}</td>
           <td>{{it.nome}}</td>
-          <td>{{it.unit_code || '—'}}</td>
+          <td>{{it.unit_code || '-'}}</td>
           <td><span [style.color]="it.active ? '#22c55e' : '#f59e0b'">{{ it.active ? 'Ativo' : 'Inativo' }}</span></td>
           <td><button class="btn secondary" (click)="view(it)">Editar</button></td>
         </tr>
@@ -50,7 +50,7 @@
         <div class="field">
           <label>Unidade</label>
           <select formControlName="unit_code">
-            <option [ngValue]="''">—</option>
+            <option [ngValue]="''">-</option>
             <option *ngFor="let u of units" [ngValue]="u.code">{{u.name}} ({{u.code}})</option>
           </select>
         </div>
@@ -85,7 +85,7 @@
         <div class="field">
           <label>Unidade</label>
           <select formControlName="unit_code">
-            <option [ngValue]="''">—</option>
+            <option [ngValue]="''">-</option>
             <option *ngFor="let u of units" [ngValue]="u.code">{{u.name}} ({{u.code}})</option>
           </select>
         </div>

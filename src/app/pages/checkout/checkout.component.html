@@ -40,7 +40,7 @@
           <div class="emoji">🏪</div>
           <div class="txt">
             <div class="tt">Retirada na loja</div>
-            <div>{{ lojaInfo.nome }} — {{ lojaInfo.endereco }} — CEP {{ lojaInfo.cep }}</div>
+            <div>{{ lojaInfo.nome }} - {{ lojaInfo.endereco }} - CEP {{ lojaInfo.cep }}</div>
             <div>Horário: {{ lojaInfo.horario }}</div>
           </div>
         </div>
@@ -51,9 +51,9 @@
             <div *ngIf="enderecoSelecionado; else noEnd">
               {{ enderecoSelecionado.logradouro }}, {{ enderecoSelecionado.numero }}
               <span *ngIf="enderecoSelecionado.complemento"> - {{ enderecoSelecionado.complemento }}</span>
-              — {{ enderecoSelecionado.bairro }} — {{ enderecoSelecionado.cidade }}/{{ enderecoSelecionado.estado }} — CEP {{ enderecoSelecionado.cep }}
+              - {{ enderecoSelecionado.bairro }} - {{ enderecoSelecionado.cidade }}/{{ enderecoSelecionado.estado }} - CEP {{ enderecoSelecionado.cep }}
             </div>
-            <ng-template #noEnd><em>Endereço não informado — este pedido será separado para retirada na loja.</em></ng-template>
+            <ng-template #noEnd><em>Endereço não informado - este pedido será separado para retirada na loja.</em></ng-template>
             <div class="frete" *ngIf="freteSelecionado">
               <span class="badge">{{ freteSelecionado.nome || freteSelecionado.servico }}</span>
               <span class="sep">•</span>
@@ -158,7 +158,7 @@
       <button class="btn light" (click)="closePixModal()">Fechar</button>
       <button class="btn success" (click)="confirmarPixPago()">Já paguei</button>
     </div>
-    <div class="simulado">Transação simulada — nenhum valor será cobrado.</div>
+    <div class="simulado">Transação simulada - nenhum valor será cobrado.</div>
   </div>
 
   <!-- Modal Cartão (simulado) -->
@@ -185,7 +185,7 @@
       <button class="btn light" (click)="closeCardModal()">Cancelar</button>
       <button class="btn success" (click)="confirmarCartaoPago()">Pagar {{ resumo.total | currency:'BRL' }}</button>
     </div>
-    <div class="simulado">Pagamento simulado — use dados fictícios.</div>
+    <div class="simulado">Pagamento simulado - use dados fictícios.</div>
   </div>
 </div>
 

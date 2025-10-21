@@ -47,6 +47,7 @@ export const routes: Routes = [
   { path: 'pacientes', loadComponent: () => import('./pages/restrito/area-vet/pacientes/pacientes.component').then(m => m.PacientesComponent)},
   { path: 'pacientes/:petId', loadComponent: () => import('./pages/restrito/area-vet/paciente-detalhe/paciente-detalhe.component').then(m => m.PacienteDetalheComponent)},
   { path: 'meus-pets', loadComponent: () => import('./pages/meus-pets/meus-pets.component').then(m => m.MeusPetsComponent)},
+  { path: 'galeria', loadComponent: () => import('./pages/galeria-publica/galeria-publica.component').then(m => m.GaleriaPublicaComponent) },
   { path: 'meus-enderecos', loadComponent: () => import('./pages/meus-enderecos/meus-enderecos.component').then(m => m.MeusEnderecosComponent)},
   { path: 'editar-perfil', loadComponent: () => import('./pages/perfil/perfil.component').then(m => m.PerfilComponent)},
   { path: 'loja', loadComponent: () => import('./pages/loja/loja.component').then(m => m.LojaComponent)},

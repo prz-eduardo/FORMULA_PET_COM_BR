@@ -87,10 +87,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1c2636;
-  padding: 15px 25px;
-  border-radius: 12px;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding: 14px 20px;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(2,6,23,0.12);
 
   .cliente-info {
     display: flex;
@@ -98,16 +98,21 @@
     gap: 15px;
 
     .cliente-photo {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       object-fit: cover;
+      border: 1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 8px 20px rgba(2,6,23,0.12);
     }
 
     .cliente-nome {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 16px;
-      color: var(--primary);
+      color: #e6eef8;
+      background: linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
+      padding: 6px 10px;
+      border-radius: 10px;
     }
   }
 
@@ -133,10 +138,10 @@
 
     .popover {
       position: fixed; /* fixado na viewport para evitar extrapolar containers */
-  background: rgba(29, 39, 55, 0.92);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.04);
       border-radius: 12px;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+      box-shadow: 0 18px 40px rgba(2,6,23,0.14);
       min-width: 200px;
       max-width: calc(100vw - 16px);
       max-height: calc(100vh - 16px);
@@ -160,24 +165,24 @@
         transform: rotate(45deg);
       }
 
-      .popover-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        text-align: left;
-        padding: 10px 12px;
-        color: #ecf0f5;
-        background: transparent;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        text-decoration: none;
-        font-weight: 600;
-        letter-spacing: .2px;
-        transition: background .15s ease, transform .08s ease;
-  &:hover { background: rgba(255,255,255,0.07); }
-        &:active { transform: scale(0.99); }
+    .popover-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    color: #e6eef8;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: .2px;
+    transition: background .12s ease, transform .06s ease;
+  &:hover { background: rgba(255,255,255,0.03); transform: translateX(4px); }
+    &:active { transform: translateX(0); }
 
         &::before {
           content: '';
@@ -214,25 +219,25 @@
   gap: 18px;
   padding: 16px;
 
-  .menu-card {
-  background: #1c2636;
-  color: #e9eef6;
-    border-radius: 12px;
-  padding: 18px;
-    text-align: center;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s ease;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
+    .menu-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      color: #e6eef8;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 10px 22px rgba(2,6,23,0.10);
 
-    &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 16px rgba(0,0,0,0.38);
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 30px rgba(2,6,23,0.14);
+      }
+
+      .card-icon { font-size: 34px; margin-bottom: 8px; }
+      .card-title { font-size: 15px; font-weight: 700; color: #cfe6ff; }
     }
-
-    .card-icon { font-size: 36px; margin-bottom: 10px; }
-    .card-title { font-size: 16px; font-weight: 600; color: var(--primary); }
-  }
 }
 
 /* Pets Cards */

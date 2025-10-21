@@ -15,8 +15,8 @@
   <div class="list" *ngIf="items().length; else emptyTpl">
     <div class="row" *ngFor="let s of items()" (click)="view(s)">
     <div class="name">{{ s.nome }}</div>
-    <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : '—' }}</div>
-      <div class="muted">{{ s.email || s.telefone || s.contato || '—' }}</div>
+    <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : '-' }}</div>
+      <div class="muted">{{ s.email || s.telefone || s.contato || '-' }}</div>
       <div class="badges">
         <span class="chip" [class.ok]="(s.ativo ?? 1)===1">{{ (s.ativo ?? 1)===1 ? 'Ativo' : 'Inativo' }}</span>
       </div>

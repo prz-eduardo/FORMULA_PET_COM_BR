@@ -111,8 +111,8 @@
               <div class="card-head">
                 <div class="tt">📦 Entrega</div>
               </div>
-              <div class="kv"><span class="k">Tipo</span><span class="v">{{ p.raw_shipping?.frete?.nome || p.raw_shipping?.frete?.servico || '—' }}</span></div>
-              <div class="kv"><span class="k">Prazo</span><span class="v">{{ p.raw_shipping?.frete?.prazo_dias ? (p.raw_shipping?.frete?.prazo_dias + ' dia(s)') : '—' }}</span></div>
+              <div class="kv"><span class="k">Tipo</span><span class="v">{{ p.raw_shipping?.frete?.nome || p.raw_shipping?.frete?.servico || '-' }}</span></div>
+              <div class="kv"><span class="k">Prazo</span><span class="v">{{ p.raw_shipping?.frete?.prazo_dias ? (p.raw_shipping?.frete?.prazo_dias + ' dia(s)') : '-' }}</span></div>
               <div class="kv"><span class="k">Frete</span><span class="v">R$ {{ p.totals?.frete_total | number:'1.2-2' }}</span></div>
               <div class="addr" *ngIf="p.endereco_entrega">
                 <div class="name" *ngIf="p.endereco_entrega.nome || p.endereco_entrega.destinatario">{{ p.endereco_entrega.nome || p.endereco_entrega.destinatario }}</div>
@@ -125,8 +125,8 @@
               <div class="card-head">
                 <div class="tt">Pagamento</div>
               </div>
-              <div class="kv"><span class="k">Forma</span><span class="v">{{ p.pagamento_forma || '—' }}</span></div>
-              <div class="kv"><span class="k">Status</span><span class="v">{{ p.pagamento_status || '—' }}</span></div>
+              <div class="kv"><span class="k">Forma</span><span class="v">{{ p.pagamento_forma || '-' }}</span></div>
+              <div class="kv"><span class="k">Status</span><span class="v">{{ p.pagamento_status || '-' }}</span></div>
               <div class="kv"><span class="k">Total</span><span class="v">R$ {{ p.totals?.grand_total | number:'1.2-2' }}</span></div>
             </div>
             <div class="card itens compact">
