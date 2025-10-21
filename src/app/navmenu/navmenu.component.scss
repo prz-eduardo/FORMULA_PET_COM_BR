@@ -1,3 +1,7 @@
+/* Remove highlight/click azul de todos elementos interativos */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
 // Avatar do usuário na navbar
 .user-trigger img {
   width: 36px !important;
