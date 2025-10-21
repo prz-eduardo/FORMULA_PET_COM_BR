@@ -18,6 +18,27 @@ import { HttpClient } from '@angular/common/http';
   providers: [provideNgxMask()]
 })
 export class PerfilComponent {
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+    private toast: ToastService,
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private router: Router
+ ){}
+  /**
+   * Retorna true se a rota atual for uma das que devem ocultar o campo profissão
+   */
+  isPerfilHiddenOnRoute(): boolean {
+    if (!this.router || !this.router.url) return false;
+    const url = this.router.url;
+    return (
+      url.includes('/mapa') ||
+      url.includes('/galeria') ||
+      url.includes('/loja') ||
+      url.includes('/carrinho')
+    );
+  }
   @Input() modal: boolean = false;
   @Input() readOnly: boolean = true;
   @Output() close = new EventEmitter<void>();
@@ -79,13 +100,6 @@ export class PerfilComponent {
   avatarOriginalUrl?: string | null = null; // to restore on cancel
   avatarChanged = false; // whether there's a pending change to save
 
-  constructor(
-    private api: ApiService,
-    private auth: AuthService,
-    private toast: ToastService,
-    private http: HttpClient,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ){}
 
   deletingAccount = false;
 

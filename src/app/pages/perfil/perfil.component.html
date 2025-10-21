@@ -121,7 +121,10 @@
           <div class="info-row">
             <span class="label">Profissão</span>
             <span class="value" *ngIf="editingSection !== 'informacoes'">{{ profissao || '-' }}</span>
-            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="profissao" placeholder="Profissão" title="Informe sua profissão" />
+            <input class="inline-input"
+              *ngIf="editingSection === 'informacoes' && !isPerfilHiddenOnRoute()"
+              [(ngModel)]="profissao"
+              placeholder="Profissão" title="Informe sua profissão" />
           </div>
         </div>
   </section>

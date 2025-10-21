@@ -82,7 +82,7 @@
             </a>
           </div>
         </div>
-  <i class="icon-menu" *ngIf="showFullMenu"><span></span></i>
+  <i class="icon-menu" *ngIf="showFullMenu && !isMenuHiddenOnRoute()" [class.icon-closed]="menuOpen" (click)="toggleMenu()"><span></span></i>
   <button *ngIf="!showFullMenu" #userBtn class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
     <ng-container *ngIf="userFoto; else defaultUserIcon">
       <img [src]="userFoto" alt="Foto do usuário" />

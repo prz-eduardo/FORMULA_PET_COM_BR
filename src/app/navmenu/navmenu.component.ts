@@ -15,6 +15,24 @@ import { gsap } from 'gsap';
   styleUrls: ['./navmenu.component.scss']
 })
 export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
+  /**
+   * Retorna true se a rota atual for uma das que devem ocultar o ícone do menu
+   */
+  isMenuHiddenOnRoute(): boolean {
+    return (
+      this.currentRoute.includes('/mapa') ||
+      this.currentRoute.includes('/galeria') ||
+      this.currentRoute.includes('/loja') ||
+      this.currentRoute.includes('/carrinho')
+    );
+  }
+  toggleMenu(): void {
+    const menu: HTMLElement | null = document.querySelector('.menu');
+    const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
+    if (menu && iconMenu) {
+      this.openMenu(menu, iconMenu);
+    }
+  }
   user: any = null;
   userFoto: string | null = null;
   previousScroll: number = 0;
@@ -55,28 +73,26 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isCliente = false;
     this.user = null;
     this.userFoto = null;
-    // Tenta carregar foto do cliente do localStorage
+    let localUserLoaded = false;
     if (typeof window !== 'undefined' && window.localStorage) {
       const userStr = localStorage.getItem('cliente_me');
       if (userStr) {
         try {
           const userObj = JSON.parse(userStr);
           this.user = userObj;
-          console.log('Carregou dados do cliente do localStorage', userObj);
-          // Corrige para buscar foto dentro de user
           this.userFoto = userObj?.user?.foto || null;
+          localUserLoaded = true;
         } catch {}
       }
     }
-    // Detecta sessão de cliente e busca dados do usuário apenas se não houver no localStorage
     this.store.isClienteLoggedSilent()
       .then(ok => {
         this.isCliente = ok;
-        if (ok && !this.user) {
+        // Só busca do backend se não tiver no localStorage
+        if (ok && !localUserLoaded) {
           this.store.getClienteMe().then(u => {
             this.user = u;
             this.userFoto = u?.foto || null;
-            // Salva no localStorage
             if (typeof window !== 'undefined' && window.localStorage && u) {
               localStorage.setItem('cliente_me', JSON.stringify(u));
             }
@@ -95,23 +111,29 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.auth.isLoggedIn$.subscribe(async ok => {
       if (ok) {
         this.isCliente = await this.store.isClienteLoggedSilent().catch(() => false);
-        if (this.isCliente) {
-          // Só faz nova requisição se não houver user salvo
-          if (!this.user) {
-            this.store.getClienteMe().then(u => {
-              this.user = u;
-              this.userFoto = u?.foto || null;
-              if (typeof window !== 'undefined' && window.localStorage && u) {
-                localStorage.setItem('cliente_me', JSON.stringify(u));
-              }
-            }).catch(() => {
-              this.user = null;
-              this.userFoto = null;
-            });
+        let localUserLoaded = false;
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const userStr = localStorage.getItem('cliente_me');
+          if (userStr) {
+            try {
+              const userObj = JSON.parse(userStr);
+              this.user = userObj;
+              this.userFoto = userObj?.user?.foto || null;
+              localUserLoaded = true;
+            } catch {}
           }
-        } else {
-          this.user = null;
-          this.userFoto = null;
+        }
+        if (this.isCliente && !localUserLoaded) {
+          this.store.getClienteMe().then(u => {
+            this.user = u;
+            this.userFoto = u?.foto || null;
+            if (typeof window !== 'undefined' && window.localStorage && u) {
+              localStorage.setItem('cliente_me', JSON.stringify(u));
+            }
+          }).catch(() => {
+            this.user = null;
+            this.userFoto = null;
+          });
         }
       } else {
         this.isCliente = false;
