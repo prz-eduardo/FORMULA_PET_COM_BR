@@ -1,7 +1,7 @@
 import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, ClienteMeResponse } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -19,8 +19,9 @@ import { HttpClient } from '@angular/common/http';
 })
 export class PerfilComponent {
   @Input() modal: boolean = false;
-  @Input() readOnly: boolean = false;
+  @Input() readOnly: boolean = true;
   @Output() close = new EventEmitter<void>();
+  @Output() navigate = new EventEmitter<string>();
   me: ClienteMeResponse | null = null;
   carregando = true;
   salvando = false;
@@ -68,6 +69,9 @@ export class PerfilComponent {
 
   // validação simples
   emailValido = true;
+  // avatar preview when selecting a new image locally
+  avatarPreview: string | null = null;
+  private _avatarObjectUrl: string | null = null;
 
   constructor(
     private api: ApiService,
@@ -76,6 +80,41 @@ export class PerfilComponent {
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ){}
+
+  deletingAccount = false;
+
+  logout(): void {
+    try { this.auth.logout(); } catch {}
+    // if inside modal, close; otherwise navigate to home
+    try { if (this.modal) this.close.emit(); } catch {}
+    try { const r = (window as any).location; r.href = '/'; } catch {}
+  }
+
+  confirmDeleteAccount(): void {
+    if (!this.me?.user?.id) { this.toast.error('Usuário inválido'); return; }
+    const ok = confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.');
+    if (!ok) return;
+    this.deleteAccount();
+  }
+
+  deleteAccount(): void {
+    if (!this.token || !this.me?.user?.id) { this.toast.error('Não autenticado'); return; }
+    this.deletingAccount = true;
+    this.api.deleteCliente(this.me.user.id, this.token).subscribe({
+      next: () => {
+        this.toast.success('Conta excluída');
+        try { this.auth.logout(); } catch {}
+        try { if (this.modal) this.close.emit(); } catch {}
+        try { (window as any).location.href = '/'; } catch {}
+      },
+      error: (err: any) => {
+        const m = err?.error?.message || err?.message || 'Erro ao excluir conta';
+        this.toast.error(m, 'Erro');
+      },
+      complete: () => { this.deletingAccount = false; }
+    });
+  }
+
 
   private get token(): string | null {
     return isPlatformBrowser(this.platformId) ? this.auth.getToken() : null;
@@ -126,6 +165,186 @@ export class PerfilComponent {
       },
       error: () => { this.carregando = false; }
     });
+  }
+
+  onAvatarSelected(ev: Event) {
+    try {
+      const input = ev.target as HTMLInputElement;
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      if (this._avatarObjectUrl) {
+        URL.revokeObjectURL(this._avatarObjectUrl);
+        this._avatarObjectUrl = null;
+      }
+      this._avatarObjectUrl = URL.createObjectURL(file);
+      this.avatarPreview = this._avatarObjectUrl;
+      // Note: actual upload/save should be handled in salvar() or a dedicated endpoint.
+    } catch (e) {
+      console.error('Erro ao selecionar avatar', e);
+    }
+  }
+
+  avatarSrc(): string {
+    if (this.avatarPreview) return this.avatarPreview;
+    try {
+      const u: any = (this.me && (this.me as any).user) || {};
+      return u.photoURL || '/imagens/image.png';
+    } catch { return '/imagens/image.png'; }
+  }
+
+  // Which section is currently being edited (null = none). Sections: 'informacoes','endereco','preferencias','observacoes'
+  // backups for canceling edits per-section
+  private sectionBackup: any = {};
+
+  editingSection: string | null = null;
+
+  editSection(section: string|null){
+    if (!section) { this.editingSection = null; this.readOnly = true; return; }
+    // create backup snapshot for the section so cancel can restore
+    switch(section){
+      case 'informacoes':
+        this.sectionBackup.informacoes = {
+          nome: this.nome,
+          email: this.email,
+          telefone: this.telefone,
+          telefoneSecundario: this.telefoneSecundario,
+          cpf: this.cpf,
+          rg: this.rg,
+          dataNascimento: this.dataNascimento,
+          genero: this.genero,
+          estadoCivil: this.estadoCivil,
+          profissao: this.profissao
+        };
+        break;
+      case 'endereco':
+        this.sectionBackup.endereco = JSON.parse(JSON.stringify(this.endereco || {}));
+        break;
+      case 'preferencias':
+        this.sectionBackup.preferencias = {
+          contatoPreferido: this.contatoPreferido,
+          horarioPreferido: this.horarioPreferido,
+          prefEmail: this.prefEmail,
+          prefWhats: this.prefWhats,
+          prefMarketing: this.prefMarketing,
+          prefNotificarPedidos: this.prefNotificarPedidos,
+          prefNotificarReceitas: this.prefNotificarReceitas,
+          prefLembrarVacinas: this.prefLembrarVacinas,
+          prefLembrarConsultas: this.prefLembrarConsultas
+        };
+        break;
+      case 'observacoes':
+        this.sectionBackup.observacoes = this.observacoes;
+        break;
+    }
+    // enable overall edit mode when any section enters edit
+    this.editingSection = section;
+    this.readOnly = false;
+    // scroll to top of modal to show form (if in modal)
+    try { window.setTimeout(()=>{ const el = document.querySelector('.perfil-wrapper'); if (el) (el as any).scrollTop = 0; },50); } catch {}
+  }
+
+  cancelEditSection(){
+    const s = this.editingSection;
+    if (!s) return;
+    // restore from backup
+    switch(s){
+      case 'informacoes':
+        if (this.sectionBackup.informacoes) {
+          const b = this.sectionBackup.informacoes;
+          this.nome = b.nome; this.email = b.email; this.telefone = b.telefone; this.telefoneSecundario = b.telefoneSecundario;
+          this.cpf = b.cpf; this.rg = b.rg; this.dataNascimento = b.dataNascimento; this.genero = b.genero; this.estadoCivil = b.estadoCivil; this.profissao = b.profissao;
+        }
+        break;
+      case 'endereco':
+        if (this.sectionBackup.endereco) {
+          this.endereco = JSON.parse(JSON.stringify(this.sectionBackup.endereco));
+        }
+        break;
+      case 'preferencias':
+        if (this.sectionBackup.preferencias) {
+          const b = this.sectionBackup.preferencias;
+          this.contatoPreferido = b.contatoPreferido; this.horarioPreferido = b.horarioPreferido;
+          this.prefEmail = b.prefEmail; this.prefWhats = b.prefWhats; this.prefMarketing = b.prefMarketing;
+          this.prefNotificarPedidos = b.prefNotificarPedidos; this.prefNotificarReceitas = b.prefNotificarReceitas;
+          this.prefLembrarVacinas = b.prefLembrarVacinas; this.prefLembrarConsultas = b.prefLembrarConsultas;
+        }
+        break;
+      case 'observacoes':
+        if (this.sectionBackup.observacoes !== undefined) this.observacoes = this.sectionBackup.observacoes;
+        break;
+    }
+    // clear editing state
+    this.editingSection = null;
+    this.readOnly = true;
+  }
+
+  saveSection(){
+    if (!this.token || !this.me?.user?.id) return;
+    this.salvando = true;
+    const digits = (v: string) => (v||'').replace(/\D/g, '');
+    const end = this.endereco || ({} as any);
+    const enderecoPayload = this.endereco ? {
+      cep: digits(end.cep || ''),
+      logradouro: (end.logradouro||'').trim(),
+      numero: (end.numero||'').trim(),
+      complemento: (end.complemento||'').trim(),
+      bairro: (end.bairro||'').trim(),
+      cidade: (end.cidade||'').trim(),
+      estado: (((end as any).estado || (end as any).uf || '') + '').toUpperCase().slice(0,2),
+      referencia: (end.referencia||'').trim() || undefined,
+      tipo: (end.tipo||'').trim() || undefined
+    } : undefined;
+    const payload: any = {
+      nome: this.nome.trim(),
+      email: this.email.trim(),
+      telefone: digits(this.telefone),
+      telefone2: digits(this.telefoneSecundario) || undefined,
+      rg: (this.rg||'').trim(),
+      genero: this.genero || undefined,
+      estadoCivil: this.estadoCivil || undefined,
+      profissao: this.profissao || undefined,
+      dataNascimento: this.dataNascimento || undefined,
+      endereco: enderecoPayload,
+      preferencias: {
+        email: !!this.prefEmail,
+        whatsapp: !!this.prefWhats,
+        marketing: !!this.prefMarketing,
+        notificarPedidos: !!this.prefNotificarPedidos,
+        notificarReceitas: !!this.prefNotificarReceitas,
+        lembretesVacinas: !!this.prefLembrarVacinas,
+        lembretesConsultas: !!this.prefLembrarConsultas,
+        contatoPreferido: this.contatoPreferido || undefined,
+        horarioPreferido: this.horarioPreferido || undefined
+      },
+      observacoes: this.observacoes || undefined
+    };
+    this.api.updateCliente(this.me.user.id, payload, this.token).subscribe({
+      next: () => {
+        this.toast.success('Perfil atualizado!');
+        // clear backup for this section
+        if (this.editingSection) delete this.sectionBackup[this.editingSection];
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || err?.message || 'Erro ao salvar perfil';
+        this.toast.error(msg, 'Erro');
+      },
+      complete: () => {
+        this.salvando = false;
+        this.editingSection = null;
+        this.readOnly = true;
+      }
+    });
+  }
+
+  // When a specific section is being edited, we still want to display the other sections
+  // in read-only mode. This helper returns true when the named section should be shown
+  // in the read-only column. If we're not editing any section (editingSection === null),
+  // all sections show normally.
+  isSectionReadOnlyVisible(section: string) {
+    if (this.editingSection === null) return true;
+    // always show the section that's being edited as well (to keep context) but its form
+    // will be shown in edit mode elsewhere
+    return true;
   }
 
   salvar(){

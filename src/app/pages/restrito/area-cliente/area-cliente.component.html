@@ -36,21 +36,26 @@
   <!-- Widgets do Cliente -->
   <div class="menu-wrapper" *ngIf="hasAuth && (!modal || !internalView)">
     <div class="menu-cards-wrapper">
+      <!-- Perfil primeiro -->
+      <div class="menu-card" (click)="open('perfil')">
+        <div class="card-icon">👤</div>
+        <div class="card-title">Perfil</div>
+      </div>
       <div class="menu-card" (click)="open('meus-pedidos')">
-        <div class="card-icon">🛒</div>
+        <div class="card-icon">📦</div>
         <div class="card-title">Meus Pedidos</div>
       </div>
       <div class="menu-card" (click)="open('meus-pets')">
         <div class="card-icon">🐶🐱</div>
         <div class="card-title">Meus Pets</div>
       </div>
+      <div class="menu-card" (click)="open('meus-enderecos')">
+        <div class="card-icon">🏠</div>
+        <div class="card-title">Endereços</div>
+      </div>
       <div class="menu-card" (click)="open('novo-pet')">
         <div class="card-icon">➕</div>
         <div class="card-title">Cadastrar Pet</div>
-      </div>
-      <div class="menu-card" (click)="open('perfil')">
-        <div class="card-icon">👤</div>
-        <div class="card-title">Perfil</div>
       </div>
       <div class="menu-card" (click)="open('favoritos')">
         <div class="card-icon">⭐</div>
@@ -59,10 +64,6 @@
       <div class="menu-card" (click)="open('carrinho')">
         <div class="card-icon">🧺</div>
         <div class="card-title">Carrinho</div>
-      </div>
-      <div class="menu-card" (click)="open('loja')">
-        <div class="card-icon">🏬</div>
-        <div class="card-title">Loja</div>
       </div>
     </div>
 

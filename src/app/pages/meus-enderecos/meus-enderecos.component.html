@@ -1,0 +1,95 @@
+<div class="area-like-wrapper">
+  <div class="container">
+    <div class="top-actions">
+      <h1 class="titulo">Meus Endereços</h1>
+      <div class="spacer"></div>
+  <button class="btn" (click)="addEndereco()">Adicionar endereço</button>
+  <div class="loader" *ngIf="loading">Carregando...</div>
+    </div>
+
+    <div class="address-list">
+  <div class="address-card" *ngFor="let e of enderecos">
+        <div class="card-head">
+          <div class="card-left">
+            <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
+          </div>
+          <div class="card-main">
+            <div class="label">{{ e.label }}</div>
+            <div class="rua">{{ e.logradouro }}{{ e.numero ? ', ' + e.numero : '' }}</div>
+            <div class="meta">{{ e.cidade }} - {{ e.estado }} • {{ e.cep }}</div>
+          </div>
+          <div class="card-actions">
+            <button class="icon edit" (click)="$event.stopPropagation(); openDetails(e, true)" title="Editar">✏️</button>
+            <button class="icon del" (click)="$event.stopPropagation(); confirmDelete(e)">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details modal -->
+  <div class="overlay" *ngIf="detailOpen">
+    <div class="detail-modal">
+      <header>
+        <h3>
+          <!-- When editing, show the live label text (or fallback). When not editing, show selected label or generic title. -->
+          {{ editing ? (editModel.label || 'Novo Endereço') : (selected?.label || 'Endereço') }}
+          <!-- Simple live validation: if user typed but label is too short, show hint -->
+          <span *ngIf="editing && editModel.label?.length > 0 && editModel.label?.length < 3" class="label-invalid"> — nome muito curto</span>
+        </h3>
+        <div class="header-actions">
+          <button *ngIf="!editing" class="btn small" (click)="enableEdit()">Editar</button>
+          <button class="close" (click)="closeDetails()" aria-label="Fechar">✕</button>
+        </div>
+      </header>
+      <div class="body">
+        <div *ngIf="!editing">
+          <div class="kv"><div class="k">Rua</div><div class="v">{{ selected?.rua }}</div></div>
+          <div class="kv"><div class="k">Cidade</div><div class="v">{{ selected?.cidade }}</div></div>
+          <div class="kv"><div class="k">UF</div><div class="v">{{ selected?.uf }}</div></div>
+          <div class="kv"><div class="k">CEP</div><div class="v">{{ selected?.cep }}</div></div>
+        </div>
+        <div *ngIf="editing">
+          <label>Label<input [(ngModel)]="editModel.label" /></label>
+          <label>CEP<input [(ngModel)]="editModel.cep" (input)="onCepInputMask($event)" (blur)="onCepBlurLookup()" /></label>
+          <div class="cep-loader" *ngIf="cepCarregando" aria-live="polite" aria-label="Consultando CEP">
+            <div class="dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <label>Rua<input [(ngModel)]="editModel.logradouro" /></label>
+          <label>Número<input [(ngModel)]="editModel.numero" /></label>
+          <label>Complemento<input [(ngModel)]="editModel.complemento" /></label>
+          <label>Bairro<input [(ngModel)]="editModel.bairro" /></label>
+          <label>Cidade<input [(ngModel)]="editModel.cidade" /></label>
+          <label>UF<input maxlength="2" [(ngModel)]="editModel.estado" /></label>
+          <div class="tipo-row">
+            <label class="pill" [class.on]="editModel.tipo === 'casa'" aria-label="Casa" data-tip="Casa"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="casa" /><span class="emoji">🏠</span><span class="tip">Casa</span></label>
+            <label class="pill" [class.on]="editModel.tipo === 'trabalho'" aria-label="Trabalho" data-tip="Trabalho"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="trabalho" /><span class="emoji">💼</span><span class="tip">Trabalho</span></label>
+            <label class="pill" [class.on]="editModel.tipo === 'entrega'" aria-label="Entrega" data-tip="Entrega"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="entrega" /><span class="emoji">📦</span><span class="tip">Entrega</span></label>
+            <label class="pill" [class.on]="editModel.tipo === 'cobranca'" aria-label="Cobrança" data-tip="Cobrança"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="cobranca" /><span class="emoji">🧾</span><span class="tip">Cobrança</span></label>
+            <label class="pill" [class.on]="editModel.tipo === 'outros'" aria-label="Outros" data-tip="Outros"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="outros" /><span class="emoji">📍</span><span class="tip">Outros</span></label>
+          </div>
+        </div>
+      </div>
+      <footer>
+  <button class="btn btn-sec" *ngIf="editing" (click)="cancelEdit()">Cancelar</button>
+  <button class="btn" *ngIf="editing" (click)="saveEdit()">Salvar</button>
+  <button class="btn" *ngIf="!editing" (click)="enableEdit()">Editar</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div class="overlay" *ngIf="confirmOpen">
+    <div class="confirm-modal">
+      <div class="body">Realmente deseja apagar esse endereço?</div>
+      <div class="actions">
+        <button class="btn btn-sec" (click)="confirmOpen=false">Cancelar</button>
+        <button class="btn" (click)="doDeleteConfirmed()">Apagar</button>
+      </div>
+    </div>
+  </div>
+</div>

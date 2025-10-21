@@ -191,3 +191,38 @@ img, video, canvas, svg {
     :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) th,
     :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) td { white-space: nowrap; font-size: 13px; padding: 8px 10px; }
 }
+
+/* === Custom scrollbars (global) ===
+     Provides a modern, subtle scrollbar for WebKit browsers and Firefox.
+     Keep it lightweight and accessible: minimum contrast for thumb + increased hit area.
+*/
+
+/* WebKit-based browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(10,10,10,0.18), rgba(10,10,10,0.28));
+    border-radius: 10px;
+    border: 3px solid rgba(255,255,255,0.03); /* padding around thumb for a softer look */
+}
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(10,10,10,0.26), rgba(10,10,10,0.4));
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(10,10,10,0.28) transparent;
+}
+
+/* Optional: add a lightweight shadow to the track on large viewports */
+@media (min-width: 900px) {
+    ::-webkit-scrollbar-track {
+        box-shadow: inset 0 0 0 1px rgba(2,6,23,0.02);
+    }
+}

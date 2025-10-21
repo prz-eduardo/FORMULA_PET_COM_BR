@@ -5,45 +5,233 @@
     <div class="top-actions" *ngIf="!modal">
       <a class="btn btn-sec" routerLink="/area-cliente">← Voltar</a>
     </div>
-  <h1 class="titulo" *ngIf="!modal">{{ readOnly ? 'Perfil' : 'Meu Perfil' }}</h1>
+<h1 class="titulo" *ngIf="!modal">{{ readOnly ? 'Perfil' : 'Meu Perfil' }}</h1>
 
     <div *ngIf="carregando" class="card">Carregando...</div>
 
-    <!-- Read-only pretty view -->
-    <div class="grid" *ngIf="!carregando && readOnly">
-      <section class="card">
-        <h2>Informações</h2>
-        <div class="info-grid">
-          <div class="info-row"><span class="label">Nome</span><span class="value">{{ nome || '-' }}</span></div>
-          <div class="info-row"><span class="label">Email</span><span class="value">{{ email || '-' }}</span></div>
-          <div class="info-row"><span class="label">Telefone</span><span class="value">{{ telefone || '-' }}</span></div>
-          <div class="info-row"><span class="label">CPF</span><span class="value">{{ cpf || '-' }}</span></div>
-          <div class="info-row"><span class="label">Nascimento</span><span class="value">{{ dataNascimento || '-' }}</span></div>
-          <div class="info-row"><span class="label">Gênero</span><span class="value">{{ genero || '-' }}</span></div>
-          <div class="info-row"><span class="label">Estado civil</span><span class="value">{{ estadoCivil || '-' }}</span></div>
-          <div class="info-row"><span class="label">Profissão</span><span class="value">{{ profissao || '-' }}</span></div>
+    <!-- Profile header with avatar -->
+    <div *ngIf="!carregando" class="profile-head">
+      <div class="avatar-card card">
+        <div class="avatar-wrap">
+          <img [src]="avatarSrc()" alt="Avatar" class="avatar"/>
+          <label class="avatar-change" title="Alterar foto">
+            <input type="file" accept="image/*" (change)="onAvatarSelected($event)" />
+            <span class="avatar-pencil" aria-hidden="true">✏️</span>
+          </label>
         </div>
-      </section>
+      
+      </div>
+      <div class="profile-actions card">
+        <h2>
+          <span *ngIf="editingSection !== 'informacoes'">{{ nome || me?.user?.nome || 'Perfil' }}</span>
+          <input class="header-name-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="nome" />
+        </h2>
+        <div class="quick-actions">
+          <ng-container *ngIf="editingSection !== 'informacoes'">
+            <!-- Always show header edit control so user can open name edit directly -->
+            <button class="btn icon-pencil" title="Editar nome" (click)="editSection('informacoes')">✏️</button>
+          </ng-container>
+          <ng-container *ngIf="editingSection === 'informacoes'">
+            <button class="btn" (click)="saveSection()">Salvar</button>
+            <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
+          </ng-container>
+          <button class="btn" *ngIf="!readOnly && editingSection === null" (click)="salvar()">Salvar</button>
+        </div>
+      </div>
+    </div>
 
-      <section class="card">
-        <h2>Endereço</h2>
+    <!-- Read-only pretty view -->
+    <div class="grid">
+      <section class="card" *ngIf="isSectionReadOnlyVisible('informacoes')">
+        <header class="section-head">
+          <div class="left">
+            <h3>Informações</h3>
+            <div class="muted">Dados pessoais</div>
+          </div>
+          <div class="right">
+            <ng-container *ngIf="editingSection !== 'informacoes'">
+              <button class="btn icon-pencil" title="Editar" (click)="editSection('informacoes')">✏️</button>
+            </ng-container>
+            <ng-container *ngIf="editingSection === 'informacoes'">
+              <button class="btn" (click)="saveSection()">Salvar</button>
+              <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
+            </ng-container>
+          </div>
+        </header>
         <div class="info-grid">
-          <div class="info-row"><span class="label">CEP</span><span class="value">{{ endereco.cep || '-' }}</span></div>
-          <div class="info-row"><span class="label">Endereço</span><span class="value">{{ endereco.logradouro || '-' }}, {{ endereco.numero || '-' }}</span></div>
-          <div class="info-row"><span class="label">Complemento</span><span class="value">{{ endereco.complemento || '-' }}</span></div>
-          <div class="info-row"><span class="label">Bairro</span><span class="value">{{ endereco.bairro || '-' }}</span></div>
-          <div class="info-row"><span class="label">Cidade/UF</span><span class="value">{{ endereco.cidade || '-' }}/{{ endereco.estado || '-' }}</span></div>
-          <div class="info-row"><span class="label">Referência</span><span class="value">{{ endereco.referencia || '-' }}</span></div>
+          <div class="info-row">
+            <span class="label">Nome</span>
+            <!-- Prefer explicit fallback to me.user.nome when nome is empty -->
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ nome || me?.user?.nome || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="nome" />
+          </div>
+          <div class="info-row">
+            <span class="label">Email</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ email || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="email" type="email" />
+          </div>
+          <div class="info-row">
+            <span class="label">Telefone</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ telefone || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="telefone" mask="(00) 00000-0000" />
+          </div>
+          <div class="info-row">
+            <span class="label">CPF</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ cpf || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="cpf" mask="000.000.000-00" disabled />
+          </div>
+          <div class="info-row">
+            <span class="label">Nascimento</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ dataNascimento || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="dataNascimento" type="date" />
+          </div>
+          <div class="info-row">
+            <span class="label">Gênero</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ genero || '-' }}</span>
+            <select class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="genero">
+              <option value="">Selecione</option>
+              <option>Masculino</option>
+              <option>Feminino</option>
+              <option>Outro</option>
+              <option>Prefiro não dizer</option>
+            </select>
+          </div>
+          <div class="info-row">
+            <span class="label">Estado civil</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ estadoCivil || '-' }}</span>
+            <select class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="estadoCivil">
+              <option value="">Selecione</option>
+              <option>Solteiro(a)</option>
+              <option>Casado(a)</option>
+              <option>Divorciado(a)</option>
+              <option>Viúvo(a)</option>
+            </select>
+          </div>
+          <div class="info-row">
+            <span class="label">Profissão</span>
+            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ profissao || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="profissao" />
+          </div>
         </div>
-        <div class="acoes" style="margin-top:12px">
-          <button class="btn btn-sec">Endereços</button>
+  </section>
+
+  <section class="card" *ngIf="isSectionReadOnlyVisible('endereco')">
+        <header class="section-head">
+          <div class="left">
+            <h3>Endereço</h3>
+            <div class="muted">Endereço principal</div>
+          </div>
+          <div class="right">
+            <ng-container *ngIf="editingSection !== 'endereco'">
+              <button class="btn icon-pencil" title="Editar" (click)="editSection('endereco')">✏️</button>
+              <!-- Put a compact '+' action inside the Endereço card to open Meus Endereços -->
+              <button class="btn fab-enderecos" title="Meus Endereços" (click)="navigate.emit('meus-enderecos')">＋</button>
+            </ng-container>
+            <ng-container *ngIf="editingSection === 'endereco'">
+              <button class="btn" (click)="saveSection()">Salvar</button>
+              <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
+            </ng-container>
+          </div>
+        </header>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="label">CEP</span>
+            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.cep || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'endereco'" [(ngModel)]="endereco.cep" mask="00000-000" (ngModelChange)="onCepInput()" />
+          </div>
+          <div class="info-row">
+            <span class="label">Endereço</span>
+            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.logradouro || '-' }}, {{ endereco.numero || '-' }}</span>
+            <div *ngIf="editingSection === 'endereco'" style="display:flex; gap:8px; align-items:center;">
+              <input class="inline-input" style="flex:1" [(ngModel)]="endereco.logradouro" />
+              <input class="inline-input" style="width:120px" [(ngModel)]="endereco.numero" />
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Complemento</span>
+            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.complemento || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'endereco'" [(ngModel)]="endereco.complemento" />
+          </div>
+          <div class="info-row">
+            <span class="label">Bairro</span>
+            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.bairro || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'endereco'" [(ngModel)]="endereco.bairro" />
+          </div>
+          <div class="info-row">
+            <span class="label">Cidade/UF</span>
+            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.cidade || '-' }}/{{ endereco.estado || '-' }}</span>
+            <div *ngIf="editingSection === 'endereco'" style="display:flex; gap:8px; align-items:center;">
+              <input class="inline-input" style="flex:1" [(ngModel)]="endereco.cidade" />
+              <input class="inline-input" style="width:80px" [(ngModel)]="endereco.estado" maxlength="2" (ngModelChange)="onUfInput()" />
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Referência</span>
+            <span class="value" *ngIf="editingSection !== 'endereco'">{{ endereco.referencia || '-' }}</span>
+            <input class="inline-input" *ngIf="editingSection === 'endereco'" [(ngModel)]="endereco.referencia" />
+          </div>
+        </div>
+  </section>
+
+  
+  <!-- Preferências & Observações in read-only view -->
+  <section class="card" *ngIf="isSectionReadOnlyVisible('preferencias')">
+        <header class="section-head">
+          <div class="left">
+            <h3>Preferências</h3>
+            <div class="muted">Como prefere ser contatado e notificações</div>
+          </div>
+          <div class="right">
+            <ng-container *ngIf="editingSection !== 'preferencias'">
+              <button class="btn icon-pencil" title="Editar" (click)="editSection('preferencias')">✏️</button>
+            </ng-container>
+            <ng-container *ngIf="editingSection === 'preferencias'">
+              <button class="btn" (click)="saveSection()">Salvar</button>
+              <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
+            </ng-container>
+          </div>
+        </header>
+        <div class="info-grid">
+          <div class="info-row"><span class="label">Método de contato</span><span class="value">{{ contatoPreferido || '-' }}</span></div>
+          <div class="info-row"><span class="label">Horário preferido</span><span class="value">{{ horarioPreferido || '-' }}</span></div>
+          <div class="info-row"><span class="label">Receber comunicações por email</span><span class="value">{{ prefEmail ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row"><span class="label">Receber mensagens por WhatsApp</span><span class="value">{{ prefWhats ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row"><span class="label">Receber ofertas e novidades</span><span class="value">{{ prefMarketing ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row"><span class="label">Notificar atualizações de pedidos</span><span class="value">{{ prefNotificarPedidos ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row"><span class="label">Notificar novas receitas</span><span class="value">{{ prefNotificarReceitas ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row"><span class="label">Lembrar vacinas dos pets</span><span class="value">{{ prefLembrarVacinas ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row"><span class="label">Lembrar consultas agendadas</span><span class="value">{{ prefLembrarConsultas ? 'Sim' : 'Não' }}</span></div>
+        </div>
+  </section>
+
+  <section class="card" *ngIf="isSectionReadOnlyVisible('observacoes')">
+        <header class="section-head">
+          <div class="left">
+            <h3>Observações</h3>
+            <div class="muted">Notas sobre você e seus pets</div>
+          </div>
+          <div class="right">
+            <ng-container *ngIf="editingSection !== 'observacoes'">
+              <button class="btn icon-pencil" title="Editar" (click)="editSection('observacoes')">✏️</button>
+            </ng-container>
+            <ng-container *ngIf="editingSection === 'observacoes'">
+              <button class="btn" (click)="saveSection()">Salvar</button>
+              <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
+            </ng-container>
+          </div>
+        </header>
+        <div class="info-grid">
+          <div class="field" style="grid-column:1 / -1">
+            <div class="value" style="white-space:pre-wrap">{{ observacoes || '-' }}</div>
+          </div>
         </div>
       </section>
     </div>
 
-    <!-- Editable form view -->
-    <div class="grid" *ngIf="!carregando && !readOnly">
-      <section class="card">
+  <!-- Editable form view (global edit). Hidden when editing a specific section inline) -->
+  <div class="grid" *ngIf="!carregando && !readOnly && editingSection === null">
+      <!-- Dados do usuário: show when editingSection is null (global edit) or 'informacoes' -->
+      <section class="card" *ngIf="editingSection === null || editingSection === 'informacoes'">
         <h2>Dados do usuário</h2>
         <div class="form-grid">
           <div class="field">
@@ -102,7 +290,8 @@
         </div>
       </section>
 
-      <section class="card">
+      <!-- Endereço: show when editingSection is null (global edit) or 'endereco' -->
+      <section class="card" *ngIf="editingSection === null || editingSection === 'endereco'">
         <h2>Endereço</h2>
         <div class="form-grid">
           <div class="field small">
@@ -150,7 +339,8 @@
         </div>
       </section>
 
-      <section class="card">
+      <!-- Preferências: show when editingSection is null or 'preferencias' -->
+      <section class="card" *ngIf="editingSection === null || editingSection === 'preferencias'">
         <h2>Preferências</h2>
         <div class="form-grid">
           <div class="field">
@@ -183,7 +373,8 @@
         </div>
       </section>
 
-      <section class="card">
+      <!-- Observações: show when editingSection is null or 'observacoes' -->
+      <section class="card" *ngIf="editingSection === null || editingSection === 'observacoes'">
         <h2>Observações</h2>
         <div class="form-grid">
           <div class="field" style="grid-column: 1 / -1;">
@@ -197,6 +388,12 @@
     <div class="acoes" *ngIf="!carregando && !readOnly">
       <a class="btn btn-sec" routerLink="/area-cliente">Cancelar</a>
       <button class="btn" (click)="salvar()" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+    </div>
+    
+    <!-- Account actions: logout and delete account -->
+    <div class="acoes" *ngIf="!carregando">
+      <button class="btn btn-sec" (click)="logout()">Logout</button>
+      <button class="btn danger" (click)="confirmDeleteAccount()" [disabled]="deletingAccount">{{ deletingAccount ? 'Excluindo...' : 'Excluir conta' }}</button>
     </div>
   </main>
 </div>

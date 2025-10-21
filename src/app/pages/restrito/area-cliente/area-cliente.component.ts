@@ -38,7 +38,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private sub?: Subscription;
 
   // Internal navigation state when in modal
-  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | null = null;
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | null = null;
 
   modalLoginAberto = false;
   modalCadastroAberto = false;
@@ -221,7 +221,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
 
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos') {
     if (!this.modal) {
       // Navigate normally when not in modal
       if (view === 'meus-pedidos') return this.router.navigateByUrl('/meus-pedidos');
@@ -252,6 +252,28 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     if (view === 'consultar-pedidos') {
       this.titulo = 'Histórico de receitas';
       return this.openConsultarPedidosOverlay();
+    }
+    if (view === 'meus-enderecos') {
+      if (!this.modal) return this.router.navigateByUrl('/meus-enderecos');
+      this.internalView = 'meus-enderecos';
+      this.titulo = 'Meus Endereços';
+      if (!this.internalHost) return;
+      this.internalHost.clear();
+      try {
+        const mod = await import('../../../pages/meus-enderecos/meus-enderecos.component');
+        const Cmp = (mod as any).MeusEnderecosComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      } catch (e) {
+        console.error('Falha ao abrir Meus Endereços', e);
+        this.toast.error('Não foi possível abrir agora');
+      }
+      return;
     }
     this.internalView = view as any;
     // Update title by selection
@@ -304,11 +326,20 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
         const mod = await import('../../../pages/perfil/perfil.component');
         const Cmp = (mod as any).PerfilComponent;
         const ref = this.internalHost.createComponent(Cmp);
-        if (ref?.instance) {
+          if (ref?.instance) {
           (ref.instance as any).modal = true;
-          (ref.instance as any).readOnly = true;
+          // do not force readOnly here; let the component decide its initial editable state
           if ((ref.instance as any).close) {
             (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+          // If perfil emits navigation requests (like 'meus-enderecos'), handle them by
+          // closing the perfil view and opening the requested internal view.
+          if ((ref.instance as any).navigate) {
+            (ref.instance as any).navigate.subscribe((viewName: string) => {
+              try { this.internalHost?.clear(); } catch {}
+              // open will route appropriately; since we're in modal, it will create the internal view
+              this.open(viewName as any);
+            });
           }
         }
       }

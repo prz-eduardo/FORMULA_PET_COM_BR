@@ -21,7 +21,11 @@
 .internal-back {
   display: flex;
   justify-content: flex-start;
-  margin-top: -10px;
+  /* Make the back button visually fixed at the top of the modal/internal area */
+  position: sticky;
+  top: 12px;
+  z-index: 1500;
+  margin-top: 0;
   button.btn.btn-sec {
     padding: 10px 14px;
     border-radius: 999px;

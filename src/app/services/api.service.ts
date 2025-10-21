@@ -384,6 +384,13 @@ export class ApiService {
     });
   }
 
+  // Deletar cliente (excluir conta)
+  deleteCliente(clienteId: number, token: string) {
+    return this.http.delete<any>(`${this.baseUrl}/clientes/${clienteId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
   // Buscar cliente por CPF (para veterinários)
   buscarClientePorCpf(cpf: string, token: string): Observable<any> {
     const cpfLimpo = cpf.replace(/\D/g, '');
@@ -499,6 +506,19 @@ export class ApiService {
   }): Observable<any> {
     const url = `${this.baseUrl}/clientes/me/enderecos`;
     return this.http.post<any>(url, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  updateEnderecoCliente(token: string, id: string | number, body: {
+    cep?: string; logradouro?: string; numero?: string; complemento?: string;
+    bairro?: string; cidade?: string; estado?: string; nome?: string; tipo?: string;
+  }): Observable<any> {
+    const url = `${this.baseUrl}/clientes/me/enderecos/${id}`;
+    return this.http.put<any>(url, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  deleteEnderecoCliente(token: string, id: string | number): Observable<any> {
+    const url = `${this.baseUrl}/clientes/me/enderecos/${id}`;
+    return this.http.delete<any>(url, { headers: { Authorization: `Bearer ${token}` } });
   }
 
   // Cálculo de frete (caso o backend exista)

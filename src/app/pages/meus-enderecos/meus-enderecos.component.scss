@@ -1,0 +1,153 @@
+.area-like-wrapper{ min-height:60vh; background: linear-gradient(135deg, #0d151f, #1a2230); color: #ecf0f5; padding: 32px 0; font-family: 'Inter', sans-serif; }
+.container{ max-width:1080px; margin: 0 auto; padding: 0 16px; }
+.titulo{ font-size:24px; font-weight:800; color:var(--primary); }
+.top-actions{ display:flex; gap:12px; align-items:center; margin-bottom:16px }
+.spacer{ flex:1 }
+.address-list{ display:grid; gap:12px }
+.address-card{ background: linear-gradient(180deg,#f2f9ff,#eef7ff); color:#0f172a; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 8px 24px rgba(2,6,23,0.06); cursor:pointer }
+.address-card .label{ font-weight:800 }
+.address-card .rua{ color:#334155 }
+.address-card .meta{ color:#475569; font-size:13px }
+.card-actions{ display:flex; gap:8px }
+.card-actions .icon{ background:transparent; border:none; cursor:pointer; padding:6px; border-radius:8px }
+.card-actions .edit{ background: rgba(255,255,255,0.9); }
+.card-actions .del{ background: rgba(255,255,255,0.9); }
+
+/* Modal overlay and detail modal */
+.overlay{ position:fixed; inset:0; background: rgba(0,0,0,0.45); display:grid; place-items:center; z-index:6000 }
+.detail-modal{ width:min(640px, calc(100vw - 40px)); background:#fff; border-radius:10px; overflow:hidden; box-shadow: 0 20px 48px rgba(0,0,0,0.35) }
+.detail-modal header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#eef2ff; }
+/* Make the header close button match the cliente-close visual */
+.detail-modal header .close {
+	background:#111827;
+	color:#fff;
+	border:0;
+	border-radius:999px;
+	width:34px;
+	height:34px;
+	cursor:pointer;
+	box-shadow:0 10px 24px rgba(0,0,0,.18);
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+}
+.detail-modal .body{ padding:12px 16px; max-height:60vh; overflow:auto }
+.detail-modal footer{ display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid #e5e7eb }
+.kv{ display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px dashed #e5e7eb }
+.kv .k{ color:#64748b; font-weight:700; width:120px }
+.kv .v{ color:#0f172a; font-weight:700 }
+
+.confirm-modal{ width:360px; background:#fff; border-radius:10px; padding:16px; box-shadow: 0 20px 48px rgba(0,0,0,0.35); display:flex; flex-direction:column; gap:12px }
+.confirm-modal .actions{ display:flex; justify-content:flex-end; gap:8px }
+
+.btn{ padding:8px 12px; border-radius:10px; border:none; background:#eef2ff; color:#0f172a; font-weight:700 }
+.btn-sec{ background:#0f172a; color:#ecf0f5; border:1px solid rgba(255,255,255,0.04) }
+
+
+/* Make the confirm modal body text dark for contrast on white background,
+	 and keep the button labels light so they appear as action controls */
+.confirm-modal .body {
+	color: #0f172a; /* dark question text */
+}
+
+.confirm-modal .actions .btn {
+	color: #ecf0f5; /* light button text */
+}
+
+/* Target the confirm action (Apagar) which is the last button in the actions row and make its text dark */
+.confirm-modal .actions .btn:last-child {
+	color: #0f172a; /* dark text for Apagar */
+}
+
+/* Additional styles: darker modal inputs and emoji-only tipo pills */
+.detail-modal{ background: linear-gradient(180deg,#0f172a,#132032); color: #e6eef8; }
+.detail-modal header{ background: linear-gradient(90deg,#0b1220,#122035); border-bottom: 1px solid rgba(255,255,255,0.03); }
+.kv .k{ color:#9fb0c8 }
+.kv .v{ color:#e6eef8 }
+.card-actions .icon{ color: #e6eef8 }
+
+.detail-modal input, .detail-modal textarea, .detail-modal select {
+	width: 100%;
+	height: 40px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.06);
+	background: rgba(255,255,255,0.03);
+	color: #e6eef8;
+}
+.detail-modal input::placeholder { color: rgba(230,238,248,0.6); }
+
+.detail-modal .tipo-row { margin: 28px 0 12px; display:flex; gap:8px }
+.detail-modal .tipo-row .pill { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; gap: 0; padding: 0; border: 1px solid rgba(255,255,255,0.06); border-radius: 999px; cursor: pointer; user-select: none; background: rgba(255,255,255,0.02); }
+.detail-modal .tipo-row .pill input { appearance: none; width: 0; height: 0; opacity: 0; position: absolute; }
+.detail-modal .tipo-row .pill .emoji { font-size: 20px; }
+.detail-modal .tipo-row .pill.on { border-color: #60a5fa; background: rgba(96,165,250,0.12); box-shadow: 0 0 0 6px rgba(96,165,250,0.06); }
+
+/* Tooltip for tipo pills when selected */
+.detail-modal .tipo-row .pill { position: relative; }
+.detail-modal .tipo-row .pill .tip {
+	position: absolute;
+	bottom: 54px; /* above the pill */
+	left: 50%;
+	transform: translateX(-50%) scale(0.92);
+	background: linear-gradient(180deg,#0b1220,#122035);
+	color: #e6eef8;
+	padding: 6px 10px;
+	border-radius: 8px;
+	font-size: 13px;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 160ms linear, transform 160ms cubic-bezier(.2,.9,.3,1);
+	box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+	z-index: 40;
+}
+.detail-modal .tipo-row .pill.on .tip {
+	opacity: 1;
+	transform: translateX(-50%) scale(1);
+	pointer-events: auto;
+}
+.detail-modal .tipo-row .pill .tip:after{
+	content: '';
+	position: absolute;
+	bottom: -6px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 10px;
+	height: 10px;
+	background: linear-gradient(180deg,#0b1220,#122035);
+	transform-origin: center;
+	clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* CEP loader: three bouncing dots centered */
+.cep-loader { display:flex; justify-content:center; align-items:center; padding:8px 0; }
+.cep-loader .dots { display:flex; gap:8px; align-items:flex-end }
+.cep-loader .dots span { width:8px; height:8px; background:#60a5fa; border-radius:50%; display:inline-block; transform: translateY(0); animation: bounce 900ms infinite ease-in-out; }
+.cep-loader .dots span:nth-child(2){ animation-delay: 140ms }
+.cep-loader .dots span:nth-child(3){ animation-delay: 280ms }
+@keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .7 } 40% { transform: translateY(-10px); opacity: 1 } }
+
+/* Desktop-only: constrain inputs inside modal to 80% and center them */
+@media (min-width: 1024px) {
+	.detail-modal .body label { display: block; width: 80%; margin: 8px auto; text-align: left; padding-left: 8px; }
+	.detail-modal .body label input,
+	.detail-modal .body label select,
+	.detail-modal .body label textarea {
+		width: 100%;
+		margin: 6px 0 0 0;
+		display: block;
+	}
+  .detail-modal .body .tipo-row { justify-content: center; }
+}
+
+/* Overrides: increase pill size/padding and add extra padding for last input */
+.detail-modal .tipo-row .pill {
+  width: 52px !important;
+  height: 52px !important;
+  padding: 6px !important;
+}
+
+.detail-modal .body label:last-of-type input {
+  padding: 10px 12px !important;
+}
