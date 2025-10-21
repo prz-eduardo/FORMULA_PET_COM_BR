@@ -1,4 +1,59 @@
-.carrinho-wrap { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); font-family: 'Inter', sans-serif; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+.carrinho-header {
+	margin-top: 6px;
+	margin-bottom: 18px;
+	padding-top: 72px;
+	text-align: left;
+	opacity: 0;
+	transform: translateY(8px);
+	animation: headerIn .52s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes headerIn { to { opacity:1; transform:none } }
+.carrinho-title {
+	font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif;
+	font-size: 44px;
+	color: var(--primary, #2b2b2b);
+	margin: 0 0 12px;
+	font-weight: 900;
+	letter-spacing: -0.8px;
+	line-height: 1.02;
+	text-shadow: 0 6px 22px #f5a70066;
+	position: relative;
+	padding-bottom: 10px;
+	display: inline-block;
+}
+.carrinho-title .cart-ico {
+	font-size: 32px;
+	vertical-align: middle;
+}
+.carrinho-title::after {
+	content: '';
+	display: block;
+	width: 64px;
+	height: 6px;
+	margin-top: 12px;
+	background: linear-gradient(90deg, #f5a700, #c4d600);
+	border-radius: 999px;
+	box-shadow: 0 8px 26px #f5a70033;
+	transform-origin: left;
+	opacity: 1;
+}
+.carrinho-subtitle {
+	margin: 0;
+	color: #54646b;
+	font-size: 15px;
+	line-height: 1.45;
+	font-weight: 500;
+	font-family: 'Poppins', 'Montserrat', sans-serif;
+}
+.carrinho-wrap {
+	padding-right: 16px;
+	padding-left: 16px;
+	padding-bottom: calc(16px + env(safe-area-inset-bottom));
+	font-family: 'Inter', sans-serif;
+	max-width: 100%;
+	overflow-x: hidden;
+	box-sizing: border-box;
+}
 .titulo { margin: 0 0 16px; padding-top: 72px; font-size: 28px; font-weight: 800; color: var(--primary, #0ea5e9); text-align: center; display: inline-flex; align-items: center; gap: 10px; }
 .titulo .cart-ico { font-size: 28px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); }
 .card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); position: relative; z-index: 20; }
@@ -29,7 +84,7 @@
 .aside { display: grid; gap: 12px; position: sticky; top: 80px; min-width: 0; }
 .entrega h3 { margin: 0 0 8px; color: #111827; }
 .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
-.radio-pill { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; background: #f9fafb; cursor: pointer; user-select: none; }
+.radio-pill { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; background: #f9fafb; cursor: pointer; -webkit-user-select: none; user-select: none; }
 .radio-pill input { appearance: none; width: 0; height: 0; position: absolute; opacity: 0; }
 .radio-pill .dot { width: 14px; height: 14px; border-radius: 999px; border: 2px solid #9ca3af; background: #fff; box-shadow: inset 0 0 0 2px #fff; }
 .radio-pill input:checked + .dot { border-color: #2563eb; background: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,0.15); }
@@ -169,7 +224,7 @@
 .addr-modal .cad-form .lbl { display: block; font-size: 12px; color: #6b7280; margin: 6px 0 4px; }
 .addr-modal .tipo-wrap { margin-bottom: 6px; }
 .addr-modal .tipo-selectors { display: flex; flex-wrap: wrap; gap: 8px; }
-.addr-modal .tipo-selectors .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; cursor: pointer; user-select: none; background: #f9fafb; }
+.addr-modal .tipo-selectors .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; cursor: pointer; -webkit-user-select: none; user-select: none; background: #f9fafb; }
 .addr-modal .tipo-selectors .pill input { appearance: none; width: 0; height: 0; opacity: 0; position: absolute; }
 .addr-modal .tipo-selectors .pill .emoji { font-size: 18px; }
 .addr-modal .tipo-selectors .pill.on { border-color: #2563eb; background: #eef2ff; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }

@@ -1,354 +1,357 @@
 <div class="carrinho-wrap">
   <app-navmenu></app-navmenu>
-  <h1 class="titulo">
-    <span class="cart-ico" aria-hidden="true">🛒</span>
-    Seu Carrinho
-  </h1>
+  <main class="carrinho-container container">
+    <header class="carrinho-header">
+      <h1 class="carrinho-title">Carrinho 🛒</h1>
+      <p class="carrinho-subtitle">Veja e gerencie os produtos que você está prestes a levar para seu pet. Confira descontos, promoções e finalize sua compra com facilidade!</p>
+      <div class="carrinho-title-line"></div>
+    </header>
 
-  <div class="layout" *ngIf="(store.cart$ | async)?.length; else vazio">
-  <div class="card warn" *ngIf="!validandoCarrinho && avisosCarrinho?.length">
-    <ul>
-      <li *ngFor="let m of avisosCarrinho">{{ m }}</li>
-    </ul>
-  </div>
-    <div class="card itens highlighted">
-      <div class="corner-loader" *ngIf="validandoCarrinho" title="Conferindo preços e estoque" aria-live="polite"></div>
-      <div class="item" *ngFor="let it of (store.cart$ | async)">
-      <img [src]="it.product.image" alt="{{ it.product.name }}" />
-      <div class="info">
-        <div class="nome">{{ it.product.name }}</div>
-        <div class="precos">
-          <ng-container *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
-            <span class="de" *ngIf="p.final < p.unit">{{ p.unit | currency:'BRL' }}</span>
-            <span class="por">{{ p.final | currency:'BRL' }}</span>
-            <span class="off-chip" *ngIf="p.unit > p.final">-{{ ((p.unit - p.final) / p.unit) * 100 | number:'1.0-0' }}%</span>
-          </ng-container>
-        </div>
-        <div class="promo-count" *ngIf="getPromotion(it.product.id) as promo">
-          <span class="promo-name" *ngIf="promo?.nome">{{ promo.nome }}</span>
-          <span class="promo-timer" *ngIf="fmtCountdown(promoEndsInMs(it.product.id)) as left">Termina em {{ left }}</span>
-        </div>
-        <div class="linha-desconto" *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
-          <ng-container *ngIf="getLineDiscount(it.product.id, it.quantity, p.unit, p.final) as ld">
-            <span class="save" *ngIf="ld > 0">Você economiza {{ ld | currency:'BRL' }} neste item</span>
-          </ng-container>
-        </div>
-        <div class="qtd">
-          <button (click)="dec(it.product.id)">-</button>
-          <span>{{ it.quantity }}</span>
-          <button (click)="inc(it.product.id)">+</button>
-        </div>
-        <!-- Prescription requirement UI -->
-        <div class="prescription" *ngIf="it.product.requiresPrescription">
-          <div class="warn">Este produto exige receita.</div>
-          <app-prescription-picker
-            [prescriptions]="receitasDisponiveis"
-            [selectedId]="it.prescriptionId"
-            [loading]="carregandoReceitas"
-            (select)="onSelectPrescription(it.product.id, $event)"
-            (upload)="onUploadPrescriptionFileDirect(it.product.id, $event)"
-          ></app-prescription-picker>
-          <div class="file" *ngIf="it.prescriptionFileName">Arquivo: {{ it.prescriptionFileName }}</div>
-        </div>
-      </div>
-      <button class="remove" (click)="onRequestRemove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
-      </div>
+    <div class="layout" *ngIf="(store.cart$ | async)?.length; else vazio">
+    <div class="card warn" *ngIf="!validandoCarrinho && avisosCarrinho?.length">
+      <ul>
+        <li *ngFor="let m of avisosCarrinho">{{ m }}</li>
+      </ul>
     </div>
-
-    <div class="aside">
-      <div class="card frete">
-        <h3>Calcular frete</h3>
-        <!-- Info da loja quando for retirada -->
-        <div class="retirada-info" *ngIf="entregaModo==='retirada'">
-          <div class="loja">{{ lojaInfo.nome }}</div>
-          <div class="end">{{ lojaInfo.endereco }}</div>
-          <div class="cep">CEP {{ lojaInfo.cep }}</div>
-          <div class="horario">Horário: {{ lojaInfo.horario }}</div>
+      <div class="card itens highlighted">
+        <div class="corner-loader" *ngIf="validandoCarrinho" title="Conferindo preços e estoque" aria-live="polite"></div>
+        <div class="item" *ngFor="let it of (store.cart$ | async)">
+        <img [src]="it.product.image" alt="{{ it.product.name }}" />
+        <div class="info">
+          <div class="nome">{{ it.product.name }}</div>
+          <div class="precos">
+            <ng-container *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
+              <span class="de" *ngIf="p.final < p.unit">{{ p.unit | currency:'BRL' }}</span>
+              <span class="por">{{ p.final | currency:'BRL' }}</span>
+              <span class="off-chip" *ngIf="p.unit > p.final">-{{ ((p.unit - p.final) / p.unit) * 100 | number:'1.0-0' }}%</span>
+            </ng-container>
+          </div>
+          <div class="promo-count" *ngIf="getPromotion(it.product.id) as promo">
+            <span class="promo-name" *ngIf="promo?.nome">{{ promo.nome }}</span>
+            <span class="promo-timer" *ngIf="fmtCountdown(promoEndsInMs(it.product.id)) as left">Termina em {{ left }}</span>
+          </div>
+          <div class="linha-desconto" *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
+            <ng-container *ngIf="getLineDiscount(it.product.id, it.quantity, p.unit, p.final) as ld">
+              <span class="save" *ngIf="ld > 0">Você economiza {{ ld | currency:'BRL' }} neste item</span>
+            </ng-container>
+          </div>
+          <div class="qtd">
+            <button (click)="dec(it.product.id)">-</button>
+            <span>{{ it.quantity }}</span>
+            <button (click)="inc(it.product.id)">+</button>
+          </div>
+          <!-- Prescription requirement UI -->
+          <div class="prescription" *ngIf="it.product.requiresPrescription">
+            <div class="warn">Este produto exige receita.</div>
+            <app-prescription-picker
+              [prescriptions]="receitasDisponiveis"
+              [selectedId]="it.prescriptionId"
+              [loading]="carregandoReceitas"
+              (select)="onSelectPrescription(it.product.id, $event)"
+              (upload)="onUploadPrescriptionFileDirect(it.product.id, $event)"
+            ></app-prescription-picker>
+            <div class="file" *ngIf="it.prescriptionFileName">Arquivo: {{ it.prescriptionFileName }}</div>
+          </div>
         </div>
+        <button class="remove" (click)="onRequestRemove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
+        </div>
+      </div>
 
-        <!-- Endereços inline quando entrega -->
-        <div class="addr-inline" *ngIf="entregaModo==='entrega'">
-          <div *ngIf="enderecos?.length; else noAddrInline2">
-            <div class="addr-grid">
-              <div class="addr-card" *ngFor="let e of enderecos | slice:0:3" [class.selected]="enderecoSelecionado?.id === e.id" (click)="selecionarEnderecoInline(e)">
-                <div class="tipo">
-                  <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
-                  <span class="nome">{{ e.nome || (e.tipo | titlecase) || 'Endereço' }}</span>
+      <div class="aside">
+        <div class="card frete">
+          <h3>Calcular frete</h3>
+          <!-- Info da loja quando for retirada -->
+          <div class="retirada-info" *ngIf="entregaModo==='retirada'">
+            <div class="loja">{{ lojaInfo.nome }}</div>
+            <div class="end">{{ lojaInfo.endereco }}</div>
+            <div class="cep">CEP {{ lojaInfo.cep }}</div>
+            <div class="horario">Horário: {{ lojaInfo.horario }}</div>
+          </div>
+
+          <!-- Endereços inline quando entrega -->
+          <div class="addr-inline" *ngIf="entregaModo==='entrega'">
+            <div *ngIf="enderecos?.length; else noAddrInline2">
+              <div class="addr-grid">
+                <div class="addr-card" *ngFor="let e of enderecos | slice:0:3" [class.selected]="enderecoSelecionado?.id === e.id" (click)="selecionarEnderecoInline(e)">
+                  <div class="tipo">
+                    <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
+                    <span class="nome">{{ e.nome || (e.tipo | titlecase) || 'Endereço' }}</span>
+                  </div>
+                  <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
+                  <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
+                  <div class="linha">CEP {{ e.cep }}</div>
+                  <div class="sel-mark" aria-hidden="true">✓</div>
                 </div>
-                <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
-                <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
-                <div class="linha">CEP {{ e.cep }}</div>
-                <div class="sel-mark" aria-hidden="true">✓</div>
+              </div>
+              <div class="acoes">
+                <button class="btn light small" (click)="abrirModalEnderecos()">Outro endereço</button>
               </div>
             </div>
-            <div class="acoes">
-              <button class="btn light small" (click)="abrirModalEnderecos()">Outro endereço</button>
+            <ng-template #noAddrInline2>
+              <div class="muted">Nenhum endereço cadastrado.</div>
+              <div class="acoes">
+                <button class="btn light small" (click)="abrirModalEnderecos()">Adicionar endereço</button>
+              </div>
+            </ng-template>
+          </div>
+          <div class="linha">
+            <input type="text" class="input" placeholder="CEP" aria-label="CEP" [(ngModel)]="cepInput" (keyup.enter)="calcularFrete()" />
+            <button class="btn" (click)="calcularFrete()">Calcular</button>
+          </div>
+          <div class="origem-destino" *ngIf="freteOrigem || freteDestino">
+            <div class="od-linha" *ngIf="freteOrigem as o">
+              <span class="lbl">Origem</span>
+              <span class="val">{{ o.cidade }}/{{ o.uf }} • CEP {{ o.cep }}</span>
+            </div>
+            <div class="od-linha" *ngIf="freteDestino as d">
+              <span class="lbl">Destino</span>
+              <span class="val">{{ d.city }}/{{ d.state }} • CEP {{ d.cep }}</span>
             </div>
           </div>
-          <ng-template #noAddrInline2>
-            <div class="muted">Nenhum endereço cadastrado.</div>
-            <div class="acoes">
-              <button class="btn light small" (click)="abrirModalEnderecos()">Adicionar endereço</button>
+          <div class="opcoes" *ngIf="freteOpcoes?.length; else freteSimples">
+            <div class="opt" *ngFor="let op of freteOpcoes" (click)="selecionarOpcaoFrete(op)" [class.sel]="freteSelecionado?.servico===op.servico" role="radio" [attr.aria-checked]="freteSelecionado?.servico===op.servico">
+              <div class="col-1">
+                <span class="bullet"></span>
+              </div>
+              <div class="col-2">
+                <div class="nome">{{ op.nome }}</div>
+                <div class="obs" *ngIf="op.observacao">{{ op.observacao }}</div>
+              </div>
+              <div class="col-3">
+                <div class="valor">{{ op.valor | currency:'BRL' }}</div>
+                <div class="prazo">{{ op.prazo_dias }} dia{{ op.prazo_dias === 1 ? '' : 's' }}</div>
+              </div>
             </div>
+            <!-- Skeleton loaders para opções externas enquanto carrega -->
+            <div class="opt loading" *ngIf="carregandoFrete">
+              <div class="col-1"><span class="bullet"></span></div>
+              <div class="col-2">
+                <div class="sk sk-line"></div>
+                <div class="sk sk-line sm"></div>
+              </div>
+              <div class="col-3">
+                <div class="sk sk-pill"></div>
+                <div class="sk sk-line sm"></div>
+              </div>
+            </div>
+            <div class="opt loading" *ngIf="carregandoFrete">
+              <div class="col-1"><span class="bullet"></span></div>
+              <div class="col-2">
+                <div class="sk sk-line"></div>
+                <div class="sk sk-line sm"></div>
+              </div>
+              <div class="col-3">
+                <div class="sk sk-pill"></div>
+                <div class="sk sk-line sm"></div>
+              </div>
+            </div>
+            <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
+          </div>
+          <ng-template #freteSimples>
+            <div class="resultado" *ngIf="freteValor>0 || fretePrazo">
+              <div>Frete: <strong>{{ freteValor | currency:'BRL' }}</strong> <span class="prazo" *ngIf="fretePrazo">({{ fretePrazo }})</span></div>
+            </div>
+            <p class="muted" *ngIf="!(freteValor>0 || fretePrazo)">Entrega: valores e prazos serão exibidos aqui.</p>
+            <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
           </ng-template>
         </div>
-        <div class="linha">
-          <input type="text" class="input" placeholder="CEP" aria-label="CEP" [(ngModel)]="cepInput" (keyup.enter)="calcularFrete()" />
-          <button class="btn" (click)="calcularFrete()">Calcular</button>
-        </div>
-        <div class="origem-destino" *ngIf="freteOrigem || freteDestino">
-          <div class="od-linha" *ngIf="freteOrigem as o">
-            <span class="lbl">Origem</span>
-            <span class="val">{{ o.cidade }}/{{ o.uf }} • CEP {{ o.cep }}</span>
+        <div class="card resumo">
+          <h3>Resumo do pedido</h3>
+          <div class="promo-banner" *ngIf="validarTotals as vt" [hidden]="!(vt.discount_total && vt.discount_total > 0)">
+            <span class="emoji" aria-hidden="true">🎉</span>
+            <span>Você está economizando <strong>{{ vt.discount_total | currency:'BRL' }}</strong> com as promoções ativas!</span>
           </div>
-          <div class="od-linha" *ngIf="freteDestino as d">
-            <span class="lbl">Destino</span>
-            <span class="val">{{ d.city }}/{{ d.state }} • CEP {{ d.cep }}</span>
-          </div>
-        </div>
-        <div class="opcoes" *ngIf="freteOpcoes?.length; else freteSimples">
-          <div class="opt" *ngFor="let op of freteOpcoes" (click)="selecionarOpcaoFrete(op)" [class.sel]="freteSelecionado?.servico===op.servico" role="radio" [attr.aria-checked]="freteSelecionado?.servico===op.servico">
-            <div class="col-1">
-              <span class="bullet"></span>
-            </div>
-            <div class="col-2">
-              <div class="nome">{{ op.nome }}</div>
-              <div class="obs" *ngIf="op.observacao">{{ op.observacao }}</div>
-            </div>
-            <div class="col-3">
-              <div class="valor">{{ op.valor | currency:'BRL' }}</div>
-              <div class="prazo">{{ op.prazo_dias }} dia{{ op.prazo_dias === 1 ? '' : 's' }}</div>
-            </div>
-          </div>
-          <!-- Skeleton loaders para opções externas enquanto carrega -->
-          <div class="opt loading" *ngIf="carregandoFrete">
-            <div class="col-1"><span class="bullet"></span></div>
-            <div class="col-2">
-              <div class="sk sk-line"></div>
-              <div class="sk sk-line sm"></div>
-            </div>
-            <div class="col-3">
-              <div class="sk sk-pill"></div>
-              <div class="sk sk-line sm"></div>
-            </div>
-          </div>
-          <div class="opt loading" *ngIf="carregandoFrete">
-            <div class="col-1"><span class="bullet"></span></div>
-            <div class="col-2">
-              <div class="sk sk-line"></div>
-              <div class="sk sk-line sm"></div>
-            </div>
-            <div class="col-3">
-              <div class="sk sk-pill"></div>
-              <div class="sk sk-line sm"></div>
-            </div>
-          </div>
-          <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
-        </div>
-        <ng-template #freteSimples>
-          <div class="resultado" *ngIf="freteValor>0 || fretePrazo">
-            <div>Frete: <strong>{{ freteValor | currency:'BRL' }}</strong> <span class="prazo" *ngIf="fretePrazo">({{ fretePrazo }})</span></div>
-          </div>
-          <p class="muted" *ngIf="!(freteValor>0 || fretePrazo)">Entrega: valores e prazos serão exibidos aqui.</p>
-          <p class="muted info" *ngIf="entregaModo==='entrega'">⏳ Importante: o prazo de entrega começa a contar após a produção do seu pedido. Como trabalhamos com manipulados, a confecção leva alguns dias úteis.</p>
-        </ng-template>
-      </div>
-      <div class="card resumo">
-        <h3>Resumo do pedido</h3>
-        <div class="promo-banner" *ngIf="validarTotals as vt" [hidden]="!(vt.discount_total && vt.discount_total > 0)">
-          <span class="emoji" aria-hidden="true">🎉</span>
-          <span>Você está economizando <strong>{{ vt.discount_total | currency:'BRL' }}</strong> com as promoções ativas!</span>
-        </div>
-        <div class="totais">
-          <ng-container *ngIf="totalsNorm as tn; else legacyTotals">
-            <div>Itens: {{ tn.item_count ?? total().count }}</div>
-            <div>Subtotal (sem descontos): {{ (tn.original_subtotal ?? total().subtotal) | currency:'BRL' }}</div>
-            <div class="discount" *ngIf="tn.discount_total && tn.discount_total > 0">Descontos aplicados: -{{ tn.discount_total | currency:'BRL' }}</div>
-            <div>Subtotal com descontos: {{ (tn.items_total ?? total().subtotal) | currency:'BRL' }}</div>
-            <div class="frete" *ngIf="entregaModo==='entrega'">
-              Frete ({{ freteNomeDisplay }}):
-              {{ freteValorDisplay | currency:'BRL' }}
-              <span class="prazo" *ngIf="fretePrazoDias != null">• {{ fretePrazoDias }} dia{{ fretePrazoDias === 1 ? '' : 's' }}</span>
-            </div>
-            <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
-            <div class="discount" *ngIf="tn.coupon_total && tn.coupon_total > 0">Cupom: -{{ tn.coupon_total | currency:'BRL' }}</div>
-            <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
-          </ng-container>
-          <ng-template #legacyTotals>
-            <div>Itens: {{ total().count }}</div>
-            <div>Subtotal (sem descontos): {{ total().subtotal | currency:'BRL' }}</div>
-            <ng-container *ngIf="validarTotals as vt2">
-              <div class="discount" *ngIf="vt2.discount_total && vt2.discount_total > 0">Descontos aplicados: -{{ vt2.discount_total | currency:'BRL' }}</div>
+          <div class="totais">
+            <ng-container *ngIf="totalsNorm as tn; else legacyTotals">
+              <div>Itens: {{ tn.item_count ?? total().count }}</div>
+              <div>Subtotal (sem descontos): {{ (tn.original_subtotal ?? total().subtotal) | currency:'BRL' }}</div>
+              <div class="discount" *ngIf="tn.discount_total && tn.discount_total > 0">Descontos aplicados: -{{ tn.discount_total | currency:'BRL' }}</div>
+              <div>Subtotal com descontos: {{ (tn.items_total ?? total().subtotal) | currency:'BRL' }}</div>
+              <div class="frete" *ngIf="entregaModo==='entrega'">
+                Frete ({{ freteNomeDisplay }}):
+                {{ freteValorDisplay | currency:'BRL' }}
+                <span class="prazo" *ngIf="fretePrazoDias != null">• {{ fretePrazoDias }} dia{{ fretePrazoDias === 1 ? '' : 's' }}</span>
+              </div>
+              <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
+              <div class="discount" *ngIf="tn.coupon_total && tn.coupon_total > 0">Cupom: -{{ tn.coupon_total | currency:'BRL' }}</div>
+              <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
             </ng-container>
-            <div class="frete" *ngIf="entregaModo==='entrega'">
-              Frete ({{ freteNomeDisplay }}): {{ freteValorDisplay | currency:'BRL' }}
-              <span class="prazo" *ngIf="fretePrazoDias != null">• {{ fretePrazoDias }} dia{{ fretePrazoDias === 1 ? '' : 's' }}</span>
-            </div>
-            <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
-            <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
-          </ng-template>
-        </div>
-        <div class="acoes">
-          <button class="btn primary" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar pedido' }}</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Destaques quando há itens no carrinho -->
-  <section class="cart-highlights" *ngIf="(store.cart$ | async)?.length && !loadingHighlights && highlights?.length">
-    <div class="card">
-      <div class="ch-header">
-        <h3>Continue descobrindo 🐾</h3>
-        <p>Selecionamos itens que combinam com o seu pedido. Complete seu carrinho com essas sugestões favoritas.</p>
-      </div>
-      <div class="ch-grid">
-        <div class="ch-item" *ngFor="let p of highlights | slice:0:6">
-          <div class="ch-img-box">
-            <img [src]="p.image" [alt]="p.name" />
-            <div class="ch-badge" *ngIf="p.discount && p.discount > 0">-{{ p.discount | number:'1.0-0' }}%</div>
-          </div>
-          <div class="ch-name">{{ p.name }}</div>
-          <div class="ch-rating" *ngIf="p.rating != null || p.ratingsCount">
-            <span class="stars">
-              <ng-container *ngFor="let s of [1,2,3,4,5]">
-                <span class="star">{{ s <= (p.rating || 0) ? '★' : '☆' }}</span>
+            <ng-template #legacyTotals>
+              <div>Itens: {{ total().count }}</div>
+              <div>Subtotal (sem descontos): {{ total().subtotal | currency:'BRL' }}</div>
+              <ng-container *ngIf="validarTotals as vt2">
+                <div class="discount" *ngIf="vt2.discount_total && vt2.discount_total > 0">Descontos aplicados: -{{ vt2.discount_total | currency:'BRL' }}</div>
               </ng-container>
-            </span>
-            <span class="r-total" *ngIf="p.ratingsCount">({{ p.ratingsCount }})</span>
+              <div class="frete" *ngIf="entregaModo==='entrega'">
+                Frete ({{ freteNomeDisplay }}): {{ freteValorDisplay | currency:'BRL' }}
+                <span class="prazo" *ngIf="fretePrazoDias != null">• {{ fretePrazoDias }} dia{{ fretePrazoDias === 1 ? '' : 's' }}</span>
+              </div>
+              <div class="frete" *ngIf="entregaModo==='retirada'">Retirada na loja: grátis</div>
+              <div class="grand">Total com frete: {{ totalComFrete | currency:'BRL' }}</div>
+            </ng-template>
           </div>
-          <div class="ch-bottom">
-            <div class="ch-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
-            <button class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'">Adicionar</button>
+          <div class="acoes">
+            <button class="btn primary" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar pedido' }}</button>
           </div>
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- Sticky checkout bar (mobile only) -->
-  <div class="checkout-bar mobile-only" *ngIf="(store.cart$ | async)?.length">
-    <div class="bar-content">
-      <div class="bar-total">
-        <strong>Total com frete</strong>
-        <span>{{ totalComFrete | currency:'BRL' }}</span>
-        <small class="count">{{ total().count }} itens</small>
-      </div>
-      <button class="btn primary" aria-label="Finalizar" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar' }}</button>
-    </div>
-  </div>
-
-  <ng-template #vazio>
-    <div class="card vazio">
-      <div class="empty-text">Seu carrinho ainda está vazio 😺</div>
-      <p class="empty-sub">Enquanto isso, separamos alguns favoritos da nossa loja para você começar:</p>
-      <div class="highlight-box" *ngIf="!loadingHighlights && highlights?.length">
-        <h3 class="h-title">Sugestões que seu pet vai amar</h3>
-        <div class="h-grid">
-          <div class="h-item" *ngFor="let p of highlights | slice:0:8">
-            <div class="h-img-box">
+    <!-- Destaques quando há itens no carrinho -->
+    <section class="cart-highlights" *ngIf="(store.cart$ | async)?.length && !loadingHighlights && highlights?.length">
+      <div class="card">
+        <div class="ch-header">
+          <h3>Continue descobrindo 🐾</h3>
+          <p>Selecionamos itens que combinam com o seu pedido. Complete seu carrinho com essas sugestões favoritas.</p>
+        </div>
+        <div class="ch-grid">
+          <div class="ch-item" *ngFor="let p of highlights | slice:0:6">
+            <div class="ch-img-box">
               <img [src]="p.image" [alt]="p.name" />
-              <div class="h-name">{{ p.name }}</div>
+              <div class="ch-badge" *ngIf="p.discount && p.discount > 0">-{{ p.discount | number:'1.0-0' }}%</div>
             </div>
-            <div class="h-bottom">
-              <div class="h-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
-              <button class="btn add" (click)="store.addToCart(p, 1)">Adicionar</button>
+            <div class="ch-name">{{ p.name }}</div>
+            <div class="ch-rating" *ngIf="p.rating != null || p.ratingsCount">
+              <span class="stars">
+                <ng-container *ngFor="let s of [1,2,3,4,5]">
+                  <span class="star">{{ s <= (p.rating || 0) ? '★' : '☆' }}</span>
+                </ng-container>
+              </span>
+              <span class="r-total" *ngIf="p.ratingsCount">({{ p.ratingsCount }})</span>
+            </div>
+            <div class="ch-bottom">
+              <div class="ch-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
+              <button class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'">Adicionar</button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </ng-template>
+    </section>
 
-  <!-- Confirmação de remoção -->
-  <div class="overlay" *ngIf="showConfirmRemove" (click)="cancelRemove()"></div>
-  <div class="confirm-modal" *ngIf="showConfirmRemove" role="dialog" aria-modal="true" aria-label="Remover item do carrinho" (click)="$event.stopPropagation()">
-    <div class="sad-face" aria-hidden="true">😿</div>
-    <h3>Remover do carrinho?</h3>
-    <p class="msg">{{ confirmTargetName || 'Este item' }} será removido do seu carrinho.</p>
-    <div class="actions">
-      <!-- Botão destrutivo com menor destaque -->
-      <button class="btn subtle-danger" (click)="confirmRemoveNow()" title="Remover definitivamente">Remover mesmo</button>
-      <!-- Cancelar com maior destaque para incentivar o retorno -->
-      <button class="btn primary" (click)="cancelRemove()">Cancelar</button>
-    </div>
-  </div>
-
-  <!-- Modal de endereços -->
-  <div class="overlay" *ngIf="mostrandoEnderecos" (click)="fecharModalEnderecos()"></div>
-  <div class="addr-modal" *ngIf="mostrandoEnderecos" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Selecionar endereço">
-    <div class="addr-topbar">
-      <h3>Endereços de entrega</h3>
-    </div>
-    <p class="help" *ngIf="!mostrandoCadastroEndereco">Clique em um card para selecionar e calcular o frete automaticamente.</p>
-
-    <div class="lista" *ngIf="enderecos?.length && !mostrandoCadastroEndereco; else cadNovo">
-      <div class="addr-grid">
-        <div class="addr-card" *ngFor="let e of enderecos" [class.selected]="enderecoSelecionado?.id === e.id" (click)="selecionarEndereco(e)">
-          <div class="tipo">
-            <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
-            <span class="nome">{{ e.nome || (e.tipo | titlecase) || 'Endereço' }}</span>
-          </div>
-          <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
-          <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
-          <div class="linha">CEP {{ e.cep }}</div>
-          <div class="sel-mark" aria-hidden="true">✓</div>
+    <!-- Sticky checkout bar (mobile only) -->
+    <div class="checkout-bar mobile-only" *ngIf="(store.cart$ | async)?.length">
+      <div class="bar-content">
+        <div class="bar-total">
+          <strong>Total com frete</strong>
+          <span>{{ totalComFrete | currency:'BRL' }}</span>
+          <small class="count">{{ total().count }} itens</small>
         </div>
-        <!-- Card para adicionar novo endereço -->
-        <div class="addr-card add-new" (click)="mostrarFormNovoEndereco()">
-          <div class="tipo">
-            <span class="emoji">➕</span>
-            <span class="nome">Adicionar novo endereço</span>
-          </div>
-          <div class="linha">Cadastre um novo local de entrega</div>
-        </div>
+        <button class="btn primary" aria-label="Finalizar" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar' }}</button>
       </div>
     </div>
-    <ng-template #cadNovo>
-      <form class="cad-form" #f="ngForm" (ngSubmit)="cadastrarEndereco(novoEndereco)" autocomplete="on">
-        <div class="tipo-wrap">
-          <label class="lbl">Tipo do endereço</label>
-          <div class="tipo-selectors">
-            <label class="pill" [class.on]="novoEndereco.tipo==='casa'">
-              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="casa" />
-              <span class="emoji">🏠</span>
-              <span>Casa</span>
-            </label>
-            <label class="pill" [class.on]="novoEndereco.tipo==='trabalho'">
-              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="trabalho" />
-              <span class="emoji">💼</span>
-              <span>Trabalho</span>
-            </label>
-            <label class="pill" [class.on]="novoEndereco.tipo==='entrega'">
-              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="entrega" />
-              <span class="emoji">📦</span>
-              <span>Entrega</span>
-            </label>
-            <label class="pill" [class.on]="novoEndereco.tipo==='cobranca'">
-              <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="cobranca" />
-              <span class="emoji">🧾</span>
-              <span>Cobrança</span>
-            </label>
+
+    <ng-template #vazio>
+      <div class="card vazio">
+        <div class="empty-text">Seu carrinho ainda está vazio 😺</div>
+        <p class="empty-sub">Enquanto isso, separamos alguns favoritos da nossa loja para você começar:</p>
+        <div class="highlight-box" *ngIf="!loadingHighlights && highlights?.length">
+          <h3 class="h-title">Sugestões que seu pet vai amar</h3>
+          <div class="h-grid">
+            <div class="h-item" *ngFor="let p of highlights | slice:0:8">
+              <div class="h-img-box">
+                <img [src]="p.image" [alt]="p.name" />
+                <div class="h-name">{{ p.name }}</div>
+              </div>
+              <div class="h-bottom">
+                <div class="h-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
+                <button class="btn add" (click)="store.addToCart(p, 1)">Adicionar</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="nome-wrap">
-          <label class="lbl" for="nome-end">Nome do endereço (opcional)</label>
-          <input id="nome-end" name="nome" [(ngModel)]="novoEndereco.nome" placeholder="Ex.: Casa dos pais, Ap 301, Depósito" />
-        </div>
-        <div class="grid">
-          <input name="cep" [(ngModel)]="novoEndereco.cep" (input)="onCepInputMask($event)" (blur)="onCepBlurLookup()" required placeholder="CEP" />
-          <input name="logradouro" [(ngModel)]="novoEndereco.logradouro" required placeholder="Logradouro" />
-          <input name="numero" [(ngModel)]="novoEndereco.numero" required placeholder="Número" />
-          <input name="complemento" [(ngModel)]="novoEndereco.complemento" placeholder="Complemento" />
-          <input name="bairro" [(ngModel)]="novoEndereco.bairro" required placeholder="Bairro" />
-          <input name="cidade" [(ngModel)]="novoEndereco.cidade" required placeholder="Cidade" />
-          <input name="estado" [(ngModel)]="novoEndereco.estado" required placeholder="UF" />
-        </div>
-        <div class="acoes">
-          <button type="button" class="btn light" (click)="fecharModalEnderecos()">Cancelar</button>
-          <button type="submit" class="btn">Salvar endereço</button>
-        </div>
-      </form>
+      </div>
     </ng-template>
-  </div>
+
+    <!-- Confirmação de remoção -->
+    <div class="overlay" *ngIf="showConfirmRemove" (click)="cancelRemove()"></div>
+    <div class="confirm-modal" *ngIf="showConfirmRemove" role="dialog" aria-modal="true" aria-label="Remover item do carrinho" (click)="$event.stopPropagation()">
+      <div class="sad-face" aria-hidden="true">😿</div>
+      <h3>Remover do carrinho?</h3>
+      <p class="msg">{{ confirmTargetName || 'Este item' }} será removido do seu carrinho.</p>
+      <div class="actions">
+        <!-- Botão destrutivo com menor destaque -->
+        <button class="btn subtle-danger" (click)="confirmRemoveNow()" title="Remover definitivamente">Remover mesmo</button>
+        <!-- Cancelar com maior destaque para incentivar o retorno -->
+        <button class="btn primary" (click)="cancelRemove()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Modal de endereços -->
+    <div class="overlay" *ngIf="mostrandoEnderecos" (click)="fecharModalEnderecos()"></div>
+    <div class="addr-modal" *ngIf="mostrandoEnderecos" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Selecionar endereço">
+      <div class="addr-topbar">
+        <h3>Endereços de entrega</h3>
+      </div>
+      <p class="help" *ngIf="!mostrandoCadastroEndereco">Clique em um card para selecionar e calcular o frete automaticamente.</p>
+
+      <div class="lista" *ngIf="enderecos?.length && !mostrandoCadastroEndereco; else cadNovo">
+        <div class="addr-grid">
+          <div class="addr-card" *ngFor="let e of enderecos" [class.selected]="enderecoSelecionado?.id === e.id" (click)="selecionarEndereco(e)">
+            <div class="tipo">
+              <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
+              <span class="nome">{{ e.nome || (e.tipo | titlecase) || 'Endereço' }}</span>
+            </div>
+            <div class="linha"><strong>{{ e.logradouro }}, {{ e.numero }}</strong> <span *ngIf="e.complemento"> - {{ e.complemento }}</span></div>
+            <div class="linha">{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
+            <div class="linha">CEP {{ e.cep }}</div>
+            <div class="sel-mark" aria-hidden="true">✓</div>
+          </div>
+          <!-- Card para adicionar novo endereço -->
+          <div class="addr-card add-new" (click)="mostrarFormNovoEndereco()">
+            <div class="tipo">
+              <span class="emoji">➕</span>
+              <span class="nome">Adicionar novo endereço</span>
+            </div>
+            <div class="linha">Cadastre um novo local de entrega</div>
+          </div>
+        </div>
+      </div>
+      <ng-template #cadNovo>
+        <form class="cad-form" #f="ngForm" (ngSubmit)="cadastrarEndereco(novoEndereco)" autocomplete="on">
+          <div class="tipo-wrap">
+            <label class="lbl">Tipo do endereço</label>
+            <div class="tipo-selectors">
+              <label class="pill" [class.on]="novoEndereco.tipo==='casa'">
+                <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="casa" />
+                <span class="emoji">🏠</span>
+                <span>Casa</span>
+              </label>
+              <label class="pill" [class.on]="novoEndereco.tipo==='trabalho'">
+                <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="trabalho" />
+                <span class="emoji">💼</span>
+                <span>Trabalho</span>
+              </label>
+              <label class="pill" [class.on]="novoEndereco.tipo==='entrega'">
+                <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="entrega" />
+                <span class="emoji">📦</span>
+                <span>Entrega</span>
+              </label>
+              <label class="pill" [class.on]="novoEndereco.tipo==='cobranca'">
+                <input type="radio" name="tipo" [(ngModel)]="novoEndereco.tipo" value="cobranca" />
+                <span class="emoji">🧾</span>
+                <span>Cobrança</span>
+              </label>
+            </div>
+          </div>
+          <div class="nome-wrap">
+            <label class="lbl" for="nome-end">Nome do endereço (opcional)</label>
+            <input id="nome-end" name="nome" [(ngModel)]="novoEndereco.nome" placeholder="Ex.: Casa dos pais, Ap 301, Depósito" />
+          </div>
+          <div class="grid">
+            <input name="cep" [(ngModel)]="novoEndereco.cep" (input)="onCepInputMask($event)" (blur)="onCepBlurLookup()" required placeholder="CEP" />
+            <input name="logradouro" [(ngModel)]="novoEndereco.logradouro" required placeholder="Logradouro" />
+            <input name="numero" [(ngModel)]="novoEndereco.numero" required placeholder="Número" />
+            <input name="complemento" [(ngModel)]="novoEndereco.complemento" placeholder="Complemento" />
+            <input name="bairro" [(ngModel)]="novoEndereco.bairro" required placeholder="Bairro" />
+            <input name="cidade" [(ngModel)]="novoEndereco.cidade" required placeholder="Cidade" />
+            <input name="estado" [(ngModel)]="novoEndereco.estado" required placeholder="UF" />
+          </div>
+          <div class="acoes">
+            <button type="button" class="btn light" (click)="fecharModalEnderecos()">Cancelar</button>
+            <button type="submit" class="btn">Salvar endereço</button>
+          </div>
+        </form>
+      </ng-template>
+    </div>
+  </main>
 </div>

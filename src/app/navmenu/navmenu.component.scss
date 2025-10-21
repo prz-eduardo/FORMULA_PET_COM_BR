@@ -1,3 +1,54 @@
+.icon-second,
+.icon-wrap a,
+.icon-wrap button {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.secondary-icons {
+  display: flex;
+  gap: 14px;
+}
+.icon-wrap {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.icon-second {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.icon-second.active img.icones-menu {
+  /* já está com fundo/borda amarelo */
+}
+.icones-menu {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .icon-wrap {
+    width: 40px;
+    height: 40px;
+  }
+  .icon-second {
+    width: 32px;
+    height: 32px;
+  }
+  .icones-menu {
+    width: 24px;
+    height: 24px;
+  }
+}
 /* Avoid inline styles: utility class for hidden svg */
 .sr-abs { position: absolute; }
 @import url("https://fonts.googleapis.com/css?family=Barlow:400,600,800&display=swap");
@@ -279,8 +330,7 @@ nav {
           background-image: url('/path/to/your/icon.png');
           background-size: contain;
           background-repeat: no-repeat;
-          filter: invert(0%) sepia(100%) saturate(0%) hue-rotate(180deg)
-            brightness(100%) contrast(100%); // Altera a cor do ícone para #31fddb
+          // Removido filtro que alterava cor dos ícones para cinza
 
           @include sm {
             margin: 0 5px;
@@ -304,10 +354,12 @@ nav {
 
           // when active, show a rounded colored background behind the image
           &.active img.icones-menu {
-            background: linear-gradient(180deg, rgba(16,185,129,0.12), rgba(16,185,129,0.06));
-            padding: 6px;
-            border-radius: 8px;
-            box-shadow: 0 6px 14px rgba(16,185,129,0.12);
+            background: linear-gradient(180deg, #f5a700 0%, #f3f7b0 100%);
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px #f5a70055;
+            border: 2px solid #f5a700;
+            transition: background 0.2s, box-shadow 0.2s;
           }
         }
 

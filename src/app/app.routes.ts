@@ -20,6 +20,7 @@ export const routes: Routes = [
       }
     ]
   },
+    { path: 'mapa', loadComponent: () => import('./pages/mapa/mapa.component').then(m => m.MapaComponent) },
   { path: 'restrito', redirectTo: 'restrito/login', pathMatch: 'full' },
   { path: 'restrito/login', component: LoginComponent },
   { path: 'restrito/admin', component: AdminComponent, canActivate: [authGuard] },
@@ -62,6 +63,7 @@ export const routes: Routes = [
   {path: 'restrito/admin/promocoes', loadComponent: () => import('./pages/restrito/admin/promocoes/promocoes.component').then(m => m.AdminPromocoesComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard]},
   {path: 'restrito/admin/fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard]},
+    { path: 'restrito/admin/pedidos', loadComponent: async () => (await import('./pages/restrito/admin/pedidos/pedidos.component')).AdminPedidosComponent, canActivate: [authGuard]},
   // Rotas abaixo removidas temporariamente pois os componentes não existem no workspace atual
   // {path: 'restrito/admin/ativos', loadComponent: async () => (await import('./pages/restrito/admin/ativos/ativos.component')).AtivosAdminComponent, canActivate: [authGuard]},
   // {path: 'restrito/admin/insumos', loadComponent: async () => (await import('./pages/restrito/admin/insumos/insumos.component')).InsumosAdminComponent, canActivate: [authGuard]},

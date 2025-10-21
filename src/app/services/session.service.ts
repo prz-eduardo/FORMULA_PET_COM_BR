@@ -106,4 +106,15 @@ export class SessionService {
       return null;
     }
   }
+
+  /** Returns the backend base URL (for admin modules that call custom endpoints). */
+  getBackendBaseUrl(): string {
+    return this.baseUrl;
+  }
+
+  /** Returns { Authorization: Bearer <token> } if token exists, else undefined */
+  getAuthHeaders(): { Authorization: string } | undefined {
+    const t = this.getBackendToken();
+    return t ? { Authorization: `Bearer ${t}` } : undefined;
+  }
 }

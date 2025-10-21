@@ -1,0 +1,232 @@
+<div class="admin-orders">
+  <header class="toolbar">
+    <h2>Pedidos</h2>
+    <div class="filters">
+      <label class="sr-only" for="q">Buscar</label>
+      <input id="q" class="input" type="text" [(ngModel)]="q" (ngModelChange)="load(true)" placeholder="Buscar por ID/forma" />
+      <label class="sr-only" for="status">Status</label>
+      <select id="status" class="input" [(ngModel)]="status" (change)="load(true)">
+        <option value="">Todos os status</option>
+        <option value="criado">Criado</option>
+        <option value="pago">Pago</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+    <div class="summary" *ngIf="summary">
+      <span *ngFor="let k of (summary | keyvalue)">{{k.key}}: <b>{{k.value}}</b></span>
+    </div>
+  </header>
+
+  <nav class="subnav" *ngIf="selected">
+    <button [class.active]="view==='details'" (click)="view='details'">Detalhes</button>
+    <button [class.active]="view==='payments'" (click)="view='payments'">Pagamentos</button>
+    <button [class.active]="view==='shipping'" (click)="view='shipping'">Envio</button>
+    <button [class.active]="view==='invoices'" (click)="view='invoices'">Notas</button>
+    <button class="ghost" (click)="backToList()">Voltar à lista</button>
+  </nav>
+
+  <section *ngIf="view==='list'">
+    <!-- Card grid: used on both desktop and mobile -->
+    <div class="orders-cards">
+      <div class="card item" *ngFor="let o of items">
+        <div class="row1">
+          <div class="id">#{{ o.id }}</div>
+          <div class="date muted">{{ o.created_at | date:'short' }}</div>
+        </div>
+        <div class="row2">
+          <div class="name ellipsis" [attr.title]="o.cliente_nome || '-'">{{ o.cliente_nome || '-' }}</div>
+          <div class="email muted ellipsis" [attr.title]="o.cliente_email || ''">{{ o.cliente_email || '' }}</div>
+        </div>
+        <div class="row3">
+          <span [ngClass]="['badge', statusBadge(o.status)]">{{ o.status || '-' }}</span>
+          <span class="pill">{{ o.pagamento_forma || '-' }}</span>
+        </div>
+        <div class="row4">
+          <div class="total">Total: <b>R$ {{ o.total_liquido | number:'1.2-2' }}</b></div>
+          <div class="muted small">
+            Frete: R$ {{ o.frete_valor | number:'1.2-2' }} • Desc.: R$ {{ o.desconto_total | number:'1.2-2' }}
+          </div>
+        </div>
+        <div class="row5 actions">
+          <button class="btn ghost" (click)="openDetails(o)">Detalhes</button>
+          <button class="btn ghost" (click)="openPayments(o)">Pag.</button>
+          <button class="btn ghost" (click)="openShipping(o)">Envio</button>
+          <button class="btn ghost" (click)="openInvoices(o)">Notas</button>
+        </div>
+      </div>
+    </div>
+    <div class="pager">
+      <button class="btn" (click)="prevPage()" [disabled]="page<=1">Anterior</button>
+      <span>Página {{page}} de {{totalPages}}</span>
+      <button class="btn" (click)="nextPage()" [disabled]="page>=totalPages">Próxima</button>
+    </div>
+  </section>
+
+  <section *ngIf="view==='details' && selected" class="details">
+    <header class="details-header">
+      <div class="title">
+        <h3>Pedido #{{selected?.id}}</h3>
+        <span [ngClass]="['badge', statusBadge(selected?.status)]">{{ selected?.status || '-' }}</span>
+        <div class="meta">
+          <span>Criado em: <b>{{ selected?.created_at | date:'short' }}</b></span>
+          <span>Atualizado: <b>{{ selected?.updated_at | date:'short' }}</b></span>
+        </div>
+      </div>
+      <div class="actions" *ngIf="(selected?.status || '').toLowerCase() === 'pago'">
+        <button class="btn danger" (click)="cancelarPedido()">Recusar/Cancelar</button>
+        <button class="btn primary" (click)="setStatus('em_preparo')">Aceitar (em preparo)</button>
+      </div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Cliente</h4>
+        <div class="kv"><span>Nome</span><b>{{ selectedCliente?.nome || '-' }}</b></div>
+        <div class="kv"><span>Email</span><b>{{ selectedCliente?.email || '-' }}</b></div>
+        <div class="kv"><span>CPF</span><b>{{ selectedCliente?.cpf || '-' }}</b></div>
+        <div class="kv"><span>ID</span><b>#{{ selectedCliente?.id || '-' }}</b></div>
+      </div>
+      <div class="card">
+        <h4>Pagamento</h4>
+        <div class="kv"><span>Status</span><b>{{ selected?.pagamento_status || '-' }}</b></div>
+        <div class="kv"><span>Forma</span><b>{{ selected?.pagamento_forma || '-' }}</b></div>
+        <div class="kv"><span>Último</span><b>{{ selected?.pagamento_ultimo?.valor ? ('R$ ' + (selected?.pagamento_ultimo?.valor | number:'1.2-2')) : '-' }}</b></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Entrega</h4>
+        <div class="addr" *ngIf="selected?.endereco_entrega as e; else noAddr">
+          <div>{{ e.nome || '' }}</div>
+          <div>{{ e.logradouro }}, {{ e.numero }} {{ e.complemento ? ('- ' + e.complemento) : '' }}</div>
+          <div>{{ e.bairro }} - {{ e.cidade }}/{{ e.estado }}</div>
+          <div>CEP: {{ e.cep }}</div>
+        </div>
+        <ng-template #noAddr><div class="muted">Sem endereço cadastrado</div></ng-template>
+      </div>
+      <div class="card">
+        <h4>Totais</h4>
+        <div class="kv"><span>Subtotal (orig.)</span><b>R$ {{ selected?.totals?.original_subtotal | number:'1.2-2' }}</b></div>
+        <div class="kv"><span>Descontos</span><b>R$ {{ selected?.totals?.discount_total | number:'1.2-2' }}</b></div>
+        <div class="kv"><span>Itens após desconto</span><b>R$ {{ selected?.totals?.items_total | number:'1.2-2' }}</b></div>
+        <div class="kv"><span>Frete</span><b>R$ {{ selected?.totals?.frete_total | number:'1.2-2' }}</b></div>
+        <div class="kv total"><span>Total</span><b>R$ {{ selected?.totals?.grand_total | number:'1.2-2' }}</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Itens</h4>
+      <table class="tbl compact">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Preço</th>
+            <th>Subtotal</th>
+            <th>Obs</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of (selected?.itens || selected?.raw_snapshot?.input?.itens || [])">
+            <td>{{ it.nome || ('#' + (it.produto_id||it.id)) }}</td>
+            <td>{{ it.quantidade || it.qtd || 1 }}</td>
+            <td>R$ {{ (it.preco_unit || it.valor_unitario || it.preco || 0) | number:'1.2-2' }}</td>
+            <td>R$ {{ ((it.preco_unit || it.valor_unitario || it.preco || 0) * (it.quantidade || it.qtd || 1)) | number:'1.2-2' }}</td>
+            <td>{{ it.observacoes || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Frete/Envio</h4>
+        <div class="kv"><span>Serviço</span><b>{{ selectedFrete?.nome || '-' }}</b></div>
+        <div class="kv"><span>Valor</span><b>R$ {{ (selectedFrete?.valor ?? selected?.frete_valor) | number:'1.2-2' }}</b></div>
+        <div class="muted small" *ngIf="selectedFrete?.observacao">{{ selectedFrete?.observacao }}</div>
+        <div *ngIf="shippingOptions?.length" class="opts">
+          <div class="muted small">Outras opções simuladas:</div>
+          <ul class="list">
+            <li *ngFor="let op of shippingOptions">
+              <div>
+                <b>{{ op.nome }}</b>
+                <span class="pill">{{ op.servico }}</span>
+              </div>
+              <div>
+                <b>R$ {{ op.valor | number:'1.2-2' }}</b>
+                <span class="muted small" *ngIf="op.prazo_dias">{{ op.prazo_dias }} dia(s)</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <details *ngIf="selected?.raw_shipping">
+          <summary>Ver JSON de frete</summary>
+          <pre>{{ selected?.raw_shipping | json }}</pre>
+        </details>
+      </div>
+      <div class="card">
+        <h4>Cupom</h4>
+        <div class="kv"><span>Código</span><b>{{ selected?.cupom?.codigo || selected?.cupom_codigo || '-' }}</b></div>
+        <div class="kv"><span>Desconto</span><b>R$ {{ selected?.cupom?.desconto_aplicado || 0 | number:'1.2-2' }}</b></div>
+        <details *ngIf="selected?.cupom">
+          <summary>Ver cupom</summary>
+          <pre>{{ selected?.cupom | json }}</pre>
+        </details>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Pagamentos</h4>
+        <div *ngIf="(selected?.pagamentos || selected?.payments)?.length; else noPay">
+          <ul class="list">
+            <li *ngFor="let p of (selected?.pagamentos || selected?.payments)">
+              <div>
+                <b>R$ {{ p?.valor | number:'1.2-2' }}</b>
+                <span class="pill">{{ p?.metodo || p?.forma || selected?.pagamento_forma || '-' }}</span>
+                <span class="muted">{{ p?.status || '-' }}</span>
+              </div>
+              <div class="muted small">{{ p?.data || p?.created_at | date:'short' }}</div>
+            </li>
+          </ul>
+        </div>
+        <ng-template #noPay>
+          <div class="muted">Sem pagamentos registrados</div>
+        </ng-template>
+      </div>
+      <div class="card">
+        <h4>Observações</h4>
+        <div class="muted" *ngIf="selected?.obs; else noObs">{{ selected?.obs }}</div>
+        <ng-template #noObs><div class="muted">Sem observações</div></ng-template>
+      </div>
+    </div>
+
+    
+
+    <div class="card">
+      <h4>Raw Snapshot</h4>
+      <details>
+        <summary>Ver JSON completo</summary>
+        <pre>{{ selected?.raw_snapshot || selected | json }}</pre>
+      </details>
+    </div>
+  </section>
+
+  <section *ngIf="view==='payments' && selected">
+    <h3>Pagamentos do Pedido #{{selected?.id}}</h3>
+    <p>Forma: {{selected?.pagamento_forma || '-'}} | Último pagamento: {{ selected?.pagamento_ultimo?.valor || '-' }}</p>
+  </section>
+
+  <section *ngIf="view==='shipping' && selected">
+    <h3>Envio do Pedido #{{selected?.id}}</h3>
+    <p>Frete: R$ {{selected?.frete_valor | number:'1.2-2'}}</p>
+    <pre>{{ selected?.raw_shipping | json }}</pre>
+  </section>
+
+  <section *ngIf="view==='invoices' && selected">
+    <h3>Notas do Pedido #{{selected?.id}}</h3>
+    <p>Neste demo, notas fiscais não estão implementadas.</p>
+  </section>
+  
+</div>

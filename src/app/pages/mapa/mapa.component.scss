@@ -1,0 +1,61 @@
+.mapa-container {
+  padding: 72px 20px 28px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.mapa-header {
+  margin-top: 6px;
+  margin-bottom: 18px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: headerIn .52s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes headerIn { to { opacity:1; transform:none } }
+.mapa-title {
+  font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif;
+  font-size: 44px;
+  color: #222;
+  margin: 0 0 12px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+  line-height: 1.02;
+  text-shadow: 0 6px 22px #f5a70066;
+  position: relative;
+  padding-bottom: 10px;
+}
+.mapa-title .emoji {
+  font-size: 32px;
+  vertical-align: middle;
+}
+.mapa-title::after {
+  content: '';
+  display: block;
+  width: 64px;
+  height: 6px;
+  margin-top: 12px;
+  background: linear-gradient(90deg, #f5a700, #c4d600);
+  border-radius: 999px;
+  box-shadow: 0 8px 26px #f5a70033;
+  transform-origin: center;
+  opacity: 1;
+}
+.mapa-subtitle {
+  margin: 0;
+  color: #54646b;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 500;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+}
+.mapa-frame-wrap {
+  margin-top: 18px;
+}
+.mapa-frame-wrap iframe {
+  box-shadow: 0 4px 24px #f5a70066;
+  background: #fff;
+  border-radius: 12px;
+  border: 0;
+  width: 100%;
+  height: 400px;
+  display: block;
+}
