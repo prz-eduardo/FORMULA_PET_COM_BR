@@ -121,7 +121,7 @@
           <div class="info-row">
             <span class="label">Profissão</span>
             <span class="value" *ngIf="editingSection !== 'informacoes'">{{ profissao || '-' }}</span>
-            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="profissao" />
+            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="profissao" placeholder="Profissão" title="Informe sua profissão" />
           </div>
         </div>
   </section>
@@ -135,14 +135,16 @@
           <div class="right">
             <ng-container *ngIf="editingSection !== 'endereco'">
               <button class="btn icon-pencil" title="Editar" (click)="editSection('endereco')">✏️</button>
-              <!-- Put a compact '+' action inside the Endereço card to open Meus Endereços -->
-              <button class="btn fab-enderecos" title="Meus Endereços" (click)="navigate.emit('meus-enderecos')">＋</button>
             </ng-container>
             <ng-container *ngIf="editingSection === 'endereco'">
               <button class="btn" (click)="saveSection()">Salvar</button>
               <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
             </ng-container>
           </div>
+        <!-- Botão '+' para meus endereços: visível no mobile, sempre na parte de baixo do card -->
+        <div class="fab-enderecos-mobile">
+          <button class="btn fab-enderecos" title="Meus Endereços" (click)="navigate.emit('meus-enderecos')">＋</button>
+        </div>
         </header>
         <div class="info-grid">
           <div class="info-row">

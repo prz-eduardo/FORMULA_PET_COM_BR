@@ -17,8 +17,8 @@ import { register } from 'swiper/element/bundle';
   imports: [
     CommonModule,
     RouterOutlet,
-    RouterOutlet,
     ToastContainerComponent,
+    NavmenuComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

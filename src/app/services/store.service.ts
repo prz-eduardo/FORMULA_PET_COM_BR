@@ -85,6 +85,22 @@ export class StoreService {
     private router: Router
   ) {}
 
+    /** Busca dados do cliente logado (GET /clientes/me) */
+    async getClienteMe(): Promise<any> {
+      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      try {
+        const res = await this.http.get('https://formulapetcombrbackend-production.up.railway.app/clientes/me', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }).toPromise();
+        return res;
+      } catch (err: any) {
+        if (this.toast?.error) {
+          this.toast.error('Não foi possível carregar os dados do cliente.', 'Erro');
+        }
+        return null;
+      }
+    }
+
   private isBrowser(): boolean {
     try { return typeof window !== 'undefined' && typeof localStorage !== 'undefined'; } catch { return false; }
   }

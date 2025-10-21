@@ -278,7 +278,7 @@ export class PerfilComponent {
     if (this.avatarPreview) return this.avatarPreview;
     try {
       const u: any = (this.me && (this.me as any).user) || {};
-      return u.photoURL || '/imagens/image.png';
+      return u.foto || '/imagens/image.png';
     } catch { return '/imagens/image.png'; }
   }
 

@@ -15,6 +15,8 @@ import { gsap } from 'gsap';
   styleUrls: ['./navmenu.component.scss']
 })
 export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
+  user: any = null;
+  userFoto: string | null = null;
   previousScroll: number = 0;
   isVisible = true;
   currentRoute: string = '';
@@ -49,18 +51,94 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
     });
 
-    // Detecta sessão de cliente (assíncrono, não afeta o primeiro ciclo)
+    // Detecta sessão de cliente e busca dados do usuário apenas se necessário
+    this.isCliente = false;
+    this.user = null;
+    this.userFoto = null;
+    // Tenta carregar foto do cliente do localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const userStr = localStorage.getItem('cliente_me');
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          this.user = userObj;
+          console.log('Carregou dados do cliente do localStorage', userObj);
+          // Corrige para buscar foto dentro de user
+          this.userFoto = userObj?.user?.foto || null;
+        } catch {}
+      }
+    }
+    // Detecta sessão de cliente e busca dados do usuário apenas se não houver no localStorage
     this.store.isClienteLoggedSilent()
-      .then(ok => this.isCliente = ok)
-      .catch(() => this.isCliente = false);
+      .then(ok => {
+        this.isCliente = ok;
+        if (ok && !this.user) {
+          this.store.getClienteMe().then(u => {
+            this.user = u;
+            this.userFoto = u?.foto || null;
+            // Salva no localStorage
+            if (typeof window !== 'undefined' && window.localStorage && u) {
+              localStorage.setItem('cliente_me', JSON.stringify(u));
+            }
+          }).catch(() => {
+            this.user = null;
+            this.userFoto = null;
+          });
+        }
+      })
+      .catch(() => {
+        this.isCliente = false;
+        this.user = null;
+        this.userFoto = null;
+      });
     // Cross-sync: atualiza ícones/estado quando login/logout ocorrer em qualquer lugar
     this.auth.isLoggedIn$.subscribe(async ok => {
       if (ok) {
         this.isCliente = await this.store.isClienteLoggedSilent().catch(() => false);
+        if (this.isCliente) {
+          // Só faz nova requisição se não houver user salvo
+          if (!this.user) {
+            this.store.getClienteMe().then(u => {
+              this.user = u;
+              this.userFoto = u?.foto || null;
+              if (typeof window !== 'undefined' && window.localStorage && u) {
+                localStorage.setItem('cliente_me', JSON.stringify(u));
+              }
+            }).catch(() => {
+              this.user = null;
+              this.userFoto = null;
+            });
+          }
+        } else {
+          this.user = null;
+          this.userFoto = null;
+        }
       } else {
         this.isCliente = false;
+        this.user = null;
+        this.userFoto = null;
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem('cliente_me');
+        }
       }
     });
+  }
+
+  // Função para forçar atualização dos dados do cliente e localStorage
+  async atualizarClienteMe() {
+    if (this.isCliente) {
+      try {
+        const u = await this.store.getClienteMe();
+        this.user = u;
+        this.userFoto = u?.foto || null;
+        if (typeof window !== 'undefined' && window.localStorage && u) {
+          localStorage.setItem('cliente_me', JSON.stringify(u));
+        }
+      } catch {
+        this.user = null;
+        this.userFoto = null;
+      }
+    }
   }
 
   ngAfterViewInit(): void {
@@ -76,8 +154,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
 
-    // Initialize metaballs animation behind logo (scoped to logo-container)
-    this.initMetaBalls();
+      // Initialize metaballs animation behind logo (scoped to logo-container)
+      this.initMetaBalls();
 
       // Inicia o timer de inatividade (sem scroll) para auto-ocultar a navbar
       this.resetIdleTimer();
