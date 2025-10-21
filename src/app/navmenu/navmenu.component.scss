@@ -354,11 +354,11 @@ nav {
 
           // when active, show a rounded colored background behind the image
           &.active img.icones-menu {
-            background: linear-gradient(180deg, #f5a700 0%, #f3f7b0 100%);
+            background: linear-gradient(180deg, #f5a700 0%, rgba(245, 167, 0, 0.08) 100%);
             padding: 8px;
             border-radius: 12px;
             box-shadow: 0 6px 18px #f5a70055;
-            border: 2px solid #f5a700;
+            border: none;
             transition: background 0.2s, box-shadow 0.2s;
           }
         }
