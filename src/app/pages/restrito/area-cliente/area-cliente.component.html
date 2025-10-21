@@ -14,9 +14,9 @@
   </div>
 
   <!-- Painel Cliente -->
-  <div *ngIf="hasAuth" class="cliente-panel">
+  <div *ngIf="hasAuth && internalView !== 'perfil'" class="cliente-panel">
     <div class="cliente-info">
-  <img *ngIf="clienteData?.photoURL" [src]="clienteData.photoURL" class="cliente-photo" [attr.alt]="clienteData?.nome ? ('Foto de ' + clienteData.nome) : 'Foto do cliente'" title="Foto do cliente" />
+      <img *ngIf="clienteData?.photoURL" [src]="clienteData.photoURL" class="cliente-photo" [attr.alt]="clienteData?.nome ? ('Foto de ' + clienteData.nome) : 'Foto do cliente'" title="Foto do cliente" />
       <span class="cliente-nome">{{ clienteData?.nome }}</span>
     </div>
     <div class="cliente-actions" (click)="$event.stopPropagation()">

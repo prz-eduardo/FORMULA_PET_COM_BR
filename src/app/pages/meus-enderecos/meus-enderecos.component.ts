@@ -13,7 +13,8 @@ import { AuthService } from '../../services/auth.service';
 })
 export class MeusEnderecosComponent {
   @Input() modal: boolean = false;
-  @Output() close = new EventEmitter<void>();
+  @Input() returnToPerfil: boolean = false;
+  @Output() close = new EventEmitter<string|void>();
 
   // Addresses will be loaded from the API. Keep a small fallback so UI renders if API fails.
   enderecos: any[] = [
@@ -73,7 +74,13 @@ export class MeusEnderecosComponent {
     this.detailOpen = true;
   }
 
-  doClose() { this.close.emit(); }
+  doClose() {
+    if (this.returnToPerfil) {
+      this.close.emit('perfil');
+    } else {
+      this.close.emit();
+    }
+  }
 
   // Detail modal state
   detailOpen = false;

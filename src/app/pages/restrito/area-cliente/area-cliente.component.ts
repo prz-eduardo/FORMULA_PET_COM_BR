@@ -39,6 +39,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
 
   // Internal navigation state when in modal
   internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | null = null;
+  // track which internal view originated the last navigation (used to return)
+  private lastInternalOrigin: string | null = null;
 
   modalLoginAberto = false;
   modalCadastroAberto = false;
@@ -253,7 +255,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       this.titulo = 'Histórico de receitas';
       return this.openConsultarPedidosOverlay();
     }
-    if (view === 'meus-enderecos') {
+      if (view === 'meus-enderecos') {
       if (!this.modal) return this.router.navigateByUrl('/meus-enderecos');
       this.internalView = 'meus-enderecos';
       this.titulo = 'Meus Endereços';
@@ -265,8 +267,18 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
         const ref = this.internalHost.createComponent(Cmp);
         if (ref?.instance) {
           (ref.instance as any).modal = true;
+          // If we opened this from Perfil, allow MeusEnderecos to request returning to Perfil
+          (ref.instance as any).returnToPerfil = this.lastInternalOrigin === 'perfil';
           if ((ref.instance as any).close) {
-            (ref.instance as any).close.subscribe(() => this.goBack());
+            (ref.instance as any).close.subscribe((payload?: string) => {
+              if (payload === 'perfil') {
+                // reopen perfil inside the modal
+                try { this.internalHost?.clear(); } catch {}
+                this.open('perfil');
+                return;
+              }
+              this.goBack();
+            });
           }
         }
       } catch (e) {
@@ -337,6 +349,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           if ((ref.instance as any).navigate) {
             (ref.instance as any).navigate.subscribe((viewName: string) => {
               try { this.internalHost?.clear(); } catch {}
+              // remember that perfil requested navigation so child can return here if needed
+              this.lastInternalOrigin = 'perfil';
               // open will route appropriately; since we're in modal, it will create the internal view
               this.open(viewName as any);
             });

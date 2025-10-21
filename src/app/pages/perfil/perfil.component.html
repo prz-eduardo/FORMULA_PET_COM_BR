@@ -60,12 +60,6 @@
         </header>
         <div class="info-grid">
           <div class="info-row">
-            <span class="label">Nome</span>
-            <!-- Prefer explicit fallback to me.user.nome when nome is empty -->
-            <span class="value" *ngIf="editingSection !== 'informacoes'">{{ nome || me?.user?.nome || '-' }}</span>
-            <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="nome" />
-          </div>
-          <div class="info-row">
             <span class="label">Email</span>
             <span class="value" *ngIf="editingSection !== 'informacoes'">{{ email || '-' }}</span>
             <input class="inline-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="email" type="email" />
@@ -383,11 +377,6 @@
           </div>
         </div>
       </section>
-    </div>
-
-    <div class="acoes" *ngIf="!carregando && !readOnly">
-      <a class="btn btn-sec" routerLink="/area-cliente">Cancelar</a>
-      <button class="btn" (click)="salvar()" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
     </div>
     
     <!-- Account actions: logout and delete account -->
