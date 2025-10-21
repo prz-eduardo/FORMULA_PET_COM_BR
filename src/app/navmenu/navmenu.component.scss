@@ -13,9 +13,12 @@
   background: #fff !important;
   display: block !important;
 }
+// Remove efeito de foco/outline azul dos ícones, links e botões
 .icon-second,
 .icon-wrap a,
-.icon-wrap button {
+.icon-wrap button,
+a,
+button {
   outline: none !important;
   box-shadow: none !important;
 }
@@ -331,31 +334,23 @@ nav {
       .secondary-icons {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 14px;
         align-items: center;
 
         .icon-second {
           width: 30px;
           height: 30px;
-          margin: 0 10px;
+          margin: 0;
           cursor: pointer;
           transition: all 0.3s ease;
           padding: 5px;
           background-color: transparent;
-          background-image: url('/path/to/your/icon.png');
+          background-image: none;
           background-size: contain;
           background-repeat: no-repeat;
-          // Removido filtro que alterava cor dos ícones para cinza
 
           @include sm {
-            margin: 0 5px;
-          }
-
-          &:last-child {
-            margin-right: 30px;
-            @include sm {
-              margin-right: 15px;
-            }
+            margin: 0;
           }
 
           &:hover {
