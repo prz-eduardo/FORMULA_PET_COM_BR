@@ -2,7 +2,8 @@
   <app-navmenu></app-navmenu>
   <main class="carrinho-container container">
     <header class="carrinho-header">
-      <h1 class="carrinho-title">Carrinho 🛒</h1>
+      <h1 class="carrinho-title">Carrinho <img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho">
+</h1>
       <p class="carrinho-subtitle">Veja e gerencie os produtos que você está prestes a levar para seu pet. Confira descontos, promoções e finalize sua compra com facilidade!</p>
       <div class="carrinho-title-line"></div>
     </header>
@@ -157,10 +158,12 @@
         </div>
         <div class="card resumo">
           <h3>Resumo do pedido</h3>
-          <div class="promo-banner" *ngIf="validarTotals as vt" [hidden]="!(vt.discount_total && vt.discount_total > 0)">
-            <span class="emoji" aria-hidden="true">🎉</span>
-            <span>Você está economizando <strong>{{ vt.discount_total | currency:'BRL' }}</strong> com as promoções ativas!</span>
-          </div>
+          <ng-container *ngIf="validarTotals as vt">
+            <div class="promo-banner" *ngIf="vt.discount_total > 0">
+              <span class="emoji" aria-hidden="true">🎉</span>
+              <span>Você está economizando <strong>{{ vt.discount_total | currency:'BRL' }}</strong> com as promoções ativas!</span>
+            </div>
+          </ng-container>
           <div class="totais">
             <ng-container *ngIf="totalsNorm as tn; else legacyTotals">
               <div>Itens: {{ tn.item_count ?? total().count }}</div>
@@ -191,7 +194,7 @@
             </ng-template>
           </div>
           <div class="acoes">
-            <button class="btn primary" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar pedido' }}</button>
+            <button class="btn primary" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Ir para pagamento' }}</button>
           </div>
         </div>
       </div>
@@ -236,7 +239,7 @@
           <span>{{ totalComFrete | currency:'BRL' }}</span>
           <small class="count">{{ total().count }} itens</small>
         </div>
-        <button class="btn primary" aria-label="Finalizar" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Finalizar' }}</button>
+  <button class="btn primary" aria-label="Pagar" [disabled]="!store.isCheckoutAllowed() || criandoPedido" (click)="finalizarPedido()" title="{{ store.isCheckoutAllowed() ? '' : 'Finalize as receitas pendentes' }}">{{ criandoPedido ? 'Enviando...' : 'Pagar' }}</button>
       </div>
     </div>
 

@@ -34,12 +34,14 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  background-color: #ff4081;
+  background: linear-gradient(90deg, var(--brand-yellow-700), var(--brand-yellow));
   color: #fff;
   padding: 6px 10px;
-  border-radius: 4px;
-  font-weight: 600;
+  border-radius: 999px;
+  font-weight: 800;
   font-size: 0.9rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.16);
+  text-transform: uppercase;
 }
 
 .favourite-icon {

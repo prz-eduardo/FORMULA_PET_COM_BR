@@ -3,7 +3,8 @@
 	<header class="pd-header">
 		<a class="back" (click)="back()">← Voltar</a>
 		<h1 class="title" [title]="product!.name">{{ product!.name }}</h1>
-		<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho">🛒</button>
+		<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho"><img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho">
+</button>
 	</header>
 
 	<section class="pd-main">
@@ -61,6 +62,7 @@
 	<header class="pd-header">
 		<a class="back" (click)="back()">← Voltar</a>
 		<h1 class="title">Produto</h1>
-		<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho">🛒</button>
+		<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho"><img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho">
+</button>
 	</header>
 </ng-template>

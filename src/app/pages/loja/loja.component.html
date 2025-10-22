@@ -2,7 +2,8 @@
   <app-navmenu></app-navmenu>
   <!-- Hero/Banner -->
   <section class="hero">
-  <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" loading="lazy" decoding="async" />
+  <!-- <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" loading="lazy" decoding="async" /> -->
+    <img src="imagens/banner.jpg"  alt="Pets felizes" loading="lazy" decoding="async">
     <div class="hero-overlay">
       <h1 class="titulo">Formula Pet</h1>
       <p class="subtitle">Do focinho ao rabinho a dose certa de carinho!💓</p>
@@ -36,7 +37,8 @@
         </button>
       </div>
         <button #cartBtn type="button" (click)="onCartClick($event)" class="btn cart-link with-badge" title="Ir para o carrinho" aria-label="Carrinho">
-          🛒
+          <img src="/icones/carrinho.png" class="carrinho-header" width="30" height="30" alt="Carrinho">
+
         <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
       </button>
     </div>
@@ -71,7 +73,8 @@
             <span class="heart">{{ isFav(p) ? '❤️' : '🤍' }}</span>
             <span class="count" *ngIf="p.favoritesCount != null">{{ p.favoritesCount }}</span>
           </button>
-          <button type="button" class="add" (click)="onAddToCartFromCard(p, $event)" title="Adicionar ao carrinho">🛒</button>
+          <button type="button" class="add" (click)="onAddToCartFromCard(p, $event)" title="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho">
+</button>
         </div>
       </a>
     </div>
@@ -125,7 +128,8 @@
               </div>
               <div class="d-actions">
                 <button type="button" class="btn fav" [class.active]="isFav(it.product)" (click)="onToggleFavFromCard(it.product, $event)" aria-label="Favoritar">❤</button>
-                <button type="button" class="btn add" (click)="onAddToCartFromCard(it.product, $event)" aria-label="Adicionar ao carrinho">🛒</button>
+                <button type="button" class="btn add" (click)="onAddToCartFromCard(it.product, $event)" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho">
+</button>
               </div>
             </div>
           </a>
