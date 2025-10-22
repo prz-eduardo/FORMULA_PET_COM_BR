@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
 html, body{
     margin: 0;
     padding: 0;
@@ -9,6 +10,9 @@ html, body{
     /* Global default font (matches app's standard) */
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
+
+/* Make Poppins available for headers and pet names */
+.pf-poppins { font-family: 'Poppins', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
 
 /* Make body a positioned container so the paw overlay can scroll with the page */
 body { position: relative; }
@@ -88,6 +92,16 @@ img, video, canvas, svg {
 /* Icon sizing tokens */
 :root{
     --icon-xxs: 16px; /* extra-extra-small icons (used for compact nav icons) */
+}
+
+/* Remove mobile tap highlight globally and related touch-callout artifacts */
+/* This disables the yellow/gray flash on touch in WebKit-based browsers. */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important; /* disable callout on long press (iOS) */
+}
+a, button, input, textarea, select {
+    -webkit-tap-highlight-color: transparent !important;
 }
 
 /* Target common admin wrappers to normalize controls */

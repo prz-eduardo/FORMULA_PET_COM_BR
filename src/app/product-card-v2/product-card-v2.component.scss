@@ -5,38 +5,38 @@
 .fav { position: absolute; right: 8px; top: 8px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.95); border: 1px solid #e5e7eb; border-radius: 999px; padding: 6px 10px; cursor: pointer; }
 .fav .heart { font-size: 16px; line-height: 1; }
 .fav .count { font-size: 12px; color: #374151; }
-.add { 
-    position: absolute; 
-    right: 8px; 
-    bottom: 8px; 
-    width: 44px; 
-    height: 44px; 
-    border-radius: 999px; 
-    border: none; 
-    background: var(--brand-yellow-700, #b45309); 
-    color: #fff; 
-    box-shadow: 0 6px 14px rgba(180,83,9,0.35); 
-    cursor: pointer; 
-    display: grid; 
-    place-items: center; 
+.add {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: none;
+    background: var(--brand-yellow, #f5a700);
+    color: var(--brand-ink, #111827);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.28), 0 6px 14px rgba(156,179,0,0.12);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
 }
 .add:active { transform: scale(.96); }
 .add::after {
- 	content: "+";
- 	position: absolute;
- 	top: -6px;
- 	right: -6px;
- 	width: 18px;
- 	height: 18px;
- 	border-radius: 999px;
- 	background: var(--brand-yellow-700);
- 	color: #fff;
- 	font-weight: 900;
- 	font-size: 12px;
- 	line-height: 18px;
- 	text-align: center;
- 	border: 2px solid #fff;
- 	box-shadow: 0 4px 12px rgba(0,0,0,.18);
+    content: "+";
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--brand-yellow-700);
+    color: #fff;
+    font-weight: 900;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,.18);
 }
 .info { padding: 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .nome { font-size: 15px; font-weight: 700; color: #111827; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

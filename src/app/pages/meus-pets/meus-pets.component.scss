@@ -1,26 +1,79 @@
-.meus-pets-wrapper .container { padding-top: 8px; }
-.meus-pets-wrapper{ min-height:100vh; background: linear-gradient(135deg, #0d151f, #1a2230); color:#ecf0f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; padding: 72px 0 40px }
-.container{ max-width:1080px; margin:0 auto; padding:0 16px }
-.titulo{ font-size:36px; font-weight:800; color:var(--primary); margin: 8px 0 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5); font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif }
-.card{ background:#182439; border-radius:12px; padding:16px; box-shadow:0 6px 12px rgba(0,0,0,.35) }
-.grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px }
-.pet-card{ display:flex; gap:12px; background:#142033; border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:12px }
-.pet-card img{ width:84px; height:84px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,.08) }
-.pet-card .info{ display:flex; flex-direction:column; gap:6px; min-width:0 }
-.muted{ color:#9fb0c8; font-size:13px }
-.tags{ display:flex; gap:6px; flex-wrap:wrap }
-.tag{ background:#2a364a; color:#d7e4f8; padding:3px 8px; border-radius:999px; font-size:12px }
-.alergias{ display:flex; gap:6px; flex-wrap:wrap }
-.chip{ background:#ffe6e6; color:#8a1f1f; border:1px solid #ffcccc; padding:3px 8px; border-radius:999px; font-size:12px }
+/* Adopt the area-like wrapper style used by Meus Pedidos for visual parity */
+.area-like-wrapper.pets-area { padding-top: 8px; }
+.area-like-wrapper.pets-area{
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0d151f, #1a2230);
+  color: #ecf0f5;
+  padding: 72px 0 40px;
+  font-family: 'Inter', sans-serif;
+}
+
+.container{ max-width: 1080px; margin: 0 auto; padding: 0 16px }
+
+.titulo{ font-size: 36px; font-weight: 700; color: var(--primary); margin: 8px 0 16px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif }
+
+/* Generic card style matching Meus Pedidos */
+.card{ background: #fff; color: #0f172a; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 6px 18px rgba(2,6,23,0.06) }
+
+.pet-list{ display: grid; gap: 12px }
+.pet-card{ display: block; border-radius: 14px; overflow: visible; background: transparent; border: none; box-shadow: none; }
+.pet-card:hover{ transform: translateY(-6px); box-shadow: 0 18px 44px rgba(2,6,23,0.12); }
+.photo-card { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 1 / 1; }
+.photo-bg { width: 100%; height: 100%; background-size: cover; background-position: center; display:block; transition: transform .28s cubic-bezier(.2,.9,.2,1); }
+.photo-card:hover .photo-bg{ transform: scale(1.03); }
+.top-overlay{ position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; gap:6px; align-items:flex-start; padding:18px 20px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); }
+.pet-title{ margin:0; font-size:36px; line-height:1; color:#fff; font-weight:900; text-shadow: 0 8px 26px rgba(2,6,23,0.6); max-width: calc(100% - 48px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.pet-title.long{ font-size:22px }
+.species-rows{ display:flex; flex-direction:column; gap:4px; margin-top:4px }
+.species-rows .species, .species-rows .raca{ font-size:13px; color: rgba(255,255,255,0.9); font-weight:600 }
+.overlay{ position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:space-between; align-items:flex-end; padding:18px 20px; gap:12px; background: linear-gradient(180deg, rgba(2,6,23,0) 0%, rgba(2,6,23,0.26) 30%, rgba(2,6,23,0.6) 100%); }
+.meta-left{ display:flex; flex-direction:column; gap:6px }
+.meta-left .name{ margin:0; font-size:22px; color:#fff; font-weight:900; text-shadow: 0 6px 18px rgba(2,6,23,0.5); }
+.meta-left .name.pf-poppins{ font-family: 'Poppins', sans-serif }
+.meta-left .muted.small{ color: rgba(255,255,255,0.85); font-size:13px }
+.meta-right .badges{ display:flex; gap:8px; align-items:center }
+.badge{ padding:6px 10px; border-radius:999px; background: rgba(255,255,255,0.95); color:#0b1220; font-weight:700; font-size:13px }
+.badge.sexo{ background: rgba(255,255,255,0.92); color: #b91c1c }
+.badge.peso{ background: rgba(255,255,255,0.92); color:#7a4e00 }
+
+.edit-fab{ position: absolute; top: 12px; right: -14px; z-index: 40; background: rgba(0,0,0,0.45); color: #fff; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; box-shadow: 0 8px 18px rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.06); font-size:16px; text-decoration:none; font-weight:700 }
+.edit-fab:hover{ background: rgba(0,0,0,0.55); transform: translateY(-2px) }
+.edit-fab.disabled{ opacity:.6; pointer-events:none }
+
+.pet-body.compact{ padding: 12px 6px 6px 6px; background: transparent }
+
+.alergias{ margin-bottom:8px }
+.chip{ background: rgba(255,255,255,0.95); color:#9b1232; border:1px solid rgba(0,0,0,0.04); padding:6px 10px; border-radius:999px; font-size:13px }
+
+.observacoes .muted{ font-size:13px; color: #cbd5e1; margin-bottom:6px }
+.obs-text{ color: #dbeafe }
+.badges{ display:flex; gap:8px; align-items:center }
+.badge{ padding:6px 10px; border-radius:999px; background:#fff9eb; color:#7a4e00; font-weight:700; border:1px solid #fde9b8; font-size:13px }
+.badge.sexo{ background:#fff2f5; color:#9b1232; border:1px solid #ffd6e0 }
+
+.pet-body{ padding: 12px 18px 18px 18px; display:flex; flex-direction:column; gap:10px; background: linear-gradient(180deg,#fffaf3,#ffffff) }
+.pet-body .tags{ display:flex; gap:8px; flex-wrap:wrap }
+.tag{ padding:6px 10px; border-radius:999px; background:#fff7e6; border:1px solid #ffe7b8; color:#7a4e00; font-weight:700; font-size:13px }
+.alergias{ display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+.chip{ background:#fff5f7; color:#9b1232; border:1px solid #ffd6e0; padding:6px 10px; border-radius:999px; font-size:13px }
+.observacoes .muted{ font-size:13px; color:#6b7280; margin-bottom:6px }
+.obs-text{ color:#0b1220 }
+
 .acoes{ display:flex; justify-content:flex-end; margin-top:16px }
 .btn{ padding:10px 16px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block }
 .btn-mini{ padding:6px 10px; font-size:12px }
-.btn-sec{ background:#2a364a; border:1px solid rgba(255,255,255,.08) }
+.btn-sec{ background:#eef2ff; border:1px solid #bae6fd; color:#0f172a }
 .btn.disabled{ opacity:.6; pointer-events:none }
-.top-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px }
-.card-actions{ margin-top:8px }
+.top-actions{ display:flex; align-items:center; gap:10px; margin-bottom:10px }
+.btn-back{ background:#e2e8f0; color:#0f172a; border:1px solid #cbd5e1; border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:600 }
+
+@media (max-width: 860px){
+  .overlay{ padding:12px 14px }
+  .meta-left .name{ font-size:18px }
+  .edit-fab{ right: 8px; top: 10px }
+}
 
 @media (max-width:560px){
   .titulo{ font-size:28px }
-  .pet-card img{ width:72px; height:72px }
+  .pet-head img{ width:72px; height:72px }
 }

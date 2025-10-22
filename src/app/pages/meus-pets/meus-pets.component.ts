@@ -16,8 +16,8 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 export class MeusPetsComponent {
   @Input() modal: boolean = false;
   @Output() close = new EventEmitter<void>();
-  clienteMe: ClienteMeResponse | null = null;
-  pets: any[] = [];
+  @Input() clienteMe: any | null = null;
+  @Input() pets: any[] = [];
   carregando = true;
 
   constructor(
@@ -32,8 +32,28 @@ export class MeusPetsComponent {
   }
 
   ngOnInit(){
+    // If parent passed cliente/pets via @Input, use them and avoid extra API calls
+    if (this.clienteMe && Array.isArray(this.pets) && this.pets.length > 0) {
+      this.carregando = false;
+      return;
+    }
+
     const t = this.token;
     if (!t) { this.carregando = false; return; }
+
+    // If we have cliente but no pets, fetch only pets
+    if (this.clienteMe && !this.pets?.length) {
+      const id = Number(this.clienteMe?.user?.id || this.clienteMe?.id || 0);
+      if (!isNaN(id) && id > 0) {
+        this.api.getPetsByCliente(id, t).subscribe({
+          next: (res) => { this.pets = res || []; this.carregando = false; },
+          error: () => { this.toast.error('Erro ao carregar pets'); this.carregando = false; }
+        });
+        return;
+      }
+    }
+
+    // Fallback: fetch cliente and pets
     this.api.getClienteMe(t).subscribe({
       next: (me) => {
         this.clienteMe = me;
@@ -51,5 +71,11 @@ export class MeusPetsComponent {
 
   voltar(){
     if (this.modal) this.close.emit();
+  }
+
+  // Fallback for broken or missing pet images
+  onImgError(event: Event){
+    const img = event?.target as HTMLImageElement | null;
+    if (img) img.src = '/imagens/image.png';
   }
 }

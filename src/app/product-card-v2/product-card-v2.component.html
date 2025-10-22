@@ -6,8 +6,7 @@
       <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>
       <span class="count" *ngIf="product.favoritesCount != null">{{ product.favoritesCount }}</span>
     </button>
-    <button class="add" (click)="onAddClick($event)" title="Adicionar ao carrinho"><p class="icon-carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho">
-</p> </button>
+  <button type="button" class="btn add" (click)="onAddClick($event)" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
   </div>
   <div class="info">
     <h3 class="nome" [title]="product.name">{{ product.name }}</h3>

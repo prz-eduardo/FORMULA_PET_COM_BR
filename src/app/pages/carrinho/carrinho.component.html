@@ -224,7 +224,7 @@
             </div>
             <div class="ch-bottom">
               <div class="ch-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
-              <button class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'">Adicionar</button>
+              <button type="button" class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
             </div>
           </div>
         </div>
@@ -257,7 +257,7 @@
               </div>
               <div class="h-bottom">
                 <div class="h-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
-                <button class="btn add" (click)="store.addToCart(p, 1)">Adicionar</button>
+                <button type="button" class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
               </div>
             </div>
           </div>

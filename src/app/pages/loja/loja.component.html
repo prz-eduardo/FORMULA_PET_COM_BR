@@ -73,8 +73,7 @@
             <span class="heart">{{ isFav(p) ? '❤️' : '🤍' }}</span>
             <span class="count" *ngIf="p.favoritesCount != null">{{ p.favoritesCount }}</span>
           </button>
-          <button type="button" class="add" (click)="onAddToCartFromCard(p, $event)" title="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho">
-</button>
+          <button type="button" class="btn add" (click)="onAddToCartFromCard(p, $event)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'" title="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
         </div>
       </a>
     </div>
@@ -128,8 +127,7 @@
               </div>
               <div class="d-actions">
                 <button type="button" class="btn fav" [class.active]="isFav(it.product)" (click)="onToggleFavFromCard(it.product, $event)" aria-label="Favoritar">❤</button>
-                <button type="button" class="btn add" (click)="onAddToCartFromCard(it.product, $event)" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho">
-</button>
+                <button type="button" class="btn add" (click)="onAddToCartFromCard(it.product, $event)" [attr.aria-label]="'Adicionar ' + it.product.name + ' ao carrinho'" title="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
               </div>
             </div>
           </a>

@@ -36,6 +36,12 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   clienteData: any = null;
   pets: Pet[] = [];
   private sub?: Subscription;
+  // Promise that resolves when loadProfile finishes (success or failure)
+  private profilePromise?: Promise<void>;
+  private _resolveProfile?: () => void;
+  private _rejectProfile?: (err?: any) => void;
+  private profileLoading: boolean = false;
+  private lastProfileToken?: string | null = null;
 
   // Internal navigation state when in modal
   internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | null = null;
@@ -176,6 +182,21 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
 
   private loadProfile(token: string) {
     // silent load; if it fails, disconnect
+    // avoid duplicate concurrent loads for the same token
+    if (this.profileLoading && this.lastProfileToken === token) {
+      return;
+    }
+    this.profileLoading = true;
+    this.lastProfileToken = token || null;
+
+    // create a promise so callers (like open('meus-pets')) can wait for completion
+    if (!this.profilePromise) {
+      this.profilePromise = new Promise<void>((resolve, reject) => {
+        this._resolveProfile = () => { resolve(); };
+        this._rejectProfile = (err?: any) => { reject(err); };
+      });
+    }
+
     this.api.getClienteMe(token).subscribe({
       next: (res) => {
         if (res && res.user) {
@@ -184,18 +205,33 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           const id = Number(res.user.id);
           if (!isNaN(id)) {
             this.api.getPetsByCliente(id, token).subscribe({
-              next: (pets) => this.pets = pets || [],
+              next: (pets) => {
+                this.pets = pets || [];
+                try { this._resolveProfile && this._resolveProfile(); } catch {}
+                this.profileLoading = false;
+                this.profilePromise = undefined;
+              },
               error: (err) => {
                 const msg = (err && err.error && (err.error.message || err.error.error)) || err.message || 'Erro ao buscar pets';
                 this.toast.error(msg, 'Erro');
                 this.pets = [];
+                try { this._resolveProfile && this._resolveProfile(); } catch {}
+                this.profileLoading = false;
+                this.profilePromise = undefined;
               }
             });
+          } else {
+            try { this._resolveProfile && this._resolveProfile(); } catch {}
+            this.profileLoading = false;
+            this.profilePromise = undefined;
           }
         } else {
           // resposta inesperada
           this.toast.error('Resposta inesperada do servidor', 'Erro');
           this.logout();
+          try { this._resolveProfile && this._resolveProfile(); } catch {}
+          this.profileLoading = false;
+          this.profilePromise = undefined;
         }
       },
       error: (err) => {
@@ -203,6 +239,9 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
         this.toast.error(msg, 'Sessão inválida');
         // desconecta ao falhar validação
         this.logout();
+        try { this._resolveProfile && this._resolveProfile(); } catch {}
+        this.profileLoading = false;
+        this.profilePromise = undefined;
       }
     });
   }
@@ -317,9 +356,24 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       } else if (view === 'meus-pets') {
         const mod = await import('../../../pages/meus-pets/meus-pets.component');
         const Cmp = (mod as any).MeusPetsComponent;
+
+        // If we are still loading profile, wait for it to finish (with a short timeout)
+        if ((!this.clienteData || !this.pets || this.pets.length === 0) && this.profilePromise) {
+          try {
+            // await but don't hang forever: 2s timeout
+            await Promise.race([
+              this.profilePromise,
+              new Promise(resolve => setTimeout(resolve, 2000))
+            ]);
+          } catch {}
+        }
+
         const ref = this.internalHost.createComponent(Cmp);
         if (ref?.instance) {
           (ref.instance as any).modal = true;
+          // Provide parent-loaded cliente/pets to avoid duplicate API calls
+          try { (ref.instance as any).clienteMe = this.clienteData; } catch {}
+          try { (ref.instance as any).pets = this.pets || []; } catch {}
           if ((ref.instance as any).close) {
             (ref.instance as any).close.subscribe(() => this.goBack());
           }
