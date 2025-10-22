@@ -810,7 +810,6 @@ nav {
   border-radius:20px;
   overflow:auto;
   max-height:inherit;
-  padding:10px; /* maintain existing inner padding */
   min-height: 360px; /* stable height while loading */
   min-width: 320px; /* avoid thin stripe visual glitch */
 }

@@ -1,35 +1,58 @@
 .area-cliente-wrapper {
+  // Glassmorphism foundation variables
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-strong: rgba(255,255,255,0.06);
+  --glass-text: rgba(238,244,255,0.95);
+  --glass-shadow: 0 10px 30px rgba(2,6,23,0.32);
   font-family: 'Inter', sans-serif;
-  color: #e9eef6;
+  color: var(--glass-text);
   min-height: 100vh;
-  padding: 24px 0 48px;
+  padding: 28px 0 56px;
   display: flex;
   flex-direction: column;
   gap: 28px;
-  /* Dark app shell background so the inner cards stand out */
-  background: radial-gradient(1200px 600px at 10% 10%, rgba(4,6,11,0.55), transparent), linear-gradient(180deg, #08090b 0%, #0c0f14 100%);
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(2,6,11,0.6), transparent), linear-gradient(180deg, #07080a 0%, #0b0e12 100%);
 }
 
 .titulo {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 700;
   text-align: center;
-  color: #f8fafc; /* light header text */
+  color: var(--glass-text);
   margin-bottom: 6px;
   font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif;
-  /* subtle translucent rounded bar behind the title to make header pop */
   position: relative;
+}
+
+/* Reusable glass card utility */
+.glass-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Dark glass variant for modal surfaces and cards inside darker shells */
+.glass-card--dark {
+  background: linear-gradient(180deg, rgba(10,16,24,0.42), rgba(6,10,14,0.36));
+  border: 1px solid rgba(255,255,255,0.04);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+  box-shadow: 0 14px 36px rgba(2,6,23,0.44);
+  color: var(--glass-text);
 }
 
 .area-header {
   display:flex;
   justify-content:center;
   align-items:center;
-  padding: 18px 12px;
+  padding: 18px 14px;
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-radius: 14px;
   margin: 0 16px 8px;
-  box-shadow: 0 8px 22px rgba(2,6,23,0.25);
+  box-shadow: var(--glass-shadow);
 }
 
 .internal-back {
@@ -60,38 +83,32 @@
 
 /* Login Card */
 .card.login-card {
-  background: transparent;
   padding: 18px;
   border-radius: 12px;
   text-align: center;
-  color: #e9eef6;
+  color: var(--glass-text);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--glass-shadow);
 
-  .acoes {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-top: 12px;
-  }
+  .acoes { display:flex; gap:12px; justify-content:center; margin-top:12px }
 
   .btn {
     padding: 10px 18px;
     border-radius: 10px;
     font-weight: 700;
     font-size: 15px;
-    text-align: center;
-    color: #0b1220;
-    background: #f8fafc; /* light primary button */
+    color: #07101a;
+    background: rgba(255,255,255,0.92);
     border: 1px solid rgba(2,6,23,0.06);
     cursor: pointer;
-    transition: all 0.12s ease;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 14px rgba(2,6,23,0.14);
-    }
+    transition: transform .12s ease, box-shadow .12s ease;
+    &:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(2,6,23,0.14); }
   }
 
-  .btn.btn-sec { background: transparent; color: #e6eef8; border: 1px solid rgba(255,255,255,0.04); }
+  .btn.btn-sec { background: transparent; color: var(--glass-text); border: 1px solid rgba(255,255,255,0.04); }
 }
 
 /* Painel Cliente */
@@ -101,8 +118,11 @@
   align-items: center;
   padding: 12px 16px;
   border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(2,6,23,0.28);
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--glass-shadow);
 
   .cliente-info {
     display: flex;
@@ -114,14 +134,14 @@
       height: 56px;
       border-radius: 12px;
       object-fit: cover;
-      border: 1px solid rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
       box-shadow: 0 10px 26px rgba(2,6,23,0.16);
     }
 
     .cliente-nome {
       font-weight: 800;
       font-size: 18px;
-      color: #f8fafc;
+      color: var(--glass-text);
       background: linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
       padding: 8px 12px;
       border-radius: 10px;
@@ -135,8 +155,8 @@
     align-items: center;
 
     .btn-gear {
-      background: #f8fafc; /* light control */
-      color: #0b1220;
+      background: rgba(255,255,255,0.96);
+      color: #07101a;
       border: 1px solid rgba(2,6,23,0.06);
       padding: 8px 12px;
       border-radius: 10px;
@@ -148,9 +168,9 @@
     }
 
     .popover {
-      position: fixed; /* fixado na viewport para evitar extrapolar containers */
-      background: #ffffff;
-      color: #0b1220;
+      position: fixed;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+      color: #07101a;
       border-radius: 12px;
       box-shadow: 0 24px 48px rgba(2,6,23,0.18);
       min-width: 200px;
@@ -161,6 +181,9 @@
       z-index: 2000;
       transform-origin: top right;
       animation: popIn .12s ease-out;
+      border: 1px solid rgba(2,6,23,0.06);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 
       &::after {
         content: '';
@@ -174,24 +197,24 @@
         box-shadow: -1px -1px 0 rgba(2,6,23,0.04);
       }
 
-    .popover-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    text-align: left;
-    padding: 10px 12px;
-    color: #0b1220;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    text-decoration: none;
-    font-weight: 700;
-    letter-spacing: .2px;
-    transition: background .12s ease, transform .06s ease;
-  &:hover { background: rgba(11,18,32,0.04); transform: translateX(4px); }
-    &:active { transform: translateX(0); }
+      .popover-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        color: #07101a;
+        background: transparent;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 700;
+        letter-spacing: .2px;
+        transition: background .12s ease, transform .06s ease;
+        &:hover { background: rgba(11,18,32,0.04); transform: translateX(4px); }
+        &:active { transform: translateX(0); }
 
         &::before {
           content: '';
@@ -202,16 +225,11 @@
           filter: drop-shadow(0 1px 1px rgba(0,0,0,.06));
         }
 
-        &.profile::before {
-          content: '👤';
-        }
-        &.danger::before {
-          content: '🚪';
-        }
-
-  &.danger { color: #b91c1c; }
-  &.danger:hover { background: rgba(255, 59, 48, 0.06); }
+        &.profile::before { content: '\ud83d\udc64'; }
+        &.danger::before { content: '\ud83d\udeaa'; }
       }
+      &.danger { color: #b91c1c; }
+      &.danger:hover { background: rgba(255, 59, 48, 0.06); }
     }
   }
 }
@@ -229,7 +247,7 @@
   padding: 16px;
 
     .menu-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      @extend .glass-card;
       color: #e6eef8;
       border-radius: 14px;
       padding: 18px;
@@ -237,12 +255,8 @@
       cursor: pointer;
       position: relative;
       transition: transform 160ms ease, box-shadow 160ms ease;
-      box-shadow: 0 10px 22px rgba(2,6,23,0.10);
 
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 16px 30px rgba(2,6,23,0.14);
-      }
+      &:hover { transform: translateY(-4px); box-shadow: 0 18px 36px rgba(2,6,23,0.16); }
 
       .card-icon { font-size: 34px; margin-bottom: 8px; }
       .card-title { font-size: 15px; font-weight: 700; color: #cfe6ff; }
@@ -251,10 +265,10 @@
 
 /* Pets Cards */
 .pets-wrapper {
-  background: #1c2636;
+  @extend .glass-card--dark;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.30);
+  margin: 8px 0;
 
   h2 { color: var(--primary); margin-bottom: 15px; }
 
@@ -264,12 +278,10 @@
     gap: 20px;
 
     .pet-card {
-      background: #222a38;
+      @extend .glass-card--dark;
       border-radius: 12px;
       padding: 15px;
       text-align: center;
-      color: #ecf0f5;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
       transition: all 0.3s ease;
 
       &:hover {
@@ -283,6 +295,7 @@
         border-radius: 50%;
         object-fit: cover;
         margin-bottom: 10px;
+        border: 1px solid rgba(255,255,255,0.04);
       }
 
       h3 { font-size: 16px; font-weight: 600; margin-bottom: 5px; }
@@ -308,19 +321,20 @@
   inset: 0;
   background: rgba(0,0,0,0.55);
   z-index: 999;
+  -webkit-backdrop-filter: blur(4px) saturate(110%);
+  backdrop-filter: blur(4px) saturate(110%);
 }
 .modal-content {
   position: fixed;
   top:50%;
   left:50%;
   transform: translate(-50%, -50%);
-  background: #1c2636;
-  color: #e9eef6;
-  padding: 25px;
+  @extend .glass-card--dark;
+  padding: 24px 22px;
   border-radius: 12px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  width: 92%;
+  max-width: 680px;
+  max-height: 84vh;
   overflow-y: auto;
   z-index: 1000;
 }

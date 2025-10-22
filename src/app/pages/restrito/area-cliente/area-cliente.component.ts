@@ -377,6 +377,34 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           if ((ref.instance as any).close) {
             (ref.instance as any).close.subscribe(() => this.goBack());
           }
+          // If the child emits editPet, open the novo-pet view inside this modal and pass id
+          if ((ref.instance as any).editPet && typeof (ref.instance as any).editPet.subscribe === 'function') {
+            (ref.instance as any).editPet.subscribe((petId: string | number) => {
+              // remember origin so NovoPet can return here if it closes
+              this.lastInternalOrigin = 'meus-pets';
+              // open novo-pet inside modal and prefill with petId
+              // We'll create the component directly so we can pass the input
+              (async () => {
+                try {
+                  // clear current internal host and create NovoPet
+                  this.internalHost?.clear();
+                  const mod2 = await import('../../../pages/novo-pet/novo-pet.component');
+                  const Cmp2 = (mod2 as any).NovoPetComponent;
+                  const ref2 = this.internalHost?.createComponent(Cmp2 as any);
+                  if (ref2?.instance) {
+                    (ref2.instance as any).modal = true;
+                    try { (ref2.instance as any).editId = petId; } catch {}
+                    if ((ref2.instance as any).close) {
+                      (ref2.instance as any).close.subscribe(() => this.goBack());
+                    }
+                  }
+                } catch (e) {
+                  console.error('Erro abrindo editor de pet no modal', e);
+                  this.toast.error('Não foi possível abrir o editor de pet');
+                }
+              })();
+            });
+          }
         }
       } else if (view === 'novo-pet') {
         const mod = await import('../../../pages/novo-pet/novo-pet.component');

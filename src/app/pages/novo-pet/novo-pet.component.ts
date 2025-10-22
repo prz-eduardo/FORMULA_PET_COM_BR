@@ -16,6 +16,8 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 })
 export class NovoPetComponent {
   @Input() modal: boolean = false;
+  // When embedded in the area-cliente modal, parent can set editId to open edit mode
+  @Input() editId?: string | number | null;
   @Output() close = new EventEmitter<void>();
   // form fields
   nome = '';
@@ -66,9 +68,10 @@ export class NovoPetComponent {
       error: () => {}
     });
 
-    // Edit mode: if route has :id, load pet and prefill
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id && t) {
+  // Edit mode: prefer programmatic editId (when embedded), otherwise use route param
+  const routeId = this.route.snapshot.paramMap.get('id');
+  const id = this.editId != null ? String(this.editId) : routeId;
+  if (id && t) {
       const numId = Number(this.clienteMe?.user?.id);
       // If clienteMe not loaded yet, we'll attempt a delayed fetch after it loads
       const loadPet = (clienteId: number) => {
