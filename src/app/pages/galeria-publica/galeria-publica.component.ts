@@ -110,7 +110,9 @@ export class GaleriaPublicaComponent {
       // if click occurred inside a reaction-wrapper, ignore
       const el = ev.target as HTMLElement | null;
       if (!el) return;
-      if (el.closest && el.closest('.reaction-wrapper')) return;
+      // If suppression is active, ignore this click (used right after opening)
+      if ((this as any)._suppressDocClose) return;
+      if (el.closest && (el.closest('.reaction-wrapper') || el.closest('.reaction-picker') || el.closest('.btn-like'))) return;
       // otherwise close
       this.reactionPickerOpenFor = null;
     } catch (e) {
@@ -153,11 +155,16 @@ export class GaleriaPublicaComponent {
   }
 
   // Open/close reaction picker; clicking the heart toggles the picker instead
-  openReactionPicker(pet: any) {
+  openReactionPicker(pet: any, ev?: Event) {
+    // Positioning is handled via CSS (absolute inside the card). We only toggle state here.
     if (this.reactionPickerOpenFor === pet.id) {
       this.reactionPickerOpenFor = null;
+      (this as any)._suppressDocClose = false;
     } else {
       this.reactionPickerOpenFor = pet.id;
+      // briefly suppress document-level click closure so the opener click doesn't close it
+      (this as any)._suppressDocClose = true;
+      setTimeout(() => { (this as any)._suppressDocClose = false; }, 120);
     }
   }
 
@@ -216,6 +223,19 @@ export class GaleriaPublicaComponent {
     return '🐾';
   }
 
+  // Safe image error handler used from templates. Accepts the event target or element
+  // and sets a fallback src only if the element exists and isn't already the fallback
+  onImgError(target: any, fallback: string) {
+    try {
+      const el = target as HTMLImageElement | null;
+      if (!el) return;
+      if (!el.src || el.src.indexOf(fallback) !== -1) return;
+      el.src = fallback;
+    } catch (e) {
+      // swallow errors — failing to set fallback shouldn't break UI
+    }
+  }
+
   private async loadPage(pageNum: number) {
     if (pageNum === 1) {
       this.loading = true;
@@ -237,7 +257,80 @@ export class GaleriaPublicaComponent {
         // pseudo-random but stable per session: use index to pick variant
         size: sizeVariants[(idx + this.page + (this.placeholderPage || 0)) % sizeVariants.length]
       }));
-      if (pageNum === 1) this.pets = normalized; else this.pets = this.pets.concat(normalized);
+
+      // When appending pages, avoid exact duplicate ids and distribute incoming items
+      // across the existing list so similar items don't cluster together.
+      if (pageNum === 1) {
+        this.pets = normalized;
+      } else {
+        const existing = this.pets || [];
+        const incoming = normalized; // do NOT drop duplicates; keep all incoming items
+
+        // If no existing content, just set pets to incoming
+        if (!existing.length) {
+          this.pets = incoming;
+        } else if (!incoming.length) {
+          // nothing to append
+        } else if (incoming.length >= existing.length) {
+          // If incoming is large, interleave to avoid clustering
+          const merged: any[] = [];
+          const max = Math.max(existing.length, incoming.length);
+          for (let i = 0; i < max; i++) {
+            if (existing[i]) merged.push(existing[i]);
+            if (incoming[i]) {
+              // try to avoid placing identical id right after the same id
+              if (merged.length > 0 && String(merged[merged.length - 1].id ?? merged[merged.length - 1]._id ?? '') === String(incoming[i].id ?? incoming[i]._id ?? '')) {
+                // attempt to find a later incoming item with different id and swap
+                let found = -1;
+                for (let j = i + 1; j < incoming.length; j++) {
+                  if (String(incoming[j].id ?? incoming[j]._id ?? '') !== String(incoming[i].id ?? incoming[i]._id ?? '')) {
+                    found = j;
+                    break;
+                  }
+                }
+                if (found !== -1) {
+                  const tmp = incoming[i];
+                  incoming[i] = incoming[found];
+                  incoming[found] = tmp;
+                }
+              }
+              merged.push(incoming[i]);
+            }
+          }
+          this.pets = merged;
+        } else {
+          // Distribute incoming items evenly among existing items, but try to avoid adjacent identical ids
+          const merged: any[] = [];
+          const gap = Math.ceil((existing.length + 1) / (incoming.length + 1));
+          let pos = 0;
+          for (let i = 0; i < incoming.length; i++) {
+            const slice = existing.slice(pos, pos + gap);
+            merged.push(...slice);
+            pos += gap;
+
+            // Before pushing incoming[i], try to avoid duplicate adjacency with last merged
+            if (merged.length > 0 && String(merged[merged.length - 1].id ?? merged[merged.length - 1]._id ?? '') === String(incoming[i].id ?? incoming[i]._id ?? '')) {
+              // Find a later incoming item with different id to swap with
+              let found = -1;
+              for (let j = i + 1; j < incoming.length; j++) {
+                if (String(incoming[j].id ?? incoming[j]._id ?? '') !== String(incoming[i].id ?? incoming[i]._id ?? '')) {
+                  found = j;
+                  break;
+                }
+              }
+              if (found !== -1) {
+                const tmp = incoming[i];
+                incoming[i] = incoming[found];
+                incoming[found] = tmp;
+              }
+            }
+
+            merged.push(incoming[i]);
+          }
+          if (pos < existing.length) merged.push(...existing.slice(pos));
+          this.pets = merged;
+        }
+      }
 
       // If the API returned no items on page 1, switch to placeholder mode
       if (pageNum === 1 && Array.isArray(items) && items.length === 0) {

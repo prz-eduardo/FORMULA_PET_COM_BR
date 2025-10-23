@@ -84,19 +84,55 @@ export class StoreService {
     private toast: ToastService,
     private router: Router
   ) {}
+    // --- Cliente me caching ---
+    // Cache the last successful response and also dedupe in-flight requests so
+    // multiple callers (components) don't trigger duplicate network calls.
+    private clienteMeCache: any = null;
+    private clienteMePromise: Promise<any> | null = null;
 
-    /** Busca dados do cliente logado (GET /clientes/me) */
-    async getClienteMe(): Promise<any> {
+    /** Busca dados do cliente logado (GET /clientes/me) with caching and dedupe
+     *  Pass forceRefresh=true to bypass cache and re-fetch from server.
+     */
+    async getClienteMe(forceRefresh: boolean = false): Promise<any> {
       const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
-      try {
-        const res = await this.http.get('https://formulapetcombrbackend-production.up.railway.app/clientes/me', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        }).toPromise();
-        return res;
-      } catch (err: any) {
-        if (this.toast?.error) {
-          this.toast.error('Não foi possível carregar os dados do cliente.', 'Erro');
+      // Return cached value when available and not forcing refresh
+      if (!forceRefresh && this.clienteMeCache) {
+        return this.clienteMeCache;
+      }
+      // If there's already an in-flight request, return the same promise
+      if (!forceRefresh && this.clienteMePromise) {
+        try {
+          return await this.clienteMePromise;
+        } catch {
+          return null;
         }
+      }
+
+      // Start a new request and store the promise
+      this.clienteMePromise = (async () => {
+        try {
+          // Prefer ApiService wrapper (adds baseUrl/headers consistently)
+          const res = await this.api.getClienteMe(token || '').toPromise();
+          this.clienteMeCache = res;
+          // also persist to localStorage for quick load elsewhere
+          if (this.isBrowser() && res) {
+            try { localStorage.setItem('cliente_me', JSON.stringify(res)); } catch {}
+          }
+          return res;
+        } catch (err: any) {
+          if (this.toast?.error) {
+            this.toast.error('Não foi possível carregar os dados do cliente.', 'Erro');
+          }
+          return null;
+        } finally {
+          // clear the in-flight marker so subsequent forceRefresh calls work
+          this.clienteMePromise = null;
+        }
+      })();
+
+      try {
+        return await this.clienteMePromise;
+      } catch {
         return null;
       }
     }
@@ -410,9 +446,7 @@ export class StoreService {
   async isClienteLoggedSilent(): Promise<boolean> {
     if (this.clienteChecked) return this.isCliente;
     try {
-      const token = this.isBrowser() ? localStorage.getItem('token') : null;
-      if (!token) throw new Error('Sem token');
-      const resp = await this.api.getClienteMe(token).toPromise();
+      const resp = await this.getClienteMe();
       if (resp && resp.user && resp.user.tipo === 'cliente') {
         this.clienteChecked = true;
         this.isCliente = true;
@@ -437,9 +471,7 @@ export class StoreService {
     if (this.clienteChecked) return this.isCliente;
     // Tenta validar via backend (clientes/me). Se falhar, redireciona para login de cliente.
     try {
-      const token = this.isBrowser() ? localStorage.getItem('token') : null;
-      if (!token) throw new Error('Sem token');
-      const resp = await this.api.getClienteMe(token).toPromise();
+      const resp = await this.getClienteMe();
       if (resp && resp.user && resp.user.tipo === 'cliente') {
         this.clienteChecked = true;
         this.isCliente = true;

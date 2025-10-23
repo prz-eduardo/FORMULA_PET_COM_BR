@@ -2,46 +2,77 @@
 
 <main class="galeria-container container">
   <header class="galeria-header">
-    <h1 class="galeria-title">Galeria 🐾</h1>
+  <h1 class="galeria-title">Galeria 🐾</h1>
     <p class="galeria-subtitle">Uma curadoria carinhosa das melhores fotos da nossa comunidade. Veja, emocione-se e espalhe afeto.</p>
   </header>
+
   <div *ngIf="loading" class="card">Carregando galeria...</div>
   <div *ngIf="error" class="card danger">{{ error }}</div>
 
   <div class="masonry">
-    <div *ngFor="let p of pets" class="masonry-item card" [ngClass]="p.size">
-      <div class="photo-wrap">
-        <img [src]="p.foto || p.photo || p.photoURL || '/imagens/image.png'" alt="Foto do pet" class="pet-photo" />
-        <div class="overlay">
-          <div class="overlay-top">
-            <div class="pet-type" [attr.aria-label]="(p.tipo || p.especie || 'Pet')">{{ typeEmoji(p.tipo || p.especie) }}</div>
-            <div class="pet-age">{{ (p.idade || p.age) ? (p.idade || p.age) + ' anos' : '' }}</div>
+  <div *ngFor="let p of pets" class="masonry-item" [ngClass]="[p.size, (p.type === 'vet_ad' ? 'vet-ad' : '')]">
+      <ng-container *ngIf="p.type === 'vet_ad'; else regularPet">
+        <!-- Veterinarian ad: special standalone layout -->
+        <article class="vet-ad-card" role="article" aria-label="Anúncio Veterinário">
+          <div class="vet-ad-inner">
+            <div class="vet-ad-badge">ANÚNCIO VETERINÁRIO</div>
+            <div class="photo-wrap vet-photo-wrap">
+        <img [src]="p.foto || p.photo || '/imagens/vet-placeholder.png'" alt="Foto do veterinário {{ p.nome }}" class="vet-photo"
+          (error)="onImgError($event.target, '/imagens/vet-placeholder.png')" />
+            </div>
+            <div class="vet-ad-body">
+              <h3 class="vet-name">{{ p.nome || p.name || 'Veterinário' }}</h3>
+              <p class="vet-promo" *ngIf="p.promo_text">{{ p.promo_text }}</p>
+              <div class="vet-contact">
+                <a *ngIf="p.telefone" class="vet-contact-link vet-phone" href="tel:{{ p.telefone }}">📞 {{ p.telefone }}</a>
+                <a *ngIf="p.email" class="vet-contact-link vet-email" href="mailto:{{ p.email }}">✉️ {{ p.email }}</a>
+              </div>
+              <div class="vet-meta">
+                <span class="vet-plan">Plano: {{ p.plan }}</span>
+              </div>
+            </div>
           </div>
-          <div class="overlay-bottom">
-            <div class="pet-name" [class.shifted]="reactionPickerOpenFor === p.id">{{ p.nome || p.name || 'Sem nome' }}</div>
-            <div class="actions">
-              <div class="reaction-wrapper" [attr.data-pet-id]="p.id">
-                <!-- heart opens the reaction picker instead of immediately toggling -->
-                <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p)">
-                  {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : '❤️' }}
-                  <span class="likes-count">{{ p.likes ?? 0 }}</span>
-                </button>
-
-                <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p.id" (click)="$event.stopPropagation()">
-                  <div class="reaction-row">
-                    <button *ngFor="let r of reactionTypes" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo">{{ r.emoji }}</button>
-                  </div>
+        </article>
+      </ng-container>
+      <ng-template #regularPet>
+        <!-- Regular pet card -->
+        <div class="card">
+      <div class="photo-wrap">
+      <img [src]="p.foto || p.photo || p.photoURL || '/imagens/image.png'" alt="Foto do pet" class="pet-photo"
+        (error)="onImgError($event.target, '/imagens/image.png')" />
+            <div class="overlay">
+              <div class="overlay-top">
+                <div class="pet-type" [attr.aria-label]="(p.tipo || p.especie || 'Pet')">{{ typeEmoji(p.tipo || p.especie) }}</div>
+                <div class="pet-age">{{ (p.idade || p.age) ? (p.idade || p.age) + ' anos' : '' }}</div>
+              </div>
+              <div class="overlay-bottom">
+                <div class="pet-name" [class.shifted]="reactionPickerOpenFor === p.id">{{ p.nome || p.name || 'Sem nome' }}</div>
+                <div class="actions">
+                  <!-- actions left intentionally empty; reaction UI moved outside photo-wrap to avoid clipping -->
                 </div>
               </div>
             </div>
           </div>
+        <!-- place the reaction button/picker outside of the photo-wrap so it can overflow and remain visible -->
+        <div class="reaction-wrapper" [attr.data-pet-id]="p.id">
+          <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p, $event)">
+            {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : '\u2764\ufe0f' }}
+            <span class="likes-count">{{ p.likes ?? 0 }}</span>
+          </button>
+          <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p.id" (click)="$event.stopPropagation()">
+            <div class="reaction-row">
+              <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'">{{ r.emoji }}</button>
+            </div>
+          </div>
         </div>
       </div>
+      </ng-template>
     </div>
   </div>
-  
+
   <div class="loading-more" *ngIf="loadingMore">Carregando mais pets…</div>
   <div #sentinel class="sentinel" aria-hidden="true"></div>
+
 </main>
 
 <app-footer></app-footer>

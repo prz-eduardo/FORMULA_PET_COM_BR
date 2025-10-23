@@ -25,17 +25,61 @@
 @media screen and (max-width: 767px) {
 	.masonry { column-count: 2; }
 }
+
+@media screen and (max-width: 520px) {
+	.masonry { column-count: 1; }
+	.masonry-item.vet-ad { -webkit-column-span: 1; column-span: 1; }
+}
 .masonry-item{
 	break-inside: avoid-column;
 	margin-bottom: 8px;
 	border-radius: 12px;
-	overflow: hidden;
+	/* allow overflow so floating UI (reaction picker) can escape the card bounds */
+	overflow: visible;
 	position: relative;
 	transform-origin: center;
 	transition: transform .26s ease, box-shadow .26s ease;
 }
-.photo-wrap{ position:relative; display:block }
+/* Veterinário Ad card styles */
+.vet-ad-card {
+	break-inside: avoid-column;
+	margin-bottom: 12px;
+	border-radius: 14px;
+	overflow: hidden;
+	background: linear-gradient(180deg, #fff 0%, #f7fafc 100%);
+	border: 1px solid rgba(10, 16, 24, 0.06);
+	box-shadow: 0 12px 36px rgba(2,6,23,0.08);
+	color: #07101a;
+}
+.vet-ad-inner { display:flex; flex-direction:column; gap:10px }
+.vet-ad-badge { background:#f5a700; color:#08111a; font-weight:800; padding:6px 10px; border-radius:999px; display:inline-block; font-size:12px; margin:10px }
+.vet-photo-wrap { padding:0 10px }
+.vet-photo { width:100%; height:220px; object-fit:cover; border-radius:10px }
+.vet-ad-body { padding: 6px 12px 18px }
+.vet-name { font-size:18px; margin:6px 0; font-weight:900 }
+.vet-promo { color:#334155; margin:6px 0; font-size:14px }
+.vet-contact { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
+.vet-contact-link { color:#064e3b; font-weight:700; text-decoration:none; background: rgba(6,78,59,0.06); padding:6px 10px; border-radius:8px }
+.vet-meta { margin-top:10px; color:#6b7280; font-size:13px }
+
+/* Hide reaction UI when inside vet ad card, defensive in case markup leaks */
+.vet-ad-card .actions, .vet-ad-card .reaction-wrapper, .vet-ad-card .btn-like, .vet-ad-card .reaction-picker { display: none !important }
+.photo-wrap{ position:relative; display:block; /* clip the photo itself to preserve rounded corners */ overflow: hidden; border-radius: 12px }
+.masonry-item.vet-ad{
+	-webkit-column-span: 2;
+	column-span: 2;
+	break-inside: avoid-column;
+}
+.vet-photo-wrap{
+	position:relative;
+	background-image: url('/imagens/vet-placeholder.png');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+}
 .pet-photo{ width:100%; display:block; object-fit:cover; transition: transform .4s ease }
+
+.vet-photo{ display:block; width:100%; height:220px; object-fit:cover; border-radius:10px; background: transparent }
 
 .masonry-item.small .pet-photo{ height:160px }
 .masonry-item.medium .pet-photo{ height:240px }
@@ -61,26 +105,53 @@
 .btn-like.active{ background:rgba(245,0,87,0.08); transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,0.06) }
 
 /* Reaction picker: expands to the left of the heart button */
-.reaction-wrapper{ position:relative; display:inline-flex; align-items:center }
+.reaction-wrapper{ position: absolute; right: 10px; bottom: 10px; z-index: 80; display: flex; align-items: center }
+.reaction-wrapper .btn-like{ background: rgba(255,255,255,0.08); color:#fff; border-radius:8px; padding:6px 8px }
+.reaction-wrapper .likes-count{ margin-left:6px; font-weight:700 }
 
 /* default picker: left of the like button with a smooth scale+translate+fade entrance */
-.reaction-picker{ position:absolute; right:100%; bottom:0; display:flex; gap:8px; padding:8px; background:rgba(11,22,33,0.92); border-radius:999px; box-shadow: 0 14px 40px rgba(2,6,23,0.55); transform-origin: right center; animation: pickerOpen .2s cubic-bezier(.2,.9,.3,1) forwards; opacity:0 }
-.reaction-picker::after{ content:''; position:absolute; right:-8px; top:50%; transform:translateY(-50%) rotate(45deg); width:14px; height:14px; background:rgba(11,22,33,0.92); border-radius:2px }
-.reaction-btn{ border:0; background:transparent; color:#fff; font-size:18px; padding:8px; border-radius:999px; cursor:pointer; transition: transform .14s ease, box-shadow .14s ease }
+.reaction-picker{ position:absolute; right:100%; bottom:0; display:flex; gap:8px; padding:8px; background:rgba(11,22,33,0.92); border-radius:999px; box-shadow: 0 14px 40px rgba(2,6,23,0.55); transform-origin: right center; /* replaced animation with transition to avoid flicker */ transition: opacity .12s ease, transform .12s ease, left .08s ease, top .08s ease; opacity:1; max-width: calc(100vw - 24px); overflow: visible; z-index: 9999 }
+/* arrow removed: no ::after caret for reaction picker */
+
+.reaction-picker.picker-floating{
+	position:fixed; /* when floating, use fixed coordinates provided by ngStyle */
+	display:flex;
+	white-space:nowrap;
+	align-items:center;
+	justify-content:center;
+	overflow:visible;
+	padding:10px 12px;
+	/* disable keyframe animation when floating to prevent flicker/jank */
+	animation: none !important;
+	opacity: 1 !important;
+	transform: none !important;
+	will-change: transform, opacity, left, top;
+	transition: transform .12s ease, opacity .12s ease, left .08s ease, top .08s ease;
+}
+	.reaction-picker.picker-floating .reaction-btn{
+		/* disable per-emoji keyframe when floating to avoid flicker on desktop */
+		animation: none !important;
+		opacity: 1 !important;
+		transform: none !important;
+	}
+/* floating picker arrow removed */
+.reaction-btn{ border:0; background:transparent; color:#fff; font-size:18px; padding:8px; border-radius:999px; cursor:pointer; transition: transform .14s ease, box-shadow .14s ease; opacity:0; transform: translateY(6px) scale(.96); animation: emojiIn .28s cubic-bezier(.2,.9,.3,1) forwards; animation-delay: var(--d, 120ms); min-width: 44px; min-height: 44px; display:inline-flex; align-items:center; justify-content:center }
 .reaction-btn:hover{ transform:translateY(-6px) scale(1.08); box-shadow:0 10px 24px rgba(0,0,0,0.36) }
 
-@keyframes pickerOpen {
-	0% { opacity:0; transform: translate(10px,6px) scale(.92); }
-	60% { opacity:1; transform: translate(-4px, -2px) scale(1.04); }
-	100% { opacity:1; transform: translate(0,0) scale(1); }
+@keyframes emojiIn {
+	0% { opacity: 0; transform: translateY(8px) scale(.92); }
+	60% { opacity: 1; transform: translateY(-4px) scale(1.06); }
+	100% { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* pickerOpen keyframes removed in favor of transitions to stabilize rendering on desktop and mobile */
 
 /* Mobile specific: larger touch targets and position picker above/left of the like button */
 @media screen and (max-width: 640px) {
 	.reaction-btn{ font-size:24px; padding:12px; line-height:1 }
 	/* place the picker slightly above and to the left of the heart so it sits next to the name */
 	.reaction-picker{ right: auto; left: 10px; bottom: calc(100% + 8px); transform-origin: left bottom; padding:10px 14px }
-	.reaction-picker::after{ left:18px; right:auto; top:100%; transform: translateY(-6px) rotate(45deg) }
+	/* mobile arrow removed */
 	/* shift the name downward so emoji row doesn't overlap */
 	.pet-name{ transition: transform .22s cubic-bezier(.2,.9,.3,1), opacity .18s ease }
 	.pet-name.shifted{ transform: translateY(20px); opacity:0.98 }
