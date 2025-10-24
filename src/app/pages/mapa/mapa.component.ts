@@ -1,4 +1,5 @@
-import { Component, OnInit, Inject, PLATFORM_ID, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, NgZone, ApplicationRef } from '@angular/core';
+import { filter, take } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
@@ -12,7 +13,7 @@ import { FooterComponent } from '../../footer/footer.component';
   templateUrl: './mapa.component.html',
   styleUrls: ['./mapa.component.scss']
 })
-export class MapaComponent implements OnInit {
+export class MapaComponent implements OnInit, OnDestroy {
   tabs = [
     { id: 'veterinario', label: 'Veterinário' },
     { id: 'dog-walker', label: 'Dog Walker' },
@@ -35,6 +36,9 @@ export class MapaComponent implements OnInit {
   private directionsService: any = null;
   private directionsRenderer: any = null;
   private originMarker: any = null;
+  private mapInitialized = false;
+  private mapReadyPromise: Promise<void> | null = null;
+  private mapReadyResolver: (() => void) | null = null;
   // default address used to center the map (same as previous iframe)
   private defaultCenterAddress = 'Rua Treze de Maio, 506, Conjunto 04, São Francisco, Curitiba, PR, CEP 80510-030';
   // exact pharmacy address requested by the user — we will geocode this and place the fixed pin here
@@ -42,7 +46,11 @@ export class MapaComponent implements OnInit {
   // resolved pharmacy coordinates (populated after a successful geocode); used by refreshMarkers()
   private pharmacyCoords: { lat: number; lng: number } | null = null;
 
-  constructor(private api: ApiService, private toast: ToastService, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(private api: ApiService, private toast: ToastService, @Inject(PLATFORM_ID) private platformId: Object, private appRef: ApplicationRef) {}
+
+  // keep references so we can remove listeners on destroy
+  private __errHandler = (ev: any) => { console.error('map uncaught error', ev); try { this.showFallbackMap(); } catch (e) {}; };
+  private __unhandledRejection = (ev: any) => { console.error('map unhandledrejection', ev); try { this.showFallbackMap(); } catch (e) {}; };
 
   // filters per service (each tab has its own set)
   filtersByTab: { [key: string]: Array<{ id: string; label: string; on: boolean }> } = {
@@ -92,14 +100,37 @@ export class MapaComponent implements OnInit {
     // follow the same pattern as other pages: only call API from the browser
     // to avoid SSR network errors.
     if (isPlatformBrowser(this.platformId)) {
-      // load available professional types first (to build tabs), then partners
+      // attach global handlers to capture initialization errors so the app doesn't get left in a broken state
+      try { window.addEventListener('error', this.__errHandler); window.addEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
+      // load available professional types first (to build tabs).
+      // Defer heavy partner/map initialization until the app is stable to avoid
+      // NG0506 hydration timeouts (don't start long-running async work during hydration).
       this.loadProfessionalTypes();
-      this.loadPartners();
-      // load anunciantes (public advertisers) filtered by active tab
-      this.loadAnunciantes(this.active);
+      try {
+        // wait until ApplicationRef reports stability (first true) and then start partners/map
+        // but don't wait forever: fallback after a short timeout to avoid blocking map init
+        const stableSub = (this.appRef.isStable as any).pipe(filter((s: boolean) => s), take(1)).subscribe(() => {
+          try { clearTimeout(stableTimer as any); } catch (e) {}
+          this.loadPartners();
+          this.loadAnunciantes(this.active);
+        });
+        // fallback timer: if stability doesn't occur within 1500ms, proceed anyway
+        const stableTimer = setTimeout(() => {
+          try { stableSub.unsubscribe(); } catch (e) {}
+          this.loadPartners();
+          this.loadAnunciantes(this.active);
+        }, 1500);
+      } catch (e) {
+        // fallback: schedule after a tick
+        setTimeout(() => { this.loadPartners(); this.loadAnunciantes(this.active); }, 0);
+      }
     } else {
       this.loading = false;
     }
+  }
+
+  ngOnDestroy(): void {
+    try { window.removeEventListener('error', this.__errHandler); window.removeEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
   }
 
   // when the user switches tabs we should refresh the anunciantes list for that tipo
@@ -206,10 +237,14 @@ export class MapaComponent implements OnInit {
         this.loading = false;
         // if we have a maps key, initialize the interactive map
         if (this.mapsApiKey && isPlatformBrowser(this.platformId)) {
-          this.initInteractiveMap(this.mapsApiKey).catch(err => {
-            console.error('initInteractiveMap failed', err);
+          this.initInteractiveMapWithRetries(this.mapsApiKey, 3).catch(err => {
+            console.error('initInteractiveMap failed after retries', err);
             this.toast.error('Erro ao inicializar o mapa');
+            try { this.showFallbackMap(); } catch (e) {}
           });
+        } else {
+          // no API key available — show a simple iframe fallback so the page isn't empty
+          try { if (isPlatformBrowser(this.platformId)) this.showFallbackMap(); } catch (e) {}
         }
       },
       error: (err) => {
@@ -221,6 +256,37 @@ export class MapaComponent implements OnInit {
     });
   }
 
+  // If interactive map fails, replace the container with an embedded iframe as fallback
+  private showFallbackMap() {
+    try {
+      const mapEl = document.getElementById('gmap');
+      if (!mapEl) return;
+      const addr = encodeURIComponent(this.pharmacyAddress || this.defaultCenterAddress || 'Curitiba, PR');
+      const iframe = `<iframe src="https://www.google.com/maps?q=${addr}&output=embed" width="100%" height="100%" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy" title="Mapa (fallback)"></iframe>`;
+      mapEl.innerHTML = iframe;
+    } catch (e) {
+      console.warn('showFallbackMap failed', e);
+    }
+  }
+
+  // wrapper with retries to improve robustness on flaky reloads
+  private async initInteractiveMapWithRetries(apiKey: string, attempts = 3): Promise<void> {
+    let lastErr: any = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        await this.initInteractiveMap(apiKey);
+        return;
+      } catch (e) {
+        lastErr = e;
+        const delay = 500 * Math.pow(2, i); // exponential backoff: 500,1000,2000
+        await this.sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
+
+  private sleep(ms: number) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
   /**
    * Load Google Maps script dynamically and initialize map/markers.
    * - returns a promise that resolves when map is ready.
@@ -228,121 +294,174 @@ export class MapaComponent implements OnInit {
   private async initInteractiveMap(apiKey: string): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    // avoid loading script more than once
-    if (!(window as any).google) {
-      await this.loadGoogleMapsScript(apiKey);
+    // prevent double initialization
+    if (this.mapInitialized) return;
+
+    // ensure mapReadyPromise exists so callers can await readiness
+    if (!this.mapReadyPromise) {
+      this.mapReadyPromise = new Promise((resolve) => { this.mapReadyResolver = resolve; });
     }
 
-    // create map centered at default address (we geocode it) or at first partner coords
-    const google = (window as any).google;
-    const mapEl = document.getElementById('gmap');
-    if (!mapEl) throw new Error('Map container not found');
-
-  // default map options — keep the map clean by disabling the default Google UI
-  // and hide Google's Points of Interest (POI) / business pins so only our custom markers display
-  const opts: any = {
-    zoom: 15,
-    disableDefaultUI: true,
-    // prevent default POI icons from being clickable
-    clickableIcons: false,
-    // allow normal single-finger gestures on mobile (avoid the "use two fingers" overlay)
-    gestureHandling: 'greedy',
-    // styles to hide POI icons and labels (businesses, places)
-    styles: [
-      { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-      { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-      { featureType: 'poi', elementType: 'labels.text', stylers: [{ visibility: 'off' }] }
-    ]
-  };
-
-    // Prefer to center the map on the pharmacy address (user requested).
-    // Attempt to geocode the pharmacy address first; if that fails, fall back to
-    // the first partner's coords (if any), otherwise use a Curitiba fallback.
-    let centerLatLng: any = null;
-    const fallbackCenter = { lat: -25.4284, lng: -49.2733 }; // Curitiba center fallback
     try {
-      const geocoder = new google.maps.Geocoder();
+      // load Google Maps script if necessary
+      if (!(window as any).google) {
+        await this.loadGoogleMapsScript(apiKey);
+      }
+
+      const google = (window as any).google;
+      const mapEl = document.getElementById('gmap');
+      if (!mapEl) throw new Error('Map container not found');
+
+      const opts: any = {
+        zoom: 15,
+        disableDefaultUI: true,
+        clickableIcons: false,
+        gestureHandling: 'greedy',
+        styles: [
+          { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+          { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+          { featureType: 'poi', elementType: 'labels.text', stylers: [{ visibility: 'off' }] }
+        ]
+      };
+
+      // geocode pharmacy address (best effort)
+      let centerLatLng: any = null;
+      const fallbackCenter = { lat: -25.4284, lng: -49.2733 };
       try {
-        const results = await this.geocodeAddress(geocoder, this.pharmacyAddress);
+        const geocoder = new google.maps.Geocoder();
+        const results = await this.geocodeAddress(geocoder, this.pharmacyAddress).catch((err) => { console.warn('geocode error', err); return null; });
         if (results && results[0] && results[0].geometry && results[0].geometry.location) {
           const loc = results[0].geometry.location;
           this.pharmacyCoords = { lat: loc.lat(), lng: loc.lng() };
           centerLatLng = { lat: loc.lat(), lng: loc.lng() };
         }
-      } catch (gErr) {
-        // ignore geocode failure here; we'll try partners next
-        console.warn('Geocode failed for pharmacy address during init', gErr);
+      } catch (e) {
+        console.warn('geocode construction failed', e);
       }
-    } catch (e) {
-      // if geocoder construction or call fails, continue to partner/fallback
-    }
 
-    // if pharmacy geocode didn't produce coords, try to use first partner
-    if (!centerLatLng && this.partners && this.partners.length) {
-      const p = this.partners[0];
-      const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
-      const lng = p.lng ?? p.longitude ?? p.long ?? null;
-      if (lat != null && lng != null) centerLatLng = { lat: Number(lat), lng: Number(lng) };
-    }
+      if (!centerLatLng && this.partners && this.partners.length) {
+        const p = this.partners[0];
+        const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
+        const lng = p.lng ?? p.longitude ?? p.long ?? null;
+        if (lat != null && lng != null) centerLatLng = { lat: Number(lat), lng: Number(lng) };
+      }
 
-    // finalize opts.center and create the map
-    opts.center = centerLatLng ?? fallbackCenter;
-    this.map = new google.maps.Map(mapEl, opts);
+      opts.center = centerLatLng ?? fallbackCenter;
+      this.map = new google.maps.Map(mapEl, opts);
 
-    // prepare Directions service/renderer for in-app routing
-    try {
-      this.directionsService = new google.maps.DirectionsService();
-      // suppress default A/B markers so we can control origin/destination markers
-      this.directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, polylineOptions: { strokeColor: '#c4d600', strokeWeight: 6, strokeOpacity: 0.95 } });
-      this.directionsRenderer.setMap(this.map);
-    } catch (e) {
-      this.directionsService = null;
-      this.directionsRenderer = null;
-    }
+      // small resize nudges to avoid blank tiles
+      setTimeout(() => { try { google.maps.event.trigger(this.map, 'resize'); } catch (e) {} }, 250);
 
-    // Place the pharmacy marker using the resolved pharmacy coordinates (if we geocoded above)
-    const fallbackPharmacyCoords = { lat: -25.4270, lng: -49.2706 };
-    const coordsToUse = this.pharmacyCoords ?? fallbackPharmacyCoords;
-    try {
-      const pinFpUrl = '/icones/pin-fp.png';
-      const icon = {
-        url: pinFpUrl,
-        scaledSize: new google.maps.Size(36, 44),
-        anchor: new google.maps.Point(18, 44)
-      };
-      const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon, title: 'Farmácia / Loja' });
-      this.markers.push(marker);
-      try { this.attachPharmacyInfo(marker, coordsToUse); } catch (e) { console.warn('attachPharmacyInfo init failed', e); }
-    } catch (e) {
       try {
-        const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
-        this.markers.push(marker);
-        try { this.attachPharmacyInfo(marker, coordsToUse); } catch (err) { console.warn('attachPharmacyInfo init fallback failed', err); }
-      } catch (err) {
-        console.warn('Failed to add pharmacy marker', err);
+        this.directionsService = new google.maps.DirectionsService();
+        this.directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, polylineOptions: { strokeColor: '#c4d600', strokeWeight: 6, strokeOpacity: 0.95 } });
+        this.directionsRenderer.setMap(this.map);
+      } catch (e) {
+        this.directionsService = null;
+        this.directionsRenderer = null;
       }
-    }
 
-    // add markers for partners if they have lat/lng using partner paw icon
-    for (const p of this.partners) {
-      const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
-      const lng = p.lng ?? p.longitude ?? p.long ?? null;
-      if (lat != null && lng != null) {
+      setTimeout(() => { try { google.maps.event.trigger(this.map, 'resize'); } catch (e) {} }, 600);
+
+      // add pharmacy marker
+      const fallbackPharmacyCoords = { lat: -25.4270, lng: -49.2706 };
+      const coordsToUse = this.pharmacyCoords ?? fallbackPharmacyCoords;
+      try {
+        const pinFpUrl = '/icones/pin-fp.png';
+        const icon = {
+          url: pinFpUrl,
+          scaledSize: new google.maps.Size(36, 44),
+          anchor: new google.maps.Point(18, 44)
+        };
+        const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon, title: 'Farmácia / Loja' });
+        this.markers.push(marker);
+        try { this.attachPharmacyInfo(marker, coordsToUse); } catch (e) { console.warn('attachPharmacyInfo init failed', e); }
+      } catch (e) {
         try {
-          const pataUrl = '/icones/pin-pata.svg';
-          const iconPata = {
-            url: pataUrl,
-            scaledSize: new google.maps.Size(32, 36),
-            anchor: new google.maps.Point(16, 36)
-          };
-          const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro', icon: iconPata });
-          this.markers.push(m);
-        } catch (e) {
-          const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
-          this.markers.push(m);
+          const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
+          this.markers.push(marker);
+          try { this.attachPharmacyInfo(marker, coordsToUse); } catch (err) { console.warn('attachPharmacyInfo init fallback failed', err); }
+        } catch (err) {
+          console.warn('Failed to add pharmacy marker', err);
         }
       }
+
+      // add partner markers
+      for (const p of this.partners) {
+        const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
+        const lng = p.lng ?? p.longitude ?? p.long ?? null;
+        if (lat != null && lng != null) {
+          try {
+            const pataUrl = '/icones/pin-pata.svg';
+            const iconPata = { url: pataUrl, scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
+            const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro', icon: iconPata });
+            this.markers.push(m);
+          } catch (e) {
+            const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
+            this.markers.push(m);
+          }
+        }
+      }
+
+      // mark ready and resolve waiters
+      this.mapInitialized = true;
+      if (this.mapReadyResolver) { try { this.mapReadyResolver(); } catch (e) {} this.mapReadyResolver = null; }
+
+      // If there is a saved destination from a previous session, do NOT auto-draw the route
+      // (auto-drawing has caused navigation/lock issues on some environments). Instead,
+      // show a small "Restaurar rota" button over the map so the user can restore manually.
+      try {
+        const raw = localStorage.getItem('fp_last_dest');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.lat != null && parsed.lng != null) {
+            try {
+              const wrap = document.getElementById('gmap');
+              if (wrap) {
+                const btnHtml = `<button id="fp-restore-route" title="Restaurar última rota" style="position:absolute;z-index:99999;right:18px;bottom:18px;padding:10px 12px;border-radius:8px;border:0;background:#0f172a;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer">Restaurar rota</button>`;
+                // ensure container is positioned for absolute child
+                if (wrap.style.position === '' || wrap.style.position === 'static') wrap.style.position = 'relative';
+                wrap.insertAdjacentHTML('beforeend', btnHtml);
+                const btn = document.getElementById('fp-restore-route');
+                if (btn) {
+                  btn.addEventListener('click', () => {
+                    try { this.drawRoute({ lat: Number(parsed.lat), lng: Number(parsed.lng) }); } catch (e) { console.warn('manual restore drawRoute failed', e); }
+                    try { btn.remove(); } catch (e) {}
+                  });
+                }
+              }
+            } catch (e) { console.warn('prepare restore button failed', e); }
+          }
+        }
+      } catch (e) {}
+
+    } catch (initErr) {
+      console.error('initInteractiveMap unexpected error', initErr);
+      try { this.showFallbackMap(); } catch (e) { console.warn('showFallbackMap failed during init error', e); }
+      // ensure waiters are resolved
+      try { if (this.mapReadyResolver) { try { this.mapReadyResolver(); } catch (e) {} this.mapReadyResolver = null; } } catch (e) {}
+      this.mapInitialized = false;
     }
+
+    // safe window handlers (outside main try)
+    try {
+      const google = (window as any).google;
+      window.addEventListener('resize', () => { try { if (this.map && google && google.maps) google.maps.event.trigger(this.map, 'resize'); } catch (e) {} });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { try { if (this.map && google && google.maps) google.maps.event.trigger(this.map, 'resize'); } catch (e) {} } });
+    } catch (e) {}
+  }
+
+  // returns a promise that resolves when the map becomes initialized
+  private waitForMapReady(timeoutMs = 10000): Promise<void> {
+    if (this.mapInitialized) return Promise.resolve();
+    if (!this.mapReadyPromise) {
+      this.mapReadyPromise = new Promise((resolve) => { this.mapReadyResolver = resolve; });
+    }
+    // create a timeout wrapper
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => { reject(new Error('map ready timeout')); }, timeoutMs);
+      this.mapReadyPromise!.then(() => { clearTimeout(t); resolve(); }).catch((e) => { clearTimeout(t); reject(e); });
+    });
   }
 
   private geocodeAddress(geocoder: any, address: string): Promise<any> {
@@ -359,16 +478,39 @@ export class MapaComponent implements OnInit {
       if ((window as any).google) return resolve();
       const existing = document.querySelector('script[data-gmaps]') as HTMLScriptElement;
       if (existing) {
-        existing.addEventListener('load', () => resolve());
+        // If script exists but google isn't available yet, wait for it with a timeout
+        const onLoad = () => {
+          // poll for window.google availability (some CSPs may delay attach)
+          const start = Date.now();
+          const poll = () => {
+            if ((window as any).google) return resolve();
+            if (Date.now() - start > 10000) return reject(new Error('Google Maps did not initialize in time'));
+            setTimeout(poll, 200);
+          };
+          poll();
+        };
+        existing.addEventListener('load', onLoad);
         existing.addEventListener('error', (e) => reject(e));
+        // if already complete, trigger onLoad
+        if ((existing as any).readyState === 'complete') onLoad();
         return;
       }
+
       const script = document.createElement('script');
       script.async = true;
       script.defer = true;
       script.setAttribute('data-gmaps', '1');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
-      script.onload = () => resolve();
+      script.onload = () => {
+        // ensure google object is attached; poll briefly if needed
+        const start = Date.now();
+        const poll = () => {
+          if ((window as any).google) return resolve();
+          if (Date.now() - start > 10000) return reject(new Error('Google Maps did not initialize in time'));
+          setTimeout(poll, 200);
+        };
+        poll();
+      };
       script.onerror = (e) => reject(e);
       document.head.appendChild(script);
     });
@@ -426,7 +568,9 @@ export class MapaComponent implements OnInit {
     const mapsPlace = `https://www.google.com/maps/search/?api=1&query=${dest}`;
 
     const content = `
-      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px">
+      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px;position:relative;overflow:visible">
+        <!-- floating close button (visually overflows the card) -->
+        <button id="map-close-btn" aria-label="Fechar" style="position:absolute;top:-20px;right:-20px;width:40px;height:40px;border-radius:50%;background:#111827;color:#fff;border:0;box-shadow:0 10px 28px rgba(0,0,0,.32);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0">✕</button>
         <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
           <img src=\"/icones/pin-fp.png\" style=\"width:36px;height:44px;object-fit:contain;border-radius:4px\"/>
           <div style="flex:1">
@@ -453,12 +597,32 @@ export class MapaComponent implements OnInit {
       try {
         google.maps.event.addListenerOnce(this.infoWindow, 'domready', () => {
           try {
+            // ensure InfoWindow outer container allows visible overflow so the button can float outside
+            try {
+              if (!document.querySelector('style[data-gm-style-iw]')) {
+                const st = document.createElement('style');
+                st.setAttribute('data-gm-style-iw', '1');
+                st.innerHTML = `
+                  /* allow content to overflow so floating close button is visible */
+                  .gm-style .gm-style-iw { overflow: visible !important; }
+                  .gm-style .gm-style-iw > div { overflow: visible !important; }
+                  /* hide Google Maps built-in infoWindow close button (duplicate) */
+                  .gm-style .gm-style-iw-chr > button.gm-ui-hover-effect { display: none !important; }
+                  .gm-style .gm-ui-hover-effect[aria-label='Fechar'] { display: none !important; }
+                `;
+                document.head.appendChild(st);
+              }
+            } catch (e) {}
+
             const routeBtn = document.getElementById('map-route-btn');
             const openBtn = document.getElementById('map-open-btn');
             if (routeBtn) {
               routeBtn.addEventListener('click', (ev) => {
                 ev.preventDefault();
-                this.drawRoute({ lat: Number(lat), lng: Number(lng) });
+                const destObj = { lat: Number(lat), lng: Number(lng) };
+                // persist last destination so we can restore after reload
+                try { localStorage.setItem('fp_last_dest', JSON.stringify(destObj)); } catch (e) {}
+                this.drawRoute(destObj);
                 try { this.infoWindow.close(); } catch {}
               });
             }
@@ -467,6 +631,18 @@ export class MapaComponent implements OnInit {
                 ev.preventDefault();
                 await this.openMapsWithRoute({ lat: Number(lat), lng: Number(lng) });
               });
+            }
+            // close button that visually overflows the card
+            const closeBtn = document.getElementById('map-close-btn');
+            if (closeBtn) {
+              // ensure close button visually overflows (set again after domready)
+              try {
+                (closeBtn as HTMLElement).style.position = 'absolute';
+                (closeBtn as HTMLElement).style.top = '-20px';
+                (closeBtn as HTMLElement).style.right = '-20px';
+                (closeBtn as HTMLElement).style.zIndex = '99999';
+              } catch (e) {}
+              closeBtn.addEventListener('click', (ev) => { ev.preventDefault(); try { this.infoWindow.close(); } catch {} });
             }
           } catch (e) { console.warn('infoWindow domready handler failed', e); }
         });

@@ -27,18 +27,18 @@
   <div class="map-layout">
     <aside class="map-sidebar neumorph-card">
       <nav class="service-tabs" role="tablist" aria-label="Serviços">
-        <button *ngFor="let t of tabs"
-                (click)="select(t.id)"
-                [class.active]="active===t.id"
-                role="tab"
-                [attr.aria-selected]="active===t.id"
-                [attr.aria-controls]="'panel-' + t.id">
+  <button *ngFor="let t of tabs"
+    (click)="select(t.id)"
+    [class.active]="active===t.id"
+    role="tab"
+    [attr.aria-selected]="(active===t.id) ? 'true' : 'false'"
+    [attr.aria-controls]="'panel-' + t.id">
           {{ t.label }}
         </button>
       </nav>
 
-      <div class="filters" role="region" [attr.aria-labelledby]="'filters-'+active">
-        <h4 id="{{'filters-'+active}}">Filtros — {{ getActiveLabel() }}</h4>
+      <div class="filters" role="region" [attr.aria-labelledby]="'filters-' + active">
+        <h4 [attr.id]="'filters-' + active">Filtros — {{ getActiveLabel() }}</h4>
         <div class="filter-list" id="panel-{{active}}">
           <ng-container *ngIf="getFiltersForActive().length; else noFilters">
             <button class="filter-chip" *ngFor="let f of getFiltersForActive()" (click)="toggleFilter(f)" [class.on]="f.on">{{ f.label }}</button>
@@ -72,12 +72,7 @@
       <div class="map-frame-wrap">
         <!-- Google Map container: initialized dynamically in the component when Maps API key is available -->
         <div id="gmap" class="gmap" role="region" aria-label="Mapa de parceiros"></div>
-        <!-- Fallback static iframe for environments where JS is disabled -->
-        <noscript>
-          <iframe
-            src="https://www.google.com/maps?q=Rua+Treze+de+Maio,+506,+Conjunto+04,+São+Francisco,+Curitiba,+PR,+CEP+80510-030&output=embed"
-            width="100%" height="100%" style="border:0; border-radius:12px;" allowfullscreen="" loading="lazy" title="Mapa da localização (fallback)"></iframe>
-        </noscript>
+        <!-- fallback handled programmatically; noscript iframe removed to avoid hydration mismatches -->
       </div>
     </section>
   </div>
