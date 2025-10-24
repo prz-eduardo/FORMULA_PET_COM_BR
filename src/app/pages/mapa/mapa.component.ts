@@ -426,7 +426,7 @@ export class MapaComponent implements OnInit {
     const mapsPlace = `https://www.google.com/maps/search/?api=1&query=${dest}`;
 
     const content = `
-      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a">
+      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px">
         <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
           <img src=\"/icones/pin-fp.png\" style=\"width:36px;height:44px;object-fit:contain;border-radius:4px\"/>
           <div style="flex:1">
