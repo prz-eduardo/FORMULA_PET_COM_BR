@@ -31,6 +31,10 @@ export class MapaComponent implements OnInit {
   // google maps runtime objects
   private map: any = null;
   private markers: any[] = [];
+  private infoWindow: any = null;
+  private directionsService: any = null;
+  private directionsRenderer: any = null;
+  private originMarker: any = null;
   // default address used to center the map (same as previous iframe)
   private defaultCenterAddress = 'Rua Treze de Maio, 506, Conjunto 04, São Francisco, Curitiba, PR, CEP 80510-030';
   // exact pharmacy address requested by the user — we will geocode this and place the fixed pin here
@@ -146,9 +150,12 @@ export class MapaComponent implements OnInit {
       };
       const pharmacyMarker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon: iconPharm, title: 'Farmácia / Loja' });
       this.markers.push(pharmacyMarker);
+      // attach info window on click
+      try { this.attachPharmacyInfo(pharmacyMarker, coordsToUse); } catch (e) { console.warn('attachPharmacyInfo failed', e); }
     } catch (e) {
       const pharmacyMarker = new (window as any).google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
       this.markers.push(pharmacyMarker);
+      try { this.attachPharmacyInfo(pharmacyMarker, coordsToUse); } catch (err) { console.warn('attachPharmacyInfo fallback failed', err); }
     }
 
     // add markers for partners/anunciantes
@@ -282,6 +289,17 @@ export class MapaComponent implements OnInit {
     opts.center = centerLatLng ?? fallbackCenter;
     this.map = new google.maps.Map(mapEl, opts);
 
+    // prepare Directions service/renderer for in-app routing
+    try {
+      this.directionsService = new google.maps.DirectionsService();
+      // suppress default A/B markers so we can control origin/destination markers
+      this.directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, polylineOptions: { strokeColor: '#c4d600', strokeWeight: 6, strokeOpacity: 0.95 } });
+      this.directionsRenderer.setMap(this.map);
+    } catch (e) {
+      this.directionsService = null;
+      this.directionsRenderer = null;
+    }
+
     // Place the pharmacy marker using the resolved pharmacy coordinates (if we geocoded above)
     const fallbackPharmacyCoords = { lat: -25.4270, lng: -49.2706 };
     const coordsToUse = this.pharmacyCoords ?? fallbackPharmacyCoords;
@@ -294,10 +312,12 @@ export class MapaComponent implements OnInit {
       };
       const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon, title: 'Farmácia / Loja' });
       this.markers.push(marker);
+      try { this.attachPharmacyInfo(marker, coordsToUse); } catch (e) { console.warn('attachPharmacyInfo init failed', e); }
     } catch (e) {
       try {
         const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
         this.markers.push(marker);
+        try { this.attachPharmacyInfo(marker, coordsToUse); } catch (err) { console.warn('attachPharmacyInfo init fallback failed', err); }
       } catch (err) {
         console.warn('Failed to add pharmacy marker', err);
       }
@@ -385,6 +405,171 @@ export class MapaComponent implements OnInit {
       try { this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
     } catch (e) {
       console.warn('centerOnPharmacy unexpected error', e);
+    }
+  }
+
+  /**
+   * Attach a styled info window to the pharmacy marker.
+   * Shows the configured pharmacy address and quick actions to get directions or open in Google Maps.
+   */
+  private attachPharmacyInfo(marker: any, coords: { lat: number; lng: number }) {
+    if (!(window as any).google) return;
+    const google = (window as any).google;
+    // close previous info window if open
+    try { if (this.infoWindow) this.infoWindow.close(); } catch {}
+
+    const address = this.pharmacyAddress || this.defaultCenterAddress || '';
+    const lat = coords?.lat ?? (coords as any)?.lat ?? 0;
+    const lng = coords?.lng ?? (coords as any)?.lng ?? 0;
+    const dest = encodeURIComponent(`${lat},${lng}`);
+    const mapsDir = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+    const mapsPlace = `https://www.google.com/maps/search/?api=1&query=${dest}`;
+
+    const content = `
+      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+          <img src=\"/icones/pin-fp.png\" style=\"width:36px;height:44px;object-fit:contain;border-radius:4px\"/>
+          <div style="flex:1">
+            <div style="font-family:'Pacifico',cursive,'Montserrat',Arial,sans-serif;font-weight:700;font-size:16px;color:#0f172a">Formula Pet</div>
+            <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.2">${address}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="map-route-btn" style="flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Traçar rota</button>
+          <button id="map-open-btn" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Abrir no Maps</button>
+        </div>
+      </div>
+    `;
+
+    this.infoWindow = new google.maps.InfoWindow({ content, maxWidth: 360 });
+
+    // open on marker click
+    marker.addListener('click', () => {
+      try { if (this.infoWindow) this.infoWindow.close(); } catch {}
+      // ensure the window is visible (pan if needed)
+      try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
+      this.infoWindow.open(this.map, marker);
+      // attach DOM listeners once the InfoWindow is rendered
+      try {
+        google.maps.event.addListenerOnce(this.infoWindow, 'domready', () => {
+          try {
+            const routeBtn = document.getElementById('map-route-btn');
+            const openBtn = document.getElementById('map-open-btn');
+            if (routeBtn) {
+              routeBtn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                this.drawRoute({ lat: Number(lat), lng: Number(lng) });
+                try { this.infoWindow.close(); } catch {}
+              });
+            }
+            if (openBtn) {
+              openBtn.addEventListener('click', async (ev) => {
+                ev.preventDefault();
+                await this.openMapsWithRoute({ lat: Number(lat), lng: Number(lng) });
+              });
+            }
+          } catch (e) { console.warn('infoWindow domready handler failed', e); }
+        });
+      } catch (e) {
+        // ignore attach errors
+      }
+    });
+  }
+
+  private async drawRoute(dest: { lat: number; lng: number }) {
+    if (!(window as any).google || !this.map) return;
+    const google = (window as any).google;
+    // Ensure directions services are available
+    if (!this.directionsService || !this.directionsRenderer) {
+      try {
+        this.directionsService = new google.maps.DirectionsService();
+        this.directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: false });
+        this.directionsRenderer.setMap(this.map);
+      } catch (e) {
+        console.warn('DirectionsService not available', e);
+        return;
+      }
+    }
+
+    // Try to get user's current position as origin
+    let origin: any = null;
+    try {
+      origin = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+        if (!navigator.geolocation) return reject('no-geolocation');
+        navigator.geolocation.getCurrentPosition((pos) => {
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        }, (err) => reject(err), { timeout: 5000 });
+      });
+    } catch (e) {
+      // fallback to map center
+      try { const c = this.map.getCenter(); origin = { lat: c.lat(), lng: c.lng() }; } catch { origin = null; }
+    }
+
+    if (!origin) {
+      console.warn('No origin available for routing');
+      return;
+    }
+
+    const request = {
+      origin,
+      destination: { lat: Number(dest.lat), lng: Number(dest.lng) },
+      travelMode: google.maps.TravelMode.DRIVING,
+      drivingOptions: { departureTime: new Date() }
+    };
+
+    try {
+      this.directionsService.route(request, (result: any, status: any) => {
+        if (status === 'OK' && result) {
+          try { this.directionsRenderer.setDirections(result); } catch (e) { console.warn('setDirections failed', e); }
+          try {
+            // fit map to route bounds
+            const route = result.routes && result.routes[0];
+            if (route && route.bounds) this.map.fitBounds(route.bounds);
+          } catch (e) {}
+
+          // create/update a single origin marker (user) while keeping pharmacy marker intact
+          try {
+            if (this.originMarker) {
+              try { this.originMarker.setMap(null); } catch (e) {}
+              this.originMarker = null;
+            }
+            const google = (window as any).google;
+            const originIcon = {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: '#c4d600',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2
+            };
+            this.originMarker = new google.maps.Marker({ position: origin, map: this.map, title: 'Você', icon: originIcon, zIndex: 9999 });
+          } catch (e) {
+            console.warn('failed to create origin marker', e);
+          }
+
+        } else {
+          console.warn('Directions request failed:', status);
+        }
+      });
+    } catch (e) { console.warn('route request failed', e); }
+  }
+
+  private async openMapsWithRoute(dest: { lat: number; lng: number }) {
+    const destStr = `${dest.lat},${dest.lng}`;
+    // Try to get user's position
+    try {
+      const pos = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+        if (!navigator.geolocation) return reject('no-geolocation');
+        navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), (err) => reject(err), { timeout: 5000 });
+      });
+      const originStr = `${pos.lat},${pos.lng}`;
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originStr)}&destination=${encodeURIComponent(destStr)}`;
+      window.open(url, '_blank');
+      return;
+    } catch (e) {
+      // if geolocation failed, open directions with destination only
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destStr)}`;
+      window.open(url, '_blank');
     }
   }
 }
