@@ -17,8 +17,8 @@
           <div class="vet-ad-inner">
             <div class="vet-ad-badge">ANÚNCIO VETERINÁRIO</div>
             <div class="photo-wrap vet-photo-wrap">
-        <img [src]="p.foto || p.photo || '/imagens/vet-placeholder.png'" alt="Foto do veterinário {{ p.nome }}" class="vet-photo"
-          (error)="onImgError($event.target, '/imagens/vet-placeholder.png')" />
+        <img [src]="p.foto || p.photo || p.photoURL || '/imagens/image.png'" alt="Foto do veterinário {{ p.nome }}" class="vet-photo"
+          (error)="onImgError($event.target, '/imagens/image.png')" />
             </div>
             <div class="vet-ad-body">
               <h3 class="vet-name">{{ p.nome || p.name || 'Veterinário' }}</h3>
@@ -46,7 +46,7 @@
                 <div class="pet-age">{{ (p.idade || p.age) ? (p.idade || p.age) + ' anos' : '' }}</div>
               </div>
               <div class="overlay-bottom">
-                <div class="pet-name" [class.shifted]="reactionPickerOpenFor === p.id">{{ p.nome || p.name || 'Sem nome' }}</div>
+                <div class="pet-name" [class.shifted]="reactionPickerOpenFor === p._uid">{{ p.nome || p.name || 'Sem nome' }}</div>
                 <div class="actions">
                   <!-- actions left intentionally empty; reaction UI moved outside photo-wrap to avoid clipping -->
                 </div>
@@ -54,12 +54,12 @@
             </div>
           </div>
         <!-- place the reaction button/picker outside of the photo-wrap so it can overflow and remain visible -->
-        <div class="reaction-wrapper" [attr.data-pet-id]="p.id">
-          <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p, $event)">
+        <div class="reaction-wrapper" [attr.data-pet-id]="p._uid">
+          <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p, p._uid, $event)">
             {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : '\u2764\ufe0f' }}
             <span class="likes-count">{{ p.likes ?? 0 }}</span>
           </button>
-          <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p.id" (click)="$event.stopPropagation()">
+          <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p._uid" (click)="$event.stopPropagation()" [class.flipped]="pickerFlippedFor === p._uid">
             <div class="reaction-row">
               <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'">{{ r.emoji }}</button>
             </div>

@@ -217,10 +217,10 @@
               <div class="map-grid" *ngIf="byUF({ customers_geo: { by_state: d.by_state || d.customers_geo?.by_state } }) as m">
                 <div class="row" *ngFor="let row of getMapRows()">
                   <div class="tile" *ngFor="let uf of row"
-                       [attr.title]="uf + ' - ' + (m[uf]?.pedidos || 0) + ' pedidos'"
-                       [style.background]="colorFor(m[uf]?.pedidos || 0, maxPedidos({ customers_geo: { by_state: d.by_state || d.customers_geo?.by_state } }))">
+                       [attr.title]="uf + ' - ' + (m[uf].pedidos || 0) + ' pedidos'"
+                       [style.background]="colorFor(m[uf].pedidos || 0, maxPedidos({ customers_geo: { by_state: d.by_state || d.customers_geo?.by_state } }))">
                     <div class="uf">{{ uf }}</div>
-                    <div class="val">{{ m[uf]?.pedidos || 0 }}</div>
+                    <div class="val">{{ m[uf].pedidos || 0 }}</div>
                   </div>
                 </div>
               </div>

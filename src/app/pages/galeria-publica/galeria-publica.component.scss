@@ -5,7 +5,7 @@
 /* Fonts: elegant headline + friendly body */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,700&family=Poppins:wght@400;600;700;800&display=swap');
 
-.galeria-title{ font-family: 'Butterfly Kids', cursive, 'Montserrat', sans-serif; font-size:44px; color:var(--primary, #2b2b2b); margin:0 0 12px; font-weight:900; letter-spacing: -0.8px; line-height:1.02; text-shadow: 0 6px 22px #f5a70066 }
+.galeria-title{ font-family: "Pacifico", cursive, "Montserrat", Arial, sans-serif; font-size:44px; color:var(--primary, #2b2b2b); margin:0 0 12px; font-weight:900; letter-spacing: -0.8px; line-height:1.02; text-shadow: 0 6px 22px #f5a70066 }
 .galeria-subtitle{ margin:0; color:#54646b; font-size:15px; line-height:1.45; font-weight:500; font-family: var(--gallery-font) }
 
 /* decorative flourish kept but sized to match the home title */
@@ -135,6 +135,16 @@
 		transform: none !important;
 	}
 /* floating picker arrow removed */
+
+.reaction-picker.flipped{
+	/* When flipped, render the picker below the trigger so the top isn't clipped */
+	bottom: auto !important;
+	top: 100% !important;
+	right: auto !important;
+	left: 0 !important;
+	margin-top: 8px;
+	transform-origin: left top;
+}
 .reaction-btn{ border:0; background:transparent; color:#fff; font-size:18px; padding:8px; border-radius:999px; cursor:pointer; transition: transform .14s ease, box-shadow .14s ease; opacity:0; transform: translateY(6px) scale(.96); animation: emojiIn .28s cubic-bezier(.2,.9,.3,1) forwards; animation-delay: var(--d, 120ms); min-width: 44px; min-height: 44px; display:inline-flex; align-items:center; justify-content:center }
 .reaction-btn:hover{ transform:translateY(-6px) scale(1.08); box-shadow:0 10px 24px rgba(0,0,0,0.36) }
 

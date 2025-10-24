@@ -33,6 +33,10 @@ export class MapaComponent implements OnInit {
   private markers: any[] = [];
   // default address used to center the map (same as previous iframe)
   private defaultCenterAddress = 'Rua Treze de Maio, 506, Conjunto 04, São Francisco, Curitiba, PR, CEP 80510-030';
+  // exact pharmacy address requested by the user — we will geocode this and place the fixed pin here
+  private pharmacyAddress = 'Rua Treze de Maio, 506 – Sala 04, Curitiba, PR';
+  // resolved pharmacy coordinates (populated after a successful geocode); used by refreshMarkers()
+  private pharmacyCoords: { lat: number; lng: number } | null = null;
 
   constructor(private api: ApiService, private toast: ToastService, @Inject(PLATFORM_ID) private platformId: Object) {}
 
@@ -128,10 +132,22 @@ export class MapaComponent implements OnInit {
     for (const m of this.markers) { try { m.setMap(null); } catch(e){} }
     this.markers = [];
 
-    // add pharmacy marker at current center again
-    const center = this.map.getCenter?.();
-    if (center) {
-      const pharmacyMarker = new (window as any).google.maps.Marker({ position: center, map: this.map, title: 'Farmácia / Loja' });
+    // add pharmacy marker at the resolved pharmacy coordinates (geocoded from pharmacyAddress)
+    // fallback to the previous hardcoded coords if geocoding hasn't completed or failed
+    const fallbackCoords = { lat: -25.4270, lng: -49.2706 };
+    const coordsToUse = this.pharmacyCoords ?? fallbackCoords;
+    try {
+      const google = (window as any).google;
+      const pinFpUrl = '/icones/pin-fp.png';
+      const iconPharm = {
+        url: pinFpUrl,
+        scaledSize: new google.maps.Size(36, 44),
+        anchor: new google.maps.Point(18, 44)
+      };
+      const pharmacyMarker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon: iconPharm, title: 'Farmácia / Loja' });
+      this.markers.push(pharmacyMarker);
+    } catch (e) {
+      const pharmacyMarker = new (window as any).google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
       this.markers.push(pharmacyMarker);
     }
 
@@ -215,83 +231,96 @@ export class MapaComponent implements OnInit {
     const mapEl = document.getElementById('gmap');
     if (!mapEl) throw new Error('Map container not found');
 
-    // default map options
-    const opts: any = { zoom: 15 };
+  // default map options — keep the map clean by disabling the default Google UI
+  // and hide Google's Points of Interest (POI) / business pins so only our custom markers display
+  const opts: any = {
+    zoom: 15,
+    disableDefaultUI: true,
+    // prevent default POI icons from being clickable
+    clickableIcons: false,
+    // allow normal single-finger gestures on mobile (avoid the "use two fingers" overlay)
+    gestureHandling: 'greedy',
+    // styles to hide POI icons and labels (businesses, places)
+    styles: [
+      { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+      { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+      { featureType: 'poi', elementType: 'labels.text', stylers: [{ visibility: 'off' }] }
+    ]
+  };
 
-    // try to center on first partner if it has coordinates
+    // Prefer to center the map on the pharmacy address (user requested).
+    // Attempt to geocode the pharmacy address first; if that fails, fall back to
+    // the first partner's coords (if any), otherwise use a Curitiba fallback.
     let centerLatLng: any = null;
-    if (this.partners && this.partners.length) {
+    const fallbackCenter = { lat: -25.4284, lng: -49.2733 }; // Curitiba center fallback
+    try {
+      const geocoder = new google.maps.Geocoder();
+      try {
+        const results = await this.geocodeAddress(geocoder, this.pharmacyAddress);
+        if (results && results[0] && results[0].geometry && results[0].geometry.location) {
+          const loc = results[0].geometry.location;
+          this.pharmacyCoords = { lat: loc.lat(), lng: loc.lng() };
+          centerLatLng = { lat: loc.lat(), lng: loc.lng() };
+        }
+      } catch (gErr) {
+        // ignore geocode failure here; we'll try partners next
+        console.warn('Geocode failed for pharmacy address during init', gErr);
+      }
+    } catch (e) {
+      // if geocoder construction or call fails, continue to partner/fallback
+    }
+
+    // if pharmacy geocode didn't produce coords, try to use first partner
+    if (!centerLatLng && this.partners && this.partners.length) {
       const p = this.partners[0];
       const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
       const lng = p.lng ?? p.longitude ?? p.long ?? null;
-      if (lat != null && lng != null) {
-        centerLatLng = { lat: Number(lat), lng: Number(lng) };
-      }
+      if (lat != null && lng != null) centerLatLng = { lat: Number(lat), lng: Number(lng) };
     }
 
-    // create map now; if we have center coords use them, otherwise set temporary center and geocode later
-    if (centerLatLng) {
-      opts.center = centerLatLng;
-      this.map = new google.maps.Map(mapEl, opts);
-    } else {
-      // temporary center (will be replaced after geocode)
-      opts.center = { lat: -25.4284, lng: -49.2733 }; // Curitiba center fallback
-      this.map = new google.maps.Map(mapEl, opts);
+    // finalize opts.center and create the map
+    opts.center = centerLatLng ?? fallbackCenter;
+    this.map = new google.maps.Map(mapEl, opts);
 
-      // try to geocode the defaultCenterAddress
-      if (this.defaultCenterAddress) {
-        const geocoder = new google.maps.Geocoder();
-        try {
-          const results = await this.geocodeAddress(geocoder, this.defaultCenterAddress);
-          if (results && results[0] && results[0].geometry && results[0].geometry.location) {
-            const loc = results[0].geometry.location;
-            const center = { lat: loc.lat(), lng: loc.lng() };
-            this.map.setCenter(center);
-          }
-        } catch (e) {
-          console.warn('Geocode failed for default address', e);
-        }
-      }
-    }
-
-    // add pharmacy marker at center (use custom icon)
-    // Create an inline SVG pin which embeds the image inside a circular crop
-    // and draws a small downward arrow so the pin visually points to the location.
-    // This keeps the image at its real aspect ratio, but smaller than before.
-    const imgUrl = '/imagens/image.png';
-    const svg = `
-      <svg xmlns='http://www.w3.org/2000/svg' width='48' height='60' viewBox='0 0 48 60'>
-        <defs>
-          <clipPath id='c'><circle cx='24' cy='22' r='20'/></clipPath>
-        </defs>
-        <rect width='100%' height='100%' fill='none'/>
-        <image href='${imgUrl}' x='4' y='2' width='40' height='40' clip-path='url(#c)' preserveAspectRatio='xMidYMid slice' />
-        <!-- small pin tail -->
-        <path d='M24 46 L16 56 L32 56 Z' fill='#0c0c0c' fill-opacity='0.9' />
-      </svg>
-    `;
-    const pinSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-    const icon = {
-      url: pinSvg,
-      // keep the rendered size smaller than previous (36x44) so it doesn't dominate the map
-      scaledSize: new google.maps.Size(36, 44),
-      // anchor at bottom center of the pin
-      anchor: new google.maps.Point(18, 44)
-    };
-
-    const center = this.map.getCenter();
-    if (center) {
-      const marker = new google.maps.Marker({ position: center, map: this.map, icon, title: 'Farmácia / Loja' });
+    // Place the pharmacy marker using the resolved pharmacy coordinates (if we geocoded above)
+    const fallbackPharmacyCoords = { lat: -25.4270, lng: -49.2706 };
+    const coordsToUse = this.pharmacyCoords ?? fallbackPharmacyCoords;
+    try {
+      const pinFpUrl = '/icones/pin-fp.png';
+      const icon = {
+        url: pinFpUrl,
+        scaledSize: new google.maps.Size(36, 44),
+        anchor: new google.maps.Point(18, 44)
+      };
+      const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon, title: 'Farmácia / Loja' });
       this.markers.push(marker);
+    } catch (e) {
+      try {
+        const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
+        this.markers.push(marker);
+      } catch (err) {
+        console.warn('Failed to add pharmacy marker', err);
+      }
     }
 
-    // add markers for partners if they have lat/lng
+    // add markers for partners if they have lat/lng using partner paw icon
     for (const p of this.partners) {
       const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
       const lng = p.lng ?? p.longitude ?? p.long ?? null;
       if (lat != null && lng != null) {
-        const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
-        this.markers.push(m);
+        try {
+          const pataUrl = '/icones/pin-pata.svg';
+          const iconPata = {
+            url: pataUrl,
+            scaledSize: new google.maps.Size(32, 36),
+            anchor: new google.maps.Point(16, 36)
+          };
+          const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro', icon: iconPata });
+          this.markers.push(m);
+        } catch (e) {
+          const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
+          this.markers.push(m);
+        }
       }
     }
   }
@@ -323,5 +352,39 @@ export class MapaComponent implements OnInit {
       script.onerror = (e) => reject(e);
       document.head.appendChild(script);
     });
+  }
+
+  /**
+   * Center the interactive map on the pharmacy address.
+   * Uses the cached geocoded `pharmacyCoords` if available, otherwise attempts
+   * to geocode the configured `pharmacyAddress`. Falls back to hardcoded coords.
+   */
+  async centerOnPharmacy(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId) || !(window as any).google || !this.map) return;
+    const google = (window as any).google;
+    const fallback = { lat: -25.4270, lng: -49.2706 };
+    try {
+      let coords = this.pharmacyCoords;
+      if (!coords && this.pharmacyAddress) {
+        try {
+          const geocoder = new google.maps.Geocoder();
+          const results = await this.geocodeAddress(geocoder, this.pharmacyAddress);
+          if (results && results[0] && results[0].geometry && results[0].geometry.location) {
+            const loc = results[0].geometry.location;
+            coords = { lat: loc.lat(), lng: loc.lng() };
+            this.pharmacyCoords = coords;
+          }
+        } catch (e) {
+          // geocode failed; we'll fallback below
+          console.warn('Geocode for pharmacy failed', e);
+        }
+      }
+
+      const center = coords ?? fallback;
+      try { this.map.setCenter(center); } catch (e) { console.warn('map.setCenter failed', e); }
+      try { this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
+    } catch (e) {
+      console.warn('centerOnPharmacy unexpected error', e);
+    }
   }
 }

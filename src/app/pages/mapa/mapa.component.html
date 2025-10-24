@@ -2,8 +2,26 @@
 <div style="height: 60px;"></div>
 <main class="mapa-container container">
   <header class="mapa-header">
-    <h1 class="mapa-title">Localização <span class="emoji">🗺️</span></h1>
+  <h1 class="mapa-title">Mapa <span class="emoji">🗺️</span></h1>
     <p class="mapa-subtitle">Encontre serviços pet próximos: veterinários, dog walkers, petsitters e creches caninas.</p>
+    <section class="farmacia-info" role="region" aria-label="Localização da farmácia">
+      <h2 class="farmacia-title">Nossa Farmácia</h2>
+      <p class="farmacia-address">Rua Treze de Maio, 506, Conjunto 04, São Francisco, Curitiba - PR, CEP 80510-030</p>
+      <p class="farmacia-directions">
+        <button
+          type="button"
+          class="farmacia-center-btn btn primary"
+          aria-label="Centralizar mapa na localização da farmácia"
+          title="Centralizar mapa"
+          (click)="centerOnPharmacy()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
+        <circle cx="12" cy="9" r="2.5" fill="#fff" />
+          </svg>
+          Centralizar no mapa
+        </button>
+      </p>
+    </section>
   </header>
 
   <div class="map-layout">
@@ -51,12 +69,6 @@
     </aside>
 
     <section class="map-area">
-      <div class="map-topbar">
-        <div class="map-actions">
-          <button class="btn" title="Centralizar">Centralizar</button>
-          <button class="btn btn-sec" title="Modo lista">Lista</button>
-        </div>
-      </div>
       <div class="map-frame-wrap">
         <!-- Google Map container: initialized dynamically in the component when Maps API key is available -->
         <div id="gmap" class="gmap" role="region" aria-label="Mapa de parceiros"></div>

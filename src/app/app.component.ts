@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { NavmenuComponent } from './navmenu/navmenu.component';
@@ -27,7 +27,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   title = 'FORMULA_PET_COM_BR';
   deviceType: string = 'desktop';
 
-  constructor(@Inject(PLATFORM_ID) private platformId: any) {
+  constructor(@Inject(PLATFORM_ID) private platformId: any, private zone: NgZone) {
     register(); // Swiper
   }
 
@@ -44,22 +44,25 @@ export class AppComponent implements OnInit, AfterViewInit {
     if (isPlatformBrowser(this.platformId)) {
       // Remove o badge de branding do Elfsight depois que o widget carregar
       // Tentando várias vezes porque o widget pode demorar pra renderizar
-      let tries = 0;
-      const maxTries = 25;
-      let loadingTestimonials = true;
-      const intervalId = setInterval(() => {
-        const badge = document.querySelector('a[href*="elfsight.com/google-reviews-widget"]');
-        if (badge) {
-          badge.remove();
-          console.log('Badge Elfsight removido.');
-          loadingTestimonials = false;
-          clearInterval(intervalId);
-        } else if (++tries >= maxTries) {
-          loadingTestimonials = false;
-          clearInterval(intervalId);
-          console.warn('Não encontrou o badge Elfsight após várias tentativas.');
-        }
-      }, 2000);
+      // Run the polling outside Angular so it doesn't keep the app unstable during hydration
+      this.zone.runOutsideAngular(() => {
+        let tries = 0;
+        const maxTries = 25;
+        let loadingTestimonials = true;
+        const intervalId = setInterval(() => {
+          const badge = document.querySelector('a[href*="elfsight.com/google-reviews-widget"]');
+          if (badge) {
+            badge.remove();
+            console.log('Badge Elfsight removido.');
+            loadingTestimonials = false;
+            clearInterval(intervalId);
+          } else if (++tries >= maxTries) {
+            loadingTestimonials = false;
+            clearInterval(intervalId);
+            console.warn('Não encontrou o badge Elfsight após várias tentativas.');
+          }
+        }, 2000);
+      });
     }
   }
 

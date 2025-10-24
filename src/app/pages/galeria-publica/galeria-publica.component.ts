@@ -17,6 +17,8 @@ import { ToastService } from '../../services/toast.service';
 })
 export class GaleriaPublicaComponent {
   pets: any[] = [];
+  // client-side UID counter for rendered cards to guarantee uniqueness per instance
+  private _uidCounter = 1;
   loading = true; // initial load
   error: string | null = null;
 
@@ -36,6 +38,8 @@ export class GaleriaPublicaComponent {
 
   // UI: track which pet has the reaction picker open (store pet id)
   reactionPickerOpenFor: number | string | null = null;
+  // track when the picker should flip below the button to avoid viewport clipping
+  pickerFlippedFor: number | string | null = null;
 
   // available reaction types (emoji + tipo)
   reactionTypes = [
@@ -54,6 +58,8 @@ export class GaleriaPublicaComponent {
   ngOnInit(): void {
     // only perform fetches in the browser; avoids SSR Node fetch with relative URL
     if (isPlatformBrowser(this.platformId)) {
+      // reset uid counter on fresh client render
+      this._uidCounter = 1;
       this.loadPage(1);
     } else {
       // on server render, skip fetching and let client load after hydration
@@ -88,6 +94,7 @@ export class GaleriaPublicaComponent {
       } catch (e) {
         // ignore in strict environments
       }
+      // (resize/scroll listeners are attached dynamically when the picker opens)
     } catch (e) {
       // IntersectionObserver might not be available in some browsers/environments
       console.warn('IntersectionObserver not available', e);
@@ -101,6 +108,8 @@ export class GaleriaPublicaComponent {
       if (isPlatformBrowser(this.platformId)) {
         document.removeEventListener('click', this._docClickHandler as any);
       }
+      // also remove any picker listeners
+      this._removePickerListeners();
     } catch (e) {}
   }
 
@@ -155,16 +164,23 @@ export class GaleriaPublicaComponent {
   }
 
   // Open/close reaction picker; clicking the heart toggles the picker instead
-  openReactionPicker(pet: any, ev?: Event) {
+  // We accept the pet object and the client _uid so the picker is unique per card instance
+  openReactionPicker(pet: any, uid?: string, ev?: Event) {
     // Positioning is handled via CSS (absolute inside the card). We only toggle state here.
-    if (this.reactionPickerOpenFor === pet.id) {
+    const key = uid ?? pet?._uid ?? pet?.id;
+    if (this.reactionPickerOpenFor === key) {
       this.reactionPickerOpenFor = null;
       (this as any)._suppressDocClose = false;
+      this._removePickerListeners();
     } else {
-      this.reactionPickerOpenFor = pet.id;
+      this.reactionPickerOpenFor = key;
       // briefly suppress document-level click closure so the opener click doesn't close it
       (this as any)._suppressDocClose = true;
       setTimeout(() => { (this as any)._suppressDocClose = false; }, 120);
+      // after the picker is rendered, adjust its position to avoid clipping
+      setTimeout(() => { try { this.adjustPickerPositionById(key); } catch (e) {} }, 40);
+      // attach scroll/resize handlers while picker is open
+      this._attachPickerListeners();
     }
   }
 
@@ -236,6 +252,60 @@ export class GaleriaPublicaComponent {
     }
   }
 
+  // --- Picker position helpers (avoid clipping at top of viewport) ---
+  private _boundRecalc = () => {
+    if (this.reactionPickerOpenFor) {
+      try { this.adjustPickerPositionById(this.reactionPickerOpenFor); } catch (e) {}
+    }
+  }
+
+  // Close picker on any page scroll; keep resize for recalculation
+  private _onScrollClose = (ev: Event) => {
+    try {
+      if (this.reactionPickerOpenFor) {
+        this.reactionPickerOpenFor = null;
+        (this as any)._suppressDocClose = false;
+        this._removePickerListeners();
+      }
+    } catch (e) {}
+  }
+
+  private _attachPickerListeners() {
+    try {
+      // scroll should immediately close an open picker (user intent)
+      window.addEventListener('scroll', this._onScrollClose, true);
+      // resize needs to recalc position if picker remains open
+      window.addEventListener('resize', this._boundRecalc);
+    } catch (e) {}
+  }
+
+  private _removePickerListeners() {
+    try {
+      window.removeEventListener('scroll', this._onScrollClose, true);
+      window.removeEventListener('resize', this._boundRecalc);
+    } catch (e) {}
+    this.pickerFlippedFor = null;
+  }
+
+  // Compute if the picker would be clipped by the top of the viewport and flip it below the button
+  adjustPickerPositionById(id: number | string) {
+    try {
+      const wrapper = document.querySelector(`.reaction-wrapper[data-pet-id="${id}"]`) as HTMLElement | null;
+      if (!wrapper) { this.pickerFlippedFor = null; return; }
+      const picker = wrapper.querySelector('.reaction-picker') as HTMLElement | null;
+      if (!picker) { this.pickerFlippedFor = null; return; }
+      const rect = picker.getBoundingClientRect();
+      const topThreshold = 8; // px from top of viewport
+      if (rect.top < topThreshold) {
+        this.pickerFlippedFor = id;
+      } else {
+        this.pickerFlippedFor = null;
+      }
+    } catch (e) {
+      this.pickerFlippedFor = null;
+    }
+  }
+
   private async loadPage(pageNum: number) {
     if (pageNum === 1) {
       this.loading = true;
@@ -254,6 +324,8 @@ export class GaleriaPublicaComponent {
       const sizeVariants = ['small', 'medium', 'large'];
       const normalized = (items || []).map((it: any, idx: number) => ({
         ...it,
+        // assign a client-unique uid to each rendered card so duplicate server ids don't collide
+        _uid: `g-${Date.now()}-${this._uidCounter++}`,
         likes: it.likes ?? it.reacoes_count ?? 0,
         userReacted: !!(it.userReacted || it.user_reacted || false),
         // pseudo-random but stable per session: use index to pick variant
