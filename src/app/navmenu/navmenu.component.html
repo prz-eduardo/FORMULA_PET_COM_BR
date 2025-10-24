@@ -96,8 +96,8 @@
   <ul class="menu" *ngIf="showFullMenu">
       
     <li class="menu-link">
-      <a [routerLink]="currentRoute === '/' ? '/sobre-nos' : '/'" class="text-item">
-        {{ currentRoute === '/' ? 'Sobre Nós' : 'Home' }}
+      <a [routerLink]="currentRoute && currentRoute.startsWith('/sobre-nos') ? '/' : '/sobre-nos'" class="text-item">
+        {{ currentRoute && currentRoute.startsWith('/sobre-nos') ? 'Home' : 'Sobre Nós' }}
       </a>
     </li>
 

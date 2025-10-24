@@ -50,6 +50,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private idleTimer: any = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
   private metaballsPaused = false;
+  private menuScrollTop: number | null = null;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService, private auth: AuthService) {}
 
@@ -297,7 +298,20 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       menu.classList.add('close');
       iconMenu.classList.remove('icon-closed');
       this.menuOpen = false;
-      try { document.body.style.overflow = ''; } catch {}
+      try {
+        // restore body/html scroll
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        // restore fixed positioning if we set it
+        if (document.body.style.position === 'fixed') {
+          const prev = this.menuScrollTop || 0;
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.width = '';
+          window.scrollTo(0, prev);
+        }
+        this.menuScrollTop = null;
+      } catch {}
       // Resume metaballs when menu is closed
       this.metaballsPaused = false;
       setTimeout(() => menu.classList.remove('open'), 1300);
@@ -309,7 +323,16 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   // Garante visibilidade enquanto o menu está aberto
   this.isVisible = true;
   if (this.idleTimer) clearTimeout(this.idleTimer);
-      try { document.body.style.overflow = 'hidden'; } catch {}
+      try {
+        // freeze background scroll: hide overflow on html/body and lock body position
+        this.menuScrollTop = window.scrollY || window.pageYOffset || 0;
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        // lock body positioning to avoid content jump
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this.menuScrollTop}px`;
+        document.body.style.width = '100%';
+      } catch {}
       // Pause metaballs while menu is open to reduce paint/layout work
       this.metaballsPaused = true;
     }

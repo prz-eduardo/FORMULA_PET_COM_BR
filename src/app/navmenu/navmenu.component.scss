@@ -74,9 +74,16 @@ button {
 /* Avoid inline styles: utility class for hidden svg */
 .sr-abs { position: absolute; }
 @import url("https://fonts.googleapis.com/css?family=Barlow:400,600,800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 
 // Variáveis
 $font-01: "Barlow", sans-serif;
+
+// Menu decorative font
+$font-menu: "Pacifico", cursive, "Montserrat", Arial, sans-serif;
+
+// Menu text color (darker for better contrast)
+$menu-text-color: #0f172a;
 
 // Cores antigas comentadas
 /*
@@ -183,6 +190,8 @@ nav {
     -webkit-backdrop-filter: blur(1px);
     backdrop-filter: blur(1px);
     animation: overlayIn 2s ease forwards;
+    /* overlay should receive pointer events so clicks can close the menu; scrolling is blocked via JS when menu opens */
+    pointer-events: auto;
   }
 
   &.hidden {
@@ -411,12 +420,13 @@ nav {
     display: none;
 
     // Menu aberto
-    &.open {
-      display: flex;
-      flex-direction: row-reverse;
-      z-index: 3;
-      overflow-x: auto; // desktop: permite rolar se exceder largura
-      overflow-y: hidden;
+  &.open {
+  display: flex;
+  flex-direction: row-reverse;
+  z-index: 3;
+  overflow-x: auto; // desktop: permite rolar se exceder largura
+  /* allow vertical scrolling of the page behind the menu */
+  overflow-y: visible;
 
       // Menu Open - Main Link
       .menu-link {
@@ -465,13 +475,13 @@ nav {
         }
 
         // Texto do Main Link
-        .text-item {
-          color: white;
-          font-family: $font-01;
-          text-transform: uppercase;
+          .text-item {
+          color: $menu-text-color;
+          font-family: $font-menu;
+          // text-transform: uppercase;
           font-weight: 800;
-          font-size: 28px; // desktop: menorzinho
-          opacity: 0.3;
+          font-size: 34px; // desktop: increased for readability
+          opacity: 1;
           width: 100%;
           height: auto; // desktop: sem altura fixa
           letter-spacing: 4px;
@@ -490,7 +500,7 @@ nav {
 
           @include sm {
             transform: rotate(0deg);
-            font-size: 30px;
+            font-size: 36px;
             position: absolute; // mobile mantém layout original
             height: 20%;
             justify-content: center;
@@ -507,7 +517,7 @@ nav {
               opacity: 0;
             }
             100% {
-              opacity: 0.3;
+              opacity: 1;
             }
           }
 
@@ -531,10 +541,12 @@ nav {
           // Instagram button variant with gradient background
           &.insta-btn {
             display: inline-flex;
+            /* switch to row layout so the img is centered inside the pill */
+            flex-direction: row;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 8px 12px;
+            // padding: 8px 12px;
             border-radius: 999px;
             box-shadow: 0 6px 16px rgba(0,0,0,.15);
             background: radial-gradient(100% 100% at 100% 0%, #feda75 0%, #fa7e1e 30%, #d62976 55%, #962fbf 75%, #4f5bd5 100%);
@@ -555,13 +567,17 @@ nav {
               background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0));
               pointer-events: none;
             }
-            img { display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+            img { display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); margin: 10px; }
             &:hover { filter: brightness(0.98); transform: translateZ(0) scale(1.03); }
+
+            /* Center the Instagram menu button on desktop so it aligns vertically */
+            align-self: center; /* override the column left-alignment for this single button */
+            padding-left: 0; /* avoid additional left offset */
           }
         }
 
         // Sub Menu
-        .submenu {
+          .submenu {
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -584,7 +600,7 @@ nav {
           .sub-item {
             display: none;
             margin: 10px 0;
-            color: white;
+            color: $menu-text-color;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-size: 20px;
@@ -593,6 +609,11 @@ nav {
             width: fit-content;
             cursor: pointer;
             padding: 5px 15px;
+
+            // Apply decorative menu font to submenu links
+            a {
+              font-family: $font-menu;
+            }
 
             @include sm {
               font-size: 16px;
@@ -639,7 +660,7 @@ nav {
             @include sm {
               width: 100%;
               font-size: 30px;
-              opacity: 0.3;
+              opacity: 1;
               letter-spacing: 5px;
             }
           }
