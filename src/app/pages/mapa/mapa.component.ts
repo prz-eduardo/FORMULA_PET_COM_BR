@@ -278,10 +278,12 @@ export class MapaComponent implements OnInit, OnDestroy {
             const opts: any = { position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' };
             if (iconObj) opts.icon = iconObj;
             const marker = new google.maps.Marker(opts);
+            try { (marker as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
             this.markers.push(marker);
             try { this.attachPartnerInfo(marker, p); } catch (e) { console.warn('attachPartnerInfo failed', e); }
         } catch (e) {
           const marker = new (window as any).google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' });
+          try { (marker as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
           this.markers.push(marker);
             try { this.attachPartnerInfo(marker, p); } catch (err) { console.warn('attachPartnerInfo fallback failed', err); }
         }
@@ -644,10 +646,12 @@ export class MapaComponent implements OnInit, OnDestroy {
             const opts: any = { position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' };
             if (iconObj) opts.icon = iconObj; else opts.icon = { url: '/icones/pin-pata.svg', scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
             const m = new google.maps.Marker(opts);
+            try { (m as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
             this.markers.push(m);
             try { this.attachPartnerInfo(m, p); } catch (e) { console.warn('attachPartnerInfo init failed', e); }
           } catch (e) {
             const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
+            try { (m as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
             this.markers.push(m);
             try { this.attachPartnerInfo(m, p); } catch (err) { console.warn('attachPartnerInfo init fallback failed', err); }
           }
@@ -798,6 +802,61 @@ export class MapaComponent implements OnInit, OnDestroy {
       try { this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
     } catch (e) {
       console.warn('centerOnPharmacy unexpected error', e);
+    }
+  }
+
+  /**
+   * Center the map on a partner and open its info window.
+   * If a marker with a matching partner id exists, trigger its click handler.
+   */
+  async centerOnPartner(partner: any): Promise<void> {
+    if (!isPlatformBrowser(this.platformId) || !(window as any).google || !this.map) return;
+    try {
+      await this.waitForMapReady(5000).catch(() => {});
+      const google = (window as any).google;
+      const lat = partner.latitude ?? partner.lat ?? partner._raw?.latitude ?? null;
+      const lng = partner.longitude ?? partner.lng ?? partner._raw?.longitude ?? null;
+      const partnerId = partner.anuncio_id ?? partner.id ?? partner._raw?.id ?? null;
+
+      // try to find marker by attached partner id
+      let marker: any = null;
+      if (partnerId != null) {
+        marker = this.markers.find(m => m && (m as any).__partnerId != null && String((m as any).__partnerId) === String(partnerId));
+      }
+
+      // fallback: match by coordinates (within tiny tolerance)
+      if (!marker && lat != null && lng != null) {
+        const latN = Number(lat);
+        const lngN = Number(lng);
+        const eps = 1e-6;
+        marker = this.markers.find(m => {
+          try {
+            const pos = (m as any).getPosition && (m as any).getPosition();
+            if (!pos) return false;
+            const plat = pos.lat(); const plng = pos.lng();
+            return Math.abs(plat - latN) < eps && Math.abs(plng - lngN) < eps;
+          } catch (e) { return false; }
+        });
+      }
+
+      // If marker found, pan to it and trigger click to open info window
+      if (marker) {
+        try { this.map.panTo(marker.getPosition()); } catch (e) { /* ignore */ }
+        try { if (this.map.setZoom) this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
+        try { google.maps.event.trigger(marker, 'click'); } catch (e) { /* ignore */ }
+        // scroll map into view on small screens so user sees the centered marker
+        try {
+          const wrap = document.getElementById('gmap'); if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {}
+        return;
+      }
+
+      // final fallback: if we have coords, center the map on them
+      if (lat != null && lng != null) {
+        try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
+      }
+    } catch (e) {
+      console.warn('centerOnPartner failed', e);
     }
   }
 

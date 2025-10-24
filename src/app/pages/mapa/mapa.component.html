@@ -55,8 +55,8 @@
         <div *ngIf="error" class="error">{{ error }}</div>
 
         <ul *ngIf="!loading && partners?.length">
-          <li *ngFor="let p of partners" class="result-item">
-            <div class="result-thumb"></div>
+          <li *ngFor="let p of partners" class="result-item" role="button" tabindex="0" (click)="centerOnPartner(p)" (keyup.enter)="centerOnPartner(p)" [attr.aria-label]="'Centralizar ' + (p.nome || p.name || 'parceiro') + ' no mapa'">
+            <div class="result-thumb" aria-hidden="true"></div>
             <div class="result-body">
               <div class="result-title">{{ p.nome || p.name || 'Parceiro' }}</div>
               <div class="result-meta">{{ p.telefone || p.phone || '' }} {{ p.email ? '· ' + p.email : '' }}</div>

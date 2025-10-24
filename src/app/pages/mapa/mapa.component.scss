@@ -251,8 +251,9 @@
     flex-direction:column;
     border-radius: 12px;
     padding: 12px;
-    background: linear-gradient(180deg, var(--brand-50), rgba(255,255,255,0.92));
-    color: var(--brand-ink);
+    /* prefer an opaque, light card on mobile to avoid dark translucent overlays */
+    background: linear-gradient(180deg, var(--brand-50, #fff), rgba(255,255,255,0.98));
+    color: var(--brand-ink, #0f172a);
     box-shadow: 0 8px 28px rgba(0,0,0,0.06);
     border: 1px solid rgba(0,0,0,0.04);
   }
@@ -282,7 +283,21 @@
   .filter-chip.on{ background: linear-gradient(90deg, var(--brand-yellow), var(--brand-yellow-700)); color: rgb(12,12,12); box-shadow: 0 8px 18px rgba(156,179,0,0.12) }
 
   .map-sidebar .results{ display:block }
-  .result-item{ padding:10px; background: rgba(255,255,255,0.02); border-radius:8px; margin-bottom:8px }
+  /* Make result items fully readable on mobile: avoid near-transparent backgrounds
+     which appear black in dark themes. Provide a distinct, touch-friendly surface. */
+  .result-item{
+    padding:10px;
+    background: var(--result-bg-mobile, #ffffff);
+    color: var(--result-ink-mobile, #0b1220);
+    border-radius:8px;
+    margin-bottom:8px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 6px 18px rgba(2,6,23,0.03);
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+    transition: transform .08s ease, box-shadow .08s ease, background .12s ease;
+  }
+  .result-item:active{ transform: translateY(1px); box-shadow: 0 6px 14px rgba(2,6,23,0.04) }
 
   /* Keep container default background on phones; avoid horizontal overflow */
   .mapa-container{
