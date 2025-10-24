@@ -6,6 +6,7 @@ import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 
+  // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
 @Component({
   selector: 'app-mapa',
   standalone: true,
@@ -14,18 +15,14 @@ import { FooterComponent } from '../../footer/footer.component';
   styleUrls: ['./mapa.component.scss']
 })
 export class MapaComponent implements OnInit, OnDestroy {
-  tabs = [
-    { id: 'veterinario', label: 'Veterinário' },
-    { id: 'dog-walker', label: 'Dog Walker' },
-    { id: 'petsitter', label: 'Pet Sitter' },
-    { id: 'creche', label: 'Creche Canina' },
-    { id: 'banho-tosa', label: 'Banho & Tosa' },
-    { id: 'outros', label: 'Outros' }
-  ];
-  active = this.tabs[0].id;
-
-  // data loaded from /maps
+  // start with no tab selected; user must pick a service type to load partners
+  // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
+  allPartners: Array<any> = [];
   partners: Array<any> = [];
+  // tabs populated from backend (/tipos-profissionais)
+  tabs: Array<{ id: string; label: string; typeId?: number; icon?: string }> = [];
+  // currently selected tab id (string slug) — empty when none selected
+  active: string = '';
   mapsApiKey: string | null = null;
   loading = false;
   error: string | null = null;
@@ -33,6 +30,8 @@ export class MapaComponent implements OnInit, OnDestroy {
   private map: any = null;
   private markers: any[] = [];
   private infoWindow: any = null;
+  // currently opened info window instance (so different markers don't overwrite behavior)
+  private currentInfoWindow: any = null;
   private directionsService: any = null;
   private directionsRenderer: any = null;
   private originMarker: any = null;
@@ -53,39 +52,39 @@ export class MapaComponent implements OnInit, OnDestroy {
   private __unhandledRejection = (ev: any) => { console.error('map unhandledrejection', ev); try { this.showFallbackMap(); } catch (e) {}; };
 
   // filters per service (each tab has its own set)
-  filtersByTab: { [key: string]: Array<{ id: string; label: string; on: boolean }> } = {
-    veterinario: [
-      { id: '24h', label: '24 horas', on: false },
-      { id: 'dom', label: 'Atende Domingo', on: false },
-      { id: 'vacina', label: 'Aceita Vacina', on: false }
-    ],
-    'dog-walker': [
-      { id: 'recorrente', label: 'Passeio recorrente', on: false },
-      { id: 'grupos', label: 'Aceita grupos', on: false }
-    ],
-    petsitter: [
-      { id: 'overnight', label: 'Cuidados noturnos', on: false },
-      { id: 'vacina', label: 'Aceita Vacina', on: false }
-    ],
-    creche: [
-      { id: 'meio-per', label: 'Meio período', on: false },
-      { id: 'dia-inteiro', label: 'Dia inteiro', on: false }
-    ],
-    'banho-tosa': [
-      { id: 'mobile', label: 'Atendimento em domicílio', on: false },
-      { id: 'apoio', label: 'Secagem incluída', on: false }
-    ],
-    outros: [
-      { id: 'acess', label: 'Acessórios', on: false },
-      { id: 'remed', label: 'Serviços Remotos', on: false }
-    ]
-  };
+  filtersByTab: { [key: string]: Array<{ id: string; label: string; on: boolean }> } = {};
 
   
   toggleFilter(f: any){
     // toggle the filter state in-place — since we bind objects from filtersByTab,
     // this will update the correct service-specific filter array.
     f.on = !f.on;
+    // when a filter toggles, re-apply filters to update visible partners and markers
+    try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
+  }
+
+  // compute the filtered partners based on currently selected filters for active tab
+  private computeFilteredPartners(): any[] {
+    const key = this.active || '';
+    const filters = this.filtersByTab[key] || [];
+    // collect keys of filters that are ON
+    const activeFilterKeys = filters.filter(f => !!f.on).map(f => String(f.id));
+    // if no active filters, return full list
+    if (!activeFilterKeys.length) return this.allPartners.slice();
+
+    // otherwise return partners where all active filter keys are true in filtros_selecionados
+    return this.allPartners.filter(p => {
+      try {
+        const sel = p.filtros_selecionados || {};
+        return activeFilterKeys.every(k => !!sel[k]);
+      } catch (e) { return false; }
+    });
+  }
+
+  // apply filters and refresh UI + markers
+  private applyFilters(){
+    this.partners = this.computeFilteredPartners();
+    try { this.refreshMarkers(); } catch (e) { console.warn('refreshMarkers failed in applyFilters', e); }
   }
   getActiveLabel(){
     const t = this.tabs.find(x => x.id === this.active);
@@ -111,14 +110,15 @@ export class MapaComponent implements OnInit, OnDestroy {
         // but don't wait forever: fallback after a short timeout to avoid blocking map init
         const stableSub = (this.appRef.isStable as any).pipe(filter((s: boolean) => s), take(1)).subscribe(() => {
           try { clearTimeout(stableTimer as any); } catch (e) {}
-          this.loadPartners();
-          this.loadAnunciantes(this.active);
+            this.loadPartners();
+            // only load anunciantes if a tab is already selected
+            if (this.active) this.loadAnunciantes(this.active);
         });
         // fallback timer: if stability doesn't occur within 1500ms, proceed anyway
         const stableTimer = setTimeout(() => {
           try { stableSub.unsubscribe(); } catch (e) {}
-          this.loadPartners();
-          this.loadAnunciantes(this.active);
+            this.loadPartners();
+            if (this.active) this.loadAnunciantes(this.active);
         }, 1500);
       } catch (e) {
         // fallback: schedule after a tick
@@ -137,21 +137,97 @@ export class MapaComponent implements OnInit, OnDestroy {
   select(tabId: string){
     this.active = tabId;
     if (isPlatformBrowser(this.platformId)) {
-      this.loadAnunciantes(tabId);
+      // resolve numeric type id from the populated tabs list and pass that to backend
+      let tipo: any = tabId;
+      try {
+        const tab = this.tabs.find(t => t.id === tabId);
+        if (tab && typeof tab.typeId !== 'undefined') tipo = Number(tab.typeId);
+      } catch (e) {}
+      this.loadAnunciantes(tipo);
     }
   }
 
-  private loadAnunciantes(tipo?: string){
+  private loadAnunciantes(tipo?: any){
     // lightweight loading state for the anunciantes list
     this.api.getAnunciantes(tipo).subscribe({
       next: (res) => {
-        // res expected to be array of anunciantes
-        this.partners = Array.isArray(res) ? res : [];
-        // refresh map markers if map already initialized
         try {
-          this.refreshMarkers();
+          // backend may return { filtros: [...], anuncios: [...] } or a raw array
+          let anuncios: any[] = [];
+          let filtros: any[] = [];
+          if (Array.isArray(res)) {
+            anuncios = res;
+          } else if (res && typeof res === 'object') {
+            anuncios = Array.isArray((res as any).anuncios) ? (res as any).anuncios : [];
+            filtros = Array.isArray((res as any).filtros) ? (res as any).filtros : [];
+          }
+
+          // populate filtersByTab for the currently active tab (or fallback to tipo as key)
+          const key = this.active || String(tipo ?? '');
+          try {
+            if (filtros && filtros.length) {
+              // map backend filter shape to UI-friendly { id, label, on }
+              this.filtersByTab[key] = filtros.map((f: any) => ({
+                id: f.chave ?? String(f.atributo_id ?? ''),
+                label: f.nome ?? f.chave ?? '',
+                // UI starts with filters OFF by default (user requested)
+                on: false
+              }));
+            } else {
+              this.filtersByTab[key] = this.filtersByTab[key] || [];
+            }
+          } catch (e) {
+            this.filtersByTab[key] = this.filtersByTab[key] || [];
+          }
+
+          // normalize anuncios into partner objects expected by the UI/map
+          this.allPartners = (anuncios || []).map((a: any) => {
+            const anuncio = a || {};
+            // try multiple field names used by backend
+            const latRaw = anuncio.anuncio_latitude ?? anuncio.latitude ?? anuncio.lat ?? anuncio.anunciante_latitude ?? null;
+            const lngRaw = anuncio.anuncio_longitude ?? anuncio.longitude ?? anuncio.lng ?? anuncio.anunciante_longitude ?? null;
+            const latitude = latRaw != null ? Number(latRaw) : (anuncio.lat ? Number(anuncio.lat) : undefined);
+            const longitude = lngRaw != null ? Number(lngRaw) : (anuncio.lng ? Number(anuncio.lng) : undefined);
+
+            return {
+              // primary identifiers
+              id: anuncio.anunciante_id ?? anuncio.anunciante_id ?? anuncio.anuncio_id ?? anuncio.id,
+              anuncio_id: anuncio.anuncio_id ?? undefined,
+              // display name: prefer anunciante_nome, fallback to titulo
+              nome: anuncio.anunciante_nome ?? anuncio.titulo ?? anuncio.nome ?? '',
+              // title/heading
+              titulo: anuncio.titulo ?? '',
+              // contact info
+              telefone: anuncio.anuncio_telefone ?? anuncio.anunciante_telefone ?? anuncio.telefone ?? '',
+              email: anuncio.anuncio_email ?? anuncio.anunciante_email ?? anuncio.email ?? '',
+              // address
+              endereco: anuncio.anuncio_endereco ?? anuncio.endereco ?? '',
+              cidade: anuncio.anuncio_cidade ?? anuncio.cidade ?? '',
+              estado: anuncio.anuncio_estado ?? anuncio.estado ?? '',
+              cep: anuncio.anuncio_cep ?? anuncio.cep ?? '',
+              // description
+              descricao: anuncio.anunciante_descricao ?? anuncio.anuncio_descricao ?? anuncio.descricao ?? '',
+              // media
+              logo_url: anuncio.logo_url ?? null,
+              // geographic
+              latitude: typeof latitude === 'number' && !isNaN(latitude) ? latitude : undefined,
+              longitude: typeof longitude === 'number' && !isNaN(longitude) ? longitude : undefined,
+              // filters selected for this anuncio
+              filtros_selecionados: anuncio.filtros_selecionados ?? {},
+              // raw payload for debugging if needed
+              _raw: anuncio
+              };
+            });
+
+            // apply current filters to compute visible partners
+            try { this.applyFilters(); } catch (e) { console.warn('applyFilters after loadAnunciantes failed', e); }
+
+            // refresh map markers if map already initialized
+            try { this.refreshMarkers(); } catch (e) { /* ignore map refresh errors; may not be ready */ }
         } catch (e) {
-          // ignore map refresh errors; map may not be ready yet
+          console.error('loadAnunciantes parse failed', e);
+          this.allPartners = [];
+          this.partners = [];
         }
       },
       error: (err) => {
@@ -163,6 +239,8 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   private refreshMarkers(){
     if (!this.map || !(window as any).google) return;
+    // close any open infoWindow and remove existing markers
+    try { if (this.currentInfoWindow) { try { this.currentInfoWindow.close(); } catch(e){} this.currentInfoWindow = null; } } catch(e){}
     // remove existing markers
     for (const m of this.markers) { try { m.setMap(null); } catch(e){} }
     this.markers = [];
@@ -194,29 +272,167 @@ export class MapaComponent implements OnInit, OnDestroy {
       const lat = p.latitude ?? p.lat ?? p.latitud ?? null;
       const lng = p.longitude ?? p.lng ?? p.long ?? null;
       if (lat != null && lng != null) {
-        const marker = new (window as any).google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' });
-        this.markers.push(marker);
+          try {
+            const google = (window as any).google;
+            const iconObj = this.getIconForPartner(p);
+            const opts: any = { position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' };
+            if (iconObj) opts.icon = iconObj;
+            const marker = new google.maps.Marker(opts);
+            this.markers.push(marker);
+            try { this.attachPartnerInfo(marker, p); } catch (e) { console.warn('attachPartnerInfo failed', e); }
+        } catch (e) {
+          const marker = new (window as any).google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' });
+          this.markers.push(marker);
+            try { this.attachPartnerInfo(marker, p); } catch (err) { console.warn('attachPartnerInfo fallback failed', err); }
+        }
       }
     }
+  }
+
+  /**
+   * Attach an info window to a partner marker showing basic info and actions.
+   */
+  private attachPartnerInfo(marker: any, partner: any) {
+    if (!(window as any).google) return;
+    const google = (window as any).google;
+    try { if (this.infoWindow) this.infoWindow.close(); } catch {}
+
+    const lat = partner.latitude ?? partner.lat ?? partner._raw?.latitude ?? 0;
+    const lng = partner.longitude ?? partner.lng ?? partner._raw?.longitude ?? 0;
+    const uid = String(partner.anuncio_id ?? partner.id ?? Math.abs(Math.floor(Math.random() * 1e9)));
+    const dest = encodeURIComponent(`${lat},${lng}`);
+    const name = partner.nome ?? partner.titulo ?? partner._raw?.anunciante?.nome ?? '';
+    const title = partner.titulo ?? '';
+    const address = partner.endereco ?? partner._raw?.endereco ?? '';
+    const phone = partner.telefone ?? partner._raw?.telefone ?? '';
+
+    const routeBtnId = `map-route-btn-${uid}`;
+    const openBtnId = `map-open-btn-${uid}`;
+    const closeBtnId = `map-close-btn-${uid}`;
+
+    const content = `
+      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px;position:relative;overflow:visible">
+        <button id="${closeBtnId}" aria-label="Fechar" style="position:absolute;top:-20px;right:-20px;width:40px;height:40px;border-radius:50%;background:#111827;color:#fff;border:0;box-shadow:0 10px 28px rgba(0,0,0,.32);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0">✕</button>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+          <img src=\"/icones/pin-pata.svg\" style=\"width:36px;height:36px;object-fit:contain;border-radius:6px\"/>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px;color:#0f172a">${name}</div>
+            <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.2">${title}${address ? ' · ' + address : ''}</div>
+            ${phone ? `<div style="font-size:13px;color:#374151;margin-top:6px">Tel: ${phone}</div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="${routeBtnId}" style="flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Traçar rota</button>
+          <button id="${openBtnId}" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Abrir no Maps</button>
+        </div>
+      </div>
+    `;
+
+    const iw = new google.maps.InfoWindow({ content, maxWidth: 360 });
+
+    marker.addListener('click', () => {
+      try { if (this.currentInfoWindow) this.currentInfoWindow.close(); } catch {}
+      try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
+      iw.open(this.map, marker);
+      this.currentInfoWindow = iw;
+      try {
+        google.maps.event.addListenerOnce(iw, 'domready', () => {
+          try {
+            // ensure style injection exists (allows overflow and hides built-in close)
+            try {
+              if (!document.querySelector('style[data-gm-style-iw]')) {
+                const st = document.createElement('style');
+                st.setAttribute('data-gm-style-iw', '1');
+                st.innerHTML = `
+                  .gm-style .gm-style-iw { overflow: visible !important; }
+                  .gm-style .gm-style-iw > div { overflow: visible !important; }
+                  .gm-style .gm-style-iw-chr > button.gm-ui-hover-effect { display: none !important; }
+                  .gm-style .gm-ui-hover-effect[aria-label='Fechar'] { display: none !important; }
+                `;
+                document.head.appendChild(st);
+              }
+            } catch (e) {}
+
+            const routeBtn = document.getElementById(routeBtnId);
+            const openBtn = document.getElementById(openBtnId);
+            const closeBtn = document.getElementById(closeBtnId);
+            if (routeBtn) {
+              routeBtn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                const destObj = { lat: Number(lat), lng: Number(lng) };
+                try { localStorage.setItem('fp_last_dest', JSON.stringify(destObj)); } catch (e) {}
+                this.drawRoute(destObj);
+                try { iw.close(); } catch (e) {}
+              });
+            }
+            if (openBtn) {
+              openBtn.addEventListener('click', async (ev) => {
+                ev.preventDefault();
+                await this.openMapsWithRoute({ lat: Number(lat), lng: Number(lng) });
+              });
+            }
+            if (closeBtn) {
+              try { (closeBtn as HTMLElement).style.zIndex = '99999'; } catch (e) {}
+              closeBtn.addEventListener('click', (ev) => { ev.preventDefault(); try { iw.close(); } catch {} });
+            }
+          } catch (e) { console.warn('partner info domready handler failed', e); }
+        });
+      } catch (e) {}
+    });
+  }
+
+  /**
+   * Determine an icon object for a partner based on its type.
+   * Tries several sources (partner.tipo.icone, partner.tipo.slug, partner.tipo.nome,
+   * tabs icons or active tab) and returns a Google Maps Icon object or undefined.
+   */
+  private getIconForPartner(partner: any) {
+    try {
+      if (!(window as any).google) return undefined;
+      const google = (window as any).google;
+      const candidates = [
+        partner?.tipo?.icone,
+        partner?.tipo?.slug,
+        partner?.tipo?.nome,
+        partner?._raw?.tipo?.icone,
+        partner?._raw?.tipo?.slug,
+        partner?._raw?.tipo?.nome,
+        // try active tab icon as last resort
+        (this.tabs.find(t => t.id === this.active)?.icon),
+        // try a tab by numeric typeId
+        (this.tabs.find(t => typeof t.typeId !== 'undefined' && partner?.tipo && partner.tipo.id === t.typeId)?.icon)
+      ];
+      let name: any = null;
+      for (const c of candidates) { if (c) { name = c; break; } }
+      if (!name) return undefined;
+      // sanitize filename: lowercase, remove diacritics, spaces -> -, remove invalid chars
+      let file = String(name).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, '-').replace(/[^a-z0-9\-_.]/g, '');
+      // ensure extension
+      if (!file.endsWith('.png') && !file.endsWith('.svg')) file = `${file}.png`;
+      const url = `/icones/${file}`;
+      return { url, scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
+    } catch (e) { return undefined; }
   }
 
   private loadProfessionalTypes(){
     // call the API service to fetch types; if it fails we keep defaults
     this.api.getProfessionalTypes().subscribe({
       next: (res) => {
-        const types = res.types || [];
+        // normalize response to an array of types
+        const types: any[] = Array.isArray(res)
+          ? (res as any[])
+          : (res && Array.isArray((res as any).types) ? (res as any).types : []);
         if (types.length) {
-          // map to {id,label} shape; support multiple server keys using a safe any-cast
-          this.tabs = types.map((t) => {
+          // map to { id: slug(for DOM), label, typeId: numeric id for backend, icon }
+          this.tabs = types.map((t: any) => {
             const anyT: any = t;
-            const id = String(anyT.id ?? anyT.key ?? anyT.slug ?? anyT.nome ?? anyT.label ?? anyT.name);
-            const label = String(anyT.nome ?? anyT.label ?? anyT.name ?? anyT.id);
-            return { id, label };
+            const slug = anyT.slug ? String(anyT.slug) : String(anyT.id ?? anyT.key ?? anyT.nome ?? anyT.label ?? anyT.name ?? '');
+            const label = String(anyT.nome ?? anyT.label ?? anyT.name ?? '');
+            const typeId = (typeof anyT.id !== 'undefined' && anyT.id !== null) ? Number(anyT.id) : undefined;
+            const icon = anyT.icone ?? anyT.icon ?? undefined;
+            return { id: slug, label, typeId, icon };
           });
-          // ensure active exists on the new tabs
-          if (!this.tabs.find(x => x.id === this.active)) {
-            this.active = this.tabs[0]?.id ?? this.active;
-          }
+          // do NOT auto-select any tab — user must choose explicitly
         }
       },
       error: (err) => {
@@ -232,7 +448,38 @@ export class MapaComponent implements OnInit, OnDestroy {
     this.error = null;
     this.api.getMaps().subscribe({
       next: (res) => {
-        this.partners = res.partners || [];
+        // normalize partners coming from /maps so the UI and map code can use a
+        // consistent shape (same as loadAnunciantes normalization).
+        const rawPartners: any[] = Array.isArray(res.partners) ? res.partners : [];
+        this.allPartners = rawPartners.map((p: any) => {
+          const latitudeRaw = p.latitude ?? p.lat ?? p.anunciante?.latitude ?? null;
+          const longitudeRaw = p.longitude ?? p.lng ?? p.anunciante?.longitude ?? null;
+          const latitude = latitudeRaw != null ? Number(latitudeRaw) : undefined;
+          const longitude = longitudeRaw != null ? Number(longitudeRaw) : undefined;
+          const anunciante = p.anunciante ?? {};
+          return {
+            id: anunciante.id ?? p.id ?? undefined,
+            anuncio_id: p.id ?? undefined,
+            nome: anunciante.nome ?? p.titulo ?? p.nome ?? '',
+            titulo: p.titulo ?? '',
+            telefone: p.telefone ?? anunciante.telefone ?? '',
+            email: p.email ?? anunciante.email ?? '',
+            endereco: p.endereco ?? p.anuncio_endereco ?? '',
+            cidade: p.cidade ?? '',
+            estado: p.estado ?? '',
+            cep: p.cep ?? '',
+            descricao: anunciante.descricao ?? p.descricao ?? p.anuncio_descricao ?? '',
+            logo_url: anunciante.logo_url ?? p.logo_url ?? null,
+            latitude: typeof latitude === 'number' && !isNaN(latitude) ? latitude : undefined,
+            longitude: typeof longitude === 'number' && !isNaN(longitude) ? longitude : undefined,
+            filtros_selecionados: p.filtros_selecionados ?? {},
+            tipo: p.tipo ?? null,
+            partner_type: p.partner_type ?? null,
+            _raw: p
+          };
+        });
+        // compute visible partners according to any current filters
+        try { this.applyFilters(); } catch (e) { this.partners = this.allPartners.slice(); }
         this.mapsApiKey = res.mapsApiKey ?? null;
         this.loading = false;
         // if we have a maps key, initialize the interactive map
@@ -339,8 +586,8 @@ export class MapaComponent implements OnInit, OnDestroy {
         console.warn('geocode construction failed', e);
       }
 
-      if (!centerLatLng && this.partners && this.partners.length) {
-        const p = this.partners[0];
+      if (!centerLatLng && this.allPartners && this.allPartners.length) {
+        const p = this.allPartners[0];
         const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
         const lng = p.lng ?? p.longitude ?? p.long ?? null;
         if (lat != null && lng != null) centerLatLng = { lat: Number(lat), lng: Number(lng) };
@@ -392,13 +639,17 @@ export class MapaComponent implements OnInit, OnDestroy {
         const lng = p.lng ?? p.longitude ?? p.long ?? null;
         if (lat != null && lng != null) {
           try {
-            const pataUrl = '/icones/pin-pata.svg';
-            const iconPata = { url: pataUrl, scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
-            const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro', icon: iconPata });
+            const google = (window as any).google;
+            const iconObj = this.getIconForPartner(p);
+            const opts: any = { position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' };
+            if (iconObj) opts.icon = iconObj; else opts.icon = { url: '/icones/pin-pata.svg', scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
+            const m = new google.maps.Marker(opts);
             this.markers.push(m);
+            try { this.attachPartnerInfo(m, p); } catch (e) { console.warn('attachPartnerInfo init failed', e); }
           } catch (e) {
             const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
             this.markers.push(m);
+            try { this.attachPartnerInfo(m, p); } catch (err) { console.warn('attachPartnerInfo init fallback failed', err); }
           }
         }
       }
@@ -554,18 +805,14 @@ export class MapaComponent implements OnInit, OnDestroy {
    * Attach a styled info window to the pharmacy marker.
    * Shows the configured pharmacy address and quick actions to get directions or open in Google Maps.
    */
-  private attachPharmacyInfo(marker: any, coords: { lat: number; lng: number }) {
+  private attachPharmacyInfo(marker: any, coords: { lat: number; lng: number }, openImmediately = false) {
     if (!(window as any).google) return;
     const google = (window as any).google;
-    // close previous info window if open
-    try { if (this.infoWindow) this.infoWindow.close(); } catch {}
 
     const address = this.pharmacyAddress || this.defaultCenterAddress || '';
     const lat = coords?.lat ?? (coords as any)?.lat ?? 0;
     const lng = coords?.lng ?? (coords as any)?.lng ?? 0;
     const dest = encodeURIComponent(`${lat},${lng}`);
-    const mapsDir = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
-    const mapsPlace = `https://www.google.com/maps/search/?api=1&query=${dest}`;
 
     const content = `
       <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px;position:relative;overflow:visible">
@@ -574,56 +821,51 @@ export class MapaComponent implements OnInit, OnDestroy {
         <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
           <img src=\"/icones/pin-fp.png\" style=\"width:36px;height:44px;object-fit:contain;border-radius:4px\"/>
           <div style="flex:1">
-            <div style="font-family:'Pacifico',cursive,'Montserrat',Arial,sans-serif;font-weight:700;font-size:16px;color:#0f172a">Formula Pet</div>
-            <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.2">${address}</div>
+            <div style=\"font-family:'Pacifico',cursive,'Montserrat',Arial,sans-serif;font-weight:700;font-size:16px;color:#0f172a\">Formula Pet</div>
+            <div style=\"font-size:13px;color:#374151;margin-top:4px;line-height:1.2\">${address}</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="map-route-btn" style="flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Traçar rota</button>
-          <button id="map-open-btn" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Abrir no Maps</button>
+        <div style=\"display:flex;gap:8px;margin-top:10px\">
+          <button id=\"map-route-btn\" style=\"flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer\">Traçar rota</button>
+          <button id=\"map-open-btn\" style=\"flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer\">Abrir no Maps</button>
         </div>
       </div>
     `;
 
-    this.infoWindow = new google.maps.InfoWindow({ content, maxWidth: 360 });
+    const iw = new google.maps.InfoWindow({ content, maxWidth: 360 });
 
-    // open on marker click
     marker.addListener('click', () => {
-      try { if (this.infoWindow) this.infoWindow.close(); } catch {}
-      // ensure the window is visible (pan if needed)
+      try { if (this.currentInfoWindow) this.currentInfoWindow.close(); } catch {}
       try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
-      this.infoWindow.open(this.map, marker);
-      // attach DOM listeners once the InfoWindow is rendered
+      iw.open(this.map, marker);
+      this.currentInfoWindow = iw;
       try {
-        google.maps.event.addListenerOnce(this.infoWindow, 'domready', () => {
+        google.maps.event.addListenerOnce(iw, 'domready', () => {
           try {
-            // ensure InfoWindow outer container allows visible overflow so the button can float outside
-            try {
-              if (!document.querySelector('style[data-gm-style-iw]')) {
-                const st = document.createElement('style');
-                st.setAttribute('data-gm-style-iw', '1');
-                st.innerHTML = `
-                  /* allow content to overflow so floating close button is visible */
-                  .gm-style .gm-style-iw { overflow: visible !important; }
-                  .gm-style .gm-style-iw > div { overflow: visible !important; }
-                  /* hide Google Maps built-in infoWindow close button (duplicate) */
-                  .gm-style .gm-style-iw-chr > button.gm-ui-hover-effect { display: none !important; }
-                  .gm-style .gm-ui-hover-effect[aria-label='Fechar'] { display: none !important; }
-                `;
-                document.head.appendChild(st);
-              }
-            } catch (e) {}
+            if (!document.querySelector('style[data-gm-style-iw]')) {
+              const st = document.createElement('style');
+              st.setAttribute('data-gm-style-iw', '1');
+              st.innerHTML = `
+                /* allow content to overflow so floating close button is visible */
+                .gm-style .gm-style-iw { overflow: visible !important; }
+                .gm-style .gm-style-iw > div { overflow: visible !important; }
+                /* hide Google Maps built-in infoWindow close button (duplicate) */
+                .gm-style .gm-style-iw-chr > button.gm-ui-hover-effect { display: none !important; }
+                .gm-style .gm-ui-hover-effect[aria-label='Fechar'] { display: none !important; }
+              `;
+              document.head.appendChild(st);
+            }
 
             const routeBtn = document.getElementById('map-route-btn');
             const openBtn = document.getElementById('map-open-btn');
+            const closeBtn = document.getElementById('map-close-btn');
             if (routeBtn) {
               routeBtn.addEventListener('click', (ev) => {
                 ev.preventDefault();
                 const destObj = { lat: Number(lat), lng: Number(lng) };
-                // persist last destination so we can restore after reload
                 try { localStorage.setItem('fp_last_dest', JSON.stringify(destObj)); } catch (e) {}
                 this.drawRoute(destObj);
-                try { this.infoWindow.close(); } catch {}
+                try { iw.close(); } catch {}
               });
             }
             if (openBtn) {
@@ -632,24 +874,20 @@ export class MapaComponent implements OnInit, OnDestroy {
                 await this.openMapsWithRoute({ lat: Number(lat), lng: Number(lng) });
               });
             }
-            // close button that visually overflows the card
-            const closeBtn = document.getElementById('map-close-btn');
             if (closeBtn) {
-              // ensure close button visually overflows (set again after domready)
-              try {
-                (closeBtn as HTMLElement).style.position = 'absolute';
-                (closeBtn as HTMLElement).style.top = '-20px';
-                (closeBtn as HTMLElement).style.right = '-20px';
-                (closeBtn as HTMLElement).style.zIndex = '99999';
-              } catch (e) {}
-              closeBtn.addEventListener('click', (ev) => { ev.preventDefault(); try { this.infoWindow.close(); } catch {} });
+              try { (closeBtn as HTMLElement).style.position = 'absolute'; (closeBtn as HTMLElement).style.top = '-20px'; (closeBtn as HTMLElement).style.right = '-20px'; (closeBtn as HTMLElement).style.zIndex = '99999'; } catch (e) {}
+              closeBtn.addEventListener('click', (ev) => { ev.preventDefault(); try { iw.close(); } catch {} });
             }
           } catch (e) { console.warn('infoWindow domready handler failed', e); }
         });
-      } catch (e) {
-        // ignore attach errors
-      }
+      } catch (e) {}
     });
+
+    if (openImmediately) {
+      try { if (this.currentInfoWindow) this.currentInfoWindow.close(); } catch {}
+      iw.open(this.map, marker);
+      this.currentInfoWindow = iw;
+    }
   }
 
   private async drawRoute(dest: { lat: number; lng: number }) {
