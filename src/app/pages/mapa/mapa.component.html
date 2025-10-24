@@ -1,13 +1,73 @@
 <app-navmenu></app-navmenu>
+<div style="height: 60px;"></div>
 <main class="mapa-container container">
   <header class="mapa-header">
     <h1 class="mapa-title">Localização <span class="emoji">🗺️</span></h1>
-    <p class="mapa-subtitle">Veja onde estamos! Nosso endereço está no mapa abaixo para facilitar sua visita.</p>
+    <p class="mapa-subtitle">Encontre serviços pet próximos: veterinários, dog walkers, petsitters e creches caninas.</p>
   </header>
-  <div class="mapa-frame-wrap">
-    <iframe
-      src="https://www.google.com/maps?q=Rua+Treze+de+Maio,+506,+Conjunto+04,+São+Francisco,+Curitiba,+PR,+CEP+80510-030&output=embed"
-      width="100%" height="400" style="border:0; border-radius:12px;" allowfullscreen="" loading="lazy" title="Mapa da localização"></iframe>
+
+  <div class="map-layout">
+    <aside class="map-sidebar neumorph-card">
+      <nav class="service-tabs" role="tablist" aria-label="Serviços">
+        <button *ngFor="let t of tabs"
+                (click)="select(t.id)"
+                [class.active]="active===t.id"
+                role="tab"
+                [attr.aria-selected]="active===t.id"
+                [attr.aria-controls]="'panel-' + t.id">
+          {{ t.label }}
+        </button>
+      </nav>
+
+      <div class="filters" role="region" [attr.aria-labelledby]="'filters-'+active">
+        <h4 id="{{'filters-'+active}}">Filtros — {{ getActiveLabel() }}</h4>
+        <div class="filter-list" id="panel-{{active}}">
+          <ng-container *ngIf="getFiltersForActive().length; else noFilters">
+            <button class="filter-chip" *ngFor="let f of getFiltersForActive()" (click)="toggleFilter(f)" [class.on]="f.on">{{ f.label }}</button>
+          </ng-container>
+          <ng-template #noFilters>
+            <div class="no-filters">Nenhum filtro disponível para este serviço.</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="results">
+        <h4>Resultados</h4>
+        <div *ngIf="loading">Carregando parceiros...</div>
+        <div *ngIf="error" class="error">{{ error }}</div>
+
+        <ul *ngIf="!loading && partners?.length">
+          <li *ngFor="let p of partners" class="result-item">
+            <div class="result-thumb"></div>
+            <div class="result-body">
+              <div class="result-title">{{ p.nome || p.name || 'Parceiro' }}</div>
+              <div class="result-meta">{{ p.telefone || p.phone || '' }} {{ p.email ? '· ' + p.email : '' }}</div>
+            </div>
+          </li>
+        </ul>
+
+        <div *ngIf="!loading && !partners?.length">Nenhum parceiro encontrado.</div>
+      </div>
+    </aside>
+
+    <section class="map-area">
+      <div class="map-topbar">
+        <div class="map-actions">
+          <button class="btn" title="Centralizar">Centralizar</button>
+          <button class="btn btn-sec" title="Modo lista">Lista</button>
+        </div>
+      </div>
+      <div class="map-frame-wrap">
+        <!-- Google Map container: initialized dynamically in the component when Maps API key is available -->
+        <div id="gmap" class="gmap" role="region" aria-label="Mapa de parceiros"></div>
+        <!-- Fallback static iframe for environments where JS is disabled -->
+        <noscript>
+          <iframe
+            src="https://www.google.com/maps?q=Rua+Treze+de+Maio,+506,+Conjunto+04,+São+Francisco,+Curitiba,+PR,+CEP+80510-030&output=embed"
+            width="100%" height="100%" style="border:0; border-radius:12px;" allowfullscreen="" loading="lazy" title="Mapa da localização (fallback)"></iframe>
+        </noscript>
+      </div>
+    </section>
   </div>
 </main>
 <app-footer></app-footer>

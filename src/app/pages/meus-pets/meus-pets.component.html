@@ -15,35 +15,14 @@
     </div>
 
     <section *ngIf="!carregando && pets.length" class="pet-list">
-      <article class="pet-card card photo-card glass" *ngFor="let p of pets; let i = index">
+      <article class="pet-card card photo-card" *ngFor="let p of pets">
         <div class="photo-bg">
-          <img class="photo-img" src="{{ p.photoURL || '/imagens/image.png' }}" (error)="onImgError($event)" (load)="onImgLoad(p, i)" alt="{{ p.nome || 'Pet' }}" title="{{ p.nome || 'Pet' }}" />
-
-          <!-- skeleton/loader while image hasn't loaded -->
-          <div class="skeleton" *ngIf="!isImageLoaded(p, i)">
-            <div class="pulse-circle"></div>
-            <div class="pulse-bar"></div>
-          </div>
-
+          <img class="photo-img" [src]="p.photoURL || '/imagens/image.png'" (error)="onImgError($event)" [attr.alt]="p.nome || 'Pet'" />
             <div class="top-overlay">
               <h2 class="pet-title pf-poppins" [class.long]="p.nome && p.nome.length > 18">{{ p.nome }}</h2>
               <div class="species-rows">
                 <div class="species">{{ p.especie }}</div>
                 <div class="raca" *ngIf="p.raca">{{ p.raca }}</div>
-              </div>
-              <!-- smaller allergy badges placed inside the top overlay (won't overlap other UI) -->
-              <div class="alergias-inline" *ngIf="(p._alergiasNormalized || alergiasFor(p)) as alergiasList">
-                <ng-container *ngIf="alergiasList.length">
-                  <div class="alergia-card glass-small">
-                    <div class="alergia-label">Alergias:</div>
-                    <div class="alergia-badges">
-                      <ng-container *ngFor="let a of alergiasList; let j = index">
-                        <span class="alergia-badge small" *ngIf="j < 5">{{ a }}</span>
-                      </ng-container>
-                      <span class="alergia-badge overflow" *ngIf="alergiasList.length > 5">(... +{{ alergiasList.length - 5 }})</span>
-                    </div>
-                  </div>
-                </ng-container>
               </div>
             </div>
             <div class="overlay">
@@ -57,21 +36,21 @@
             </div>
         </div>
 
-    <a class="edit-fab" (click)="onEditClick(p)" [class.disabled]="!p.id" [attr.aria-label]="'Editar ' + p.nome">✎</a>
+  <a class="edit-fab" [routerLink]="p.id ? ['/editar-pet', p.id] : null" [class.disabled]="!p.id" [attr.aria-label]="'Editar ' + p.nome">✎</a>
 
         <div class="pet-body compact">
-          <!-- Body left intentionally simple; allergy info shown on image overlay -->
+          <div class="alergias" *ngIf="p.alergias?.length">
+            <label class="muted">Alergias:</label>
+            <div class="alergia-list">
+              <span class="chip" *ngFor="let a of p.alergias">{{ a?.nome || a?.nome_alergia || a?.name || a }}</span>
+            </div>
+          </div>
         </div>
       </article>
     </section>
 
     <div class="paginacao acoes">
-      
+      <a class="btn" routerLink="/novo-pet">+ Novo Pet</a>
     </div>
   </main>
-
-  <!-- Floating add pet FAB fixed to bottom-right -->
-  <a class="add-pet-fab" routerLink="/novo-pet" aria-label="Adicionar novo pet">+
-  </a>
-
 </div>

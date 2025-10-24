@@ -1,7 +1,7 @@
 import { environment } from '../../enviroments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of, catchError } from 'rxjs';
 
 export interface Ativo {
   id: string;
@@ -400,13 +400,15 @@ export class ApiService {
   }
 
   // Galeria pública de pets (paginação)
-  getGaleriaPublica(params?: { page?: number; pageSize?: number }) {
+  // Accepts optional token so callers can request the gallery as an authenticated user
+  getGaleriaPublica(params?: { page?: number; pageSize?: number }, token?: string) {
     const search = new URLSearchParams();
     if (params?.page) search.set('page', String(params.page));
     if (params?.pageSize) search.set('pageSize', String(params.pageSize));
     const qp = search.toString();
     const url = `${this.baseUrl}/pets/galeria-publica${qp ? `?${qp}` : ''}`;
-    return this.http.get<any>(url);
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(url, { headers });
   }
 
   // Reações em pets
@@ -559,5 +561,105 @@ export class ApiService {
   buscarCepBrasilAPI(cep: string): Observable<any> {
     const clean = (cep || '').replace(/\D/g, '');
     return this.http.get(`https://brasilapi.com.br/api/cep/v1/${clean}`);
+  }
+
+  // Public maps endpoint: returns partner vets and mapsApiKey (if backend exposes it)
+  getMaps(): Observable<{ partners: any[]; mapsApiKey?: string | null }> {
+    const url = `${this.baseUrl}/maps`;
+    return this.http.get<{ partners: any[]; mapsApiKey?: string | null }>(url).pipe(
+      catchError((err) => {
+        // If the call to configured baseUrl fails (common in local dev when
+        // backend runs on another port), try a same-host fallback to port 4000.
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/maps`;
+            return this.http.get<{ partners: any[]; mapsApiKey?: string | null }>(fallback).pipe(
+              catchError(() => of({ partners: [], mapsApiKey: null }))
+            );
+          } catch (e) {
+            return of({ partners: [], mapsApiKey: null });
+          }
+        }
+        return of({ partners: [], mapsApiKey: null });
+      }) as any
+    );
+  }
+
+  // Fetch registered professional types used by the mapa page to build tabs
+  getProfessionalTypes(): Observable<{ types: Array<{ id: string; nome?: string; label?: string }> }> {
+    const url = `${this.baseUrl}/tipos-profissionais`;
+    return this.http.get<{ types: Array<{ id: string; nome?: string; label?: string }> }>(url).pipe(
+      catchError((err) => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/tipos-profissionais`;
+            return this.http.get<{ types: Array<{ id: string; nome?: string; label?: string }> }>(fallback).pipe(
+              catchError(() => of({ types: [] }))
+            );
+          } catch (e) {
+            return of({ types: [] });
+          }
+        }
+        return of({ types: [] });
+      }) as any
+    );
+  }
+
+  // Anunciantes (public listing). Optional `tipo` filters by professional type id.
+  getAnunciantes(tipo?: string | number): Observable<any[]> {
+    const search = new URLSearchParams();
+    if (tipo != null) search.set('tipo', String(tipo));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/anunciantes${qp ? `?${qp}` : ''}`;
+    return this.http.get<any[]>(url).pipe(
+      catchError((err) => {
+        // same-host fallback for local dev
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/anunciantes${qp ? `?${qp}` : ''}`;
+            return this.http.get<any[]>(fallback).pipe(catchError(() => of([])));
+          } catch (e) {
+            return of([]);
+          }
+        }
+        return of([]);
+      }) as any
+    );
+  }
+
+  // Get single anunciante with atributos+valores
+  getAnuncianteById(id: string | number): Observable<any> {
+    const url = `${this.baseUrl}/anunciantes/${encodeURIComponent(String(id))}`;
+    return this.http.get<any>(url).pipe(
+      catchError(() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/anunciantes/${encodeURIComponent(String(id))}`;
+            return this.http.get<any>(fallback).pipe(catchError(() => of(null)));
+          } catch (e) {
+            return of(null);
+          }
+        }
+        return of(null);
+      }) as any
+    );
+  }
+
+  // Get only atributos+valores array for an anunciante
+  getAnuncianteValores(id: string | number): Observable<any[]> {
+    const url = `${this.baseUrl}/anunciantes/${encodeURIComponent(String(id))}/valores`;
+    return this.http.get<any[]>(url).pipe(
+      catchError(() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/anunciantes/${encodeURIComponent(String(id))}/valores`;
+            return this.http.get<any[]>(fallback).pipe(catchError(() => of([])));
+          } catch (e) {
+            return of([]);
+          }
+        }
+        return of([]);
+      }) as any
+    );
   }
 }

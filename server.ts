@@ -19,6 +19,25 @@ export function app(): express.Express {
 
   // Example Express Rest API endpoints
   // server.get('/api/**', (req, res) => { });
+  // Public maps endpoint used by the frontend to fetch partner vets and maps API key.
+  // Returns { partners: [...], mapsApiKey: string|null }
+  server.get('/maps', (req, res) => {
+    const mapsApiKey = process.env['MAPS_API_KEY'] || process.env['GOOGLE_MAPS_API_KEY'] || null;
+
+    // Allow cross-origin requests so frontend dev server can call this endpoint.
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
+
+    // Return a small mock list of partner veterinarians so the frontend can
+    // render the mapa page during development without a connected DB.
+    const partners = [
+      { id: 1, nome: 'Clínica Vet Curitibana', telefone: '+55 41 98765-4321', email: 'contato@vetcuritiba.com', crmv: 'PR-12345', approved: 1, ativo: 1 },
+      { id: 2, nome: 'Hospital Veterinário Central', telefone: '+55 41 91234-5678', email: 'central@hv.com', crmv: 'PR-54321', approved: 1, ativo: 1 },
+      { id: 3, nome: 'PetCare 24h', telefone: '+55 41 99876-1112', email: 'atendimento@petcare24h.com', crmv: 'PR-67890', approved: 1, ativo: null }
+    ];
+
+    res.json({ partners, mapsApiKey });
+  });
   // Serve static files from /browser
   server.get('**', express.static(browserDistFolder, {
     maxAge: '1y',

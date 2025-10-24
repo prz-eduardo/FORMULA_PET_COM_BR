@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="84" viewBox="0 0 64 84" fill="none">
+  <!-- Pin body -->
+  <path d="M32 2C44.091 2 54 11.909 54 24c0 13.2-16.8 34.8-20.8 40.2a4 4 0 0 1-6.4 0C26.8 58.8 10 37.2 10 24 10 11.909 19.909 2 32 2z" fill="#F7C948" stroke="#E6A800" stroke-width="2"/>
+  <!-- Tip shadow -->
+  <path d="M32 62c1.6 0 3.2-1.92 4.8-4.8C40 52.8 54 33 54 24 54 13 45 4 34 4 23 4 14 13 14 24c0 9 13.6 28.8 17.2 33.2C28.8 60.08 30.4 62 32 62z" fill="rgba(0,0,0,0.06)"/>
+  <!-- Paw pad (big) -->
+  <ellipse cx="32" cy="26" rx="7" ry="6" fill="#FFFFFF"/>
+  <!-- Paw toes -->
+  <ellipse cx="24.5" cy="21" rx="3.2" ry="2.8" fill="#FFFFFF"/>
+  <ellipse cx="39.5" cy="21" rx="3.2" ry="2.8" fill="#FFFFFF"/>
+  <ellipse cx="29.5" cy="18" rx="3.2" ry="2.8" fill="#FFFFFF"/>
+  <!-- Small arrow pointer under pin (triangle) -->
+  <polygon points="28,48 36,48 32,56" fill="#E6A800"/>
+</svg>

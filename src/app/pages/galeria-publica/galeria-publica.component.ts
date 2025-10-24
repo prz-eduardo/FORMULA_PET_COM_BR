@@ -245,7 +245,9 @@ export class GaleriaPublicaComponent {
     }
     try {
       // use ApiService so baseUrl and headers are handled consistently
-      const data = await this.api.getGaleriaPublica({ page: pageNum, pageSize: this.pageSize }).toPromise();
+      // pass JWT when available so the gallery can return auth-aware data
+  const token = this.auth.getToken() ?? undefined;
+  const data = await this.api.getGaleriaPublica({ page: pageNum, pageSize: this.pageSize }, token).toPromise();
       // support API returning { data: [], page, totalPages } or plain array
       const items = Array.isArray(data) ? data : (data?.data || []);
       // normalize items: ensure likes and userReacted fields exist
