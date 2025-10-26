@@ -193,35 +193,52 @@ export class GaleriaPublicaComponent {
     }
 
     // If user already reacted with same tipo, remove it
-    const already = pet.userReactionTipo === tipo || pet.userReactedTipo === tipo || pet.userReacted === tipo;
+    const prevTipo = pet.userReactionTipo ?? null;
+    const alreadySame = prevTipo === tipo;
 
+    // ensure reactionTotals exists
+    pet.reactionTotals = pet.reactionTotals || { love: 0, haha: 0, sad: 0, angry: 0 };
     try {
-      // optimistic update: set user's reaction and adjust counts
-      const prevTipo = pet.userReactionTipo || null;
-      const prevLikes = pet.likes ?? 0;
-
-      if (already) {
-        // remove reaction
+      if (alreadySame) {
+        // optimistic removal
         pet.userReactionTipo = null;
         pet.userReacted = false;
-        pet.likes = Math.max(0, prevLikes - 1);
+        pet.reactionTotals[tipo] = Math.max(0, Number(pet.reactionTotals[tipo] ?? 0) - 1);
+        pet.likes = Math.max(0, Number(pet.likes ?? 0) - 1);
         await this.api.deletePetReaction(pet.id, { tipo }, token).toPromise();
       } else {
+        // optimistic change/add
+        if (prevTipo) {
+          // switching reaction: move counts
+          pet.reactionTotals[prevTipo] = Math.max(0, Number(pet.reactionTotals[prevTipo] ?? 0) - 1);
+        }
+        const wasReactedBefore = !!prevTipo;
+        pet.reactionTotals[tipo] = (Number(pet.reactionTotals[tipo] ?? 0) + 1);
+        // if user had no previous reaction, increment overall likes
+        if (!wasReactedBefore) pet.likes = Number(pet.likes ?? 0) + 1;
         pet.userReactionTipo = tipo;
         pet.userReacted = true;
-        // For simplicity we treat all reactions as a single likes counter
-        pet.likes = (pet.likes ?? 0) + 1;
         await this.api.postPetReaction(pet.id, { tipo }, token).toPromise();
       }
     } catch (err) {
       console.error('Erro ao enviar reação', err);
       this.toast.error('Não foi possível enviar sua reação.');
-      // rollback: naive approach, reload item from server would be ideal
-      // revert optimistic changes
-      if (pet.userReactionTipo === tipo) {
-        pet.userReactionTipo = null;
-        pet.userReacted = false;
-        pet.likes = Math.max(0, (pet.likes ?? 1) - 1);
+      // rollback naive: if we removed, restore; if we added, revert
+      if (alreadySame) {
+        // we attempted to remove but failed -> restore
+        pet.userReactionTipo = prevTipo;
+        pet.userReacted = !!prevTipo;
+        pet.reactionTotals[tipo] = Number(pet.reactionTotals[tipo] ?? 0) + 1;
+        pet.likes = Number(pet.likes ?? 0) + 1;
+      } else {
+        // we attempted to add/switch but failed -> revert changes
+        if (prevTipo) {
+          pet.reactionTotals[prevTipo] = Number(pet.reactionTotals[prevTipo] ?? 0) + 1;
+        }
+        pet.reactionTotals[tipo] = Math.max(0, Number(pet.reactionTotals[tipo] ?? 1) - 1);
+        if (!prevTipo) pet.likes = Math.max(0, Number(pet.likes ?? 1) - 1);
+        pet.userReactionTipo = prevTipo;
+        pet.userReacted = !!prevTipo;
       }
     } finally {
       // close picker after action
@@ -326,8 +343,18 @@ export class GaleriaPublicaComponent {
         ...it,
         // assign a client-unique uid to each rendered card so duplicate server ids don't collide
         _uid: `g-${Date.now()}-${this._uidCounter++}`,
-        likes: it.likes ?? it.reacoes_count ?? 0,
-        userReacted: !!(it.userReacted || it.user_reacted || false),
+        // normalize reaction fields
+        likes: Number(it.likes ?? it.reacoes_count ?? it.total_reacoes_geral ?? 0),
+        // minha_reacao may be null or an object { tipo }
+        userReactionTipo: it.minha_reacao?.tipo ?? (it.userReactionTipo ?? it.user_reaction_tipo ?? null),
+        userReacted: !!(it.minha_reacao || it.liked || it.liked === true || it.userReacted || it.user_reacted || false),
+        // detailed reaction totals (coerce strings to numbers)
+        reactionTotals: {
+          love: Number(it.total_reacao_love ?? it.total_reacao_love ?? 0),
+          haha: Number(it.total_reacao_haha ?? 0),
+          sad: Number(it.total_reacao_sad ?? 0),
+          angry: Number(it.total_reacao_angry ?? 0)
+        },
         // pseudo-random but stable per session: use index to pick variant
         size: sizeVariants[(idx + this.page + (this.placeholderPage || 0)) % sizeVariants.length]
       }));

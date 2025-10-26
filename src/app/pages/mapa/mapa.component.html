@@ -65,6 +65,19 @@
         </ul>
 
         <div *ngIf="!loading && !partners?.length">Nenhum parceiro encontrado.</div>
+
+        <!-- Partner CTA: invite businesses to appear on the map -->
+        <div class="partner-cta neumorph-card" role="group" aria-label="Quer aparecer aqui?">
+          <div class="partner-cta-inner">
+            <!-- Updated CTA image (Unsplash) to ensure reliable loading -->
+            <img class="partner-cta-img" src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1200&q=80" alt="Parceiros - pet shop e serviços"/>
+            <div class="partner-cta-body">
+              <h4>Quer aparecer aqui?</h4>
+              <p>Seja nosso parceiro e mostre seus serviços para clientes perto de você. Cadastre sua empresa e conecte-se com donos de pets na sua região.</p>
+              <a class="btn partner-cta-btn" href="/contato" role="link" title="Quero ser parceiro">Quero ser parceiro</a>
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
 

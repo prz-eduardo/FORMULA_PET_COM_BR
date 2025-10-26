@@ -1,3 +1,175 @@
+/* Map page styles — cleaned and modernized
+   - improved desktop tab layout and hover interactions
+   - clearer, elevated result cards with accessible focus styles
+   - mobile-friendly fallbacks preserved
+*/
+.mapa-container {
+  padding: calc(env(safe-area-inset-top, 0px) + 72px) 20px 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.mapa-header {
+  margin-top: 6px;
+  margin-bottom: 18px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: headerIn .52s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes headerIn { to { opacity:1; transform:none } }
+.mapa-title {
+  font-family: "Pacifico", cursive, "Montserrat", Arial, sans-serif;
+  font-size: 44px;
+  color: var(--primary, #2b2b2b);
+  margin: 0 0 12px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+  line-height: 1.02;
+  text-shadow: 0 6px 22px #f5a70066;
+  position: relative;
+  padding-bottom: 10px;
+}
+.mapa-title .emoji { font-size: 32px; vertical-align: middle; }
+.mapa-title::after {
+  content: '';
+  display: block;
+  width: 64px; height: 6px; margin-top: 12px;
+  background: linear-gradient(90deg, #f5a700, #c4d600);
+  border-radius: 999px;
+  box-shadow: 0 8px 26px #f5a70033;
+}
+.mapa-subtitle {
+  margin: 0; color: #54646b; font-size: 15px; line-height: 1.45;
+  font-weight: 500; font-family: 'Poppins', 'Montserrat', sans-serif;
+}
+
+.map-layout{
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Ensure grid/flex children can shrink and won't force horizontal scroll */
+.map-layout, .map-sidebar, .map-area, .map-frame-wrap { min-width: 0; }
+
+.map-sidebar{
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: 12px; padding: 14px; border: 1px solid rgba(255,255,255,0.04);
+  min-height: 480px; position: relative;
+  transition: box-shadow .18s ease, transform .12s ease;
+  box-shadow: 0 8px 20px rgba(2,6,23,0.04);
+}
+
+/* Neumorph modifier spacing */
+.map-sidebar.neumorph-card{ padding-bottom: 100px; }
+
+/* Tabs: desktop = vertical list, mobile = horizontal pills */
+.service-tabs{ display:flex; flex-direction: column; gap:10px; margin-bottom:16px; align-items: stretch; }
+
+.service-tabs button{
+  display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,250,250,0.98));
+  border: 1px solid rgba(0,0,0,0.06);
+  color: var(--primary, #0b1220); font-weight:700; cursor:pointer; text-align:left;
+  min-width:0; max-width:100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  position: relative;
+  transition: transform .18s cubic-bezier(.2,.9,.3,1), box-shadow .18s cubic-bezier(.2,.9,.3,1), background .18s cubic-bezier(.2,.9,.3,1);
+}
+
+.service-tabs button:focus-visible{ outline: none; box-shadow: 0 8px 20px rgba(2,6,23,0.08), 0 0 0 4px rgba(196,214,0,0.06); transform: translateY(-2px); }
+.service-tabs button:hover{ transform: translateY(-2px); box-shadow: 0 10px 28px rgba(2,6,23,0.06); }
+
+.service-tabs button.active{
+  background: linear-gradient(90deg, var(--brand-yellow, #f5a700), #c4d600);
+  color: rgb(12,12,12); box-shadow: 0 10px 28px rgba(156,179,0,0.14); border-color: rgba(0,0,0,0.06); z-index:3;
+}
+.service-tabs button.active::before{
+  content: ''; position:absolute; left:-6px; top:8px; bottom:8px; width:6px; border-radius:6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(0,0,0,0.06)); box-shadow: 0 6px 18px rgba(156,179,0,0.12);
+}
+
+.filters{ margin-bottom:12px }
+.filter-list{ display:flex; gap:8px; flex-wrap:wrap }
+.filter-chip{ padding:8px 10px; border-radius:999px; background:transparent; border:1px solid rgba(255,255,255,0.04); color:#cfe6ff; cursor:pointer }
+.filter-chip.on{ background: var(--brand-50); color: var(--brand-ink); border-color: rgba(0,0,0,0.04) }
+
+.results{ margin-top:12px }
+
+/* Results list: elevated cards */
+.results ul{ list-style:none; margin:0; padding:0 }
+.result-item{
+  display:flex; gap:14px; padding:14px; align-items:center; border-radius:12px;
+  background: var(--result-bg, #ffffff); color: var(--result-ink, #111111);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 8px 20px rgba(2,6,23,0.06); /* subtle default elevation */
+  margin-bottom:12px; transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.result-item:hover{ transform: translateY(-6px); box-shadow: 0 22px 44px rgba(2,6,23,0.10); }
+.result-item:focus-visible{ outline:none; transform: translateY(-6px); box-shadow: 0 22px 44px rgba(2,6,23,0.12), 0 0 0 4px rgba(196,214,0,0.08); }
+.result-thumb{ width:56px; height:56px; border-radius:8px; background: linear-gradient(180deg,#f6f7fb,#ffffff); border:1px solid rgba(0,0,0,0.06); flex: 0 0 56px; }
+.result-title{ font-weight:800; color: inherit; font-size:16px; line-height:1.1; margin-bottom:4px }
+.result-meta{ color:#55606a; font-size:13px; opacity:.95 }
+
+.map-area{ background: transparent; display:flex; flex-direction:column; gap:12px; overflow:hidden }
+.map-topbar{ display:flex; justify-content:flex-end }
+.map-actions .btn{ margin-left:8px }
+
+/* Farmácia info styles */
+.farmacia-info{ display:flex; flex-direction:column; gap:8px }
+.farmacia-title{ margin:0; font-family:"Pacifico",cursive,"Montserrat",Arial,sans-serif; font-size:20px; font-weight:900; color:var(--primary); text-shadow: 0 4px 18px rgba(0,0,0,0.06); }
+.farmacia-address{ margin:0; color:#4b5563; font-size:13px; line-height:1.3; background: linear-gradient(180deg, rgba(250,250,250,0.6), rgba(255,255,255,0.85)); padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); box-shadow: 0 6px 18px rgba(3,102,214,0.03); }
+.farmacia-directions{ display:flex; align-items:center; gap:10px }
+.farmacia-center-btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(14,165,233,0.12); }
+.farmacia-center-btn svg{ transform: translateY(-1px) }
+.farmacia-center-btn:hover{ transform: translateY(-2px) }
+.map-frame-wrap{ height: min(60vh, 640px); max-width:100%; overflow:hidden; border-radius:12px; box-sizing:border-box }
+
+.gmap{ width:100%; height:100%; min-height: min(56vh,560px); border-radius:12px; overflow:hidden; background: linear-gradient(180deg,#f6f7fb,#ffffff); box-shadow: 0 8px 36px rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.04); }
+.gmap, .gmap * { touch-action: auto; -ms-touch-action: auto }
+
+@media (max-width: 860px){
+  .gmap{ min-height: min(48vh,360px); border-radius:10px; box-shadow: 0 10px 30px rgba(0,0,0,0.06) }
+}
+
+.map-frame-wrap iframe{ box-shadow: 0 8px 36px rgba(0,0,0,0.12); background:#fff; border-radius:12px; border:0; width:100%; height:100%; display:block; min-width:0; min-height:0 }
+
+/* Mobile */
+@media (max-width: 860px){
+  .map-layout{ grid-template-columns: 1fr; gap: 0.75rem; }
+  .map-sidebar{ order:2; min-height:auto; display:flex; flex-direction:column; border-radius:12px; padding:12px; background: linear-gradient(180deg, var(--brand-50, #fff), rgba(255,255,255,0.98)); color: var(--brand-ink, #0f172a); box-shadow: 0 8px 28px rgba(0,0,0,0.06); border:1px solid rgba(0,0,0,0.04); }
+  .map-sidebar.neumorph-card{ padding-bottom:48px }
+  .map-frame-wrap{ height: min(48vh, 360px); max-width:100%; overflow:hidden; border-radius:10px }
+
+  /* Mobile tabs as horizontal scroller */
+  .service-tabs{ flex-direction:row; overflow:auto; gap:10px; padding-bottom:6px }
+  .service-tabs button{ white-space:nowrap; min-width:0; flex:0 0 auto; background:transparent; color: rgba(0,0,0,0.78); border:none; padding:8px 12px; border-radius:999px; font-weight:700; transition: transform .12s ease, box-shadow .12s ease, background .12s ease }
+  .service-tabs button:hover{ transform: translateY(-2px); box-shadow: 0 8px 20px rgba(2,6,23,0.06) }
+  .service-tabs button.active{ background: var(--brand-yellow); color: rgb(12,12,12); box-shadow: 0 8px 20px rgba(156,179,0,0.14) }
+
+  /* Mobile result item adjustments */
+  .map-sidebar .results{ display:block }
+  .result-item{ padding:10px; background: var(--result-bg-mobile, #ffffff); color: var(--result-ink-mobile, #0b1220); border-radius:8px; margin-bottom:8px; border:1px solid rgba(0,0,0,0.06); box-shadow: 0 6px 18px rgba(2,6,23,0.03); cursor:pointer; -webkit-tap-highlight-color: rgba(0,0,0,0.06); transition: transform .08s ease, box-shadow .08s ease, background .12s ease }
+  .result-item:active{ transform: translateY(1px); box-shadow: 0 6px 14px rgba(2,6,23,0.04) }
+
+  /* CTA inside sidebar */
+  .partner-cta{ margin-top:14px; padding:12px; background: linear-gradient(180deg,#ffffff,#fbfbfb); border-radius:12px; border:1px solid rgba(0,0,0,0.04) }
+  .partner-cta-inner{ display:flex; gap:12px; align-items:center }
+  .partner-cta-img{ width:120px; height:84px; object-fit:cover; border-radius:10px; flex:0 0 120px; box-shadow: 0 8px 20px rgba(0,0,0,0.06) }
+  .partner-cta-body h4{ margin:0; font-size:16px; color:var(--primary,#111827); font-weight:800 }
+  .partner-cta-body p{ margin:6px 0 10px; color:#475569; font-size:13px; line-height:1.3 }
+  .partner-cta-btn{ display:inline-block; padding:8px 12px; border-radius:10px; background: linear-gradient(90deg,#f5a700,#c4d600); color:#071017; text-decoration:none; font-weight:800; box-shadow: 0 8px 20px rgba(156,179,0,0.12); border:0 }
+  .partner-cta-btn:hover{ transform: translateY(-2px) }
+
+  @media (max-width: 520px){ .partner-cta-img{ width:84px; height:64px; flex:0 0 84px } .partner-cta-body p{ font-size:13px } }
+}
+
+/* Neumorphism card utility */
+.neumorph-card{ --nm-bg: var(--card-bg, #edf2f7); --nm-light: rgba(255,255,255,0.9); --nm-dark: rgba(0,0,0,0.12); background: var(--nm-bg); border-radius:14px; padding:16px; box-shadow: 14px 14px 30px var(--nm-dark), -10px -10px 30px var(--nm-light); border:1px solid rgba(0,0,0,0.04); transition: box-shadow .18s ease, transform .12s ease }
+.neumorph-card--soft{ box-shadow: 8px 8px 18px rgba(0,0,0,0.08), -6px -6px 18px rgba(255,255,255,0.85) }
+.neumorph-card:hover{ transform: translateY(-4px); box-shadow: 18px 18px 38px rgba(0,0,0,0.14), -12px -12px 38px rgba(255,255,255,0.92) }
+.neumorph-card--pressed{ box-shadow: inset 6px 6px 18px rgba(0,0,0,0.12), inset -6px -6px 18px rgba(255,255,255,0.9); transform: translateY(0) }
+
+@media (prefers-color-scheme: dark){ .neumorph-card{ --nm-bg: var(--card-bg-dark, #1f2937); --nm-light: rgba(255,255,255,0.03); --nm-dark: rgba(0,0,0,0.6); } .neumorph-card, .neumorph-card--soft{ border:1px solid rgba(255,255,255,0.02) } }
 .mapa-container {
   /* Respect the device safe-area (notably iOS notch) and add extra
      top spacing so a fixed navbar won't overlap the page title.
@@ -47,7 +219,7 @@
   color: #54646b;
   font-size: 15px;
   line-height: 1.45;
-  font-weight: 500;
+    transition: transform .18s cubic-bezier(.2,.9,.3,1), box-shadow .18s cubic-bezier(.2,.9,.3,1), background .18s cubic-bezier(.2,.9,.3,1);
   font-family: 'Poppins', 'Montserrat', sans-serif;
 }
 
@@ -56,6 +228,7 @@
   display: grid;
   grid-template-columns: 360px 1fr;
   gap: 20px;
+  .service-tabs button:hover{ transform: translateY(-2px); box-shadow: 0 10px 28px rgba(2,6,23,0.06) }
   align-items: start;
 }
 
@@ -66,13 +239,24 @@
 
 .map-sidebar{
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(2,6,23,0.06); /* subtle default elevation for better contrast */
   padding: 14px;
   border: 1px solid rgba(255,255,255,0.04);
   min-height: 480px;
   position: relative; /* allow tabs to overlap visually */
+  /* modernize card: slightly larger padding and smoother surface on desktop */
+  transition: box-shadow .18s ease, transform .12s ease;
 }
+  .result-item:hover{
+    transform: translateY(-6px);
+    box-shadow: 0 22px 44px rgba(2,6,23,0.10);
+  }
 
+  .result-item:focus-visible{
+    outline: none;
+    box-shadow: 0 22px 44px rgba(2,6,23,0.12), 0 0 0 4px rgba(196,214,0,0.08);
+    transform: translateY(-6px);
+  }
 /* Add extra bottom padding to the sidebar card so content isn't cramped
    and tabs' notch has breathing room. Reduce on small screens. */
 .map-sidebar.neumorph-card{
@@ -80,20 +264,24 @@
 }
 
 .service-tabs{
-  /* Desktop: render as browser-like tabs (horizontal row). On mobile we override below. */
+  /* Desktop: vertical stacked tabs for improved discoverability and hit area */
   display:flex;
-  gap:8px;
-  margin-bottom:12px;
-  align-items: flex-end; /* so tabs align to top of card content */
+  flex-direction: column;
+  gap:10px;
+  margin-bottom:16px;
+  align-items: stretch;
+  padding-right: 2px;
 }
 
 .service-tabs button{
-  padding:8px 14px;
-  border-radius: 8px 8px 0 0; /* rounded top corners like browser tabs */
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,250,0.96));
-  border: 1px solid rgba(0,0,0,0.08);
-  border-bottom: 0; /* visually connect with the panel */
-  color: var(--primary);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,250,250,0.98));
+  border: 1px solid rgba(0,0,0,0.06);
+  color: var(--primary, #0b1220);
   font-weight: 700;
   cursor: pointer;
   text-align: left;
@@ -103,33 +291,35 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
-  z-index: 1;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
 
+.service-tabs button:hover{ transform: translateY(-2px); box-shadow: 0 8px 22px rgba(2,6,23,0.04) }
 .service-tabs button.active{
-  background: var(--tab-active-bg, #fff); /* active tab appears 'on top' */
-  color: #111;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  border-color: rgba(0,0,0,0.12);
-  z-index: 3; /* ensure active tab overlays border of the panel */
+  background: linear-gradient(90deg, var(--brand-yellow, #f5a700), #c4d600);
+  color: rgb(12,12,12);
+  box-shadow: 0 10px 28px rgba(156,179,0,0.14);
+  border-color: rgba(0,0,0,0.06);
+  z-index: 3;
+}
+
+/* Active indicator: a subtle left accent bar on desktop */
+.service-tabs button.active::before{
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(0,0,0,0.06));
+  box-shadow: 0 6px 18px rgba(156,179,0,0.12);
 }
 
 /* Inverted bottom corners (notch) for the active tab: create a pseudo
    element that inherits the tab background and extends into the card so
    the area below the tab matches the tab selection color. */
-.service-tabs button.active::after{
-  content: '';
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: -18px; /* reach further into the card to hide the card border */
-  height: 28px; /* taller so it visually becomes the area under the tab */
-  background: inherit; /* inherit the tab background (works when tab background is set) */
-  border-radius: 0 0 12px 12px;
-  z-index: 2; /* below the active tab (z-index:3) but above card content */
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  pointer-events: none;
-}
+/* remove bottom notch effect on desktop; mobile still uses pill active styling via media query */
 
 /* Make sure the sidebar card behind the tabs has overflow visible so
    the tab can visually overlap and the pseudo element can hide the card border. */
@@ -148,20 +338,20 @@
 .results ul{ list-style: none; margin: 0; padding: 0; }
 .result-item{
   display:flex;
-  gap:12px;
-  padding:12px;
+  gap:14px;
+  padding:14px;
   align-items:center;
-  border-radius:10px;
+  border-radius:12px;
   background: var(--result-bg, #ffffff);
   color: var(--result-ink, #111111);
   border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 6px 18px rgba(16,24,40,0.04);
-  margin-bottom:10px;
-  transition: transform .12s ease, box-shadow .12s ease;
+  box-shadow: 0 8px 24px rgba(16,24,40,0.04);
+  margin-bottom:12px;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
 .result-item:hover{
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(16,24,40,0.08);
+  transform: translateY(-6px);
+  box-shadow: 0 18px 36px rgba(16,24,40,0.08);
 }
 .result-thumb{
   width:56px;
@@ -174,7 +364,7 @@
 .result-title{
   font-weight:800;
   color: inherit; /* inherit from item for light/dark mode */
-  font-size:15px;
+  font-size:16px;
   line-height:1.1;
   margin-bottom:4px;
 }
@@ -200,7 +390,7 @@
   /* Prefer a fixed height on larger screens but ensure the container
      can't overflow horizontally. Use overflow hidden to clip iframe
      content that might exceed bounds. */
-  height: min(56vh, 560px);
+  height: min(60vh, 640px);
   max-width: 100%;
   overflow: hidden;
   border-radius: 12px;
@@ -298,6 +488,27 @@
     transition: transform .08s ease, box-shadow .08s ease, background .12s ease;
   }
   .result-item:active{ transform: translateY(1px); box-shadow: 0 6px 14px rgba(2,6,23,0.04) }
+
+  /* CTA: 'Quer aparecer aqui?' block styling */
+  .partner-cta{
+    margin-top:14px;
+    padding:12px;
+    background: linear-gradient(180deg, #ffffff, #fbfbfb);
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+  .partner-cta-inner{ display:flex; gap:12px; align-items:center }
+  .partner-cta-img{ width:120px; height:84px; object-fit:cover; border-radius:10px; flex:0 0 120px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+  .partner-cta-body h4{ margin:0; font-size:16px; color:var(--primary,#111827); font-weight:800 }
+  .partner-cta-body p{ margin:6px 0 10px; color:#475569; font-size:13px; line-height:1.3 }
+  .partner-cta-btn{ display:inline-block; padding:8px 12px; border-radius:10px; background: linear-gradient(90deg,#f5a700,#c4d600); color:#071017; text-decoration:none; font-weight:800; box-shadow: 0 8px 20px rgba(156,179,0,0.12); border:0 }
+  .partner-cta-btn:hover{ transform: translateY(-2px); }
+
+  @media (max-width: 520px){
+    .partner-cta-inner{ flex-direction:row; align-items:center }
+    .partner-cta-img{ width:84px; height:64px; flex:0 0 84px }
+    .partner-cta-body p{ font-size:13px }
+  }
 
   /* Keep container default background on phones; avoid horizontal overflow */
   .mapa-container{

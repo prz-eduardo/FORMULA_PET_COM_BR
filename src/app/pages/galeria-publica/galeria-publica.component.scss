@@ -108,6 +108,9 @@
 .reaction-wrapper{ position: absolute; right: 10px; bottom: 10px; z-index: 80; display: flex; align-items: center }
 .reaction-wrapper .btn-like{ background: rgba(255,255,255,0.08); color:#fff; border-radius:8px; padding:6px 8px }
 .reaction-wrapper .likes-count{ margin-left:6px; font-weight:700 }
+.likes-total{ display:inline-block; margin-left:6px; font-weight:700; padding:2px 8px; border-radius:8px; transition: box-shadow .12s ease, border-color .12s ease, transform .12s ease }
+/* show a visible border around the whole like button when the current user reacted */
+.reaction-wrapper .btn-like.active{ outline: 2px solid #ff4d6d; outline-offset: 0; box-shadow: 0 8px 20px rgba(255,77,109,0.12); transform: translateY(-1px); border-radius:10px }
 
 /* default picker: left of the like button with a smooth scale+translate+fade entrance */
 .reaction-picker{ position:absolute; right:100%; bottom:0; display:flex; gap:8px; padding:8px; background:rgba(11,22,33,0.92); border-radius:999px; box-shadow: 0 14px 40px rgba(2,6,23,0.55); transform-origin: right center; /* replaced animation with transition to avoid flicker */ transition: opacity .12s ease, transform .12s ease, left .08s ease, top .08s ease; opacity:1; max-width: calc(100vw - 24px); overflow: visible; z-index: 9999 }

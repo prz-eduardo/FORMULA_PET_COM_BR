@@ -57,11 +57,14 @@
         <div class="reaction-wrapper" [attr.data-pet-id]="p._uid">
           <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p, p._uid, $event)">
             {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : '\u2764\ufe0f' }}
-            <span class="likes-count">{{ p.likes ?? 0 }}</span>
+            <div class="likes-total" [class.has-my-like]="p.userReacted">{{ p.likes ?? 0 }}</div>
           </button>
           <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p._uid" (click)="$event.stopPropagation()" [class.flipped]="pickerFlippedFor === p._uid">
             <div class="reaction-row">
-              <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'">{{ r.emoji }}</button>
+              <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'" [class.active]="p.userReactionTipo === r.tipo">
+                <span class="emoji">{{ r.emoji }}</span>
+                <span class="reaction-count" aria-hidden="true">{{ (p.reactionTotals && (p.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
+              </button>
             </div>
           </div>
         </div>

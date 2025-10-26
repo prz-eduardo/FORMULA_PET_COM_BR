@@ -21,8 +21,8 @@ export class MapaComponent implements OnInit, OnDestroy {
   partners: Array<any> = [];
   // tabs populated from backend (/tipos-profissionais)
   tabs: Array<{ id: string; label: string; typeId?: number; icon?: string }> = [];
-  // currently selected tab id (string slug) — empty when none selected
-  active: string = '';
+  // currently selected tab id (string slug) — default to 'todos' so initial load requests all types
+  active: string = 'todos';
   mapsApiKey: string | null = null;
   loading = false;
   error: string | null = null;
@@ -111,14 +111,14 @@ export class MapaComponent implements OnInit, OnDestroy {
         const stableSub = (this.appRef.isStable as any).pipe(filter((s: boolean) => s), take(1)).subscribe(() => {
           try { clearTimeout(stableTimer as any); } catch (e) {}
             this.loadPartners();
-            // only load anunciantes if a tab is already selected
-            if (this.active) this.loadAnunciantes(this.active);
+              // only load anunciantes if a tab is already selected
+              if (this.active) this.loadAnunciantes(this.active === 'todos' ? undefined : this.active);
         });
         // fallback timer: if stability doesn't occur within 1500ms, proceed anyway
         const stableTimer = setTimeout(() => {
           try { stableSub.unsubscribe(); } catch (e) {}
             this.loadPartners();
-            if (this.active) this.loadAnunciantes(this.active);
+            if (this.active) this.loadAnunciantes(this.active === 'todos' ? undefined : this.active);
         }, 1500);
       } catch (e) {
         // fallback: schedule after a tick
@@ -139,6 +139,8 @@ export class MapaComponent implements OnInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       // resolve numeric type id from the populated tabs list and pass that to backend
       let tipo: any = tabId;
+      // if the special 'todos' tab is selected, send undefined so backend returns all
+      if (String(tabId) === 'todos') tipo = undefined;
       try {
         const tab = this.tabs.find(t => t.id === tabId);
         if (tab && typeof tab.typeId !== 'undefined') tipo = Number(tab.typeId);
@@ -149,6 +151,8 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   private loadAnunciantes(tipo?: any){
     // lightweight loading state for the anunciantes list
+    // normalize special 'todos' marker so backend receives undefined (meaning: all types)
+    if (String(tipo) === 'todos') tipo = undefined;
     this.api.getAnunciantes(tipo).subscribe({
       next: (res) => {
         try {
@@ -165,14 +169,29 @@ export class MapaComponent implements OnInit, OnDestroy {
           // populate filtersByTab for the currently active tab (or fallback to tipo as key)
           const key = this.active || String(tipo ?? '');
           try {
+            // Prefer `filtros` (legacy) but if backend supplies atributos_disponiveis or
+            // anuncios include atributos (or atributos_disponiveis) use those to build filters.
+            let availableAtributos: any[] = [];
             if (filtros && filtros.length) {
-              // map backend filter shape to UI-friendly { id, label, on }
-              this.filtersByTab[key] = filtros.map((f: any) => ({
-                id: f.chave ?? String(f.atributo_id ?? ''),
-                label: f.nome ?? f.chave ?? '',
-                // UI starts with filters OFF by default (user requested)
-                on: false
-              }));
+              availableAtributos = filtros.map((f: any) => ({ atributo_id: f.atributo_id ?? null, chave: f.chave ?? null, nome: f.nome ?? f.chave ?? '' }));
+            } else if (res && Array.isArray((res as any).atributos_disponiveis) && (res as any).atributos_disponiveis.length) {
+              availableAtributos = (res as any).atributos_disponiveis.map((a: any) => ({ atributo_id: a.atributo_id ?? null, chave: a.chave ?? null, nome: a.nome ?? a.chave ?? '' }));
+            } else {
+              // fallback: collect atributos_disponiveis or atributos from anuncios
+              const collect: { [k: string]: any } = {};
+              (anuncios || []).forEach((an: any) => {
+                if (Array.isArray(an.atributos_disponiveis)) {
+                  an.atributos_disponiveis.forEach((a: any) => { const keyk = a.chave ?? String(a.atributo_id ?? ''); if (!collect[keyk]) collect[keyk] = { atributo_id: a.atributo_id ?? null, chave: a.chave ?? keyk, nome: a.nome ?? a.chave ?? '' }; });
+                }
+                if (Array.isArray(an.atributos)) {
+                  an.atributos.forEach((a: any) => { const keyk = a.chave ?? String(a.atributo_id ?? ''); if (!collect[keyk]) collect[keyk] = { atributo_id: a.atributo_id ?? null, chave: a.chave ?? keyk, nome: a.nome ?? a.chave ?? '' }; });
+                }
+              });
+              availableAtributos = Object.values(collect || {});
+            }
+
+            if (availableAtributos && availableAtributos.length) {
+              this.filtersByTab[key] = availableAtributos.map((f: any) => ({ id: f.chave ?? String(f.atributo_id ?? ''), label: f.nome ?? f.chave ?? '', on: false }));
             } else {
               this.filtersByTab[key] = this.filtersByTab[key] || [];
             }
@@ -180,14 +199,27 @@ export class MapaComponent implements OnInit, OnDestroy {
             this.filtersByTab[key] = this.filtersByTab[key] || [];
           }
 
-          // normalize anuncios into partner objects expected by the UI/map
-          this.allPartners = (anuncios || []).map((a: any) => {
-            const anuncio = a || {};
-            // try multiple field names used by backend
-            const latRaw = anuncio.anuncio_latitude ?? anuncio.latitude ?? anuncio.lat ?? anuncio.anunciante_latitude ?? null;
-            const lngRaw = anuncio.anuncio_longitude ?? anuncio.longitude ?? anuncio.lng ?? anuncio.anunciante_longitude ?? null;
-            const latitude = latRaw != null ? Number(latRaw) : (anuncio.lat ? Number(anuncio.lat) : undefined);
-            const longitude = lngRaw != null ? Number(lngRaw) : (anuncio.lng ? Number(anuncio.lng) : undefined);
+            // normalize anuncios into partner objects expected by the UI/map
+            this.allPartners = (anuncios || []).map((a: any) => {
+              const anuncio = a || {};
+              // try multiple field names used by backend
+              const latRaw = anuncio.anuncio_latitude ?? anuncio.latitude ?? anuncio.lat ?? anuncio.anunciante_latitude ?? null;
+              const lngRaw = anuncio.anuncio_longitude ?? anuncio.longitude ?? anuncio.lng ?? anuncio.anunciante_longitude ?? null;
+              const latitude = latRaw != null ? Number(latRaw) : (anuncio.lat ? Number(anuncio.lat) : undefined);
+              const longitude = lngRaw != null ? Number(lngRaw) : (anuncio.lng ? Number(anuncio.lng) : undefined);
+
+              // build filtros_selecionados from anuncio.atributos (if present) so computeFilteredPartners can use them
+              const filtros_map: any = {};
+              try {
+                if (Array.isArray(anuncio.atributos)) {
+                  anuncio.atributos.forEach((at: any) => {
+                    const k = at.chave ?? String(at.atributo_id ?? '');
+                    if (typeof at.valor_bool !== 'undefined') filtros_map[k] = !!at.valor_bool;
+                    else if (typeof at.valor_texto !== 'undefined' && at.valor_texto != null) filtros_map[k] = String(at.valor_texto);
+                    else if (typeof at.valor_numero !== 'undefined' && at.valor_numero != null) filtros_map[k] = at.valor_numero;
+                  });
+                }
+              } catch (e) { /* ignore attribute parsing errors */ }
 
             return {
               // primary identifiers
@@ -202,9 +234,9 @@ export class MapaComponent implements OnInit, OnDestroy {
               email: anuncio.anuncio_email ?? anuncio.anunciante_email ?? anuncio.email ?? '',
               // address
               endereco: anuncio.anuncio_endereco ?? anuncio.endereco ?? '',
-              cidade: anuncio.anuncio_cidade ?? anuncio.cidade ?? '',
-              estado: anuncio.anuncio_estado ?? anuncio.estado ?? '',
-              cep: anuncio.anuncio_cep ?? anuncio.cep ?? '',
+              cidade: anuncio.anunciante_cidade ?? anuncio.cidade ?? '',
+              estado: anuncio.anunciante_estado ?? anuncio.estado ?? '',
+              cep: anuncio.anunciante_cep ?? anuncio.cep ?? '',
               // description
               descricao: anuncio.anunciante_descricao ?? anuncio.anuncio_descricao ?? anuncio.descricao ?? '',
               // media
@@ -212,8 +244,11 @@ export class MapaComponent implements OnInit, OnDestroy {
               // geographic
               latitude: typeof latitude === 'number' && !isNaN(latitude) ? latitude : undefined,
               longitude: typeof longitude === 'number' && !isNaN(longitude) ? longitude : undefined,
-              // filters selected for this anuncio
-              filtros_selecionados: anuncio.filtros_selecionados ?? {},
+              // filters selected for this anuncio (normalized from atributos array or fallback)
+              filtros_selecionados: Object.keys(filtros_map).length ? filtros_map : (anuncio.filtros_selecionados ?? {}),
+              // tipo normalization: backend may return `tipo` or `tipos` (array)
+              tipo: anuncio.tipo ?? (Array.isArray(anuncio.tipos) && anuncio.tipos[0]) ?? null,
+              tipos: Array.isArray(anuncio.tipos) ? anuncio.tipos : undefined,
               // raw payload for debugging if needed
               _raw: anuncio
               };
@@ -313,20 +348,21 @@ export class MapaComponent implements OnInit, OnDestroy {
     const closeBtnId = `map-close-btn-${uid}`;
 
     const content = `
-      <div style="max-width:320px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px;position:relative;overflow:visible">
-        <button id="${closeBtnId}" aria-label="Fechar" style="position:absolute;top:-20px;right:-20px;width:40px;height:40px;border-radius:50%;background:#111827;color:#fff;border:0;box-shadow:0 10px 28px rgba(0,0,0,.32);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0">✕</button>
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
-          <img src=\"/icones/pin-pata.svg\" style=\"width:36px;height:36px;object-fit:contain;border-radius:6px\"/>
-          <div style="flex:1">
-            <div style="font-weight:700;font-size:15px;color:#0f172a">${name}</div>
-            <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.2">${title}${address ? ' · ' + address : ''}</div>
-            ${phone ? `<div style="font-size:13px;color:#374151;margin-top:6px">Tel: ${phone}</div>` : ''}
-          </div>
+      <div style="max-width:340px;font-family:Inter,Arial,Helvetica,sans-serif;color:#0f172a;padding:12px;box-sizing:border-box;border-radius:10px;position:relative;overflow:visible">
+      <button id="${closeBtnId}" aria-label="Fechar" style="position:absolute;top:-20px;right:-20px;width:40px;height:40px;border-radius:50%;background:#111827;color:#fff;border:0;box-shadow:0 10px 28px rgba(0,0,0,.32);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0">✕</button>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.2;word-break:break-word">${title}${address ? ' · ' + address : ''}</div>
+        ${phone ? `<div style="font-size:13px;color:#374151;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tel: ${phone}</div>` : ''}
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="${routeBtnId}" style="flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Traçar rota</button>
-          <button id="${openBtnId}" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Abrir no Maps</button>
-        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="${routeBtnId}" style="flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Traçar rota</button>
+        <button id="${openBtnId}" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Abrir no Maps</button>
+      </div>
       </div>
     `;
 
@@ -393,12 +429,21 @@ export class MapaComponent implements OnInit, OnDestroy {
       if (!(window as any).google) return undefined;
       const google = (window as any).google;
       const candidates = [
+        // explicit tipo object
         partner?.tipo?.icone,
         partner?.tipo?.slug,
         partner?.tipo?.nome,
+        // if backend provides an array of tipos, prefer the first
+        (Array.isArray(partner?.tipos) && partner?.tipos[0]?.icone),
+        (Array.isArray(partner?.tipos) && partner?.tipos[0]?.slug),
+        (Array.isArray(partner?.tipos) && partner?.tipos[0]?.nome),
+        // raw payload fallbacks
         partner?._raw?.tipo?.icone,
         partner?._raw?.tipo?.slug,
         partner?._raw?.tipo?.nome,
+        partner?._raw?.tipos && Array.isArray(partner._raw.tipos) ? partner._raw.tipos[0]?.icone : undefined,
+        partner?._raw?.tipos && Array.isArray(partner._raw.tipos) ? partner._raw.tipos[0]?.slug : undefined,
+        partner?._raw?.tipos && Array.isArray(partner._raw.tipos) ? partner._raw.tipos[0]?.nome : undefined,
         // try active tab icon as last resort
         (this.tabs.find(t => t.id === this.active)?.icon),
         // try a tab by numeric typeId
@@ -434,7 +479,11 @@ export class MapaComponent implements OnInit, OnDestroy {
             const icon = anyT.icone ?? anyT.icon ?? undefined;
             return { id: slug, label, typeId, icon };
           });
-          // do NOT auto-select any tab — user must choose explicitly
+          // ensure a default 'todos' tab exists at the beginning so UI/backends can request all
+          if (!this.tabs.find(x => x.id === 'todos')) {
+            this.tabs.unshift({ id: 'todos', label: 'Todos', typeId: undefined, icon: undefined });
+          }
+          // do NOT auto-select other tabs — we keep `this.active` default (currently 'todos')
         }
       },
       error: (err) => {
@@ -475,7 +524,9 @@ export class MapaComponent implements OnInit, OnDestroy {
             latitude: typeof latitude === 'number' && !isNaN(latitude) ? latitude : undefined,
             longitude: typeof longitude === 'number' && !isNaN(longitude) ? longitude : undefined,
             filtros_selecionados: p.filtros_selecionados ?? {},
-            tipo: p.tipo ?? null,
+            // normalize tipo/tipos shapes: prefer explicit tipo, otherwise pick first from tipos array
+            tipo: p.tipo ?? (Array.isArray(p.tipos) && p.tipos[0]) ?? null,
+            tipos: Array.isArray(p.tipos) ? p.tipos : undefined,
             partner_type: p.partner_type ?? null,
             _raw: p
           };
@@ -673,7 +724,7 @@ export class MapaComponent implements OnInit, OnDestroy {
             try {
               const wrap = document.getElementById('gmap');
               if (wrap) {
-                const btnHtml = `<button id="fp-restore-route" title="Restaurar última rota" style="position:absolute;z-index:99999;right:18px;bottom:18px;padding:10px 12px;border-radius:8px;border:0;background:#0f172a;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer">Restaurar rota</button>`;
+                const btnHtml = `<button id="fp-restore-route" title="Restaurar última rota" style="position:absolute;z-index:99999;right:18px;bottom:18px;padding:10px 12px;border-radius:8px;border:0;background:#0f172a;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer">Traçar rota</button>`;
                 // ensure container is positioned for absolute child
                 if (wrap.style.position === '' || wrap.style.position === 'static') wrap.style.position = 'relative';
                 wrap.insertAdjacentHTML('beforeend', btnHtml);
@@ -1020,11 +1071,50 @@ export class MapaComponent implements OnInit, OnDestroy {
             console.warn('failed to create origin marker', e);
           }
 
+          // when a route is drawn, show a 'Limpar rota' button overlay so the user can clear it
+          try { this.addClearRouteButton(); } catch (e) { /* ignore */ }
+
         } else {
           console.warn('Directions request failed:', status);
         }
       });
     } catch (e) { console.warn('route request failed', e); }
+  }
+
+  /**
+   * Add a 'Limpar rota' button overlayed on the map. Idempotent: does nothing if button exists.
+   */
+  private addClearRouteButton() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      const wrap = document.getElementById('gmap');
+      if (!wrap) return;
+      if (document.getElementById('fp-clear-route')) return; // already present
+      const btnHtml = `<button id="fp-clear-route" title="Limpar rota" style="position:absolute;z-index:99999;left:18px;bottom:18px;padding:10px 12px;border-radius:8px;border:0;background:#ffffff;color:#0f172a;box-shadow:0 8px 20px rgba(0,0,0,.12);cursor:pointer">Limpar rota</button>`;
+      if (wrap.style.position === '' || wrap.style.position === 'static') wrap.style.position = 'relative';
+      wrap.insertAdjacentHTML('beforeend', btnHtml);
+      const btn = document.getElementById('fp-clear-route');
+      if (btn) btn.addEventListener('click', (ev) => { ev.preventDefault(); try { this.clearRoute(); } catch (e) {} });
+    } catch (e) { console.warn('addClearRouteButton failed', e); }
+  }
+
+  /** Remove the clear-route button if present. */
+  private removeClearRouteButton() {
+    try { const b = document.getElementById('fp-clear-route'); if (b) b.remove(); } catch (e) {}
+  }
+
+  /**
+   * Clear any drawn route and remove origin marker and stored last-destination.
+   */
+  public clearRoute() {
+    try {
+      if (this.directionsRenderer) {
+        try { (this.directionsRenderer as any).set('directions', null); } catch (e) { /* fallback attempt */ try { this.directionsRenderer.setDirections({ routes: [] } as any); } catch (er) {} }
+      }
+    } catch (e) { console.warn('clearRoute: clearing directions failed', e); }
+    try { if (this.originMarker) { try { this.originMarker.setMap(null); } catch (e) {} this.originMarker = null; } } catch (e) {}
+    try { localStorage.removeItem('fp_last_dest'); } catch (e) {}
+    try { this.removeClearRouteButton(); } catch (e) {}
   }
 
   private async openMapsWithRoute(dest: { lat: number; lng: number }) {
