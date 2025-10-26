@@ -19,26 +19,38 @@
 .cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px }
 .masonry{
 	column-count: 4;
-	column-gap: 8px;
+	column-gap: 16px;
 }
 
-@media screen and (max-width: 767px) {
-	.masonry { column-count: 2; }
+/* Responsive masonry columns: desktop 4, tablet 2, phone 1 */
+@media screen and (max-width: 1200px) {
+  .masonry{ column-count: 3; }
 }
-
+@media screen and (max-width: 900px) {
+  .masonry{ column-count: 2; }
+}
 @media screen and (max-width: 520px) {
-	.masonry { column-count: 1; }
-	.masonry-item.vet-ad { -webkit-column-span: 1; column-span: 1; }
+  .masonry{ column-count: 1; }
+}
+
+/* Mobile picker defaults (narrow screens) */
+@media screen and (max-width: 640px) {
+  .reaction-btn{ font-size:20px; padding:8px; line-height:1 }
+  /* anchor the picker to the right edge of the card; ensure it never exceeds viewport */
+  .reaction-picker{ right: 8px; left: auto; bottom: calc(100% + 8px); transform-origin: right bottom; padding:6px 8px; max-width: calc(100vw - 32px); display:flex; justify-content:center; box-sizing: border-box }
+  .reaction-row{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:nowrap }
+  .pet-name{ transition: transform .22s cubic-bezier(.2,.9,.3,1), opacity .18s ease }
+  .pet-name.shifted{ transform: translateY(20px); opacity:0.98 }
+  .reaction-picker{ z-index: 120 }
 }
 .masonry-item{
-	break-inside: avoid-column;
-	margin-bottom: 8px;
 	border-radius: 12px;
 	/* allow overflow so floating UI (reaction picker) can escape the card bounds */
 	overflow: visible;
 	position: relative;
 	transform-origin: center;
 	transition: transform .26s ease, box-shadow .26s ease;
+	margin-bottom: 16px;
 }
 /* Veterinário Ad card styles */
 .vet-ad-card {
@@ -110,7 +122,7 @@
 .reaction-wrapper .likes-count{ margin-left:6px; font-weight:700 }
 .likes-total{ display:inline-block; margin-left:6px; font-weight:700; padding:2px 8px; border-radius:8px; transition: box-shadow .12s ease, border-color .12s ease, transform .12s ease }
 /* show a visible border around the whole like button when the current user reacted */
-.reaction-wrapper .btn-like.active{ outline: 2px solid #ff4d6d; outline-offset: 0; box-shadow: 0 8px 20px rgba(255,77,109,0.12); transform: translateY(-1px); border-radius:10px }
+.reaction-wrapper .btn-like.visualActive{ outline: 2px solid #ff4d6d; outline-offset: 0; box-shadow: 0 8px 20px rgba(255,77,109,0.12); transform: translateY(-1px); border-radius:10px }
 
 /* default picker: left of the like button with a smooth scale+translate+fade entrance */
 .reaction-picker{ position:absolute; right:100%; bottom:0; display:flex; gap:8px; padding:8px; background:rgba(11,22,33,0.92); border-radius:999px; box-shadow: 0 14px 40px rgba(2,6,23,0.55); transform-origin: right center; /* replaced animation with transition to avoid flicker */ transition: opacity .12s ease, transform .12s ease, left .08s ease, top .08s ease; opacity:1; max-width: calc(100vw - 24px); overflow: visible; z-index: 9999 }
@@ -151,25 +163,57 @@
 .reaction-btn{ border:0; background:transparent; color:#fff; font-size:18px; padding:8px; border-radius:999px; cursor:pointer; transition: transform .14s ease, box-shadow .14s ease; opacity:0; transform: translateY(6px) scale(.96); animation: emojiIn .28s cubic-bezier(.2,.9,.3,1) forwards; animation-delay: var(--d, 120ms); min-width: 44px; min-height: 44px; display:inline-flex; align-items:center; justify-content:center }
 .reaction-btn:hover{ transform:translateY(-6px) scale(1.08); box-shadow:0 10px 24px rgba(0,0,0,0.36) }
 
+/* indicate user's selected reaction subtly in the picker */
+.reaction-btn.active{ background: rgba(255,255,255,0.06); box-shadow: 0 8px 20px rgba(0,0,0,0.12); transform: translateY(-3px) }
+.reaction-btn.active .emoji{ transform: scale(1.08); }
+.reaction-btn.active::after{ content: ''; display:block; width:6px; height:6px; border-radius:50%; background: rgba(255,255,255,0.92); margin:6px auto 0; opacity:0.9 }
+
+/* confirmed-selected inside the picker (appears only after increment/confirm) */
+.reaction-btn.selected{ background: rgba(255,255,255,0.10); box-shadow: 0 10px 22px rgba(0,0,0,0.14); transform: translateY(-3px); }
+.reaction-btn.selected .emoji{ transform: scale(1.08); }
+/* Remove the ::after indicator for the selected state so the picker
+	selected button does not render the small dot underneath. */
+.reaction-btn.selected::after{ display: none; }
+
+/* preview state (temporary cue when opening picker for first-time)
+	Keep this visually neutral: do not add a colored background inside the
+	balloon. The confirmed in-picker highlight is controlled by
+	`_pickerSelectedConfirmed` and uses the `.selected` class instead. */
+.reaction-btn.preview{ background: transparent; box-shadow: none; transform: translateY(-2px); }
+.reaction-btn.preview .emoji{ transform: scale(1.04); }
+
+/* confirmed give -- subtle pop and glow to indicate reaction was sent */
+.reaction-btn.confirm{ transform: translateY(-4px) scale(1.12); box-shadow: 0 14px 32px rgba(255,77,109,0.18); background: linear-gradient(90deg,#ff9fb6,#ff6a87); color:#fff }
+.reaction-btn.confirm .emoji{ transform: scale(1.18) }
+@keyframes popConfirm {
+	0% { transform: scale(.88); opacity: 0.6 }
+	40% { transform: scale(1.12); opacity: 1 }
+	100% { transform: scale(1.06); opacity: 1 }
+}
+
 @keyframes emojiIn {
 	0% { opacity: 0; transform: translateY(8px) scale(.92); }
 	60% { opacity: 1; transform: translateY(-4px) scale(1.06); }
 	100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes emojiOut {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  60% { opacity: 0.95; transform: translateY(-4px) scale(0.96); }
+  100% { opacity: 0; transform: translateY(8px) scale(.92); }
+}
+
+/* Exit state: apply when picker requests icons to disappear one-by-one */
+.reaction-btn.exiting { animation-name: emojiOut !important; animation-duration: .28s; animation-timing-function: cubic-bezier(.2,.9,.3,1); animation-fill-mode: forwards; animation-delay: var(--exit-d, 0ms); }
+
+/* Small header action for the gallery page */
+.galeria-actions{ margin-top:12px }
+.btn-go-meus-pets{ background: linear-gradient(90deg,#ff8aa0,#ff6a87); border:0; color:#fff; padding:8px 12px; border-radius:999px; font-weight:600; box-shadow: 0 8px 20px rgba(255,106,135,0.12); cursor:pointer }
+.btn-go-meus-pets:hover{ transform: translateY(-2px); }
+
 /* pickerOpen keyframes removed in favor of transitions to stabilize rendering on desktop and mobile */
 
-/* Mobile specific: larger touch targets and position picker above/left of the like button */
-@media screen and (max-width: 640px) {
-	.reaction-btn{ font-size:24px; padding:12px; line-height:1 }
-	/* place the picker slightly above and to the left of the heart so it sits next to the name */
-	.reaction-picker{ right: auto; left: 10px; bottom: calc(100% + 8px); transform-origin: left bottom; padding:10px 14px }
-	/* mobile arrow removed */
-	/* shift the name downward so emoji row doesn't overlap */
-	.pet-name{ transition: transform .22s cubic-bezier(.2,.9,.3,1), opacity .18s ease }
-	.pet-name.shifted{ transform: translateY(20px); opacity:0.98 }
-	.reaction-picker{ z-index: 120 }
-}
+/* Mobile specific handled earlier to keep picker anchored and avoid viewport overflow */
 
 /* slightly offset name on narrow but not tiny screens */
 @media screen and (min-width: 641px) and (max-width: 900px) {

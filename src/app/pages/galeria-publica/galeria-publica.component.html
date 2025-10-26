@@ -4,6 +4,9 @@
   <header class="galeria-header">
   <h1 class="galeria-title">Galeria 🐾</h1>
     <p class="galeria-subtitle">Uma curadoria carinhosa das melhores fotos da nossa comunidade. Veja, emocione-se e espalhe afeto.</p>
+    <div class="galeria-actions">
+      <button class="btn btn-primary btn-go-meus-pets" (click)="openAreaClienteMeusPets()" aria-label="Ir para meus pets">Ir para meus pets</button>
+    </div>
   </header>
 
   <div *ngIf="loading" class="card">Carregando galeria...</div>
@@ -38,8 +41,8 @@
         <!-- Regular pet card -->
         <div class="card">
       <div class="photo-wrap">
-      <img [src]="p.foto || p.photo || p.photoURL || '/imagens/image.png'" alt="Foto do pet" class="pet-photo"
-        (error)="onImgError($event.target, '/imagens/image.png')" />
+  <img [src]="p.foto || p.photo || p.photoURL || '/imagens/image.png'" alt="Foto do pet" class="pet-photo"
+  (error)="onImgError($event.target, '/imagens/image.png')" (click)="onPhotoClick(p, $event)" />
             <div class="overlay">
               <div class="overlay-top">
                 <div class="pet-type" [attr.aria-label]="(p.tipo || p.especie || 'Pet')">{{ typeEmoji(p.tipo || p.especie) }}</div>
@@ -55,13 +58,13 @@
           </div>
         <!-- place the reaction button/picker outside of the photo-wrap so it can overflow and remain visible -->
         <div class="reaction-wrapper" [attr.data-pet-id]="p._uid">
-          <button class="btn-like" [class.active]="p.userReacted" (click)="openReactionPicker(p, p._uid, $event)">
+          <button class="btn-like" [class.visualActive]="p._visualActive" (click)="openReactionPicker(p, p._uid, $event)">
             {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : '\u2764\ufe0f' }}
-            <div class="likes-total" [class.has-my-like]="p.userReacted">{{ p.likes ?? 0 }}</div>
+            <div class="likes-total" [class.has-my-like]="p._visualActive">{{ p.likes ?? 0 }}</div>
           </button>
           <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p._uid" (click)="$event.stopPropagation()" [class.flipped]="pickerFlippedFor === p._uid">
             <div class="reaction-row">
-              <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'" [class.active]="p.userReactionTipo === r.tipo">
+              <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'" [style.--exit-d]="(i + 1) * 100 + 'ms'" [class.selected]="(p._pickerSelectedConfirmed === true) && (p.userReactionTipo === r.tipo)" [class.preview]="p._pickerAutoHighlight === r.tipo" [class.confirm]="p._pickerConfirm === r.tipo" [class.exiting]="p._pickerExiting">
                 <span class="emoji">{{ r.emoji }}</span>
                 <span class="reaction-count" aria-hidden="true">{{ (p.reactionTotals && (p.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
               </button>

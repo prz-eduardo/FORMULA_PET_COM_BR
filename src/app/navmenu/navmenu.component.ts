@@ -48,6 +48,9 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   private idleTimer: any = null;
+  // If an external component requests opening the Area Cliente modal with a specific
+  // internal view (e.g. 'meus-pets'), we store it here while abrirClienteModal creates the component.
+  private _pendingAreaClienteView: string | null = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
   private metaballsPaused = false;
   private menuScrollTop: number | null = null;
@@ -145,6 +148,22 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     });
+
+    // Listen for requests from other parts of the app to open the Area Cliente modal
+    // with a specific internal view. Example: dispatch new CustomEvent('openAreaCliente', { detail: { view: 'meus-pets' } })
+    try {
+      document.addEventListener('openAreaCliente', this._onOpenAreaClienteEvent as any);
+    } catch (e) {}
+  }
+
+  private _onOpenAreaClienteEvent = (ev: any) => {
+    try {
+      const view = ev && ev.detail && ev.detail.view ? ev.detail.view : (sessionStorage.getItem('areaClienteOpenView') || null);
+      this._pendingAreaClienteView = view;
+      // open the modal; abrirClienteModal will check _pendingAreaClienteView after creating the component
+      this.abrirClienteModal();
+      try { sessionStorage.removeItem('areaClienteOpenView'); } catch (e) {}
+    } catch (e) {}
   }
 
   // Função para forçar atualização dos dados do cliente e localStorage
@@ -241,6 +260,21 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           const ref = this.clienteHost.createComponent(Cmp);
           if (ref?.instance) {
             (ref.instance as any).modal = true;
+              // If an external opener requested a specific internal view, ask the created
+              // AreaCliente instance to open that view (e.g. 'meus-pets').
+              try {
+                const view = this._pendingAreaClienteView || sessionStorage.getItem('areaClienteOpenView');
+                if (view && typeof (ref.instance as any).open === 'function') {
+                  // Defer to next tick so AreaCliente can finish ngOnInit/loadProfile before we ask it
+                  // to create the internal view. This prevents racing where open() runs
+                  // before profilePromise is initialized.
+                  setTimeout(() => {
+                    try { (ref.instance as any).open(view as any); } catch (e) {}
+                  }, 0);
+                  this._pendingAreaClienteView = null;
+                  try { sessionStorage.removeItem('areaClienteOpenView'); } catch (e) {}
+                }
+              } catch (e) {}
           }
           // Quando o conteúdo for resolvido/renderizado, removemos o loader em um próximo tick
           setTimeout(() => { this.clienteLoading = false; }, 0);
@@ -275,6 +309,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.idleTimer) clearTimeout(this.idleTimer);
+    try { document.removeEventListener('openAreaCliente', this._onOpenAreaClienteEvent as any); } catch (e) {}
   }
 
   private resetIdleTimer(): void {
