@@ -12,12 +12,13 @@
     <!-- Profile header with avatar -->
     <div *ngIf="!carregando" class="profile-head">
       <div class="avatar-card card">
-        <div class="avatar-wrap">
+      <div class="avatar-wrap" [class.has-pending]="avatarChanged" [class.options-visible]="avatarOptionsVisible">
           <img [src]="avatarSrc()" alt="Avatar" class="avatar"/>
           <label class="avatar-change" title="Editar foto">
             <!-- hidden file input; id used to open programmatically -->
             <input id="perfil-avatar-file" type="file" accept="image/*" (change)="onAvatarSelected($event)" style="display:none" />
-            <button type="button" class="avatar-pencil" (click)="toggleAvatarOptions()">✏️</button>
+            <!-- use the common page edit style so it matches other edit buttons -->
+            <button type="button" class="btn icon-pencil" (click)="toggleAvatarOptions()">✏️</button>
           </label>
 
           <!-- small action list shown when avatarOptionsVisible is true -->
@@ -36,26 +37,31 @@
       </div>
       <div class="profile-actions card">
         <h2>
-          <span *ngIf="editingSection !== 'informacoes'">{{ nome || me?.user?.nome || 'Perfil' }}</span>
-          <input class="header-name-input" *ngIf="editingSection === 'informacoes'" [(ngModel)]="nome" />
+          <!-- Strict guard: the inline header input appears ONLY when editingNameOnly is active AND
+               no other section is being edited. This prevents overlapping edit modes. -->
+          <span *ngIf="!(editingNameOnly && editingSection === null)">{{ nome || me?.user?.nome || 'Perfil' }}</span>
+          <input class="header-name-input" *ngIf="editingNameOnly && editingSection === null" [(ngModel)]="nome" />
         </h2>
         <div class="quick-actions">
-          <ng-container *ngIf="editingSection !== 'informacoes'">
-            <!-- Always show header edit control so user can open name edit directly -->
-            <button class="btn icon-pencil" title="Editar nome" (click)="editSection('informacoes')">✏️</button>
+          <!-- Inline name edit is only available when no other section is being edited -->
+          <ng-container *ngIf="!editingNameOnly && editingSection === null">
+            <button class="btn icon-pencil" title="Editar nome" (click)="editNameOnly()">✏️</button>
           </ng-container>
-          <ng-container *ngIf="editingSection === 'informacoes'">
-            <button class="btn" (click)="saveSection()">Salvar</button>
-            <button class="btn btn-sec" (click)="cancelEditSection()" title="Cancelar">×</button>
+
+          <!-- Inline name editing actions (only when no other section is being edited) -->
+          <ng-container *ngIf="editingNameOnly && editingSection === null">
+            <button class="btn" (click)="saveNameOnly()" [disabled]="salvando">Salvar</button>
+            <button class="btn btn-sec" (click)="cancelNameEdit()" title="Cancelar">×</button>
           </ng-container>
-          <button class="btn" *ngIf="!readOnly && editingSection === null" (click)="salvar()">Salvar</button>
+
+          <button class="btn" *ngIf="!readOnly && editingSection === null && !editingNameOnly" (click)="salvar()">Salvar</button>
         </div>
       </div>
     </div>
 
     <!-- Read-only pretty view -->
     <div class="grid">
-      <section class="card" *ngIf="isSectionReadOnlyVisible('informacoes')">
+      <section id="informacoes-card" class="card" *ngIf="isSectionReadOnlyVisible('informacoes')">
         <header class="section-head">
           <div class="left">
             <h3>Informações</h3>
@@ -212,15 +218,93 @@
           </div>
         </header>
         <div class="info-grid">
-          <div class="info-row"><span class="label">Método de contato</span><span class="value">{{ contatoPreferido || '-' }}</span></div>
-          <div class="info-row"><span class="label">Horário preferido</span><span class="value">{{ horarioPreferido || '-' }}</span></div>
-          <div class="info-row"><span class="label">Receber comunicações por email</span><span class="value">{{ prefEmail ? 'Sim' : 'Não' }}</span></div>
-          <div class="info-row"><span class="label">Receber mensagens por WhatsApp</span><span class="value">{{ prefWhats ? 'Sim' : 'Não' }}</span></div>
-          <div class="info-row"><span class="label">Receber ofertas e novidades</span><span class="value">{{ prefMarketing ? 'Sim' : 'Não' }}</span></div>
-          <div class="info-row"><span class="label">Notificar atualizações de pedidos</span><span class="value">{{ prefNotificarPedidos ? 'Sim' : 'Não' }}</span></div>
-          <div class="info-row"><span class="label">Notificar novas receitas</span><span class="value">{{ prefNotificarReceitas ? 'Sim' : 'Não' }}</span></div>
-          <div class="info-row"><span class="label">Lembrar vacinas dos pets</span><span class="value">{{ prefLembrarVacinas ? 'Sim' : 'Não' }}</span></div>
-          <div class="info-row"><span class="label">Lembrar consultas agendadas</span><span class="value">{{ prefLembrarConsultas ? 'Sim' : 'Não' }}</span></div>
+          <div class="info-row">
+            <span class="label">Método de contato</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ contatoPreferido || '-' }}</span>
+              <select class="inline-input" *ngIf="editingSection === 'preferencias'" [(ngModel)]="contatoPreferido">
+                <option value="">Selecione</option>
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="telefone">Telefone</option>
+              </select>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Horário preferido</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ horarioPreferido || '-' }}</span>
+              <select class="inline-input" *ngIf="editingSection === 'preferencias'" [(ngModel)]="horarioPreferido">
+                <option value="">Selecione</option>
+                <option value="manhã">Manhã</option>
+                <option value="tarde">Tarde</option>
+                <option value="noite">Noite</option>
+              </select>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Receber comunicações por email</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefEmail ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefEmail" /> Receber comunicações por email
+              </label>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Receber mensagens por WhatsApp</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefWhats ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefWhats" /> Receber mensagens por WhatsApp
+              </label>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Receber ofertas e novidades</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefMarketing ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefMarketing" /> Receber ofertas e novidades
+              </label>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Notificar atualizações de pedidos</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefNotificarPedidos ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefNotificarPedidos" /> Notificar atualizações de pedidos
+              </label>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Notificar novas receitas</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefNotificarReceitas ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefNotificarReceitas" /> Notificar novas receitas
+              </label>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Lembrar vacinas dos pets</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefLembrarVacinas ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefLembrarVacinas" /> Lembrar vacinas dos pets
+              </label>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Lembrar consultas agendadas</span>
+            <div>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ prefLembrarConsultas ? 'Sim' : 'Não' }}</span>
+              <label *ngIf="editingSection === 'preferencias'" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" [(ngModel)]="prefLembrarConsultas" /> Lembrar consultas agendadas
+              </label>
+            </div>
+          </div>
         </div>
   </section>
 
@@ -242,7 +326,10 @@
         </header>
         <div class="info-grid">
           <div class="field" style="grid-column:1 / -1">
-            <div class="value" style="white-space:pre-wrap">{{ observacoes || '-' }}</div>
+            <div *ngIf="editingSection !== 'observacoes'" class="value" style="white-space:pre-wrap">{{ observacoes || '-' }}</div>
+            <div *ngIf="editingSection === 'observacoes'">
+              <textarea class="inline-input" [(ngModel)]="observacoes" rows="6"></textarea>
+            </div>
           </div>
         </div>
       </section>
@@ -408,7 +495,70 @@
     <!-- Account actions: logout and delete account -->
     <div class="acoes" *ngIf="!carregando">
       <button class="btn btn-sec" (click)="logout()">Logout</button>
-      <button class="btn danger" (click)="confirmDeleteAccount()" [disabled]="deletingAccount">{{ deletingAccount ? 'Excluindo...' : 'Excluir conta' }}</button>
+      <button class="btn danger" (click)="openDeleteAccountModal()" [disabled]="deletingAccount">{{ deletingAccount ? 'Excluindo...' : 'Excluir conta' }}</button>
+    </div>
+
+    <!-- Delete / Deactivate account modal with LGPD notice -->
+    <div class="modal-overlay" *ngIf="deleteModalOpen">
+      <div class="modal-content card" role="dialog" aria-modal="true">
+        <header class="modal-header">
+          <h3>Desativar conta</h3>
+        </header>
+        <div class="modal-body">
+          <p>
+            Ao desativar sua conta, ela será imediatamente desativada. Se não for reativada dentro de 30 dias,
+            você perderá o acesso permanentemente e seus dados poderão ser excluídos conforme nossa política de retenção.
+          </p>
+          <p><strong>O que acontece ao desativar:</strong></p>
+          <ul>
+            <li>A conta ficará desativada por até 30 dias, período no qual você pode reativá-la.</li>
+            <li>Se não reativada em 30 dias, o acesso será perdido e os dados poderão ser removidos ou anonimizados.</li>
+            <li>Algumas informações poderão ser retidas por obrigações legais (ex.: fiscais) mesmo após exclusão.</li>
+          </ul>
+          <p>
+            Em conformidade com a LGPD (Lei Geral de Proteção de Dados), você tem direitos sobre seus dados
+            (acesso, correção, eliminação, portabilidade, etc.). Antes de confirmar, leia nossa
+            <a href="#" (click)="openPrivacyModal(); $event.preventDefault()">Política de Privacidade</a>.
+          </p>
+          <p style="margin-top:8px;">
+            Para habilitar a desativação você precisa ler a Política de Privacidade e clicar em <strong>Concordo</strong>.
+          </p>
+          <label style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+            <input type="checkbox" [checked]="lgpdChecked" disabled />
+            Li e concordo com a Política de Privacidade (LGPD).
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-sec" (click)="closeDeleteAccountModal()">Cancelar</button>
+          <button class="btn danger" [disabled]="!lgpdChecked || deletingAccount" (click)="confirmDeleteAccountModal()">{{ deletingAccount ? 'Excluindo...' : 'Desativar conta' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy policy modal (opens from delete modal) -->
+    <div class="modal-overlay" *ngIf="privacyModalOpen">
+      <div class="modal-content card privacy" role="dialog" aria-modal="true">
+        <header class="modal-header">
+          <h3>Política de Privacidade</h3>
+        </header>
+        <div class="modal-body">
+          <!-- Short summary / important clauses. Replace or expand with real policy text. -->
+          <p><strong>Resumo:</strong> Coletamos e processamos dados pessoais para fornecer os serviços contratados, cumprir obrigações legais e proteger nossos direitos. Você pode solicitar acesso, correção, portabilidade ou eliminação de seus dados conforme previsto na LGPD.</p>
+          <p>Seus dados poderão ser retidos por períodos necessários para cumprimento de obrigações legais, fiscais ou para exercício regular de direitos.</p>
+          <div style="max-height:40vh; overflow:auto; padding:8px; border-radius:8px; background:rgba(0,0,0,0.02); margin-top:8px;">
+            <p><em>Política completa (exemplo):</em></p>
+            <p>— Coleta: Nome, email, telefone, histórico de compras, etc.</p>
+            <p>— Finalidade: Processamento de pedidos, atendimento, notificações e melhorias.</p>
+            <p>— Compartilhamento: Com parceiros de logística, pagamentos e conforme exigido por lei.</p>
+            <p>— Direitos: Acesso, correção, anonimização, eliminação, portabilidade, revogação do consentimento.</p>
+            <p>Para ver a versão completa da Política, acesse a página dedicada ou contate nosso DPO.</p>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-sec" (click)="closePrivacyModal()">Fechar</button>
+          <button class="btn primary" (click)="agreePrivacy()">Concordo</button>
+        </div>
+      </div>
     </div>
   </main>
 </div>

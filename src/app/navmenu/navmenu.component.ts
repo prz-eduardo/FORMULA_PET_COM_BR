@@ -48,12 +48,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   private idleTimer: any = null;
-  // If an external component requests opening the Area Cliente modal with a specific
-  // internal view (e.g. 'meus-pets'), we store it here while abrirClienteModal creates the component.
-  private _pendingAreaClienteView: string | null = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
   private metaballsPaused = false;
-  private menuScrollTop: number | null = null;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService, private auth: AuthService) {}
 
@@ -148,22 +144,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     });
-
-    // Listen for requests from other parts of the app to open the Area Cliente modal
-    // with a specific internal view. Example: dispatch new CustomEvent('openAreaCliente', { detail: { view: 'meus-pets' } })
-    try {
-      document.addEventListener('openAreaCliente', this._onOpenAreaClienteEvent as any);
-    } catch (e) {}
-  }
-
-  private _onOpenAreaClienteEvent = (ev: any) => {
-    try {
-      const view = ev && ev.detail && ev.detail.view ? ev.detail.view : (sessionStorage.getItem('areaClienteOpenView') || null);
-      this._pendingAreaClienteView = view;
-      // open the modal; abrirClienteModal will check _pendingAreaClienteView after creating the component
-      this.abrirClienteModal();
-      try { sessionStorage.removeItem('areaClienteOpenView'); } catch (e) {}
-    } catch (e) {}
   }
 
   // Função para forçar atualização dos dados do cliente e localStorage
@@ -260,21 +240,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           const ref = this.clienteHost.createComponent(Cmp);
           if (ref?.instance) {
             (ref.instance as any).modal = true;
-              // If an external opener requested a specific internal view, ask the created
-              // AreaCliente instance to open that view (e.g. 'meus-pets').
-              try {
-                const view = this._pendingAreaClienteView || sessionStorage.getItem('areaClienteOpenView');
-                if (view && typeof (ref.instance as any).open === 'function') {
-                  // Defer to next tick so AreaCliente can finish ngOnInit/loadProfile before we ask it
-                  // to create the internal view. This prevents racing where open() runs
-                  // before profilePromise is initialized.
-                  setTimeout(() => {
-                    try { (ref.instance as any).open(view as any); } catch (e) {}
-                  }, 0);
-                  this._pendingAreaClienteView = null;
-                  try { sessionStorage.removeItem('areaClienteOpenView'); } catch (e) {}
-                }
-              } catch (e) {}
           }
           // Quando o conteúdo for resolvido/renderizado, removemos o loader em um próximo tick
           setTimeout(() => { this.clienteLoading = false; }, 0);
@@ -309,7 +274,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.idleTimer) clearTimeout(this.idleTimer);
-    try { document.removeEventListener('openAreaCliente', this._onOpenAreaClienteEvent as any); } catch (e) {}
   }
 
   private resetIdleTimer(): void {
@@ -333,20 +297,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       menu.classList.add('close');
       iconMenu.classList.remove('icon-closed');
       this.menuOpen = false;
-      try {
-        // restore body/html scroll
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-        // restore fixed positioning if we set it
-        if (document.body.style.position === 'fixed') {
-          const prev = this.menuScrollTop || 0;
-          document.body.style.position = '';
-          document.body.style.top = '';
-          document.body.style.width = '';
-          window.scrollTo(0, prev);
-        }
-        this.menuScrollTop = null;
-      } catch {}
+      try { document.body.style.overflow = ''; } catch {}
       // Resume metaballs when menu is closed
       this.metaballsPaused = false;
       setTimeout(() => menu.classList.remove('open'), 1300);
@@ -358,16 +309,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   // Garante visibilidade enquanto o menu está aberto
   this.isVisible = true;
   if (this.idleTimer) clearTimeout(this.idleTimer);
-      try {
-        // freeze background scroll: hide overflow on html/body and lock body position
-        this.menuScrollTop = window.scrollY || window.pageYOffset || 0;
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
-        // lock body positioning to avoid content jump
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${this.menuScrollTop}px`;
-        document.body.style.width = '100%';
-      } catch {}
+      try { document.body.style.overflow = 'hidden'; } catch {}
       // Pause metaballs while menu is open to reduce paint/layout work
       this.metaballsPaused = true;
     }

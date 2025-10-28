@@ -1,6 +1,11 @@
 .galeria-container{ padding: 72px 20px 28px; max-width:1200px; margin: 0 auto }
 .galeria-header{ margin-top: 6px; margin-bottom: 18px; }
 
+/* header actions (e.g., go to Meus Pets) */
+.galeria-actions{ margin-top:10px }
+.galeria-actions .btn-meus-pets{ display:inline-block; padding:8px 12px; border-radius:8px; background: linear-gradient(90deg,#ffd7e0,#ff9fb6); color:#111; font-weight:700; text-decoration:none }
+.galeria-actions .btn-meus-pets:hover{ transform:translateY(-2px); box-shadow:0 10px 30px rgba(255,125,150,0.12) }
+
 
 /* Fonts: elegant headline + friendly body */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,700&family=Poppins:wght@400;600;700;800&display=swap');
@@ -100,6 +105,7 @@
 .overlay{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:10px; box-sizing:border-box }
 .overlay-top{ display:flex; justify-content:space-between; color:rgba(255,255,255,0.95); font-size:12px; font-weight:700; text-shadow:0 1px 2px rgba(0,0,0,0.6) }
 .overlay-bottom{ display:flex; justify-content:space-between; align-items:center; gap:8px }
+/* top-reaction-badge removed — dominant emoji moved to the like button */
 .pet-name{ color:#fff; font-weight:900; text-shadow:0 4px 18px rgba(0,0,0,0.6); font-size:20px }
 .pet-type, .pet-age{ background:rgba(0,0,0,0.35); padding:4px 8px; border-radius:999px }
 
@@ -122,7 +128,22 @@
 .reaction-wrapper .likes-count{ margin-left:6px; font-weight:700 }
 .likes-total{ display:inline-block; margin-left:6px; font-weight:700; padding:2px 8px; border-radius:8px; transition: box-shadow .12s ease, border-color .12s ease, transform .12s ease }
 /* show a visible border around the whole like button when the current user reacted */
-.reaction-wrapper .btn-like.visualActive{ outline: 2px solid #ff4d6d; outline-offset: 0; box-shadow: 0 8px 20px rgba(255,77,109,0.12); transform: translateY(-1px); border-radius:10px }
+.reaction-wrapper .btn-like.visualActive{
+	/* stronger colored glow: outer soft drop + visible halo ring + subtle inner sheen */
+	outline: none;
+	box-shadow:
+		/* main soft drop-shadow for depth */
+		0 12px 32px rgba(255,77,109,0.34),
+		/* visible colored halo ring to emphasize the active state */
+		0 0 0 6px rgba(255,77,109,0.16),
+		/* smaller tighter shadow for contrast */
+		0 4px 12px rgba(255,77,109,0.18) inset,
+		/* tiny highlight */
+		0 1px 0 rgba(255,255,255,0.04);
+	transform: translateY(-2px);
+	border-radius: 10px;
+	transition: box-shadow .18s ease, transform .12s ease;
+}
 
 /* default picker: left of the like button with a smooth scale+translate+fade entrance */
 .reaction-picker{ position:absolute; right:100%; bottom:0; display:flex; gap:8px; padding:8px; background:rgba(11,22,33,0.92); border-radius:999px; box-shadow: 0 14px 40px rgba(2,6,23,0.55); transform-origin: right center; /* replaced animation with transition to avoid flicker */ transition: opacity .12s ease, transform .12s ease, left .08s ease, top .08s ease; opacity:1; max-width: calc(100vw - 24px); overflow: visible; z-index: 9999 }
@@ -142,6 +163,39 @@
 	transform: none !important;
 	will-change: transform, opacity, left, top;
 	transition: transform .12s ease, opacity .12s ease, left .08s ease, top .08s ease;
+}
+
+/* Modal / fixed-picker tweaks:
+	 - When the picker is floating (fixed), add a small left padding so the
+		 picker appears slightly inset and doesn't butt directly against the card edge.
+	 - Also restyle the like button within the same wrapper to better match
+		 the Area Cliente pages (subtle light background, soft border and shadow).
+	 Note: Uses the relational :has selector to scope the .btn-like styling to
+	 wrappers that currently contain a floating picker. Modern browsers support
+	 :has; if you need broader support we can instead toggle a class from TS.
+*/
+.reaction-picker.picker-floating { padding-left: 18px; padding-right: 12px; }
+
+.reaction-wrapper:has(.reaction-picker.picker-floating) {
+	/* slightly offset the wrapper so the floating picker and button feel spacious */
+	padding-left: 6px;
+}
+
+.reaction-wrapper:has(.reaction-picker.picker-floating) .btn-like {
+	/* area-cliente like/button visual: light surface, subtle border and soft shadow */
+	background: linear-gradient(180deg, #ffffff, #f7f7f9);
+	color: #07101a;
+	border: 1px solid rgba(10,16,24,0.06);
+	box-shadow: 0 10px 26px rgba(2,6,23,0.06);
+	padding: 8px 12px; /* more left/right padding for clarity when fixed */
+	border-radius: 10px;
+	font-weight: 700;
+	min-height: 40px;
+	align-items: center;
+}
+
+.reaction-wrapper:has(.reaction-picker.picker-floating) .btn-like .likes-count {
+	color: #0b1621;
 }
 	.reaction-picker.picker-floating .reaction-btn{
 		/* disable per-emoji keyframe when floating to avoid flicker on desktop */
@@ -166,21 +220,11 @@
 /* indicate user's selected reaction subtly in the picker */
 .reaction-btn.active{ background: rgba(255,255,255,0.06); box-shadow: 0 8px 20px rgba(0,0,0,0.12); transform: translateY(-3px) }
 .reaction-btn.active .emoji{ transform: scale(1.08); }
-.reaction-btn.active::after{ content: ''; display:block; width:6px; height:6px; border-radius:50%; background: rgba(255,255,255,0.92); margin:6px auto 0; opacity:0.9 }
+/* Removed pseudo-element to avoid pre-highlighting background on the love button */
 
-/* confirmed-selected inside the picker (appears only after increment/confirm) */
-.reaction-btn.selected{ background: rgba(255,255,255,0.10); box-shadow: 0 10px 22px rgba(0,0,0,0.14); transform: translateY(-3px); }
-.reaction-btn.selected .emoji{ transform: scale(1.08); }
-/* Remove the ::after indicator for the selected state so the picker
-	selected button does not render the small dot underneath. */
-.reaction-btn.selected::after{ display: none; }
-
-/* preview state (temporary cue when opening picker for first-time)
-	Keep this visually neutral: do not add a colored background inside the
-	balloon. The confirmed in-picker highlight is controlled by
-	`_pickerSelectedConfirmed` and uses the `.selected` class instead. */
-.reaction-btn.preview{ background: transparent; box-shadow: none; transform: translateY(-2px); }
-.reaction-btn.preview .emoji{ transform: scale(1.04); }
+/* preview state (temporary highlight when opening picker for first-time) */
+.reaction-btn.preview{ background: linear-gradient(90deg,#ffdde6,#ffd7e0); box-shadow:0 8px 20px rgba(255,77,109,0.08); transform: translateY(-2px) }
+.reaction-btn.preview .emoji{ transform: scale(1.06) }
 
 /* confirmed give -- subtle pop and glow to indicate reaction was sent */
 .reaction-btn.confirm{ transform: translateY(-4px) scale(1.12); box-shadow: 0 14px 32px rgba(255,77,109,0.18); background: linear-gradient(90deg,#ff9fb6,#ff6a87); color:#fff }
@@ -205,11 +249,6 @@
 
 /* Exit state: apply when picker requests icons to disappear one-by-one */
 .reaction-btn.exiting { animation-name: emojiOut !important; animation-duration: .28s; animation-timing-function: cubic-bezier(.2,.9,.3,1); animation-fill-mode: forwards; animation-delay: var(--exit-d, 0ms); }
-
-/* Small header action for the gallery page */
-.galeria-actions{ margin-top:12px }
-.btn-go-meus-pets{ background: linear-gradient(90deg,#ff8aa0,#ff6a87); border:0; color:#fff; padding:8px 12px; border-radius:999px; font-weight:600; box-shadow: 0 8px 20px rgba(255,106,135,0.12); cursor:pointer }
-.btn-go-meus-pets:hover{ transform: translateY(-2px); }
 
 /* pickerOpen keyframes removed in favor of transitions to stabilize rendering on desktop and mobile */
 

@@ -11,7 +11,7 @@
 
     <div *ngIf="!carregando && !pets.length" class="card vazio">
       <p>Você ainda não cadastrou nenhum pet.</p>
-      <a class="btn" routerLink="/novo-pet">Cadastrar Pet</a>
+      <a class="btn" href="/novo-pet" (click)="onNewPetClick($event)">Cadastrar Pet</a>
     </div>
 
     <section *ngIf="!carregando && pets.length" class="pet-list">
@@ -49,8 +49,7 @@
       </article>
     </section>
 
-    <div class="paginacao acoes">
-      <a class="btn" routerLink="/novo-pet">+ Novo Pet</a>
-    </div>
+    <!-- Floating Novo Pet FAB -->
+    <a class="fab-new-pet" href="/novo-pet" (click)="onNewPetClick($event)" title="Novo Pet" aria-label="Novo Pet">＋</a>
   </main>
 </div>

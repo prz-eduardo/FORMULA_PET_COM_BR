@@ -259,3 +259,235 @@ a, button, input, textarea, select {
     object-fit: contain;
     vertical-align: middle;
 }
+@media (max-width: 600px) {
+    #global-delete-modal, #global-privacy-modal {
+        align-items: flex-end !important;
+        padding: 12px !important;
+        background: rgba(6, 10, 14, 0.72) !important;
+    }
+}
+#global-delete-modal, #global-privacy-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    display: flex !important
+;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6, 10, 14, 0.76) !important;
+    -webkit-backdrop-filter: blur(6px) saturate(120%) !important;
+    backdrop-filter: blur(6px) saturate(120%) !important;
+    padding: 0 !important;
+    z-index: 99999 !important;
+}
+
+/* High-specificity fallback for global overlays to guarantee button/text contrast
+   These rules are appended at EOF so they apply to overlays appended to document.body
+   and are resistant to component-scoped or other global overrides. */
+body > #global-delete-modal .modal-content,
+body > #global-privacy-modal .modal-content,
+#global-delete-modal .modal-content,
+#global-privacy-modal .modal-content {
+    color: #ffffff !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)) !important;
+    box-shadow: 0 6px 30px rgba(2,6,23,0.45) !important;
+}
+
+/* Primary / danger buttons inside overlays */
+/* Primary / danger buttons inside overlays (modern, touch-friendly) */
+body > #global-delete-modal .modal-content .btn,
+body > #global-delete-modal .modal-content button,
+body > #global-privacy-modal .modal-content .btn,
+body > #global-privacy-modal .modal-content button,
+#global-delete-modal .modal-content .btn,
+#global-delete-modal .modal-content button,
+#global-privacy-modal .modal-content .btn,
+#global-privacy-modal .modal-content button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 10px 16px !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #fff !important;
+    background: linear-gradient(90deg, #ff6a85, #ff455f) !important; /* vibrant primary */
+    border: 0 !important;
+    box-shadow: 0 8px 24px rgba(255,69,95,0.12) !important;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease, opacity .12s ease !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+body > #global-delete-modal .modal-content .btn.danger,
+body > #global-delete-modal .modal-content button.danger,
+#global-delete-modal .modal-content .btn.danger,
+#global-delete-modal .modal-content button.danger {
+    background: linear-gradient(90deg, #e85348, #d93025) !important;
+}
+body > #global-delete-modal .modal-content .btn:disabled,
+body > #global-delete-modal .modal-content button:disabled,
+body > #global-privacy-modal .modal-content .btn:disabled,
+body > #global-privacy-modal .modal-content button:disabled,
+#global-delete-modal .modal-content .btn:disabled,
+#global-delete-modal .modal-content button:disabled,
+#global-privacy-modal .modal-content .btn:disabled,
+#global-privacy-modal .modal-content button:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+body > #global-delete-modal .modal-content .btn:hover,
+body > #global-delete-modal .modal-content button:hover,
+body > #global-privacy-modal .modal-content .btn:hover,
+body > #global-privacy-modal .modal-content button:hover,
+#global-delete-modal .modal-content .btn:hover,
+#global-delete-modal .modal-content button:hover,
+#global-privacy-modal .modal-content .btn:hover,
+#global-privacy-modal .modal-content button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 36px rgba(255,69,95,0.16) !important;
+}
+body > #global-delete-modal .modal-content .btn:active,
+body > #global-delete-modal .modal-content button:active,
+body > #global-privacy-modal .modal-content .btn:active,
+body > #global-privacy-modal .modal-content button:active,
+#global-delete-modal .modal-content .btn:active,
+#global-delete-modal .modal-content button:active,
+#global-privacy-modal .modal-content .btn:active,
+#global-privacy-modal .modal-content button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08) !important;
+}
+/* Focus ring for keyboard users */
+body > #global-delete-modal .modal-content .btn:focus-visible,
+body > #global-delete-modal .modal-content button:focus-visible,
+body > #global-privacy-modal .modal-content .btn:focus-visible,
+body > #global-privacy-modal .modal-content button:focus-visible,
+#global-delete-modal .modal-content .btn:focus-visible,
+#global-delete-modal .modal-content button:focus-visible,
+#global-privacy-modal .modal-content .btn:focus-visible,
+#global-privacy-modal .modal-content button:focus-visible {
+    outline: 3px solid rgba(255,69,95,0.18) !important;
+    outline-offset: 3px !important;
+}
+
+/* Secondary / neutral buttons inside overlays (ghost/outline) */
+body > #global-delete-modal .modal-content .btn.secondary,
+body > #global-delete-modal .modal-content button.secondary,
+body > #global-privacy-modal .modal-content .btn.secondary,
+body > #global-privacy-modal .modal-content button.secondary,
+#global-delete-modal .modal-content .btn.secondary,
+#global-delete-modal .modal-content button.secondary,
+#global-privacy-modal .modal-content .btn.secondary,
+#global-privacy-modal .modal-content button.secondary {
+    background: transparent !important;
+    color: #e6eef8 !important;
+    border: 1px solid rgba(230,238,248,0.06) !important;
+    box-shadow: none !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+}
+body > #global-delete-modal .modal-content .btn.secondary:hover,
+body > #global-delete-modal .modal-content button.secondary:hover,
+body > #global-privacy-modal .modal-content .btn.secondary:hover,
+body > #global-privacy-modal .modal-content button.secondary:hover,
+#global-delete-modal .modal-content .btn.secondary:hover,
+#global-delete-modal .modal-content button.secondary:hover,
+#global-privacy-modal .modal-content .btn.secondary:hover,
+#global-privacy-modal .modal-content button.secondary:hover {
+    background: rgba(255,255,255,0.03) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Footer layout: stacked full-width buttons on small screens */
+body > #global-delete-modal .modal-content .modal-footer,
+body > #global-privacy-modal .modal-content .modal-footer,
+#global-delete-modal .modal-content .modal-footer,
+#global-privacy-modal .modal-content .modal-footer {
+    display: flex !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+}
+
+@media (max-width: 600px) {
+    body > #global-delete-modal,
+    body > #global-privacy-modal,
+    #global-delete-modal,
+    #global-privacy-modal {
+        align-items: flex-end !important;
+        padding: 12px !important;
+    }
+    body > #global-delete-modal .modal-content .modal-footer,
+    body > #global-privacy-modal .modal-content .modal-footer,
+    #global-delete-modal .modal-content .modal-footer,
+    #global-privacy-modal .modal-content .modal-footer {
+        flex-direction: column !important;
+    }
+    body > #global-delete-modal .modal-content .btn,
+    body > #global-privacy-modal .modal-content .btn,
+    #global-delete-modal .modal-content .btn,
+    #global-privacy-modal .modal-content .btn {
+        width: 100% !important;
+    }
+}
+
+/* Fix mobile overlay layout: ensure modal-content respects overlay padding and stays centered
+     Avoid modal being pushed to the corner when overlay has padding. */
+@media (max-width: 600px) {
+    body > #global-delete-modal .modal-content,
+    body > #global-privacy-modal .modal-content,
+    #global-delete-modal .modal-content,
+    #global-privacy-modal .modal-content {
+        width: calc(100% - 24px) !important; /* subtract overlay horizontal padding */
+        max-width: 720px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+        border-radius: 12px !important;
+    }
+    /* If any modal-content had fixed positioning or transforms, neutralize them for overlays */
+    body > #global-delete-modal .modal-content,
+    body > #global-privacy-modal .modal-content {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+    }
+}
+
+/* Strong overrides: remove any overlay container padding that may push modals to the edge
+     and ensure modal-content fills available space while keeping inner padding for content. */
+body > #global-delete-modal,
+body > #global-privacy-modal,
+#global-delete-modal,
+#global-privacy-modal {
+        padding: 0 !important; /* neutralize earlier rules that caused layout issues */
+}
+
+/* Ensure modal-content fits within the overlay without overflow and is centered
+     Use margin for visible spacing rather than overlay padding. */
+body > #global-delete-modal .modal-content,
+body > #global-privacy-modal .modal-content,
+#global-delete-modal .modal-content,
+#global-privacy-modal .modal-content {
+        width: calc(100% - 24px) !important; /* allow 12px margin on each side when present */
+        max-width: 720px !important;
+        margin: 12px auto !important;
+        box-sizing: border-box !important;
+        padding: 16px !important; /* keep internal spacing for content */
+}
+
+@media (min-width: 601px) {
+    /* On larger screens keep the centered dialog look */
+    body > #global-delete-modal .modal-content,
+    body > #global-privacy-modal .modal-content,
+    #global-delete-modal .modal-content,
+    #global-privacy-modal .modal-content {
+        width: 92% !important;
+        max-width: 760px !important;
+        margin: 0 auto !important;
+    }
+}

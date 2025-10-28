@@ -58,6 +58,33 @@ export class GaleriaPublicaComponent {
     return r ? r.emoji : '❤️';
   }
 
+  // Return the dominant reaction (tipo, emoji, count) for a pet based on
+  // aggregated totals. If all counts are zero, return null.
+  getDominantReaction(pet: any) {
+    try {
+      const totals = pet?.reactionTotals || {
+        love: Number(pet?.total_reacao_love ?? pet?.total_reacoes_love ?? 0),
+        haha: Number(pet?.total_reacao_haha ?? pet?.total_reacoes_haha ?? 0),
+        sad: Number(pet?.total_reacao_sad ?? pet?.total_reacoes_sad ?? 0),
+        angry: Number(pet?.total_reacao_angry ?? pet?.total_reacoes_angry ?? 0)
+      };
+      const order = ['love', 'haha', 'sad', 'angry'];
+      let maxTipo: string | null = null;
+      let maxVal = -1;
+      for (const t of order) {
+        const v = Number(totals[t] ?? 0);
+        if (v > maxVal) {
+          maxVal = v;
+          maxTipo = t;
+        }
+      }
+      if (!maxTipo || maxVal <= 0) return null;
+      return { tipo: maxTipo, emoji: this.getReactionEmoji(maxTipo), count: maxVal };
+    } catch (e) {
+      return null;
+    }
+  }
+
   ngOnInit(): void {
     // only perform fetches in the browser; avoids SSR Node fetch with relative URL
     if (isPlatformBrowser(this.platformId)) {
@@ -146,7 +173,7 @@ export class GaleriaPublicaComponent {
       });
       this._autoPickerTimers.clear();
       // remove transient preview/confirm flags on any pets
-  try { (this.pets || []).forEach(p => { if (p && (p._pickerAutoHighlight || p._pickerConfirm || p._pickerSelectedConfirmed)) { try { delete p._pickerAutoHighlight; } catch (e) {} try { delete p._pickerConfirm; } catch (e) {} try { delete p._pickerSelectedConfirmed; } catch (e) {} } }); } catch (e) {}
+      try { (this.pets || []).forEach(p => { if (p && (p._pickerAutoHighlight || p._pickerConfirm)) { try { delete p._pickerAutoHighlight; } catch (e) {} try { delete p._pickerConfirm; } catch (e) {} } }); } catch (e) {}
     } catch (e) {}
   }
 
@@ -225,24 +252,21 @@ export class GaleriaPublicaComponent {
         const emojiAnimMs = 280; // matches .28s animation duration for emojiIn in CSS
         const numEmojis = Array.isArray(this.reactionTypes) ? this.reactionTypes.length : 4;
 
-        // 1) small delay to allow picker opening; start the highlight slightly before the last emoji finishes
-        const t1 = setTimeout(() => {
-          try { pet._pickerAutoHighlight = 'love'; } catch (e) {}
-        }, openDelay);
-        timers.push(t1 as any);
+        // mark as auto-flow so selectReaction knows to play the 'love' animation
+        // only after the server confirms. Avoid setting visual highlight before
+        // the increment so the love button doesn't get a white background early.
+        try { pet._autoFlowPending = true; } catch (e) {}
 
-        // compute when the last emoji will finish its entrance animation
+        // compute when the last emoji will finish its entrance animation and
+        // then trigger the request. We do NOT set _pickerAutoHighlight or
+        // _pickerConfirm here; selectReaction will set them only after server
+        // confirmation so the animation happens after increment.
         const lastEmojiEnd = openDelay + (perEmojiDelay * numEmojis) + emojiAnimMs;
         const confirmDelay = lastEmojiEnd + 80; // small buffer after animations complete
-        // 2) confirm (scale/pop) and send reaction after the last emoji animation completes
         const t2 = setTimeout(() => {
-          try { pet._pickerConfirm = true; } catch (e) {}
           try { this.selectReaction(pet, 'love'); } catch (e) { console.warn('auto-like via sequence failed', e); }
         }, confirmDelay);
         timers.push(t2 as any);
-        // Note: do NOT close the picker here. We'll play an exit animation sequence
-        // (icons disappearing one-by-one) after the server confirms the increment
-        // and then close the picker from selectReaction.
         this._autoPickerTimers.set(key, timers);
         return;
       }
@@ -272,7 +296,6 @@ export class GaleriaPublicaComponent {
       if (pet) {
         try { delete pet._pickerAutoHighlight; } catch (e) {}
         try { delete pet._pickerConfirm; } catch (e) {}
-        try { delete pet._pickerSelectedConfirmed; } catch (e) {}
       }
     } catch (e) {}
   }
@@ -301,7 +324,6 @@ export class GaleriaPublicaComponent {
       const tClose = setTimeout(() => {
         try { delete pet._pickerAutoHighlight; } catch (e) {}
         try { delete pet._pickerConfirm; } catch (e) {}
-        try { delete pet._pickerSelectedConfirmed; } catch (e) {}
         try { delete pet._pickerExiting; } catch (e) {}
         try { this.reactionPickerOpenFor = null; } catch (e) {}
         try { this._autoPickerTimers.delete(k); } catch (e) {}
@@ -352,18 +374,15 @@ export class GaleriaPublicaComponent {
         } catch (e) { /* ignore server parse errors and keep optimistic state */ }
   // ensure visual highlight reflects confirmed deletion
   try { pet._visualActive = false; } catch (e) {}
-  // If this was the auto-preview-confirm flow, schedule the exit animation to
-  // start after a short delay (400ms) so the opening animation and the visual
-  // increment have time to complete before the icons begin disappearing.
+  // If this was an auto-flow we may want to play the 'love' animation now that
+  // the server confirmed. Set transient picker flags but keep the picker open;
+  // the user will close it by clicking outside or scrolling.
   try {
-    if (pet._pickerConfirm) {
-      try {
-        const k = pet._uid ?? pet.id;
-        const delayId = setTimeout(() => { try { this._startPickerExitSequence(pet, k); } catch (e) {} }, 400);
-        const arr = (this._autoPickerTimers.get(k) || []) as any[];
-        arr.push(delayId as any);
-        this._autoPickerTimers.set(k, arr);
-      } catch (e) {}
+    if (pet && pet._autoFlowPending) {
+      try { pet._pickerAutoHighlight = 'love'; } catch (e) {}
+      try { pet._pickerConfirm = true; } catch (e) {}
+      try { delete pet._autoFlowPending; } catch (e) {}
+      try { this._clearAutoTimerFor(pet._uid ?? pet.id, pet); } catch (e) {}
     }
   } catch (e) {}
       } else {
@@ -376,26 +395,8 @@ export class GaleriaPublicaComponent {
         pet.reactionTotals[tipo] = (Number(pet.reactionTotals[tipo] ?? 0) + 1);
         // if user had no previous reaction, increment overall likes
         if (!wasReactedBefore) pet.likes = Number(pet.likes ?? 0) + 1;
-  pet.userReactionTipo = tipo;
-  pet.userReacted = true;
-        // If this call was triggered from the auto preview-confirm flow (picker opened
-        // and confirmed via animation), set the visual highlight now so it appears
-        // after the number increment and animation. Also mark the picker selection as
-        // confirmed so the in-picker highlight appears at the right time. Start the
-        // exit animation immediately (we're already past the opening animation).
-        try {
-          if (pet._pickerConfirm) {
-            pet._visualActive = true;
-            pet._pickerSelectedConfirmed = true;
-            try {
-              const k = pet._uid ?? pet.id;
-              const delayId = setTimeout(() => { try { this._startPickerExitSequence(pet, k); } catch (e) {} }, 400);
-              const arr = (this._autoPickerTimers.get(k) || []) as any[];
-              arr.push(delayId as any);
-              this._autoPickerTimers.set(k, arr);
-            } catch (e) {}
-          }
-        } catch (e) {}
+        pet.userReactionTipo = tipo;
+        pet.userReacted = true;
         // send post and reconcile with server response when possible
         const res: any = await this.api.postPetReaction(pet.id, { tipo }, token).toPromise();
         try {
@@ -412,10 +413,18 @@ export class GaleriaPublicaComponent {
             };
           }
         } catch (e) { /* ignore server parse errors */ }
-    // ensure visual highlight reflects confirmed addition/switch
+  // ensure visual highlight reflects confirmed addition/switch
   try { pet._visualActive = true; } catch (e) {}
-  // ensure picker selection shows as confirmed for manual flows (after server confirms)
-  try { pet._pickerSelectedConfirmed = true; } catch (e) {}
+  // If this was an auto-flow we triggered earlier, play the 'love' animation
+  // now that the server confirmed the reaction. Keep the picker open.
+  try {
+    if (pet && pet._autoFlowPending) {
+      try { pet._pickerAutoHighlight = 'love'; } catch (e) {}
+      try { pet._pickerConfirm = true; } catch (e) {}
+      try { delete pet._autoFlowPending; } catch (e) {}
+      try { this._clearAutoTimerFor(pet._uid ?? pet.id, pet); } catch (e) {}
+    }
+  } catch (e) {}
       }
     } catch (err) {
       console.error('Erro ao enviar reação', err);
@@ -440,12 +449,12 @@ export class GaleriaPublicaComponent {
         try { pet._visualActive = !!prevTipo; } catch (e) {}
       }
     } finally {
-      // close picker after action for manual interactions; if this was the
-      // auto preview-confirm flow (pet._pickerConfirm), the exit sequence will
-      // close the picker after animations complete.
+      // Keep the picker open after any reaction. Users can close it by
+      // clicking outside or by scrolling (existing handlers).
       try {
-        if (!pet || !pet._pickerConfirm) this.reactionPickerOpenFor = null;
-      } catch (e) { this.reactionPickerOpenFor = null; }
+        // clear any transient auto timers (already attempted elsewhere) to be safe
+        try { this._clearAutoTimerFor(pet?._uid ?? pet?.id, pet); } catch (e) {}
+      } catch (e) {}
     }
   }
 
@@ -472,6 +481,37 @@ export class GaleriaPublicaComponent {
     }
   }
 
+  // Called when an <img> load event fires. We keep a small flag on the pet
+  // in case callers want to animate/mark loaded images. Also useful for debug.
+  onImgLoad(ev: Event, pet?: any) {
+    try {
+      if (pet) pet._imgLoaded = true;
+    } catch (e) {}
+  }
+
+  // Normalize/validate image URLs returned by the API. This helps with
+  // protocol-relative URLs (//host/path) and occasional missing-protocol
+  // strings that fail to load when navigating client-side.
+  resolveImage(p: any) {
+    try {
+      const raw = (p && (p.foto || p.photo || p.photoURL || p.url)) || '';
+      if (!raw || typeof raw !== 'string') return '/imagens/image.png';
+      let url = raw.trim();
+      // If protocol-relative (//example.com/...), prefix with current page protocol
+      if (url.startsWith('//')) {
+        url = window.location.protocol + url;
+      }
+      // If missing protocol but looks like a host (example.com/...), try https
+      if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) {
+        url = 'https://' + url;
+      }
+      // else allow relative paths (/imagens/...) and data: URIs through
+      return url || '/imagens/image.png';
+    } catch (e) {
+      return '/imagens/image.png';
+    }
+  }
+
   // When user clicks the photo: if they haven't reacted, send a 'love' reaction automatically.
   // If they already reacted, open the reaction picker (so they can change/remove).
   onPhotoClick(pet: any, ev?: Event) {
@@ -484,16 +524,6 @@ export class GaleriaPublicaComponent {
       }
       // otherwise, submit a 'love' reaction immediately
       try { this.selectReaction(pet, 'love'); } catch (e) { console.warn('auto-like failed', e); }
-    } catch (e) {}
-  }
-
-  // Open the Área do Cliente modal (via Navmenu) and request the 'meus-pets' internal view.
-  openAreaClienteMeusPets() {
-    try {
-      // offer a fallback by writing to sessionStorage so listeners can pick it up
-      try { sessionStorage.setItem('areaClienteOpenView', 'meus-pets'); } catch (e) {}
-      // dispatch an event that Navmenu listens to
-      try { document.dispatchEvent(new CustomEvent('openAreaCliente', { detail: { view: 'meus-pets' } })); } catch (e) {}
     } catch (e) {}
   }
 
@@ -583,10 +613,6 @@ export class GaleriaPublicaComponent {
   // Initialize visual-only flag from server-provided reaction. Optimistic
   // client changes should NOT flip this flag until the server confirms.
   _visualActive: !!(it.minha_reacao || it.liked || it.liked === true || it.userReacted || it.user_reacted || false),
-          // if the server says the current user already reacted, mark the picker
-          // selection as confirmed so the in-picker selected background appears
-          // immediately when the picker opens after page load.
-          _pickerSelectedConfirmed: !!(it.minha_reacao?.tipo || it.userReactionTipo || it.user_reaction_tipo),
         // detailed reaction totals (coerce strings to numbers). Also accept alternate field names.
         reactionTotals: {
           love: Number(it.total_reacao_love ?? it.total_reacoes_love ?? 0),

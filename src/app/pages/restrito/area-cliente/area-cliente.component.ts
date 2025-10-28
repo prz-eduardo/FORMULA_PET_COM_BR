@@ -50,6 +50,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
 
   modalLoginAberto = false;
   modalCadastroAberto = false;
+  modalLogoutAberto = false;
   menuAberto = false;
   popoverTop = 0;
   popoverLeft = 0;
@@ -60,6 +61,15 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   fecharModalLogin() { this.modalLoginAberto = false; }
   abrirModalCadastro() { this.modalCadastroAberto = true; }
   fecharModalCadastro() { this.modalCadastroAberto = false; }
+
+  openLogoutModal() { this.modalLogoutAberto = true; }
+  closeLogoutModal() { this.modalLogoutAberto = false; }
+  confirmLogout() {
+    try { this.closeLogoutModal(); } catch (e) {}
+    try { this.logout(); } catch (e) {}
+    // After logging out, send user to homepage
+    try { this.router.navigateByUrl('/'); } catch (e) { window.location.href = '/'; }
+  }
 
   toggleMenu(event?: Event) {
     if (event) event.stopPropagation();
@@ -326,7 +336,9 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       }
       return;
     }
-    this.internalView = view as any;
+  // Prevent duplicate internal view creation if the same view is already open
+  if (this.internalView === view) return;
+  this.internalView = view as any;
     // Update title by selection
     const titles: Record<string,string> = {
       'meus-pedidos': 'Meus Pedidos',
@@ -377,32 +389,11 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           if ((ref.instance as any).close) {
             (ref.instance as any).close.subscribe(() => this.goBack());
           }
-          // If the child emits editPet, open the novo-pet view inside this modal and pass id
-          if ((ref.instance as any).editPet && typeof (ref.instance as any).editPet.subscribe === 'function') {
-            (ref.instance as any).editPet.subscribe((petId: string | number) => {
-              // remember origin so NovoPet can return here if it closes
-              this.lastInternalOrigin = 'meus-pets';
-              // open novo-pet inside modal and prefill with petId
-              // We'll create the component directly so we can pass the input
-              (async () => {
-                try {
-                  // clear current internal host and create NovoPet
-                  this.internalHost?.clear();
-                  const mod2 = await import('../../../pages/novo-pet/novo-pet.component');
-                  const Cmp2 = (mod2 as any).NovoPetComponent;
-                  const ref2 = this.internalHost?.createComponent(Cmp2 as any);
-                  if (ref2?.instance) {
-                    (ref2.instance as any).modal = true;
-                    try { (ref2.instance as any).editId = petId; } catch {}
-                    if ((ref2.instance as any).close) {
-                      (ref2.instance as any).close.subscribe(() => this.goBack());
-                    }
-                  }
-                } catch (e) {
-                  console.error('Erro abrindo editor de pet no modal', e);
-                  this.toast.error('Não foi possível abrir o editor de pet');
-                }
-              })();
+          // If the MeusPets child requests creating a new pet while embedded,
+          // open the 'novo-pet' internal view so the form appears inside this modal.
+          if ((ref.instance as any).newPet) {
+            (ref.instance as any).newPet.subscribe(() => {
+              try { this.open('novo-pet'); } catch (e) {}
             });
           }
         }

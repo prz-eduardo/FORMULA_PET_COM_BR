@@ -17,7 +17,18 @@
 .container{ max-width:1080px; margin:0 auto; padding:0 16px }
 .top-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px }
 .titulo{ font-size:36px; font-weight:800; color:var(--primary); margin: 8px 0 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5); font-family: "Pacifico", cursive, "Montserrat", Arial, sans-serif }
-.card{ background:#182439; border-radius:12px; padding:16px; box-shadow:0 6px 12px rgba(0,0,0,.35); position: relative }
+.card{
+  /* Glassmorphism similar to modal surfaces */
+  background: linear-gradient(180deg, rgba(10,16,24,0.42), rgba(6,10,14,0.36));
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius:12px;
+  padding:16px;
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+  box-shadow: 0 14px 36px rgba(2,6,23,0.44);
+  color: #e6eef8;
+  position: relative;
+}
 .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px }
 .form-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:10px }
 .field{ grid-column: span 6; }
@@ -34,16 +45,54 @@
 
 /* Profile header & avatar styles */
 .profile-head{ display:grid; grid-template-columns: 220px 1fr; gap:12px; margin-bottom:12px }
-.avatar-card{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:20px }
+.avatar-card{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:20px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.04); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-radius:12px }
 .avatar-wrap{ position:relative }
 .avatar{ width:140px; height:140px; border-radius:999px; object-fit:cover; border:4px solid rgba(255,255,255,0.04); box-shadow:0 8px 24px rgba(0,0,0,0.45) }
-.avatar-change{ position:absolute; right:6px; bottom:6px; width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); cursor:pointer }
+.avatar-change{ position:absolute; right:6px; bottom:6px; width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); cursor:pointer; transition: opacity .12s ease, transform .12s ease }
 .avatar-change input{ position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer }
+
+/* Position avatar action buttons below the avatar image to avoid overlap. Use state classes on wrapper to hide/show toggles cleanly. */
+.avatar-wrap{ display:flex; flex-direction:column; align-items:center; }
+.avatar-actions, .avatar-pending { display:flex; gap:8px; z-index:12; margin-top:12px }
+
+/* Hide the little pencil when options are visible or a pending change exists */
+.avatar-wrap.options-visible .avatar-change,
+.avatar-wrap.has-pending .avatar-change { opacity: 0; pointer-events: none; transform: scale(.96); }
+
+/* Ensure avatar card grows to include action buttons and avoid overlap */
+.avatar-card { padding-bottom: 24px }
+
+@media (max-width: 600px) {
+  .avatar-actions, .avatar-pending { margin-top:10px }
+}
 .avatar-pencil{ font-size:14px; color:#fff; transform:translateY(1px) }
 .avatar-name{ margin-top:10px; font-weight:800; color:#e6eef8 }
 .profile-actions{ display:flex; align-items:center; justify-content:space-between; padding:18px }
 .profile-actions h2{ margin:0 }
 .quick-actions{ display:flex; gap:8px }
+
+/* Inline header name input styling while editing */
+.header-name-input {
+  font-size: 22px;
+  font-weight: 900;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(2,6,23,0.36);
+  width: min(70%, 520px);
+  display: inline-block;
+  box-sizing: border-box;
+  transition: box-shadow .12s ease, transform .08s ease, border-color .12s ease;
+}
+.header-name-input:focus {
+  outline: none;
+  transform: translateY(-1px);
+  box-shadow: 0 18px 44px rgba(2,6,23,0.56);
+  border-color: rgba(96,165,250,0.7);
+}
+.header-name-input::placeholder { color: rgba(230,238,248,0.5); }
 
 /* Slightly larger cards for profile content */
 .card{ padding:20px }
@@ -137,6 +186,36 @@ select::-ms-expand{ display:none }
   .profile-head{ grid-template-columns: 1fr; }
 }
 
+/* Mobile: move save/edit buttons above the header input and make input full width */
+@media (max-width: 600px) {
+  .profile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    padding: 12px 0 0;
+  }
+  .profile-actions .quick-actions {
+    order: 1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    width: 100%;
+  }
+  .profile-actions h2 {
+    order: 2;
+    width: 100%;
+    margin: 0;
+  }
+  .header-name-input {
+    width: 100% !important;
+    display: block;
+    margin-top: 6px;
+    font-size: 18px;
+    padding: 10px 12px;
+  }
+}
+
 /* Mobile: place edit buttons on the border of each card (except avatar photo edit) */
 @media (max-width: 600px) {
   .card { position: relative; }
@@ -162,3 +241,65 @@ select::-ms-expand{ display:none }
   /* avoid overlapping profile actions layout */
   .profile-actions { padding-top: 14px; }
 }
+
+/* Global overlays created dynamically when perfil is embedded in another modal */
+#global-delete-modal, #global-privacy-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6,10,14,0.64) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(120%) !important;
+  backdrop-filter: blur(6px) saturate(120%) !important;
+  padding: 20px !important;
+  z-index: 99999 !important;
+}
+
+#global-delete-modal .modal-content,
+#global-privacy-modal .modal-content {
+  max-width: 760px;
+  width: 92%;
+  /* higher contrast solid background to avoid washed-out gray text */
+  background: rgba(6,10,14,0.98) !important;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 18px;
+  color: #ffffff !important;
+  box-shadow: 0 36px 80px rgba(2,6,23,0.72);
+}
+
+#global-delete-modal .modal-body,
+#global-privacy-modal .modal-body {
+  color: #ffffff !important;
+  line-height: 1.6;
+}
+
+#global-delete-modal .modal-body p,
+#global-privacy-modal .modal-body p { margin-bottom: 12px; }
+
+#global-delete-modal .modal-actions,
+#global-privacy-modal .modal-actions { display:flex; gap:12px; justify-content:flex-end; padding-top:12px }
+
+/* Buttons inside global overlays */
+#global-delete-modal .btn, #global-privacy-modal .btn {
+  border-radius: 10px; padding: 10px 14px; font-weight:700; min-width:110px; color:#fff !important;
+}
+#global-delete-modal .btn.btn-sec, #global-privacy-modal .btn.btn-sec {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.06); color: #e6eef8 !important;
+}
+#global-delete-modal .btn.danger, #global-privacy-modal .btn.danger {
+  background: linear-gradient(180deg,#ef4444,#dc2626); color: #fff !important; border: none; box-shadow: 0 10px 26px rgba(220,38,38,0.22);
+}
+#global-privacy-modal .btn.primary { background: linear-gradient(180deg,#2563eb,#1d4ed8); color:#fff !important; border:none; box-shadow: 0 10px 26px rgba(37,99,235,0.18); }
+
+/* Disabled buttons still clearly visible but dimmed */
+#global-delete-modal .btn:disabled, #global-privacy-modal .btn:disabled { opacity: 0.6; cursor: not-allowed }
+
+/* Ensure links inside modals are visible */
+#global-delete-modal a, #global-privacy-modal a { color: #93c5fd; text-decoration: underline; }
+
+/* Small scrollable policy area styling */
+#global-privacy-modal .modal-body > div { background: rgba(255,255,255,0.02); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); }
+

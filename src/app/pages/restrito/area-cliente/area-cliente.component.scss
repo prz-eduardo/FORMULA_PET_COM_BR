@@ -56,6 +56,7 @@
 }
 
 .internal-back {
+  padding-left: 10px;
   display: flex;
   justify-content: flex-start;
   position: sticky;
@@ -337,4 +338,50 @@
   max-height: 84vh;
   overflow-y: auto;
   z-index: 1000;
+}
+
+/* Modal button styles: primary (confirm) and secondary (cancel) */
+.modal-content .btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: transform .12s ease, box-shadow .16s ease, background .12s ease;
+  /* Primary confirm: subtle warm red to match site accents */
+  background: linear-gradient(90deg, #ff6a85, #ff455f);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(255,69,95,0.12);
+}
+.modal-content .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(255,69,95,0.14); }
+.modal-content .btn:active { transform: translateY(0); }
+
+.modal-content .btn.btn-sec {
+  background: transparent;
+  color: var(--glass-text);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+}
+
+/* Align actions inside modals when inline markup used */
+.modal-content .modal-actions {
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+/* Explicit confirm/cancel classes for modal actions to ensure styling applies */
+.modal-content .btn-confirm {
+  background: linear-gradient(90deg, #ff6a85, #ff455f) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 30px rgba(255,69,95,0.14) !important;
+  border: none !important;
+}
+.modal-content .btn-cancel {
+  background: transparent !important;
+  color: var(--glass-text) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: none !important;
 }

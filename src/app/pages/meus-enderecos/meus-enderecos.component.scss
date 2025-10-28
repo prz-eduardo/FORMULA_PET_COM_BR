@@ -81,6 +81,109 @@
 .btn{ padding:8px 12px; border-radius:10px; border:none; background:#eef2ff; color:#0f172a; font-weight:700 }
 .btn-sec{ background:#0f172a; color:#ecf0f5; border:1px solid rgba(255,255,255,0.04) }
 
+/* Modal styles replicated from Area Cliente for consistent look */
+.modal-overlay{ position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; -webkit-backdrop-filter: blur(4px) saturate(110%); backdrop-filter: blur(4px) saturate(110%); }
+.modal-content{ position: fixed; top:50%; left:50%; transform: translate(-50%, -50%); width: 92%; max-width: 680px; max-height: 84vh; overflow-y: auto; z-index: 1000; background: linear-gradient(180deg, rgba(10,16,24,0.42), rgba(6,10,14,0.36)); border: 1px solid rgba(255,255,255,0.04); -webkit-backdrop-filter: blur(10px) saturate(120%); backdrop-filter: blur(10px) saturate(120%); box-shadow: 0 14px 36px rgba(2,6,23,0.44); color: #e6eef8; border-radius: 12px; padding: 18px; }
+.modal-content .modal-body { max-width: 640px; margin: 0 auto; }
+
+/* Modal button styles */
+.modal-content .btn { padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; border: none; transition: transform .12s ease, box-shadow .16s ease, background .12s ease; background: linear-gradient(90deg, #ff6a85, #ff455f); color: #fff; box-shadow: 0 10px 26px rgba(255,69,95,0.12); }
+.modal-content .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(255,69,95,0.14); }
+.modal-content .btn.btn-sec { background: transparent; color: #e6eef8; border: 1px solid rgba(255,255,255,0.06); box-shadow: none; }
+.modal-content .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+.modal-content .btn-confirm { background: linear-gradient(90deg, #ff6a85, #ff455f) !important; color: #fff !important; box-shadow: 0 12px 30px rgba(255,69,95,0.14) !important; border: none !important; }
+.modal-content .btn-cancel { background: transparent !important; color: #e6eef8 !important; border: 1px solid rgba(255,255,255,0.06) !important; box-shadow: none !important; }
+
+/* Inputs and tipo selector inside modal-body: mirror previous detail-modal look but scoped to modal-content */
+.modal-content .modal-body input,
+.modal-content .modal-body textarea,
+.modal-content .modal-body select {
+	width: 100%;
+	height: 40px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.06);
+	background: rgba(255,255,255,0.03);
+	color: #e6eef8;
+	box-shadow: none;
+	margin: 6px 0;
+}
+.modal-content .modal-body input::placeholder,
+.modal-content .modal-body textarea::placeholder { color: rgba(230,238,248,0.6); }
+
+/* tipo pills (house/work/delivery) inside modal-body */
+.modal-content .modal-body .tipo-row { margin: 28px 0 12px; display:flex; gap:8px; }
+.modal-content .modal-body .tipo-row .pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	gap: 0;
+	padding: 6px;
+	border: 1px solid rgba(255,255,255,0.06);
+	border-radius: 999px;
+	cursor: pointer;
+	user-select: none;
+	background: rgba(255,255,255,0.02);
+}
+.modal-content .modal-body .tipo-row .pill .emoji { font-size: 20px; }
+.modal-content .modal-body .tipo-row .pill.on {
+	border-color: #60a5fa;
+	background: rgba(96,165,250,0.12);
+	box-shadow: 0 0 0 6px rgba(96,165,250,0.06);
+}
+
+/* ensure labels inside modal-body align well on desktop */
+@media (min-width: 1024px) {
+	.modal-content .modal-body label { display: block; width: 80%; margin: 8px auto; text-align: left; padding-left: 8px; }
+	.modal-content .modal-body label input,
+	.modal-content .modal-body label select,
+	.modal-content .modal-body label textarea { width: 100%; margin: 6px 0 0 0; display: block; }
+	.modal-content .modal-body .tipo-row { justify-content: center; }
+}
+
+/* Floating close button for modal */
+.modal-content .close-floating {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 40px;
+	height: 40px;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	border-radius: 999px;
+	background: rgba(0,0,0,0.36);
+	color: #fff;
+	border: 1px solid rgba(255,255,255,0.04);
+	box-shadow: 0 8px 20px rgba(2,6,23,0.28);
+	cursor: pointer;
+	z-index: 1100;
+}
+.modal-content .close-floating:hover{ transform: translateY(-2px); }
+
+/* Floating label styles */
+.modal-content .modal-body .floating { position: relative; margin: 8px 0; }
+.modal-content .modal-body .floating input { padding: 14px 12px 10px 12px; }
+.modal-content .modal-body .floating label {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	transition: transform .12s ease, font-size .12s ease, opacity .12s ease;
+	pointer-events: none;
+	color: rgba(230,238,248,0.8);
+	background: transparent;
+	padding: 0 6px;
+}
+.modal-content .modal-body .floating input:focus + label,
+.modal-content .modal-body .floating input:not(:placeholder-shown) + label {
+	transform: translateY(-160%);
+	font-size: 12px;
+	opacity: 0.95;
+}
+
 
 /* Make the confirm modal body text dark for contrast on white background,
 	 and keep the button labels light so they appear as action controls */

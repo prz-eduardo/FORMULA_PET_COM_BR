@@ -15,16 +15,8 @@
 
   <!-- Painel Cliente -->
   <div *ngIf="hasAuth && internalView !== 'perfil'" class="cliente-panel">
-    <div class="cliente-info">
-      <img *ngIf="clienteData?.photoURL" [src]="clienteData.photoURL" class="cliente-photo" [attr.alt]="clienteData?.nome ? ('Foto de ' + clienteData.nome) : 'Foto do cliente'" title="Foto do cliente" />
+    <div class="cliente-info" style="display:flex;justify-content:center;align-items:center;width:100%;">
       <span class="cliente-nome">{{ clienteData?.nome }}</span>
-    </div>
-    <div class="cliente-actions" (click)="$event.stopPropagation()">
-      <button #gearBtn class="btn-gear" (click)="toggleMenu($event)" aria-haspopup="true" [attr.aria-expanded]="menuAberto ? 'true' : 'false'" aria-label="Abrir menu do usuário">⚙️</button>
-      <div class="popover cliente-popover" *ngIf="menuAberto" role="menu" [ngStyle]="{ top: popoverTop + 'px', left: popoverLeft + 'px' }">
-        <button class="popover-item profile" role="menuitem" (click)="open('perfil'); fecharMenu()">Perfil</button>
-        <button class="popover-item danger" role="menuitem" (click)="logout(); fecharMenu()">Logout</button>
-      </div>
     </div>
   </div>
 
@@ -53,17 +45,11 @@
         <div class="card-icon">🏠</div>
         <div class="card-title">Endereços</div>
       </div>
-      <div class="menu-card" (click)="open('novo-pet')">
-        <div class="card-icon">➕</div>
-        <div class="card-title">Cadastrar Pet</div>
-      </div>
-      <div class="menu-card" (click)="open('favoritos')">
-        <div class="card-icon">⭐</div>
-        <div class="card-title">Favoritos</div>
-      </div>
-      <div class="menu-card" (click)="open('carrinho')">
-        <div class="card-icon">🧺</div>
-        <div class="card-title">Carrinho</div>
+      <!-- Removed: Cadastrar Pet, Favoritos and Carrinho per request -->
+      <!-- Logout button - matches existing menu-card style -->
+      <div class="menu-card" (click)="openLogoutModal()" title="Sair da conta">
+        <div class="card-icon">🚪</div>
+        <div class="card-title">Logout</div>
       </div>
     </div>
 
@@ -88,6 +74,21 @@
     <div class="modal-content">
       <div (click)="$event.stopPropagation()">
   <app-crie-sua-conta-cliente (close)="fecharModalCadastro()" (loggedIn)="onLogin()"></app-crie-sua-conta-cliente>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- Logout confirmation modal -->
+  <ng-container *ngIf="modalLogoutAberto">
+    <div class="modal-overlay" (click)="closeLogoutModal()"></div>
+    <div class="modal-content">
+      <div (click)="$event.stopPropagation()" style="padding:18px; max-width:420px; text-align:left;">
+        <h3 style="margin-top:0;">Confirmar logout</h3>
+        <p>Tem certeza que deseja sair da sua conta? Você será desconectado desta sessão.</p>
+        <div class="modal-actions">
+          <button class="btn btn-sec btn-cancel" (click)="closeLogoutModal()">Cancelar</button>
+          <button class="btn btn-confirm" (click)="confirmLogout()">Sair</button>
+        </div>
       </div>
     </div>
   </ng-container>

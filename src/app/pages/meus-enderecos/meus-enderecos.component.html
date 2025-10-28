@@ -27,22 +27,23 @@
     </div>
   </div>
 
-  <!-- Details modal -->
-  <div class="overlay" *ngIf="detailOpen">
-    <div class="detail-modal">
-      <header>
-        <h3>
-          <!-- When editing, show the live label text (or fallback). When not editing, show selected label or generic title. -->
-          {{ editing ? (editModel.label || 'Novo Endereço') : (selected?.label || 'Endereço') }}
-          <!-- Simple live validation: if user typed but label is too short, show hint -->
-          <span *ngIf="editing && editModel.label?.length > 0 && editModel.label?.length < 3" class="label-invalid"> — nome muito curto</span>
-        </h3>
-        <div class="header-actions">
-          <button *ngIf="!editing" class="btn small" (click)="enableEdit()">Editar</button>
-          <button class="close" (click)="closeDetails()" aria-label="Fechar">✕</button>
-        </div>
-      </header>
-      <div class="body">
+  <!-- Details modal (replicated style from Area Cliente) -->
+  <ng-container *ngIf="detailOpen">
+    <div class="modal-overlay" (click)="closeDetails()"></div>
+    <div class="modal-content">
+      <button class="close-floating" (click)="closeDetails()" aria-label="Fechar">✕</button>
+      <div class="modal-body" (click)="$event.stopPropagation()">
+        <header>
+          <h3>
+            {{ editing ? (editModel.label || 'Novo Endereço') : (selected?.label || 'Endereço') }}
+            <span *ngIf="editing && editModel.label?.length > 0 && editModel.label?.length < 3" class="label-invalid"> — nome muito curto</span>
+          </h3>
+          <div class="header-actions">
+            <button *ngIf="!editing" class="btn small" (click)="enableEdit()">Editar</button>
+            <!-- close moved to floating corner for cleaner layout -->
+          </div>
+        </header>
+        <div class="body">
         <div *ngIf="!editing">
           <div class="kv"><div class="k">Rua</div><div class="v">{{ selected?.rua }}</div></div>
           <div class="kv"><div class="k">Cidade</div><div class="v">{{ selected?.cidade }}</div></div>
@@ -50,7 +51,11 @@
           <div class="kv"><div class="k">CEP</div><div class="v">{{ selected?.cep }}</div></div>
         </div>
         <div *ngIf="editing">
-          <label>Label<input [(ngModel)]="editModel.label" /></label>
+          <!-- Floating label field for the address name -->
+          <div class="floating">
+            <input id="labelInput" placeholder=" " [(ngModel)]="editModel.label" />
+            <label for="labelInput">Nome do endereço</label>
+          </div>
           <label>CEP<input [(ngModel)]="editModel.cep" (input)="onCepInputMask($event)" (blur)="onCepBlurLookup()" /></label>
           <div class="cep-loader" *ngIf="cepCarregando" aria-live="polite" aria-label="Consultando CEP">
             <div class="dots">
@@ -66,21 +71,22 @@
           <label>Cidade<input [(ngModel)]="editModel.cidade" /></label>
           <label>UF<input maxlength="2" [(ngModel)]="editModel.estado" /></label>
           <div class="tipo-row">
-            <label class="pill" [class.on]="editModel.tipo === 'casa'" aria-label="Casa" data-tip="Casa"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="casa" /><span class="emoji">🏠</span><span class="tip">Casa</span></label>
-            <label class="pill" [class.on]="editModel.tipo === 'trabalho'" aria-label="Trabalho" data-tip="Trabalho"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="trabalho" /><span class="emoji">💼</span><span class="tip">Trabalho</span></label>
-            <label class="pill" [class.on]="editModel.tipo === 'entrega'" aria-label="Entrega" data-tip="Entrega"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="entrega" /><span class="emoji">📦</span><span class="tip">Entrega</span></label>
-            <label class="pill" [class.on]="editModel.tipo === 'cobranca'" aria-label="Cobrança" data-tip="Cobrança"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="cobranca" /><span class="emoji">🧾</span><span class="tip">Cobrança</span></label>
-            <label class="pill" [class.on]="editModel.tipo === 'outros'" aria-label="Outros" data-tip="Outros"><input type="radio" name="tipo" [(ngModel)]="editModel.tipo" value="outros" /><span class="emoji">📍</span><span class="tip">Outros</span></label>
+            <button type="button" class="pill" [class.on]="editModel.tipo === 'casa'" (click)="editModel.tipo='casa'" aria-label="Casa" data-tip="Casa"><span class="emoji">🏠</span><span class="tip">Casa</span></button>
+            <button type="button" class="pill" [class.on]="editModel.tipo === 'trabalho'" (click)="editModel.tipo='trabalho'" aria-label="Trabalho" data-tip="Trabalho"><span class="emoji">💼</span><span class="tip">Trabalho</span></button>
+            <button type="button" class="pill" [class.on]="editModel.tipo === 'entrega'" (click)="editModel.tipo='entrega'" aria-label="Entrega" data-tip="Entrega"><span class="emoji">📦</span><span class="tip">Entrega</span></button>
+            <button type="button" class="pill" [class.on]="editModel.tipo === 'cobranca'" (click)="editModel.tipo='cobranca'" aria-label="Cobrança" data-tip="Cobrança"><span class="emoji">🧾</span><span class="tip">Cobrança</span></button>
+            <button type="button" class="pill" [class.on]="editModel.tipo === 'outros'" (click)="editModel.tipo='outros'" aria-label="Outros" data-tip="Outros"><span class="emoji">📍</span><span class="tip">Outros</span></button>
           </div>
         </div>
       </div>
-      <footer>
-  <button class="btn btn-sec" *ngIf="editing" (click)="cancelEdit()">Cancelar</button>
-  <button class="btn" *ngIf="editing" (click)="saveEdit()">Salvar</button>
-  <button class="btn" *ngIf="!editing" (click)="enableEdit()">Editar</button>
-      </footer>
+        <div class="modal-actions">
+          <button class="btn btn-sec btn-cancel" *ngIf="editing" (click)="cancelEdit()">Cancelar</button>
+          <button class="btn btn-confirm" *ngIf="editing" (click)="saveEdit()">Salvar</button>
+          <button class="btn btn-confirm" *ngIf="!editing" (click)="enableEdit()">Editar</button>
+        </div>
+      </div>
     </div>
-  </div>
+  </ng-container>
 
   <!-- Delete confirm modal -->
   <div class="overlay" *ngIf="confirmOpen">

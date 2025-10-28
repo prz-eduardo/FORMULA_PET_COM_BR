@@ -1,6 +1,6 @@
 import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ApiService, ClienteMeResponse } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
@@ -16,6 +16,7 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 export class MeusPetsComponent implements OnChanges {
   @Input() modal: boolean = false;
   @Output() close = new EventEmitter<void>();
+  @Output() newPet = new EventEmitter<void>();
   // Emit when user requests to edit a pet (id or full pet object)
   @Output() editPet = new EventEmitter<string | number>();
   @Input() clienteMe: any | null = null;
@@ -28,8 +29,20 @@ export class MeusPetsComponent implements OnChanges {
     private api: ApiService,
     private auth: AuthService,
     private toast: ToastService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private router: Router
   ){}
+
+  onNewPetClick(ev?: Event) {
+    if (ev && (ev as Event).preventDefault) (ev as Event).preventDefault();
+    if (this.modal) {
+      // ask parent to open novo-pet inside the modal host
+      try { this.newPet.emit(); } catch (e) {}
+      return;
+    }
+    // otherwise navigate to the novo-pet route
+    try { this.router.navigateByUrl('/novo-pet'); } catch (e) { try { (window as any).location.href = '/novo-pet'; } catch {} }
+  }
 
   // When edit is requested from a pet card
   onEditClick(pet: any) {
@@ -96,7 +109,27 @@ export class MeusPetsComponent implements OnChanges {
   }
 
   voltar(){
-    if (this.modal) this.close.emit();
+    // If rendered as modal, inform parent to close and return control there
+    if (this.modal) {
+      this.close.emit();
+      return;
+    }
+
+    // When opened via the gallery route, prefer returning to gallery.
+    // Use document.referrer as a hint; if it contains '/galeria' go back in history
+    try {
+      const ref = (typeof document !== 'undefined' && document.referrer) ? String(document.referrer) : '';
+      if (ref && ref.includes('/galeria')) {
+        if (history.length > 1) { history.back(); return; }
+        else { this.router.navigateByUrl('/galeria'); return; }
+      }
+    } catch (e) {}
+
+    // Fallback: prefer browser history if available, otherwise navigate to gallery
+    try {
+      if (history.length > 1) { history.back(); return; }
+    } catch (e) {}
+    this.router.navigateByUrl('/galeria');
   }
 
   // Fallback for broken or missing pet images

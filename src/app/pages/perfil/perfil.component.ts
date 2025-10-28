@@ -111,9 +111,201 @@ export class PerfilComponent {
   }
 
   confirmDeleteAccount(): void {
+    // Deprecated: previous confirm flow replaced by modal with LGPD notice.
+    this.openDeleteAccountModal();
+  }
+
+  // Modal state for delete confirmation with LGPD acknowledgement
+  deleteModalOpen = false;
+  lgpdChecked = false;
+  // Privacy policy modal state
+  privacyModalOpen = false;
+
+  openDeleteAccountModal(): void {
     if (!this.me?.user?.id) { this.toast.error('Usuário inválido'); return; }
-    const ok = confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.');
-    if (!ok) return;
+    this.lgpdChecked = false;
+    // If this component is embedded inside another modal, create a global overlay appended to body
+    if (this.modal) {
+      this.showGlobalDeleteModal();
+      return;
+    }
+    this.deleteModalOpen = true;
+    try { window.setTimeout(()=>{ const el = document.querySelector('.modal-content'); if (el) (el as any).scrollTop = 0; },50); } catch {}
+  }
+
+  closeDeleteAccountModal(): void {
+    this.deleteModalOpen = false;
+    this.lgpdChecked = false;
+    this.removeGlobalOverlay('global-delete-modal');
+  }
+
+  openPrivacyModal(): void {
+    if (this.modal) {
+      this.showGlobalPrivacyModal();
+      return;
+    }
+    this.privacyModalOpen = true;
+    try { window.setTimeout(()=>{ const el = document.querySelector('.modal-content.privacy'); if (el) (el as any).scrollTop = 0; },50); } catch {}
+  }
+
+  closePrivacyModal(): void {
+    this.privacyModalOpen = false;
+  }
+
+  // User clicked 'Concordo' inside the privacy modal
+  agreePrivacy(): void {
+    this.lgpdChecked = true;
+    this.privacyModalOpen = false;
+    // focus back to delete modal if open
+    try { window.setTimeout(()=>{ const el = document.querySelector('.modal-content'); if (el) (el as any).focus(); },50); } catch {}
+  }
+
+  // --- Helpers to render a simple global overlay appended to body when this component is embedded in another modal ---
+  private removeGlobalOverlay(id: string) {
+    try {
+      const existing = document.getElementById(id);
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    } catch (e) { /* ignore */ }
+  }
+
+  private showGlobalDeleteModal() {
+    this.removeGlobalOverlay('global-delete-modal');
+    const container = document.createElement('div');
+    container.id = 'global-delete-modal';
+    container.className = 'modal-overlay global';
+  container.style.position = 'fixed';
+  container.style.left = '0'; container.style.top = '0'; container.style.width = '100%'; container.style.height = '100%';
+  container.style.display = 'flex'; container.style.alignItems = 'center'; container.style.justifyContent = 'center';
+  container.style.zIndex = '99999';
+  // backdrop to visually separate modal from underlying content
+  container.style.background = 'rgba(6,10,14,0.64)';
+  (container.style as any).backdropFilter = 'blur(6px) saturate(120%)';
+  (container.style as any).webkitBackdropFilter = 'blur(6px) saturate(120%)';
+  // no padding on overlay container — modal-content controls its own padding
+    container.innerHTML = `
+      <div class="modal-content card" role="dialog" aria-modal="true" style="max-width:720px; width:92%;">
+        <header class="modal-header"><h3>Desativar conta</h3></header>
+        <div class="modal-body" style="max-height:60vh; overflow:auto;">
+          <p>Ao desativar sua conta, ela será imediatamente desativada. Se não for reativada dentro de 30 dias, você perderá o acesso permanentemente e seus dados poderão ser excluídos conforme nossa política de retenção.</p>
+          <p><strong>O que acontece ao desativar:</strong></p>
+          <ul>
+            <li>A conta ficará desativada por até 30 dias, período no qual você pode reativá-la.</li>
+            <li>Se não reativada em 30 dias, o acesso será perdido e os dados poderão ser removidos ou anonimizados.</li>
+            <li>Algumas informações poderão ser retidas por obrigações legais (ex.: fiscais) mesmo após exclusão.</li>
+          </ul>
+          <p>Em conformidade com a LGPD, leia nossa <a href="#" id="global-privacy-link">Política de Privacidade</a> antes de confirmar.</p>
+          <p style="margin-top:8px;">Para habilitar a desativação você precisa ler a Política de Privacidade e clicar em <strong>Concordo</strong>.</p>
+          <label style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+            <input type="checkbox" id="global-lgpd-checkbox" disabled />
+            Li e concordo com a Política de Privacidade (LGPD).
+          </label>
+        </div>
+        <div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end; padding-top:12px;">
+          <button class="btn btn-sec" id="global-delete-cancel">Cancelar</button>
+          <button class="btn danger" id="global-delete-confirm" disabled>Desativar conta</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(container);
+
+    // ensure overlay doesn't allow horizontal overflow and supports vertical scroll
+    container.style.overflowX = 'hidden';
+    container.style.overflowY = 'auto';
+
+    // ensure modal-content is centered and uses border-box to avoid width leakage
+    try {
+      const mc = container.querySelector('.modal-content') as HTMLElement | null;
+      if (mc) { mc.style.margin = '0 auto'; mc.style.boxSizing = 'border-box'; mc.style.maxWidth = mc.style.maxWidth || '760px'; }
+    } catch (e) {}
+
+    // wire events
+    const btnCancel = container.querySelector('#global-delete-cancel') as HTMLButtonElement | null;
+    const btnConfirm = container.querySelector('#global-delete-confirm') as HTMLButtonElement | null;
+    const privacyLink = container.querySelector('#global-privacy-link') as HTMLAnchorElement | null;
+    const lgpdCheckbox = container.querySelector('#global-lgpd-checkbox') as HTMLInputElement | null;
+
+    const onClose = () => { this.removeGlobalOverlay('global-delete-modal'); };
+    const onPrivacyOpen = (e?: Event) => { e && e.preventDefault(); this.showGlobalPrivacyModal(); };
+    const onConfirm = () => {
+      // call delete flow
+      this.deleteAccount();
+      this.removeGlobalOverlay('global-delete-modal');
+    };
+
+    if (btnCancel) btnCancel.addEventListener('click', onClose);
+    if (privacyLink) privacyLink.addEventListener('click', onPrivacyOpen);
+
+    // expose a way for privacy modal to enable checkbox: set a global handler
+    (window as any).__enableGlobalLgpd = () => {
+      if (lgpdCheckbox) lgpdCheckbox.checked = true;
+      if (btnConfirm) btnConfirm.disabled = false;
+      this.lgpdChecked = true;
+    };
+
+    if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
+  }
+
+  private showGlobalPrivacyModal() {
+    this.removeGlobalOverlay('global-privacy-modal');
+    const container = document.createElement('div');
+    container.id = 'global-privacy-modal';
+    container.className = 'modal-overlay global';
+  container.style.position = 'fixed';
+  container.style.left = '0'; container.style.top = '0'; container.style.width = '100%'; container.style.height = '100%';
+  container.style.display = 'flex'; container.style.alignItems = 'center'; container.style.justifyContent = 'center';
+  container.style.zIndex = '100000';
+  // backdrop so the privacy modal stands out above the page
+  container.style.background = 'rgba(6,10,14,0.64)';
+  (container.style as any).backdropFilter = 'blur(6px) saturate(120%)';
+  (container.style as any).webkitBackdropFilter = 'blur(6px) saturate(120%)';
+  // no padding on overlay container — modal-content controls its own padding
+    container.innerHTML = `
+      <div class="modal-content card privacy" role="dialog" aria-modal="true" style="max-width:720px; width:92%;">
+        <header class="modal-header"><h3>Política de Privacidade</h3></header>
+        <div class="modal-body" style="max-height:60vh; overflow:auto;">
+          <p><strong>Resumo:</strong> Coletamos e processamos dados pessoais para fornecer os serviços contratados, cumprir obrigações legais e proteger nossos direitos. Você pode solicitar acesso, correção, portabilidade ou eliminação de seus dados conforme previsto na LGPD.</p>
+          <div style="max-height:40vh; overflow:auto; padding:8px; border-radius:8px; background:rgba(0,0,0,0.02); margin-top:8px;">
+            <p>— Coleta: Nome, email, telefone, histórico de compras, etc.</p>
+            <p>— Finalidade: Processamento de pedidos, atendimento, notificações e melhorias.</p>
+            <p>— Compartilhamento: Com parceiros de logística, pagamentos e conforme exigido por lei.</p>
+            <p>— Direitos: Acesso, correção, anonimização, eliminação, portabilidade, revogação do consentimento.</p>
+          </div>
+        </div>
+        <div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end; padding-top:12px;">
+          <button class="btn btn-sec" id="global-privacy-close">Fechar</button>
+          <button class="btn primary" id="global-privacy-agree">Concordo</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(container);
+
+    // ensure overlay doesn't allow horizontal overflow and supports vertical scroll
+    container.style.overflowX = 'hidden';
+    container.style.overflowY = 'auto';
+    try {
+      const mc = container.querySelector('.modal-content') as HTMLElement | null;
+      if (mc) { mc.style.margin = '0 auto'; mc.style.boxSizing = 'border-box'; mc.style.maxWidth = mc.style.maxWidth || '760px'; }
+    } catch (e) {}
+
+    const btnClose = container.querySelector('#global-privacy-close') as HTMLButtonElement | null;
+    const btnAgree = container.querySelector('#global-privacy-agree') as HTMLButtonElement | null;
+
+    const onClose = () => { this.removeGlobalOverlay('global-privacy-modal'); };
+    const onAgree = () => {
+      // enable LGPD on the delete modal
+      try { (window as any).__enableGlobalLgpd && (window as any).__enableGlobalLgpd(); } catch (e) {}
+      this.removeGlobalOverlay('global-privacy-modal');
+    };
+
+    if (btnClose) btnClose.addEventListener('click', onClose);
+    if (btnAgree) btnAgree.addEventListener('click', onAgree);
+  }
+
+  // Called when user confirms inside the modal (requires LGPD checkbox)
+  confirmDeleteAccountModal(): void {
+    if (!this.lgpdChecked) { this.toast.info('É necessário concordar com a Política de Privacidade (LGPD) antes de prosseguir.'); return; }
+    // close modal and proceed with deletion flow
+    this.deleteModalOpen = false;
     this.deleteAccount();
   }
 
@@ -301,6 +493,8 @@ export class PerfilComponent {
   private sectionBackup: any = {};
 
   editingSection: string | null = null;
+  // When true only the header name is being edited (inline), do not open the full 'informacoes' editor
+  editingNameOnly: boolean = false;
 
   editSection(section: string|null){
     if (!section) { this.editingSection = null; this.readOnly = true; return; }
@@ -340,11 +534,66 @@ export class PerfilComponent {
         this.sectionBackup.observacoes = this.observacoes;
         break;
     }
+    // disable any inline-only name editor (don't allow both modes at once)
+    this.editingNameOnly = false;
     // enable overall edit mode when any section enters edit
     this.editingSection = section;
     this.readOnly = false;
+    // small UX: focus the first input inside the edited section so user sees it's editable
+    try {
+      window.setTimeout(()=>{
+        if (section === 'informacoes') {
+          const card = document.getElementById('informacoes-card');
+          if (card) {
+            const f = card.querySelector('input, select, textarea') as HTMLElement | null;
+            if (f && typeof (f as any).focus === 'function') (f as any).focus();
+          }
+        }
+      }, 80);
+    } catch (e) { /* ignore */ }
     // scroll to top of modal to show form (if in modal)
     try { window.setTimeout(()=>{ const el = document.querySelector('.perfil-wrapper'); if (el) (el as any).scrollTop = 0; },50); } catch {}
+  }
+
+  // Start inline-only name edit (does not open the whole 'informacoes' section)
+  editNameOnly(){
+    if (this.editingSection) return; // prefer single edit mode at a time
+    // Only enable the inline name editor. Do NOT flip global readOnly —
+    // that would open the full-page edit form (undesired).
+    this.sectionBackup.nomeOnly = this.nome;
+    this.editingNameOnly = true;
+    // focus handling can be done in template if needed
+  }
+
+  // Cancel inline name edit and restore backup
+  cancelNameEdit(){
+    if (this.sectionBackup.nomeOnly !== undefined) this.nome = this.sectionBackup.nomeOnly;
+    this.editingNameOnly = false;
+    this.readOnly = true;
+  }
+
+  // Save only the nome field (PATCH-like behaviour)
+  saveNameOnly(){
+    if (!this.token || !this.me?.user?.id) return;
+    const payload: any = { nome: (this.nome||'').trim() };
+    this.salvando = true;
+    this.api.updateCliente(this.me.user.id, payload, this.token).subscribe({
+      next: (res: any) => {
+        this.toast.success('Nome atualizado!');
+        // update local cached user name if present
+        try { if (this.me && this.me.user) (this.me.user as any).nome = payload.nome; } catch {}
+        delete this.sectionBackup.nomeOnly;
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || err?.message || 'Erro ao salvar nome';
+        this.toast.error(msg, 'Erro');
+      },
+      complete: () => {
+        this.salvando = false;
+        this.editingNameOnly = false;
+        this.readOnly = true;
+      }
+    });
   }
 
   cancelEditSection(){
