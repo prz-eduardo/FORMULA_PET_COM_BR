@@ -79,32 +79,43 @@ export class SessionService {
   }
 
   /** Set super admin flag in storage (fallback if token claim not present) */
+
   setIsSuper(isSuper: boolean) {
-    try { localStorage.setItem(this.isSuperKey, isSuper ? '1' : '0'); } catch {}
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(this.isSuperKey, isSuper ? '1' : '0'); } catch {}
+    }
   }
 
   /** Return true if user is super admin (by token claim or stored flag) */
   isSuper(): boolean {
     const decoded = this.decodeToken();
     if (decoded && (decoded.is_super === 1 || decoded.is_super === true || decoded.is_super === '1')) return true;
-    try {
-      return localStorage.getItem(this.isSuperKey) === '1';
-    } catch {
-      return false;
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(this.isSuperKey) === '1';
+      } catch {
+        return false;
+      }
     }
+    return false;
   }
 
   setUser(user: any) {
-    try { localStorage.setItem(this.userKey, JSON.stringify(user)); } catch {}
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(this.userKey, JSON.stringify(user)); } catch {}
+    }
   }
 
   getUser<T = any>(): T | null {
-    try {
-      const raw = localStorage.getItem(this.userKey);
-      return raw ? JSON.parse(raw) as T : null;
-    } catch {
-      return null;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(this.userKey);
+        return raw ? JSON.parse(raw) as T : null;
+      } catch {
+        return null;
+      }
     }
+    return null;
   }
 
   /** Returns the backend base URL (for admin modules that call custom endpoints). */

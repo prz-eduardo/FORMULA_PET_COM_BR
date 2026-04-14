@@ -94,7 +94,7 @@ export class StoreService {
      *  Pass forceRefresh=true to bypass cache and re-fetch from server.
      */
     async getClienteMe(forceRefresh: boolean = false): Promise<any> {
-      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const token = this.isBrowser() && typeof window !== 'undefined' ? (localStorage.getItem('token') || undefined) : undefined;
       // Return cached value when available and not forcing refresh
       if (!forceRefresh && this.clienteMeCache) {
         return this.clienteMeCache;
@@ -115,7 +115,7 @@ export class StoreService {
           const res = await this.api.getClienteMe(token || '').toPromise();
           this.clienteMeCache = res;
           // also persist to localStorage for quick load elsewhere
-          if (this.isBrowser() && res) {
+          if (this.isBrowser() && typeof window !== 'undefined' && res) {
             try { localStorage.setItem('cliente_me', JSON.stringify(res)); } catch {}
           }
           return res;
