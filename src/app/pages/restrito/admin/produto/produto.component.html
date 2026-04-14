@@ -55,61 +55,7 @@
       <div class="hint">Se escolher uma fórmula, vamos buscar os estoques dos ativos dessa fórmula para vincular um lote.</div>
     </div>
 
-    <div class="form-group full-width" *ngIf="form.value.formulaId">
-      <div class="hint" *ngIf="formulaStatus.missing?.length">Ativos sem lote disponível: {{ missingLabel() }}</div>
-      <div class="availability" *ngIf="formulaStatus.items?.length">
-        <div class="availability-grid">
-          <div class="avail-row header">
-            <div>Ativo</div>
-            <div>Req/Unidade</div>
-            <div>Disponível (conv.)</div>
-            <div>Unidades producíveis</div>
-          </div>
-          <div class="avail-row" *ngFor="let it of formulaStatus.items">
-            <div>{{ it.ativo_nome }}</div>
-            <div>{{ it.required_per_unit }} {{ it.unit_code }}</div>
-            <div>{{ it.available_converted }} {{ it.unit_code }}</div>
-            <div>{{ it.producible_units }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="lots-by-ativo" *ngIf="formulaStatus.lotsByAtivo | keyvalue as kv">
-        <div class="ativo-block" *ngFor="let entry of kv">
-          <h5>Ativo #{{ entry.key }}</h5>
-          <div class="estoque-list">
-            <div class="lote-card" *ngFor="let e of entry.value" (click)="selecionarLote(e)" [class.selected]="estoqueSelecionado?.id === e.id">
-              <div class="lote-select">
-                <div class="meta">
-                  <div><strong>Lote:</strong> {{ e.lote || '—' }}</div>
-                  <div><strong>Qtd:</strong> {{ e.quantity }} {{ e.unit_code }}</div>
-                  <div><strong>Validade:</strong> {{ e.validade || '—' }}</div>
-                  <div class="muted">#{{ e.id }} • {{ e.unit_name || e.unit_code }} • {{ e.location || '—' }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <label>Selecionar Lote de Estoque (obrigatório quando há fórmula)</label>
-      <div class="estoque-list" *ngIf="estoqueLotes.length; else semEstoqueFormula">
-        <div class="lote-card" *ngFor="let e of estoqueLotes" (click)="selecionarLote(e)"
-             [class.selected]="estoqueSelecionado?.id === e.id">
-          <div class="lote-select">
-            <div class="meta">
-              <div><strong>Lote:</strong> {{ e.lote || '—' }}</div>
-              <div><strong>Qtd:</strong> {{ e.quantity }} {{ e.unit_code }}</div>
-              <div><strong>Validade:</strong> {{ e.validade || '—' }}</div>
-              <div class="muted">#{{ e.id }} • {{ e.unit_name || e.unit_code }} • {{ e.location || '—' }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <ng-template #semEstoqueFormula>
-        <div class="empty">
-          Nenhum lote encontrado nos ativos da fórmula. Cadastre estoque antes de prosseguir.
-          <button type="button" class="link" (click)="router.navigate(['/restrito/admin/estoque'])">+ Cadastrar Estoque</button>
-        </div>
-      </ng-template>
+      <!-- Estoque removido: não é mais obrigatório nem exibido para produtos com ou sem fórmula -->
     </div>
   </section>
 
@@ -167,10 +113,7 @@
           </div>
         </ng-template>
       </div>
-      <div class="form-group">
-        <label>Estoque</label>
-        <input type="number" formControlName="stock">
-      </div>
+      <!-- Campo de estoque removido -->
       <div class="form-group">
         <label>Peso/Volume/Unidade</label>
         <div style="display:flex; gap:0.5rem;">

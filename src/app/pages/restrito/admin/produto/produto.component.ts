@@ -224,11 +224,8 @@ export class ProdutoComponent implements OnInit {
         return !!img;
       }
       case 1: {
-        // Fórmula opcional; quando fórmula selecionada (manipulado), exigir lote (estoqueId)
-        const formulaId = this.form.get('formulaId')?.value;
-        if (!formulaId) return true;
-        const estoqueId = this.form.get('estoqueId')?.value;
-        return !!estoqueId;
+        // Fórmula opcional; estoque não é mais obrigatório
+        return true;
       }
       case 2: {
         const name = this.form.get('name');
