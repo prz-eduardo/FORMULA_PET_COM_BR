@@ -14,6 +14,16 @@ interface AtivoBasic { id: number | string; nome: string; descricao?: string }
   styleUrls: ['./produto.component.scss']
 })
 export class ProdutoComponent implements OnInit {
+    showCategoryDropdown = false;
+    toggleCategoryDropdown() {
+      this.showCategoryDropdown = !this.showCategoryDropdown;
+    }
+
+    selectCategory(id: string | number, event: Event) {
+      event.stopPropagation();
+      this.form.patchValue({ categoryId: id });
+      this.showCategoryDropdown = false;
+    }
   private fb = inject(FormBuilder);
   private api = inject(AdminApiService);
   private route = inject(ActivatedRoute);
@@ -37,7 +47,7 @@ export class ProdutoComponent implements OnInit {
     { key: 'revisao', label: 'Revisão' }
   ];
 
-  // taxonomias
+  // taxonomias (agora vindas de customizacoes)
   categoriasList: Array<{ id: string | number; name: string }> = [];
   tagsList: Array<{ id: string | number; name: string }> = [];
   embalagensList: Array<{ id: string | number; name: string }> = [];
@@ -70,14 +80,17 @@ export class ProdutoComponent implements OnInit {
   formulasAll: Array<{ id: number; name: string; form_name?: string }> = [];
   formulasFiltered: Array<{ id: number; name: string; form_name?: string }> = [];
   formulaStatus: { missing: Array<{ ativo_id: number; ativo_nome?: string }>, items: Array<{ ativo_id: number; ativo_nome: string; required_per_unit: number; unit_code: string; available_converted: number; producible_units: number }>, lotsByAtivo: Record<string, EstoqueAtivoDto[]> } = { missing: [], items: [], lotsByAtivo: {} };
+  // índice selecionado nas sugestões (-1 = 'Produto pronto')
+  selectedFormulaIndex = -1;
+  formulaEnabled = false;
 
   ngOnInit() {
+    this.syncPrecoDigitsFromForm();
     this.form = this.fb.group({
       id: [null],
-      // novo modelo
-      tipo: ['pronto', Validators.required], // 'pronto' | 'manipulado'
-      active: [1], // 1 ativo, 0 inativo
-  formulaId: [null], // quando setado, força tipo = 'manipulado'
+      manipulado: [false], // novo toggle
+      active: [1],
+      formulaId: [null],
       name: ['', Validators.required],
       description: ['', Validators.required],
       price: [0, [Validators.required, Validators.min(0)]],
@@ -89,7 +102,7 @@ export class ProdutoComponent implements OnInit {
       tags: this.fb.array<string>([]),
       weightValue: [0],
       weightUnit: ['g'],
-      images: this.fb.array<string>([]), // base64 gallery
+      images: this.fb.array<string>([]),
       customizations: this.fb.group({
         dosage: this.fb.array<string>([]),
         packaging: this.fb.array<string>([])
@@ -98,11 +111,26 @@ export class ProdutoComponent implements OnInit {
       estoqueId: [null]
     });
 
-  // carregar taxonomias
-    this.loadTaxonomy('categorias');
-    this.loadTaxonomy('tags');
-    this.loadTaxonomy('embalagens');
-    this.loadTaxonomy('dosages');
+    // initialize formula toggle based on any pre-filled form value
+    this.formulaEnabled = !!this.form.value.formulaId;
+
+    // Carregar categorias, tags, dosagens e embalagens de customizacoes
+    this.api.getMarketplaceCustomizacoes().subscribe({
+      next: (res: any) => {
+        // categorias/tags
+        this.categoriasList = (res.categorias || []).map((c: any) => ({ id: c.id, name: c.nome || c.name }));
+        this.tagsList = (res.tags || []).map((t: any) => ({ id: t.id, name: t.nome || t.name }));
+        // dosagens/embalagens
+        this.dosagesList = (res.dosages || []).map((d: any) => ({ id: d.id, name: d.nome || d.name }));
+        this.embalagensList = (res.embalagens || []).map((e: any) => ({ id: e.id, name: e.nome || e.name }));
+      },
+      error: () => {
+        this.categoriasList = [];
+        this.tagsList = [];
+        this.dosagesList = [];
+        this.embalagensList = [];
+      }
+    });
 
     // carregar config (formas/unidades/ativos consolidado) - ativos ficam apenas para derivação via fórmula
     this.api.getConfigNewProduct().subscribe({
@@ -132,6 +160,107 @@ export class ProdutoComponent implements OnInit {
     // ativo search removido
   }
 
+  private precoDigits = '';
+
+    onPrecoKeydown(event: KeyboardEvent) {
+      event.preventDefault();
+      const key = event.key;
+      // Permitir apenas números, backspace e delete
+      if (/^\d$/.test(key)) {
+        if (this.precoDigits.length < 9) this.precoDigits += key;
+      } else if (key === 'Backspace') {
+        this.precoDigits = this.precoDigits.slice(0, -1);
+      } else if (key === 'Delete') {
+        this.precoDigits = '';
+      } else if (key === 'Tab' || key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
+        // permitir navegação
+        return;
+      } else {
+        return;
+      }
+      // Atualiza valor
+      let val = this.precoDigits || '0';
+      const num = parseInt(val, 10);
+      const reais = Math.floor(num / 100);
+      const centavos = num % 100;
+      this.form.patchValue({ price: num / 100 });
+      this.priceMasked = {
+        int: reais.toLocaleString('pt-BR'),
+        dec: centavos.toString().padStart(2, '0')
+      };
+    }
+
+    // Inicializa precoDigits ao abrir tela ou ao editar produto
+    private syncPrecoDigitsFromForm() {
+      const price = this.form?.value?.price;
+      if (typeof price === 'number' && !isNaN(price)) {
+        this.precoDigits = Math.round(price * 100).toString();
+      } else {
+        this.precoDigits = '';
+      }
+    }
+  // Controle de edição do campo de preço
+ 
+
+
+  editingPreco = false;
+
+
+  enablePrecoEdit() {
+    if (!this.editingPreco) {
+      this.editingPreco = true;
+      // Remove foco do input antigo, se houver
+      setTimeout(() => {
+        const wrapper = document.querySelector('.preco-input-wrapper') as HTMLElement;
+        if (wrapper) wrapper.focus();
+      }, 10);
+    }
+  }
+
+
+  disablePrecoEdit() {
+    this.editingPreco = false;
+  }
+
+    // Máscara de preço para exibição destacada
+  priceMasked: { int: string, dec: string } | null = null;
+
+  onPriceInput(event: any) {
+    let val = event.target.value.replace(/\D/g, ''); // só números
+    if (!val) val = '0';
+    // Limite de 9 dígitos
+    if (val.length > 9) val = val.slice(0, 9);
+    // Formatar para centavos
+    const num = parseInt(val, 10);
+    const reais = Math.floor(num / 100);
+    const centavos = num % 100;
+    // Atualiza o campo do formulário
+    this.form.patchValue({ price: num / 100 });
+    // Atualiza a máscara para exibição
+    this.priceMasked = {
+      int: reais.toLocaleString('pt-BR'),
+      dec: centavos.toString().padStart(2, '0')
+    };
+    // Atualiza o valor do input para manter só números
+    event.target.value = val;
+  }
+
+  ngAfterViewInit() {
+    // Inicializa a máscara se já houver valor
+    const price = this.form?.value?.price;
+    if (typeof price === 'number' && !isNaN(price)) {
+      const num = Math.round(price * 100);
+      const reais = Math.floor(num / 100);
+      const centavos = num % 100;
+      this.priceMasked = {
+        int: reais.toLocaleString('pt-BR'),
+        dec: centavos.toString().padStart(2, '0')
+      };
+    }
+    // Listener para fechar dropdown de categoria ao clicar fora
+    document.addEventListener('click', this.handleClickOutsideDropdown.bind(this));
+  }
+
   get tagsFA() { return this.form.get('tags') as FormArray; }
   get dosageFA() { return this.form.get(['customizations','dosage']) as FormArray; }
   get packagingFA() { return this.form.get(['customizations','packaging']) as FormArray; }
@@ -156,19 +285,7 @@ export class ProdutoComponent implements OnInit {
     return 'Avançar';
   }
 
-  private loadTaxonomy(tipo: TaxonomyType) {
-    this.loading.set(true);
-    this.api.listTaxonomia(tipo).subscribe({
-      next: (res) => {
-        if (tipo === 'categorias') this.categoriasList = res.data;
-        else if (tipo === 'tags') this.tagsList = res.data;
-        else if (tipo === 'embalagens') this.embalagensList = res.data;
-        else if (tipo === 'dosages') this.dosagesList = res.data;
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
-    });
-  }
+  // Removido: loadTaxonomy. Agora tudo vem de getMarketplaceCustomizacoes().
 
   private loadProduto(id: string | number) {
     this.loading.set(true);
@@ -224,16 +341,13 @@ export class ProdutoComponent implements OnInit {
         return !!img;
       }
       case 1: {
-        // Fórmula opcional; estoque não é mais obrigatório
+        // Fórmula opcional
         return true;
       }
       case 2: {
         const name = this.form.get('name');
         const desc = this.form.get('description');
-        const tipo = this.form.get('tipo');
-        const isManipulado = tipo?.value === 'manipulado';
-        const formulaOk = isManipulado ? !!this.form.get('formulaId')?.value : true;
-        return !!name && !!desc && name.valid && desc.valid && !!tipo && tipo.valid && formulaOk;
+        return !!name && !!desc && name.valid && desc.valid;
       }
       case 3: {
         const price = this.form.get('price');
@@ -252,7 +366,7 @@ export class ProdutoComponent implements OnInit {
     switch (i) {
       case 0: mark('image'); break;
       case 1: mark('formulaId'); mark('estoqueId'); break;
-      case 2: mark('name'); mark('description'); mark('tipo'); if (this.form.get('tipo')?.value === 'manipulado') mark('formulaId'); break;
+      case 2: mark('name'); mark('description'); break;
       case 3: mark('price'); break;
       case 4: mark('categoryId'); break;
     }
@@ -315,6 +429,20 @@ export class ProdutoComponent implements OnInit {
 
   // helpers para template
   hasTag(name: string) { return this.tagsFA.controls.some(c => c.value === name); }
+
+  // Fecha dropdown ao clicar fora
+  // (Removido: duplicidade de ngAfterViewInit)
+
+  ngOnDestroy() {
+    document.removeEventListener('click', this.handleClickOutsideDropdown.bind(this));
+  }
+
+  handleClickOutsideDropdown(event: MouseEvent) {
+    const dropdown = document.querySelector('.custom-dropdown');
+    if (dropdown && !dropdown.contains(event.target as Node)) {
+      this.showCategoryDropdown = false;
+    }
+  }
   hasDosage(name: string) { return this.dosageFA.controls.some(c => c.value === name); }
   hasPackaging(name: string) { return this.packagingFA.controls.some(c => c.value === name); }
 
@@ -325,8 +453,8 @@ export class ProdutoComponent implements OnInit {
 
   // Fórmula: seleção e derivação de estoques a partir dos ativos da fórmula
   onFormulaChange(formulaId: number | null) {
-    // Define tipo conforme presença de fórmula
-    this.form.patchValue({ tipo: formulaId ? 'manipulado' : 'pronto' });
+    // Define manipulado conforme presença de fórmula
+    this.form.patchValue({ manipulado: !!formulaId });
     this.estoqueSelecionado = null; this.form.patchValue({ estoqueId: null, ativoId: null });
     this.estoqueLotes = [];
     if (!formulaId) return;
@@ -354,9 +482,62 @@ export class ProdutoComponent implements OnInit {
     const q = (this.formulaQuery() || '').toLowerCase();
     if (!q) {
       this.formulasFiltered = this.formulasAll.slice(0, 50);
+      this.selectedFormulaIndex = this.formulasFiltered.length > 0 ? 0 : -1;
       return;
     }
     this.formulasFiltered = this.formulasAll.filter(ff => ((ff.name + ' ' + (ff.form_name || '')).toLowerCase().includes(q))).slice(0, 50);
+    this.selectedFormulaIndex = this.formulasFiltered.length > 0 ? 0 : -1;
+  }
+
+  toggleFormulaEnabled() {
+    this.formulaEnabled = !this.formulaEnabled;
+    if (!this.formulaEnabled) {
+      this.selectFormula(null);
+    } else {
+      setTimeout(() => {
+        const el = document.getElementById('formulaInput') as HTMLInputElement | null;
+        el?.focus();
+      }, 10);
+    }
+  }
+
+  setFormulaIndex(i: number) { this.selectedFormulaIndex = i; }
+
+  selectFormula(id: number | null) {
+    this.form.patchValue({ formulaId: id });
+    this.onFormulaChange(id);
+    this.formulaQuery.set('');
+    this.formulasFiltered = [];
+    this.selectedFormulaIndex = -1;
+  }
+
+  onFormulaKeydown(event: KeyboardEvent) {
+    const len = (this.formulasFiltered?.length || 0);
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (len === 0) { this.selectedFormulaIndex = -1; }
+      else { this.selectedFormulaIndex = this.selectedFormulaIndex < len - 1 ? this.selectedFormulaIndex + 1 : -1; }
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (len === 0) { this.selectedFormulaIndex = -1; }
+      else { this.selectedFormulaIndex = this.selectedFormulaIndex === -1 ? len - 1 : (this.selectedFormulaIndex > 0 ? this.selectedFormulaIndex - 1 : -1); }
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.selectedFormulaIndex === -1) this.selectFormula(null);
+      else {
+        const f = this.formulasFiltered[this.selectedFormulaIndex];
+        if (f) this.selectFormula(f.id);
+      }
+      return;
+    }
+    if (event.key === 'Escape') {
+      this.formulaQuery.set(''); this.formulasFiltered = []; this.selectedFormulaIndex = -1;
+      return;
+    }
   }
   missingLabel(): string {
     const arr = this.formulaStatus?.missing || [];
@@ -392,20 +573,22 @@ export class ProdutoComponent implements OnInit {
     if (!name) return;
     this.api.createTaxonomia(tipo, name).subscribe({
       next: (res) => {
-        this.loadTaxonomy(tipo);
+        // Atualização da lista removida, pois agora vem de getMarketplaceCustomizacoes
         if (tipo === 'categorias') this.form.patchValue({ categoryId: res.id });
       }
     });
   }
   updateTaxonomia(tipo: TaxonomyType, item: { id: number|string; name: string }, newName: string) {
     if (!newName) return;
-    this.api.updateTaxonomia(tipo, item.id, newName).subscribe(() => this.loadTaxonomy(tipo));
+    this.api.updateTaxonomia(tipo, item.id, newName).subscribe();
   }
   deleteTaxonomia(tipo: TaxonomyType, item: { id: number|string; name: string }) {
-    this.api.deleteTaxonomia(tipo, item.id).subscribe(() => this.loadTaxonomy(tipo));
+    this.api.deleteTaxonomia(tipo, item.id).subscribe();
   }
 
-  resetForm() { this.form.reset({ tipo: 'pronto', active: 1, price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; }
+  // Mantém apenas a versão correta do resetForm
+  // Atualizar resetForm para novo campo manipulado
+  resetForm() { this.form.reset({ manipulado: false, active: 1, price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; }
 
   fixRating(event: any) {
     const v = parseFloat(event.target.value);
@@ -433,7 +616,7 @@ export class ProdutoComponent implements OnInit {
     if (cover) { imagens.push({ data: cover, posicao: pos++ }); }
     gallery.forEach(img => imagens.push({ data: img, posicao: pos++ }));
 
-    const tipo: 'pronto' | 'manipulado' = this.form.value.tipo;
+    const tipo: 'pronto' | 'manipulado' = this.form.value.manipulado ? 'manipulado' : 'pronto';
     const body: any = {
       nome: this.form.value.name,
       descricao: this.form.value.description,
@@ -444,7 +627,7 @@ export class ProdutoComponent implements OnInit {
       tag_ids,
       imagens,
     };
-  if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
+    if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
     if (this.form.value.estoqueId) body.estoque_id = this.form.value.estoqueId;
 
     // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full

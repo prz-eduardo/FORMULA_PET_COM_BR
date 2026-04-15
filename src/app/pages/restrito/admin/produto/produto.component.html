@@ -10,142 +10,338 @@
 
   <!-- STEP 0: Imagem (obrigatória) -->
   <section *ngIf="step()===0" class="step step-imagem">
-    <div class="image-upload">
-      <label for="imgUpload">
-        <div class="img-preview" *ngIf="form.value.image; else placeholder">
-          <img [src]="form.value.image" alt="Imagem do produto">
-        </div>
-        <ng-template #placeholder>
-          <div class="img-placeholder">Clique para adicionar imagem</div>
-        </ng-template>
-      </label>
-      <input type="file" id="imgUpload" (change)="onImageSelected($event)">
-      <div class="hint">A imagem é obrigatória para cadastrar o produto.</div>
+    <div class="imagem-card">
+      <div class="image-upload">
+        <label for="imgUpload">
+          <div class="img-preview" *ngIf="form.value.image; else placeholder">
+            <img [src]="form.value.image" alt="Imagem do produto">
+          </div>
+          <ng-template #placeholder>
+            <div class="img-placeholder">Clique para adicionar imagem</div>
+          </ng-template>
+        </label>
+        <input type="file" id="imgUpload" (change)="onImageSelected($event)">
+        <div class="hint">A imagem é obrigatória para cadastrar o produto.</div>
+      </div>
     </div>
   </section>
 
   <!-- STEP 1: Fórmula (opcional) -->
   <section *ngIf="step()===1" class="step step-formula">
-    <div class="image-upload">
-      <label for="imgUpload">
-        <div class="img-preview" *ngIf="form.value.image; else placeholder">
-          <img [src]="form.value.image" alt="Imagem do produto">
-        </div>
-        <ng-template #placeholder>
-          <div class="img-placeholder">Clique para adicionar imagem</div>
-        </ng-template>
-      </label>
-      <input type="file" id="imgUpload" (change)="onImageSelected($event)">
-    </div>
+    <div class="formula-card">
+      <div class="image-upload">
+        <label for="imgUpload">
+          <div class="img-preview" *ngIf="form.value.image; else placeholder">
+            <img [src]="form.value.image" alt="Imagem do produto">
+          </div>
+          <ng-template #placeholder>
+            <div class="img-placeholder">Clique para adicionar imagem</div>
+          </ng-template>
+        </label>
+        <input type="file" id="imgUpload" (change)="onImageSelected($event)">
+      </div>
 
+      <div class="form-group full-width formula-search-group">
+        <label>Este produto usa uma fórmula?</label>
+        <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
+          <button type="button"
+            class="toggle-btn"
+            [class.active]="formulaEnabled"
+            (click)="toggleFormulaEnabled()"
+            [attr.aria-pressed]="formulaEnabled">
+            <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
+            <span class="toggle-label">Usa Fórmula</span>
+          </button>
 
-    <div class="form-group full-width">
-      <label>Este produto usa uma fórmula?</label>
-      <input type="text" placeholder="Buscar fórmula (nome ou forma)"
-        [value]="formulaQuery()"
-        (input)="onFormulaQueryInput($any($event.target).value)" />
-      <div class="sugestoes" *ngIf="(formulasFiltered?.length || 0) > 0">
-        <div class="sugestao" (click)="onFormulaChange(null); form.patchValue({ formulaId: null })">
-          Não, é um produto pronto
+          <div *ngIf="form.value.formulaId" class="selected-formula">
+            <span class="label">Fórmula selecionada:</span>
+            <strong class="name">{{ formulaNameById(form.value.formulaId) }}</strong>
+            <button type="button" class="link small" (click)="selectFormula(null)">Remover</button>
+          </div>
         </div>
-        <div class="sugestao" *ngFor="let f of formulasFiltered"
-             (click)="form.patchValue({ formulaId: f.id }); onFormulaChange(f.id)">
-          {{ f.name }} <span class="muted">• {{ f.form_name || '—' }}</span>
+
+        <div *ngIf="formulaEnabled" class="search-box" style="margin-top:0.75rem;">
+          <input type="text" placeholder="Buscar fórmula (nome ou forma)"
+            [value]="formulaQuery()"
+            (input)="onFormulaQueryInput($any($event.target).value)"
+            (keydown)="onFormulaKeydown($event)"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="(formulasFiltered?.length || 0) > 0"
+            aria-controls="formula-list"
+            id="formulaInput"
+          />
+          <button *ngIf="formulaQuery()" type="button" class="clear-btn" (click)="onFormulaQueryInput('')">✕</button>
+        </div>
+
+        <div class="sugestoes" *ngIf="formulaEnabled && (formulasFiltered?.length || 0) > 0">
+          <div id="formula-list" role="listbox" class="sugestao-list">
+            <div class="sugestao none" role="option" (click)="selectFormula(null)" [class.focused]="selectedFormulaIndex===-1" (mouseenter)="setFormulaIndex(-1)">
+              <strong>Produto pronto</strong>
+              <div class="muted">Sem fórmula</div>
+            </div>
+            <div class="sugestao-item" *ngFor="let f of formulasFiltered; let i = index" role="option"
+                 [attr.aria-selected]="selectedFormulaIndex===i"
+                 [class.focused]="selectedFormulaIndex===i"
+                 (click)="selectFormula(f.id)"
+                 (mouseenter)="setFormulaIndex(i)">
+              <div class="sugestao-main">{{ f.name }}</div>
+              <div class="sugestao-sub">{{ f.form_name || '—' }}</div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="hint">Se escolher uma fórmula, vamos buscar os estoques dos ativos dessa fórmula para vincular um lote.</div>
     </div>
   </section>
 
-  <!-- STEP 2: Básico -->
+  <!-- STEP 2: Básico (novo layout) -->
   <section *ngIf="step()===2" class="step step-basico">
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Tipo do Produto</label>
-        <select formControlName="tipo" required>
-          <option value="pronto">Pronto</option>
-          <option value="manipulado">Manipulado</option>
-        </select>
+    <div class="basico-bloco">
+      <div class="form-group manipulado-toggle-group">
+        <button type="button"
+          class="toggle-btn"
+          [class.active]="!!form.get('manipulado')?.value"
+          (click)="form.patchValue({ manipulado: !form.get('manipulado')?.value })"
+          [attr.aria-pressed]="!!form.get('manipulado')?.value"
+        >
+          <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
+          <span class="toggle-label">Manipulado</span>
+        </button>
       </div>
-      <!-- Fórmula agora é escolhida na etapa anterior -->
-      <div class="form-group">
-        <label>Nome do Produto</label>
-        <input type="text" formControlName="name" required>
+      <div class="basico-card">
+        <label for="nomeProduto" class="basico-label">Nome do Produto</label>
+        <input id="nomeProduto" type="text" formControlName="name" placeholder="Digite o nome do produto" class="basico-input" aria-label="Nome do Produto">
+        <div class="basico-hint">Este será o nome exibido para o cliente.</div>
       </div>
-      <div class="form-group full-width">
-        <label>Descrição</label>
-        <textarea formControlName="description" required rows="4"></textarea>
+      <div class="basico-card">
+        <label for="descricaoProduto" class="basico-label">Descrição</label>
+        <textarea id="descricaoProduto" formControlName="description" rows="4" placeholder="Descreva o produto (opcional)" class="basico-input"></textarea>
       </div>
     </div>
   </section>
 
   <!-- STEP 3: Preço/Estoque e Campanha -->
   <section *ngIf="step()===3" class="step step-preco">
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Preço</label>
-        <input type="number" formControlName="price" required>
+    <div class="preco-peso-bloco">
+      <div class="preco-card">
+        <label for="precoProduto" class="preco-label">Preço</label>
+        <div class="preco-input-wrapper"
+          tabindex="0"
+          (keydown)="onPrecoKeydown($event)"
+          (paste)="$event.preventDefault()"
+          role="textbox"
+          aria-label="Preço"
+          (click)="enablePrecoEdit()"
+        >
+          <span class="preco-cifrao">R$</span>
+          <span class="preco-mascara preco-hover">
+            <span class="preco-int">{{ priceMasked?.int || '0' }}</span><span class="preco-dec">,{{ priceMasked?.dec || '00' }}</span>
+            <span *ngIf="editingPreco" class="preco-cursor">|</span>
+          </span>
+        </div>
       </div>
-      <div class="form-group full-width">
-        <label>Campanha/Promoção</label>
-        <ng-container *ngIf="promocaoSelecionada; else noPromo">
-          <div class="promo-card">
-            <div class="promo-header">
-              <span class="badge" [class.active]="promocaoSelecionada.ui?.status==='active'" [class.upcoming]="promocaoSelecionada.ui?.status==='upcoming'" [class.expired]="promocaoSelecionada.ui?.status==='expired'" [class.inactive]="promocaoSelecionada.ui?.status==='inactive'">{{ promocaoSelecionada.ui?.status || '—' }}</span>
-              <strong>{{ promocaoSelecionada.nome }}</strong>
-              <span class="valor">{{ promocaoSelecionada.ui?.valor_label }}</span>
-            </div>
-            <div class="promo-meta">
-              <div *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</div>
-              <div>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</div>
-            </div>
-            <div class="promo-actions">
-              <button type="button" (click)="openPromoModal()">Trocar campanha</button>
-              <button type="button" class="link" (click)="promocaoSelecionada=null">Remover</button>
-            </div>
-          </div>
-        </ng-container>
-        <ng-template #noPromo>
-          <div class="empty">Nenhuma campanha aplicada.
-            <button type="button" (click)="openPromoModal()">+ Aplicar campanha</button>
-          </div>
-        </ng-template>
-      </div>
-      <!-- Campo de estoque removido -->
-      <div class="form-group">
-        <label>Peso/Volume/Unidade</label>
-        <div style="display:flex; gap:0.5rem;">
-          <input type="number" formControlName="weightValue" placeholder="Valor">
-          <select formControlName="weightUnit">
-            <option value="mg">mg</option>
-            <option value="g">g</option>
-            <option value="kg">kg</option>
-            <option value="ml">ml</option>
-            <option value="un">un</option>
-          </select>
+      <div class="peso-card destaque">
+        <label class="peso-label">Peso / Volume / Unidade</label>
+        <div class="peso-input-wrapper">
+          <span class="peso-icon">⚖️</span>
+          <input type="number" min="0" formControlName="weightValue" placeholder="Digite o valor" class="peso-input" />
+        </div>
+        <div class="peso-toggle-list">
+          <button type="button" *ngFor="let unit of ['mg','g','kg','ml','un']"
+            class="peso-toggle-btn"
+            [class.active]="form.value.weightUnit === unit"
+            (click)="form.patchValue({weightUnit: unit})"
+            [attr.aria-pressed]="form.value.weightUnit === unit">
+            {{unit}}
+          </button>
         </div>
       </div>
     </div>
+    <div class="form-group full-width campanha-bloco">
+      <label>Campanha/Promoção</label>
+      <ng-container *ngIf="promocaoSelecionada; else noPromo">
+        <div class="promo-card">
+          <div class="promo-header">
+            <span class="badge" [class.active]="promocaoSelecionada.ui?.status==='active'" [class.upcoming]="promocaoSelecionada.ui?.status==='upcoming'" [class.expired]="promocaoSelecionada.ui?.status==='expired'" [class.inactive]="promocaoSelecionada.ui?.status==='inactive'">{{ promocaoSelecionada.ui?.status || '—' }}</span>
+            <strong>{{ promocaoSelecionada.nome }}</strong>
+            <span class="valor">{{ promocaoSelecionada.ui?.valor_label }}</span>
+          </div>
+          <div class="promo-meta">
+            <div *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</div>
+            <div>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</div>
+          </div>
+          <div class="promo-actions">
+            <button type="button" (click)="openPromoModal()">Trocar campanha</button>
+            <button type="button" class="link" (click)="promocaoSelecionada=null">Remover</button>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #noPromo>
+        <div class="empty">Nenhuma campanha aplicada.
+          <button type="button" (click)="openPromoModal()">+ Aplicar campanha</button>
+        </div>
+      </ng-template>
+    </div>
   </section>
+
+  <style>
+  .manipulado-toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    border: none;
+    background: none;
+    padding: 0.2rem 0.35rem;
+    cursor: pointer;
+    outline: none;
+    gap: 0.6rem;
+    transition: filter 0.2s;
+  }
+  .toggle-btn:focus { filter: brightness(0.95); }
+  .toggle-bg {
+    width: 48px;
+    height: 28px;
+    background: #ccc;
+    border-radius: 28px;
+    transition: background 0.3s;
+    display: inline-block;
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .toggle-btn.active .toggle-bg { background: #007bff; }
+  .toggle-circle {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #007bff;
+    transition: left 0.3s;
+    z-index: 2;
+  }
+  .toggle-btn.active .toggle-circle { left: 24px; color: #fff; background: #0056b3; }
+  .toggle-label {
+    margin-left: 0.1rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #e6eef8;
+    transition: color 0.2s;
+    position: static;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+  }
+  .toggle-btn.active .toggle-label { color: #27EF9F; }
+
+  /* ensure header layout doesn't overlap */
+  .formula-header { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; justify-content: space-between; }
+  .formula-header .selected-formula { display:flex; align-items:center; gap:0.5rem; min-width:0; }
+  .formula-header .selected-formula .name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:360px; }
+  .formula-header .selected-formula .label { color: rgba(230,238,248,0.7); font-size:0.95rem; }
+  .preco-group {
+    margin-bottom: 1.5rem;
+  }
+  .preco-input-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    background: #f8f9fa;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    width: fit-content;
+    min-width: 120px;
+    min-height: 48px;
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .preco-input-wrapper.editing {
+    box-shadow: 0 0 0 2px #007bff44;
+    border-color: #0056b3;
+    background: #eaf4ff;
+    cursor: text;
+  }
+  .preco-cifrao {
+    font-size: 1.5rem;
+    color: #007bff;
+    font-weight: 700;
+    user-select: none;
+  }
+  .preco-mascara {
+    margin-left: 0.5rem;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0.8;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+  .preco-mascara.preco-hover {
+    opacity: 1;
+    text-decoration: underline dotted #007bff 2px;
+  }
+  .preco-int {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #222;
+  }
+  .preco-dec {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #666;
+    margin-left: 2px;
+  }
+  /* Fórmula - busca e sugestões (adaptado para tema escuro) */
+  .formula-search-group { position: relative; max-width: 720px; }
+  .search-box { display:flex; align-items:center; gap:0.5rem; border:1px solid rgba(255,255,255,0.06); padding:0.4rem 0.6rem; border-radius:6px; background: rgba(255,255,255,0.02); }
+  .search-box input { border: none; outline:none; width:100%; font-size:1rem; padding:0.2rem; color: var(--text-color, #e6eef8); background: transparent; }
+  .search-box input::placeholder { color: rgba(230,238,248,0.5); }
+  .search-box .clear-btn { background:transparent; border:none; cursor:pointer; color: rgba(230,238,248,0.7); font-size:1rem; padding:0 0.4rem; }
+  .sugestao-list { position:absolute; z-index:99999 !important; top: calc(100% + 8px); left:0; right:0; background:#0f1724; border-radius:8px; box-shadow:0 8px 30px rgba(2,6,23,0.6); max-height:260px; overflow:auto; border:1px solid rgba(255,255,255,0.04); pointer-events:auto; }
+  .sugestao { padding:0.75rem 1rem; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.02); color: #e6eef8; }
+  .sugestao.none { font-weight:700; color:#fff; display:flex; flex-direction:column; }
+  .sugestao-item { padding:0.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column; cursor:pointer; }
+  .sugestao-item:last-child, .sugestao:last-child { border-bottom:none; }
+  .sugestao-main { font-weight:600; color: #f8fbff; }
+  .sugestao-sub { font-size:0.9rem; color: rgba(230,238,248,0.65); margin-top:4px; }
+  .sugestao-item.focused, .sugestao.none.focused, .sugestao-item:hover, .sugestao.none:hover { background: rgba(255,255,255,0.02); }
+  </style>
 
   <!-- STEP 4: Categoria/Tags -->
   <section *ngIf="step()===4" class="step step-categorias">
     <div class="form-grid">
       <div class="form-group">
         <label>Categoria</label>
-        <select formControlName="categoryId" required>
-          <option [ngValue]="null">Selecione</option>
-          <option *ngFor="let c of categoriasList" [ngValue]="c.id">{{ c.name }}</option>
-        </select>
+        <div class="custom-dropdown" [class.open]="showCategoryDropdown" (click)="toggleCategoryDropdown()" tabindex="0">
+          <div class="selected-value">{{ categoryNameById(form.value.categoryId) || 'Selecione' }}</div>
+          <div class="dropdown-list" *ngIf="showCategoryDropdown">
+            <div class="dropdown-item" *ngFor="let c of categoriasList" [class.selected]="form.value.categoryId === c.id" (click)="selectCategory(c.id, $event)">{{ c.name }}</div>
+          </div>
+        </div>
         <button type="button" (click)="showCategoryModal=true">+ Nova Categoria</button>
       </div>
       <div class="form-group full-width">
         <label>Tags</label>
-        <div class="tags" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <div class="tags tags-toggle">
           <button type="button" *ngFor="let t of tagsList"
                   [class.selected]="hasTag(t.name)"
-                  (click)="toggleTagVal(t.name)">{{t.name}}</button>
-          <button type="button" (click)="showTagModal=true">+ Adicionar</button>
+                  (click)="toggleTagVal(t.name)">
+            <span class="tag-label">{{t.name}}</span>
+          </button>
+          <button type="button" class="add-tag-btn" (click)="showTagModal=true">+ Adicionar</button>
         </div>
       </div>
     </div>
@@ -291,30 +487,30 @@
   </div>
 
   <!-- Modal Selecionar Promoção -->
-  <div class="modal" *ngIf="showPromoModal">
-    <div class="modal-content">
-      <h4>Selecionar Campanha</h4>
-      <div class="promo-list" *ngIf="promocoes?.length; else promoEmpty">
-        <div class="promo-item" *ngFor="let pr of promocoes">
-          <div class="row" (click)="promocaoSelecionada=pr; showPromoModal=false">
+  <div class="modal modal-campanha" *ngIf="showPromoModal">
+    <div class="modal-content campanha-modal-content">
+      <h2 class="modal-title">Selecionar Campanha</h2>
+      <div class="promo-list" *ngIf="promocoes.length; else promoEmpty">
+        <div class="promo-item" *ngFor="let pr of promocoes" (click)="promocaoSelecionada=pr; showPromoModal=false">
+          <div class="promo-item-header">
             <span class="badge" [class.active]="pr.ui?.status==='active'" [class.upcoming]="pr.ui?.status==='upcoming'" [class.expired]="pr.ui?.status==='expired'" [class.inactive]="pr.ui?.status==='inactive'">{{ pr.ui?.status || '—' }}</span>
             <strong class="name">{{ pr.nome }}</strong>
             <span class="valor">{{ pr.ui?.valor_label }}</span>
           </div>
-          <div class="row small">
+          <div class="promo-item-meta">
             <span *ngIf="pr.ui?.start?.human">Início: {{ pr.ui?.start?.human }}</span>
             <span>Fim: {{ pr.ui?.end?.human || 'sem validade' }}</span>
           </div>
-          <div class="row actions">
-            <button type="button" (click)="$event.stopPropagation(); openPromoDetail(pr.id!)">Editar promoção</button>
+          <div class="promo-item-actions">
+            <button type="button" class="btn-secundario" (click)="$event.stopPropagation(); openPromoDetail(pr.id!)">Editar promoção</button>
           </div>
         </div>
       </div>
       <ng-template #promoEmpty>
-        <div class="empty">Nenhuma promoção encontrada. <button type="button" (click)="showPromoModal=false">Fechar</button></div>
+        <div class="empty">Nenhuma promoção encontrada.</div>
       </ng-template>
       <div class="actions">
-        <button type="button" (click)="showPromoModal=false">Fechar</button>
+        <button type="button" class="btn-fechar" (click)="showPromoModal=false">Fechar</button>
       </div>
     </div>
   </div>
