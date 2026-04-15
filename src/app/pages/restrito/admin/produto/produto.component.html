@@ -12,16 +12,20 @@
   <section *ngIf="step()===0" class="step step-imagem">
     <div class="imagem-card">
       <div class="image-upload">
-        <label for="imgUpload">
-          <div class="img-preview" *ngIf="form.value.image; else placeholder">
-            <img [src]="form.value.image" alt="Imagem do produto">
+        <div class="img-stack">
+          <div *ngFor="let img of form.value.images; let i = index" 
+               class="img-preview-stack" 
+               [ngClass]="{'hovered': hoveredImg === i}"
+               (mouseenter)="hoveredImg = i" (mouseleave)="hoveredImg = null">
+            <img [src]="img" alt="Imagem {{i+1}} do produto">
+            <button type="button" class="remove-img-btn" (click)="removeImageAt(i)">&times;</button>
           </div>
-          <ng-template #placeholder>
-            <div class="img-placeholder">Clique para adicionar imagem</div>
-          </ng-template>
-        </label>
-        <input type="file" id="imgUpload" (change)="onImageSelected($event)">
-        <div class="hint">A imagem é obrigatória para cadastrar o produto.</div>
+          <label *ngIf="form.value.images.length < 3" class="img-add-btn">
+            <span class="plus-icon">+</span>
+            <input type="file" multiple accept="image/*" (change)="onImagesSelected($event)" style="display:none">
+          </label>
+        </div>
+        <div class="hint">Adicione até 3 imagens do produto.</div>
       </div>
     </div>
   </section>
@@ -29,18 +33,6 @@
   <!-- STEP 1: Fórmula (opcional) -->
   <section *ngIf="step()===1" class="step step-formula">
     <div class="formula-card">
-      <div class="image-upload">
-        <label for="imgUpload">
-          <div class="img-preview" *ngIf="form.value.image; else placeholder">
-            <img [src]="form.value.image" alt="Imagem do produto">
-          </div>
-          <ng-template #placeholder>
-            <div class="img-placeholder">Clique para adicionar imagem</div>
-          </ng-template>
-        </label>
-        <input type="file" id="imgUpload" (change)="onImageSelected($event)">
-      </div>
-
       <div class="form-group full-width formula-search-group">
         <label>Este produto usa uma fórmula?</label>
         <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
@@ -66,14 +58,14 @@
             (input)="onFormulaQueryInput($any($event.target).value)"
             (keydown)="onFormulaKeydown($event)"
             aria-autocomplete="list"
-            [attr.aria-expanded]="(formulasFiltered?.length || 0) > 0"
+            [attr.aria-expanded]="(formulasFiltered.length || 0) > 0"
             aria-controls="formula-list"
             id="formulaInput"
           />
           <button *ngIf="formulaQuery()" type="button" class="clear-btn" (click)="onFormulaQueryInput('')">✕</button>
         </div>
 
-        <div class="sugestoes" *ngIf="formulaEnabled && (formulasFiltered?.length || 0) > 0">
+        <div class="sugestoes" *ngIf="formulaEnabled && (formulasFiltered.length || 0) > 0">
           <div id="formula-list" role="listbox" class="sugestao-list">
             <div class="sugestao none" role="option" (click)="selectFormula(null)" [class.focused]="selectedFormulaIndex===-1" (mouseenter)="setFormulaIndex(-1)">
               <strong>Produto pronto</strong>
@@ -143,7 +135,7 @@
         <label class="peso-label">Peso / Volume / Unidade</label>
         <div class="peso-input-wrapper">
           <span class="peso-icon">⚖️</span>
-          <input type="number" min="0" formControlName="weightValue" placeholder="Digite o valor" class="peso-input" />
+          <input type="text" formControlName="weightValue" placeholder="Digite o valor" class="peso-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" [value]="form.value.weightValue ? form.value.weightValue : ''" />
         </div>
         <div class="peso-toggle-list">
           <button type="button" *ngFor="let unit of ['mg','g','kg','ml','un']"
@@ -153,6 +145,24 @@
             [attr.aria-pressed]="form.value.weightUnit === unit">
             {{unit}}
           </button>
+        </div>
+        <div class="embalagem-select" style="margin-top:1.5rem;">
+          <label for="embalagemSelect" style="font-weight:600; color:#27EF9F;">Tipo de Embalagem</label>
+          <select id="embalagemSelect" formControlName="packaging" style="margin-top:0.5rem; width:100%; padding:0.5rem 1rem; border-radius:8px; border:2px solid #0DB8DE; background:#0E151A; color:#ECF0F5;">
+            <option value="" disabled selected>Selecione</option>
+            <option value="Caixa">Caixa</option>
+            <option value="Frasco">Frasco</option>
+            <option value="Blister">Blister</option>
+            <option value="Envelope">Envelope</option>
+            <option value="Saco">Saco</option>
+            <option value="Cartela">Cartela</option>
+            <option value="Pote">Pote</option>
+            <option value="Seringa">Seringa</option>
+          </select>
+        </div>
+        <div class="peso-card destaque">
+          <label for="estoqueProduto" style="font-weight:600; color:#27EF9F;">Quantidade em Estoque</label>
+          <input id="estoqueProduto" type="number" min="0" formControlName="stock" placeholder="Digite a quantidade disponível" class="basico-input" style="max-width: 100%; margin-top:0.5rem;" />
         </div>
       </div>
     </div>
@@ -322,6 +332,7 @@
 
   <!-- STEP 4: Categoria/Tags -->
   <section *ngIf="step()===4" class="step step-categorias">
+    <div style="margin-top: 2.5rem;"></div>
     <div class="form-grid">
       <div class="form-group">
         <label>Categoria</label>
@@ -347,61 +358,51 @@
     </div>
   </section>
 
-  <!-- STEP 5: Customizações -->
-  <section *ngIf="step()===5" class="step step-custom">
-    <div class="customizations">
-      <h4>Dosagens</h4>
-      <div class="dosagens" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button type="button" *ngFor="let d of dosagesList"
-                [class.selected]="hasDosage(d.name)"
-                (click)="toggleDosageVal(d.name)">{{d.name}}</button>
-        <button type="button" (click)="showDosageModal=true">+ Adicionar</button>
-      </div>
-    </div>
-    <div class="customizations">
-      <h4>Embalagens</h4>
-      <div class="embalagens" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <button type="button" *ngFor="let p of embalagensList"
-                [class.selected]="hasPackaging(p.name)"
-                (click)="togglePackagingVal(p.name)">{{p.name}}</button>
-        <button type="button" (click)="showPackagingModal=true">+ Adicionar</button>
-      </div>
-    </div>
-  </section>
+
 
   <!-- STEP 6: Revisão e Envio -->
   <section *ngIf="step()===6" class="step step-revisao">
     <div class="review">
       <h4>Revisão</h4>
       <ul>
-    <li><strong>Tipo:</strong> {{ form.value.formulaId ? 'manipulado' : 'pronto' }}</li>
-    <li *ngIf="form.value.formulaId"><strong>Fórmula:</strong> {{ formulaNameById(form.value.formulaId) }}</li>
-    <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
+        <li><strong>Tipo:</strong> {{ form.value.formulaId ? 'manipulado' : 'pronto' }}</li>
+        <li *ngIf="form.value.formulaId"><strong>Fórmula:</strong> {{ formulaNameById(form.value.formulaId) }}</li>
+        <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
         <li><strong>Nome:</strong> {{ form.value.name }}</li>
         <li><strong>Descrição:</strong> {{ form.value.description }}</li>
         <li><strong>Preço:</strong> {{ form.value.price | currency:'BRL':'symbol-narrow' }}</li>
         <li><strong>Estoque:</strong> {{ form.value.stock ?? '—' }}</li>
-  <li><strong>Categoria:</strong> {{ categoryNameById(form.value.categoryId) }}</li>
+        <li><strong>Categoria:</strong> {{ categoryNameById(form.value.categoryId) }}</li>
         <li><strong>Tags:</strong> {{ (form.value.tags || []).join(', ') || '—' }}</li>
-        <li><strong>Dosagens:</strong> {{ (form.value.customizations?.dosage || []).join(', ') || '—' }}</li>
-        <li><strong>Embalagens:</strong> {{ (form.value.customizations?.packaging || []).join(', ') || '—' }}</li>
         <li><strong>Campanha:</strong> {{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</li>
-      </ul>
-      <div class="gallery">
-        <label>Imagens adicionais</label>
-        <div class="thumbs">
-          <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index">
-            <img [src]="img.value" alt="img">
-            <div class="thumb-actions">
-              <button type="button" (click)="moveImage(i,-1)">↑</button>
-              <button type="button" (click)="moveImage(i,1)">↓</button>
-              <button type="button" (click)="removeImageAt(i)">✕</button>
+        <li><strong>Ativo:</strong>
+          <button type="button" class="toggle-btn" [class.active]="form.value.active === 1" (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})">
+            <span class="toggle-bg"><span class="toggle-circle"></span></span>
+            <span class="toggle-label">{{ form.value.active === 1 ? 'Ativo' : 'Inativo' }}</span>
+          </button>
+        </li>
+        <li><strong>Destaque na Home:</strong>
+          <button type="button" class="toggle-btn" [class.active]="destaqueHome" (click)="destaqueHome = !destaqueHome">
+            <span class="toggle-bg"><span class="toggle-circle"></span></span>
+            <span class="toggle-label">{{ destaqueHome ? 'Sim' : 'Não' }}</span>
+          </button>
+        </li>
+        <li><strong>Imagem Principal:</strong>
+          <div class="thumbs">
+            <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index">
+              <img [src]="img.value" alt="img" [class.selected]="imagemPrincipal === img.value" (click)="imagemPrincipal = img.value">
+              <div class="thumb-actions">
+                <button type="button" (click)="moveImage(i,-1)">↑</button>
+                <button type="button" (click)="moveImage(i,1)">↓</button>
+                <button type="button" (click)="removeImageAt(i)">✕</button>
+              </div>
+              <div class="pos">{{ i }}</div>
+              <div *ngIf="imagemPrincipal === img.value" class="main-label">Principal</div>
             </div>
-            <div class="pos">{{ i }}</div>
           </div>
-        </div>
-        <input type="file" multiple (change)="onImagesSelected($event)">
-      </div>
+          <input type="file" multiple (change)="onImagesSelected($event)">
+        </li>
+      </ul>
     </div>
   </section>
 

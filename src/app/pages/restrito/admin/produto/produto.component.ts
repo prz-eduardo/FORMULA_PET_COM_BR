@@ -14,6 +14,9 @@ interface AtivoBasic { id: number | string; nome: string; descricao?: string }
   styleUrls: ['./produto.component.scss']
 })
 export class ProdutoComponent implements OnInit {
+    destaqueHome = false;
+    imagemPrincipal: string | null = null;
+  public hoveredImg: number | null = null;
     showCategoryDropdown = false;
     toggleCategoryDropdown() {
       this.showCategoryDropdown = !this.showCategoryDropdown;
@@ -43,7 +46,6 @@ export class ProdutoComponent implements OnInit {
     { key: 'basico', label: 'Básico' },
     { key: 'preco', label: 'Preço/Estoque' },
     { key: 'categorias', label: 'Categoria/Tags' },
-    { key: 'custom', label: 'Customizações' },
     { key: 'revisao', label: 'Revisão' }
   ];
 
@@ -85,6 +87,9 @@ export class ProdutoComponent implements OnInit {
   formulaEnabled = false;
 
   ngOnInit() {
+      // Inicializa destaqueHome e imagemPrincipal
+      this.destaqueHome = false;
+      this.imagemPrincipal = null;
     this.syncPrecoDigitsFromForm();
     this.form = this.fb.group({
       id: [null],
@@ -336,9 +341,9 @@ export class ProdutoComponent implements OnInit {
   isStepValid(i: number): boolean {
     switch (i) {
       case 0: {
-        // Imagem obrigatória
-        const img = this.form.get('image')?.value;
-        return !!img;
+        // Imagem obrigatória (agora usando array images)
+        const imgs = this.form.get('images') as FormArray;
+        return imgs && imgs.length > 0;
       }
       case 1: {
         // Fórmula opcional
@@ -372,18 +377,21 @@ export class ProdutoComponent implements OnInit {
     }
   }
 
+
+  // Mantém compatibilidade, mas não usada mais
   onImageSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e: any) => this.form.patchValue({ image: e.target.result });
+    reader.onload = (e: any) => this.imagesFA.push(this.fb.control<string>(e.target.result));
     reader.readAsDataURL(file);
   }
 
   onImagesSelected(event: any) {
     const files: FileList | undefined = event.target.files;
     if (!files || files.length === 0) return;
-    Array.from(files).forEach((file) => {
+    const max = 3 - this.imagesFA.length;
+    Array.from(files).slice(0, max).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e: any) => this.imagesFA.push(this.fb.control<string>(e.target.result));
       reader.readAsDataURL(file);
@@ -623,16 +631,26 @@ export class ProdutoComponent implements OnInit {
       preco: this.form.value.price,
       tipo,
       ativo: this.form.value.active ?? 1,
+      destaque_home: this.destaqueHome ? 1 : 0,
+      imagem_principal: this.imagemPrincipal,
       categoria_ids,
       tag_ids,
       imagens,
+      customizations: {
+        dosage: this.dosageFA.value,
+        packaging: this.packagingFA.value
+      },
+      stock: this.form.value.stock ?? null,
+      weightValue: this.form.value.weightValue ?? null,
+      weightUnit: this.form.value.weightUnit ?? null,
+      discount: this.form.value.discount ?? null,
+      rating: this.form.value.rating ?? null,
+      estoque_id: this.form.value.estoqueId ?? null
     };
     if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
-    if (this.form.value.estoqueId) body.estoque_id = this.form.value.estoqueId;
-
     // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full
     const legacyId = this.form.value.id;
-  const req$ = legacyId ? this.api.updateProduto(legacyId, {
+    const req$ = legacyId ? this.api.updateProduto(legacyId, {
       id: legacyId,
       name: this.form.value.name,
       description: this.form.value.description,
@@ -647,7 +665,7 @@ export class ProdutoComponent implements OnInit {
       weightValue: this.form.value.weightValue ?? null,
       weightUnit: this.form.value.weightUnit ?? null,
       ativoId: this.form.value.ativoId ?? null,
-      estoqueId: this.form.value.estoqueId ?? null,
+      estoqueId: this.form.value.estoqueId ?? null
     }) : this.api.createMarketplaceProdutoFull(body);
     req$.subscribe({
       next: (res) => {
