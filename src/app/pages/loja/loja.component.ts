@@ -68,6 +68,73 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   minRatingDraft?: number;
 
   @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLButtonElement>;
+
+  async ngOnInit() {
+    // Subscriptions (lightweight) remain synchronous so UI reacts quickly
+    this.store.products$.subscribe(p => {
+      this.produtos = p;
+      this.refreshProductRefs();
+    });
+    this.store.categories$.subscribe(c => this.categorias = c);
+    this.store.meta$.subscribe(m => this.storeMeta = m);
+
+    // React to global auth changes: apenas atualiza perfil; não refaz produtos
+    this.auth.isLoggedIn$.subscribe(async ok => {
+      if (this.lastLoggedIn === ok) return;
+      this.lastLoggedIn = ok ?? false;
+      if (ok) {
+        await this.fetchMe();
+      } else {
+        this.me = null;
+        this.store.resetClienteGate();
+      }
+    });
+
+    // read query params to prefill filters (do not trigger initial fetch here)
+    this.route.queryParamMap.subscribe(params => {
+      const q = params.get('q');
+      const cat = params.get('cat');
+      const login = params.get('login');
+      const fav = params.get('fav');
+      const srt = params.get('sort');
+      const prom = params.get('promo');
+      if (q !== null) this.filtro = q;
+      if (cat !== null) this.categoria = cat;
+      this.promoOnly = prom === '1';
+      if (login === '1') {
+        if (!this.auth.getToken()) this.openLoginAfterScrollTop(); else this.openLoginNearProfile();
+      }
+      this.onlyFavorites = fav === '1';
+      if (srt) {
+        const valid = ['relevance','newest','price_asc','price_desc','rating','popularity','my_favorites'] as const;
+        if ((valid as readonly string[]).includes(srt)) this.sort = srt as any;
+      }
+      // mark that params were initialized; actual products fetch is deferred to initHeavy()
+      if (!this.initializedFromParams) {
+        this.initializedFromParams = true;
+      } else {
+        // subsequent param changes should trigger immediate fetch
+        void this.fetchProducts(true).then(() => this.rebuildInterleavedAndFeatured());
+      }
+    });
+
+    // Defer heavy operations in browser; run immediately on server for prerender
+    const initHeavy = async () => {
+      try { await this.fetchMe(); } catch {}
+      if (!this.auth.getToken()) this.store.clearCart();
+      // Ensure initial products load after params are processed
+      try { await this.fetchProducts(true); this.rebuildInterleavedAndFeatured(); } catch {}
+    };
+
+    // Do not run heavy server-side fetches on SSR to keep response fast.
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => void initHeavy());
+      } else {
+        setTimeout(() => void initHeavy(), 50);
+      }
+    }
+  }
   @ViewChild('profileBtn') profileBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('infiniteAnchor') infiniteAnchor?: ElementRef<HTMLDivElement>;
   private io?: IntersectionObserver;
@@ -76,59 +143,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   private initializedFromParams = false;
 
   constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
-
-  async ngOnInit() {
-    this.store.products$.subscribe(p => {
-      this.produtos = p;
-      // Sempre que a store atualizar (ex.: favoritos otimistas), realinhar as referências
-      this.refreshProductRefs();
-    });
-  this.store.categories$.subscribe(c => this.categorias = c);
-  this.store.meta$.subscribe(m => this.storeMeta = m);
-    // React to global auth changes: apenas atualiza perfil; não refaz produtos
-    this.auth.isLoggedIn$.subscribe(async ok => {
-      if (this.lastLoggedIn === ok) return; // ignore duplicate emissions
-      this.lastLoggedIn = ok ?? false;
-      if (ok) {
-        await this.fetchMe();
-      } else {
-        // On logout from anywhere (Loja or Área do Cliente), reflect immediately
-        this.me = null;
-        this.store.resetClienteGate();
-      }
-    });
-    // try fetch me silently
-    await this.fetchMe();
-    // If not logged in, clear cart as requested
-    if (!this.me) this.store.clearCart();
-  // read query params to prefill filters
-    this.route.queryParamMap.subscribe(async params => {
-      const q = params.get('q');
-      const cat = params.get('cat');
-  const login = params.get('login');
-      const fav = params.get('fav');
-      const srt = params.get('sort');
-      const prom = params.get('promo');
-      if (q !== null) this.filtro = q;
-      if (cat !== null) this.categoria = cat;
-      // promo flag from URL
-      this.promoOnly = prom === '1';
-      if (login === '1') {
-        if (!this.me) this.openLoginAfterScrollTop(); else this.openLoginNearProfile();
-      }
-      this.onlyFavorites = fav === '1';
-      if (srt) {
-        const valid = ['relevance','newest','price_asc','price_desc','rating','popularity','my_favorites'] as const;
-        if ((valid as readonly string[]).includes(srt)) this.sort = srt as any;
-      }
-      // Chama produtos somente no primeiro carregamento; demais filtros acionam fetch explicitamente
-      if (!this.initializedFromParams) {
-        this.initializedFromParams = true;
-        await this.fetchProducts(true);
-      }
-    });
-    // removido: evitamos fetch duplicado; o subscribe de params já chama fetchProducts(true)
-  }
+ 
 
   ngAfterViewInit(): void {
     // Set up infinite scroll observer in browser only
@@ -454,17 +469,21 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.store.getCartTotals().count;
   }
 
+  get hasBackendToken(): boolean {
+    return !!this.auth.getToken();
+  }
+
   async onAddToCart(p: ShopProduct, ev: Event) {
     // If not logged in, clicking cart should trigger login
-  if (!this.me) { this.openLoginAfterScrollTop(); return; }
+    if (!this.auth.getToken()) { this.openLoginAfterScrollTop(); return; }
     const ok = await this.addToCart(p);
     if (ok) this.flyToCart(ev);
   }
 
   // If user clicks cart link and is not logged in, intercept to open login
-  onCartClick(ev: MouseEvent) {
+  async onCartClick(ev: MouseEvent) {
     ev.preventDefault();
-  if (!this.me) { this.openLoginAfterScrollTop(); return; }
+    if (!this.auth.getToken()) { this.openLoginAfterScrollTop(); return; }
     this.router.navigate(['/carrinho']);
   }
 
@@ -592,14 +611,24 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleLogin(ev?: MouseEvent) {
     if (this.showLogin || this.closingLogin) {
       this.closeLogin();
+      ev?.stopPropagation();
+      return;
+    }
+
+    // If we have a backend token, go to Area do Cliente instead of opening the login popover
+    if (this.auth.getToken()) {
+      try { this.router.navigate(['/area-cliente']); } catch { }
+      ev?.stopPropagation();
+      return;
+    }
+
+    // Otherwise open the login popover
+    this.showLogin = true;
+    this.closingLogin = false;
+    if (typeof window !== 'undefined') {
+      requestAnimationFrame(() => this.positionPopover());
     } else {
-      this.showLogin = true;
-      this.closingLogin = false;
-      if (typeof window !== 'undefined') {
-        requestAnimationFrame(() => this.positionPopover());
-      } else {
-        this.positionPopover();
-      }
+      this.positionPopover();
     }
     ev?.stopPropagation();
   }
@@ -810,8 +839,14 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showLogin = false;
         this.email = '';
         this.senha = '';
-        this.store.resetClienteGate();
-        await this.fetchMe();
+        // Populate store cache and localStorage with fresh cliente/me data so other components
+        // see the logged-in state immediately without transiently assuming logged-out.
+        try {
+          const meResp = await this.store.getClienteMe(true);
+          this.me = meResp?.user || meResp || null;
+        } catch {
+          this.me = null;
+        }
         // Não recarregamos produtos aqui para evitar chamadas extras; ícones usam flags do servidor nos cards carregados
         if (this.pendingProduct) {
           await this.store.addToCart(this.pendingProduct, 1);
@@ -860,8 +895,12 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
         localStorage.setItem('userType', 'cliente');
         this.toast.success('Login com Google realizado');
         this.showLogin = false;
-        this.store.resetClienteGate();
-        await this.fetchMe();
+        try {
+          const meResp = await this.store.getClienteMe(true);
+          this.me = meResp?.user || meResp || null;
+        } catch {
+          this.me = null;
+        }
         // Evita recarregar produtos aqui; manter comportamento de uma única chamada inicial
         if (this.pendingProduct) {
           await this.store.addToCart(this.pendingProduct, 1);

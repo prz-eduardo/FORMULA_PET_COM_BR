@@ -1,0 +1,104 @@
+<div class="cupons-wrap">
+  <div class="header">
+    <h2>Cupons</h2>
+    <div class="filters">
+      <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por código, descrição…" />
+      <select [value]="active()" (change)="onActive($event)">
+        <option value="all">Todos</option>
+        <option value="1">Ativos</option>
+        <option value="0">Inativos</option>
+      </select>
+      <button (click)="openCreate()" class="primary">Novo</button>
+    </div>
+  </div>
+
+  <div class="list" *ngIf="items().length; else emptyTpl">
+    <div class="row header-row">
+      <div>Código</div>
+      <div>Descrição</div>
+      <div>Tipo</div>
+      <div>Valor</div>
+      <div>Validade</div>
+      <div>Ativo</div>
+      <div>Usado</div>
+      <div>Ações</div>
+    </div>
+    <div class="row" *ngFor="let s of items()">
+      <div (click)="view(s)">{{ s.codigo }}</div>
+      <div (click)="view(s)">{{ s.descricao || '-' }}</div>
+      <div (click)="view(s)">{{ s.tipo || '-' }}</div>
+      <div (click)="view(s)">{{ s.valor || 0 }}</div>
+      <div (click)="view(s)">{{ s.validade || '-' }}</div>
+      <div><span class="chip" [class.ok]="(s.ativo ?? 1)===1">{{ (s.ativo ?? 1)===1 ? 'Ativo' : 'Inativo' }}</span></div>
+      <div>{{ s.usado ?? 0 }}</div>
+      <div class="actions">
+        <button (click)="view(s)">Editar</button>
+        <button class="danger" (click)="removeItem(s)">Remover</button>
+        <button class="outline" (click)="validar(s.codigo)">Validar</button>
+      </div>
+    </div>
+  </div>
+  <ng-template #emptyTpl>
+    <div class="empty">Nenhum cupom encontrado.</div>
+  </ng-template>
+
+  <div class="pagination" *ngIf="total() > pageSize()">
+    <button (click)="prev()" [disabled]="!canPrev()">Anterior</button>
+    <span>Página {{ page() }} de {{ totalPages() }}</span>
+    <button (click)="next()" [disabled]="!canNext()">Próxima</button>
+  </div>
+
+  <div class="detail" *ngIf="selected() as s">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>{{ s.codigo }}</h3>
+        <div class="head-actions">
+          <button (click)="closeDetail()">Fechar</button>
+          <button class="danger" (click)="remove()">Remover</button>
+          <button class="primary" (click)="save()" [disabled]="form.invalid">Salvar</button>
+        </div>
+      </div>
+      <form [formGroup]="form" class="grid">
+        <div><label>Código</label><input formControlName="codigo" /></div>
+        <div class="colspan2"><label>Descrição</label><input formControlName="descricao" /></div>
+        <div><label>Tipo</label>
+          <select formControlName="tipo"><option value="percentual">Percentual</option><option value="valor">Valor</option></select>
+        </div>
+        <div><label>Valor</label><input formControlName="valor" type="number" /></div>
+        <div><label>Valor mínimo</label><input formControlName="valor_minimo" type="number" /></div>
+        <div><label>Desconto máximo</label><input formControlName="desconto_maximo" type="number" /></div>
+        <div><label>Validade</label><input formControlName="validade" placeholder="YYYY-MM-DD" /></div>
+        <div><label>Primeira compra</label><select formControlName="primeira_compra"><option [ngValue]="0">Não</option><option [ngValue]="1">Sim</option></select></div>
+        <div><label>Frete grátis</label><select formControlName="frete_gratis"><option [ngValue]="0">Não</option><option [ngValue]="1">Sim</option></select></div>
+        <div><label>Ativo</label><select formControlName="ativo"><option [ngValue]="1">Ativo</option><option [ngValue]="0">Inativo</option></select></div>
+        <div><label>Usado</label><input formControlName="usado" type="number" /></div>
+        <div class="colspan2"><label>Restrições (JSON)</label><textarea formControlName="restricoes_json"></textarea></div>
+        <div><label>Max uso</label><input formControlName="max_uso" type="number" /></div>
+        <div><label>Limite por cliente</label><input formControlName="limite_por_cliente" type="number" /></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="create-drawer" *ngIf="showCreate()">
+    <div class="drawer">
+      <div class="drawer-head">
+        <h3>Novo cupom</h3>
+        <button class="ghost" (click)="cancelCreate()">Fechar</button>
+      </div>
+      <form [formGroup]="createForm" (ngSubmit)="create()" class="grid">
+        <div><label>Código</label><input formControlName="codigo" /></div>
+        <div class="colspan2"><label>Descrição</label><input formControlName="descricao" /></div>
+        <div><label>Tipo</label>
+          <select formControlName="tipo"><option value="percentual">Percentual</option><option value="valor">Valor</option></select>
+        </div>
+        <div><label>Valor</label><input formControlName="valor" type="number" /></div>
+        <div><label>Validade</label><input formControlName="validade" placeholder="YYYY-MM-DD" /></div>
+        <div><label>Ativo</label><select formControlName="ativo"><option [ngValue]="1">Ativo</option><option [ngValue]="0">Inativo</option></select></div>
+        <div class="drawer-actions">
+          <button type="button" class="ghost" (click)="cancelCreate()">Cancelar</button>
+          <button type="submit" class="primary" [disabled]="createForm.invalid">Criar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

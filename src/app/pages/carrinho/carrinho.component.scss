@@ -154,18 +154,21 @@
 }
 .btn.light { background: #fff9f0; color: #3a2a1a; box-shadow: none; border: 1px solid rgba(245,167,0,0.10); }
 .vazio { text-align: center; }
-.vazio .empty-text { margin-bottom: 4px; font-size: 16px; font-weight: 800; color: #111827; }
-.vazio .empty-sub { margin: 0 0 8px; color: #374151; }
-.highlight-box { margin-top: 8px; text-align: left; }
-.highlight-box .h-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
-.h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; align-items: stretch; }
-.h-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px; display: grid; grid-template-rows: auto 1fr; gap: 8px; min-height: 240px; }
-.h-item .h-img-box { position: relative; border-radius: 10px; overflow: hidden; }
-.h-item img { width: 100%; height: 140px; object-fit: cover; display: block; }
-.h-item .h-name { position: absolute; left: 8px; right: 8px; bottom: 8px; background: rgba(0,0,0,0.55); color: #fff; font-size: 13px; font-weight: 700; padding: 6px 8px; border-radius: 8px; text-shadow: 0 1px 3px rgba(0,0,0,0.35); }
-.h-item .h-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
-.h-item .h-price { font-size: 14px; font-weight: 800; color: #111827; }
-.h-item .btn.add { padding: 8px 10px; border-radius: 10px; font-size: 14px; }
+.vazio .empty-text { margin-bottom: 4px; font-size: 18px; font-weight: 900; color: #111827; }
+.vazio .empty-sub { margin: 0 0 12px; color: #374151; max-width: 720px; margin-left: auto; margin-right: auto; }
+
+.empty-main { display: grid; gap: 10px; align-items: center; justify-items: center; padding: 18px 8px; }
+.empty-illustration { width: 96px; height: 96px; display: grid; place-items: center; font-size: 42px; border-radius: 999px; background: linear-gradient(180deg,#fffbe0,#f5f5d4); box-shadow: 0 8px 30px rgba(245,167,0,0.08); }
+.vazio-actions { display: flex; gap: 10px; margin-top: 6px; width: 100%; max-width: 420px; justify-content: center; }
+.vazio-actions .btn { padding: 10px 14px; border-radius: 10px; }
+
+.suggestions { margin-top: 14px; text-align: left; }
+.suggestions-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
+.suggestions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; align-items: stretch; }
+.suggestions-grid app-product-card-v2 { display: block; }
+
+/* keep old h-grid rules for backward compatibility but hide them to avoid conflicts */
+.h-grid, .h-item { display: none; }
 
 /* Highlights when cart has items */
 .cart-highlights { margin-top: 16px; }

@@ -151,7 +151,7 @@ export class GaleriaPublicaComponent {
       if (!el) return;
       // If suppression is active, ignore this click (used right after opening)
       if ((this as any)._suppressDocClose) return;
-      if (el.closest && (el.closest('.reaction-wrapper') || el.closest('.reaction-picker') || el.closest('.btn-like'))) return;
+      if (el.closest && (el.closest('.reaction-wrapper') || el.closest('.reaction-picker') || el.closest('.btn-like') || el.closest('.menu') || el.closest('.icon-menu') || el.closest('.nav-overlay'))) return;
       // otherwise close and clear any preview timers
       this.reactionPickerOpenFor = null;
       try { this._clearAllAutoTimers(); } catch (e) {}

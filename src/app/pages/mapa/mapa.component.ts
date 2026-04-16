@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, NgZone, ApplicationRef } from '@angular/core';
 import { filter, take } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
@@ -10,7 +11,7 @@ import { FooterComponent } from '../../footer/footer.component';
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [CommonModule, NavmenuComponent, FooterComponent],
+  imports: [CommonModule, NavmenuComponent, FooterComponent, RouterModule],
   templateUrl: './mapa.component.html',
   styleUrls: ['./mapa.component.scss']
 })

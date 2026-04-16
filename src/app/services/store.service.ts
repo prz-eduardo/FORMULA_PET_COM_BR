@@ -30,6 +30,7 @@ export interface ShopProduct {
   inStock?: boolean | number | null;
   imageUrl?: string | null;
   images?: Array<{ id: number; url: string; posicao?: number | null }>
+  created_at?: string | Date;
 }
 export interface StoreCategory { id: number; nome: string; produtos: number; }
 export interface StoreTag { id: number; nome: string; produtos: number; }
@@ -94,7 +95,11 @@ export class StoreService {
      *  Pass forceRefresh=true to bypass cache and re-fetch from server.
      */
     async getClienteMe(forceRefresh: boolean = false): Promise<any> {
-      const token = this.isBrowser() && typeof window !== 'undefined' ? (localStorage.getItem('token') || undefined) : undefined;
+        // Avoid performing external requests during server-side rendering.
+        if (!this.isBrowser()) {
+          return this.clienteMeCache || null;
+        }
+        const token = this.isBrowser() && typeof window !== 'undefined' ? (localStorage.getItem('token') || undefined) : undefined;
       // Return cached value when available and not forcing refresh
       if (!forceRefresh && this.clienteMeCache) {
         return this.clienteMeCache;
@@ -444,6 +449,12 @@ export class StoreService {
 
   // Session helpers
   async isClienteLoggedSilent(): Promise<boolean> {
+    // During SSR we should not attempt network calls; assume not logged.
+    if (!this.isBrowser()) {
+      this.clienteChecked = true;
+      this.isCliente = false;
+      return false;
+    }
     if (this.clienteChecked) return this.isCliente;
     try {
       const resp = await this.getClienteMe();

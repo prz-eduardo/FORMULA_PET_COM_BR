@@ -11,7 +11,7 @@ import { AdminApiService, Paged, ProdutoDto } from '../../../../services/admin-a
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './lista-produtos.component.html',
-  styleUrl: './lista-produtos.component.scss'
+  styleUrls: ['./lista-produtos.component.scss']
 })
 export class ListaProdutosComponent implements OnInit {
   private api = inject(AdminApiService);

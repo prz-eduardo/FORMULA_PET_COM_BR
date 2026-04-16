@@ -148,9 +148,18 @@ export interface AdminFornecedorDto {
   endereco?: string | null;
   obs?: string | null;
   ativo?: 0 | 1;
+  // Optional administrative fields for partners
+  tipo?: string | number | null; // partner type id
+  numero?: string | null; // endereço número
+  complemento?: string | null; // endereço complemento
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  status?: string | null; // e.g. 'pending'|'approved'|'rejected'
   created_at?: string;
   updated_at?: string;
 }
+
+export interface PartnerTypeDto { id?: number | string; name: string }
 
 // Fórmulas (manipulados)
 export interface FormulaDto {
@@ -237,6 +246,29 @@ export interface PromocaoDto {
   ui?: PromocaoUiInfo; // payload de UI calculado no backend
   produtos?: Array<{ id: number; nome?: string; name?: string; preco?: string | number; price?: string | number }>; // resumo
 }
+
+// Cupons (admin)
+export interface CupomDto {
+  id?: number | string;
+  codigo: string;
+  descricao?: string | null;
+  tipo?: 'percentual' | 'valor';
+  valor?: number;
+  valor_minimo?: number | null;
+  desconto_maximo?: number | null;
+  primeira_compra?: 0 | 1;
+  frete_gratis?: 0 | 1;
+  ativo?: 0 | 1;
+  validade?: string | null; // YYYY-MM-DD
+  max_uso?: number | null;
+  limite_por_cliente?: number | null;
+  restricoes_json?: string | null;
+  usado?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CupomPayload = Omit<CupomDto, 'id' | 'created_at' | 'updated_at'>;
 
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
@@ -337,6 +369,25 @@ export class AdminApiService {
       if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
     }
     return this.http.get<Paged<any>>(`${this.baseUrl}/ativos`, { headers: this.headers(), params: httpParams });
+  }
+
+  // Partner types (fornecedores) - allow admin to manage types/categories of partners
+  listPartnerTypes(): Observable<PartnerTypeDto[]> {
+    return this.http.get<any>(`${this.baseUrl}/fornecedores/tipos`, { headers: this.headers() }).pipe(
+      map((res) => Array.isArray(res) ? res : (res?.data ?? []))
+    );
+  }
+
+  createPartnerType(name: string): Observable<PartnerTypeDto> {
+    return this.http.post<PartnerTypeDto>(`${this.baseUrl}/fornecedores/tipos`, { name }, { headers: this.headers() });
+  }
+
+  updatePartnerType(id: string | number, name: string): Observable<PartnerTypeDto> {
+    return this.http.put<PartnerTypeDto>(`${this.baseUrl}/fornecedores/tipos/${id}`, { name }, { headers: this.headers() });
+  }
+
+  deletePartnerType(id: string | number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/fornecedores/tipos/${id}`, { headers: this.headers() });
   }
 
   getAtivo(id: string | number): Observable<any> {
@@ -541,6 +592,39 @@ export class AdminApiService {
       if (params.limit != null) httpParams = httpParams.set('limit', String(params.limit));
     }
     return this.http.get<any>(`${this.baseUrl}/dashboard/coupons`, { headers: this.headers(), params: httpParams });
+  }
+
+  // Cupons (admin)
+  listCupons(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1; expired?: 0 | 1 }): Observable<Paged<CupomDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+      if (typeof params.expired === 'number') httpParams = httpParams.set('expired', String(params.expired));
+    }
+    return this.http.get<Paged<CupomDto>>(`${this.baseUrl}/cupons`, { headers: this.headers(), params: httpParams });
+  }
+
+  getCupom(id: string | number): Observable<CupomDto> {
+    return this.http.get<CupomDto>(`${this.baseUrl}/cupons/${id}`, { headers: this.headers() });
+  }
+
+  createCupom(body: CupomPayload): Observable<CupomDto> {
+    return this.http.post<CupomDto>(`${this.baseUrl}/cupons`, body, { headers: this.headers() });
+  }
+
+  updateCupom(id: string | number, body: Partial<CupomPayload>): Observable<CupomDto> {
+    return this.http.put<CupomDto>(`${this.baseUrl}/cupons/${id}`, body, { headers: this.headers() });
+  }
+
+  deleteCupom(id: string | number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/cupons/${id}`, { headers: this.headers() });
+  }
+
+  validarCupom(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/cupons/validar`, payload, { headers: this.headers() });
   }
 
   // Fórmulas - cadastro

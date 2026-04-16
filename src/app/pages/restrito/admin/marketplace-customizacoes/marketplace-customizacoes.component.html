@@ -5,6 +5,12 @@
       <p class="sub">Gerencie categorias e tags usadas na vitrine e filtros.</p>
     </div>
     <div class="tools">
+      <label class="select-all">
+        <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll($any($event.target).checked)" />
+        Selecionar todos
+      </label>
+      <button class="btn danger" (click)="bulkDeleteSelected()" [disabled]="!areAnySelected()">Excluir selecionados</button>
+      <button class="btn" (click)="bulkDisableSelected()" [disabled]="!areAnySelected()">Desativar selecionados</button>
       <button class="btn ghost" (click)="load()" [disabled]="loading()">{{ loading() ? 'Atualizando…' : 'Atualizar' }}</button>
       <button class="btn primary" (click)="save()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar alterações' }}</button>
     </div>
@@ -18,10 +24,14 @@
       </div>
       <div class="empty" *ngIf="!categorias.length">Nenhuma categoria ainda.</div>
       <div class="list" *ngIf="categorias.length">
-        <div class="row" *ngFor="let c of categorias.controls; let i = index" [formGroup]="$any(c)">
+        <div class="row" *ngFor="let c of categorias.controls; let i = index" [formGroup]="$any(c)" [class.marked-for-delete]="$any(c.get('remove')?.value)" [class.disabled]="$any(c.get('disabled')?.value)">
+          <div class="field tiny center">
+            <label>Sel</label>
+            <input type="checkbox" formControlName="selected" />
+          </div>
           <div class="field small">
             <label>ID</label>
-            <input type="text" formControlName="id" placeholder="novo" [disabled]="true" />
+            <input type="text" formControlName="id" placeholder="novo" [readonly]="true" />
           </div>
           <div class="field grow">
             <label>Nome</label>
@@ -54,10 +64,14 @@
       </div>
       <div class="empty" *ngIf="!tags.length">Nenhuma tag ainda.</div>
       <div class="list" *ngIf="tags.length">
-        <div class="row" *ngFor="let t of tags.controls; let i = index" [formGroup]="$any(t)">
+        <div class="row" *ngFor="let t of tags.controls; let i = index" [formGroup]="$any(t)" [class.marked-for-delete]="$any(t.get('remove')?.value)" [class.disabled]="$any(t.get('disabled')?.value)">
+          <div class="field tiny center">
+            <label>Sel</label>
+            <input type="checkbox" formControlName="selected" />
+          </div>
           <div class="field small">
             <label>ID</label>
-            <input type="text" formControlName="id" placeholder="novo" [disabled]="true" />
+            <input type="text" formControlName="id" placeholder="novo" [readonly]="true" />
           </div>
           <div class="field grow">
             <label>Nome</label>

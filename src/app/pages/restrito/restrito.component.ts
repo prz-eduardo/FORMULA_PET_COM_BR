@@ -5,7 +5,7 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './restrito.component.html',
-  styleUrl: './restrito.component.scss'
+  styleUrls: ['./restrito.component.scss']
 })
 export class RestritoComponent {
 

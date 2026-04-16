@@ -71,6 +71,7 @@ export class AdminComponent implements OnInit {
   goToFornecedores() { this.router.navigate(['/restrito/admin/fornecedores']); }
   goToAtivos() { this.router.navigate(['/restrito/admin/ativos']); }
   goToInsumos() { this.router.navigate(['/restrito/admin/insumos']); }
+  goToParceiros() { this.router.navigate(['/restrito/admin/parceiros']); }
 
   // Header user menu
   toggleUserMenu(force?: boolean) {

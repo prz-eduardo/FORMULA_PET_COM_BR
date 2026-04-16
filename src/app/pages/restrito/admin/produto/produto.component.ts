@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
 
 interface AtivoBasic { id: number | string; nome: string; descricao?: string }
@@ -33,6 +34,7 @@ export class ProdutoComponent implements OnInit {
   public router = inject(Router);
 
   form!: FormGroup;
+  private imagesSub: Subscription | null = null;
   loading = signal(false);
   saving = signal(false);
   error = signal<string | null>(null);
@@ -105,7 +107,7 @@ export class ProdutoComponent implements OnInit {
       rating: [null],
       stock: [null],
       tags: this.fb.array<string>([]),
-      weightValue: [0],
+      weightValue: [null],
       weightUnit: ['g'],
       images: this.fb.array<string>([]),
       customizations: this.fb.group({
@@ -117,7 +119,16 @@ export class ProdutoComponent implements OnInit {
     });
 
     // initialize formula toggle based on any pre-filled form value
-    this.formulaEnabled = !!this.form.value.formulaId;
+    this.formulaEnabled = !!(this.form?.value?.formulaId);
+
+    // manter a imagem principal atualizada: selecionar automaticamente a primeira imagem quando houver
+    this.imagesSub = this.imagesFA.valueChanges.subscribe((vals: string[]) => {
+      if (Array.isArray(vals) && vals.length > 0) {
+        if (!this.imagemPrincipal || !vals.includes(this.imagemPrincipal)) this.imagemPrincipal = vals[0];
+      } else {
+        this.imagemPrincipal = null;
+      }
+    });
 
     // Carregar categorias, tags, dosagens e embalagens de customizacoes
     this.api.getMarketplaceCustomizacoes().subscribe({
@@ -283,10 +294,51 @@ export class ProdutoComponent implements OnInit {
     return c?.name || '—';
   }
 
+  // Promo helpers
+  promoLabel(): string {
+    const p: any = this.promocaoSelecionada as any;
+    if (!p) return '—';
+    if (p.ui && p.ui.valor_label) return p.ui.valor_label;
+    if (p.tipo === 'percentual') return `${p.valor}%`;
+    if (p.tipo === 'valor') return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.valor) || 0);
+    return '—';
+  }
+
+  discountedPriceValue(): number | null {
+    const p: any = this.promocaoSelecionada as any;
+    const price = Number(this.form?.value?.price);
+    if (!p || isNaN(price)) return null;
+    const valor = Number(p.valor);
+    if (isNaN(valor)) return null;
+    if (p.tipo === 'percentual') return Math.max(0, price * (1 - valor / 100));
+    if (p.tipo === 'valor') return Math.max(0, price - valor);
+    return null;
+  }
+
+  // limpa o valor 0 quando o usuário foca o campo (UX)
+  clearWeightIfZero() {
+    const v = this.form.get('weightValue')?.value;
+    if (v === 0 || v === '0') this.form.patchValue({ weightValue: null });
+  }
+
+  // normaliza o valor de weightValue para número ou null (não retornar 0)
+  private parseWeightValue(v: any): number | null {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (!trimmed) return null;
+      const num = Number(trimmed.replace(',', '.'));
+      if (isNaN(num)) return null;
+      return num === 0 ? null : num;
+    }
+    if (typeof v === 'number') return v === 0 ? null : v;
+    return null;
+  }
+
   // footer next button label
   nextLabel(): string {
     // Step 1 (Fórmula): permitir pular se nenhuma fórmula selecionada
-    if (this.step() === 1 && !this.form.value.formulaId) return 'Pular';
+    if (this.step() === 1 && !this.form.get('formulaId')?.value) return 'Pular';
     return 'Avançar';
   }
 
@@ -308,7 +360,7 @@ export class ProdutoComponent implements OnInit {
           discount: p.discount ?? null,
           rating: p.rating ?? null,
           stock: p.stock ?? null,
-          weightValue: p.weightValue ?? 0,
+          weightValue: p.weightValue ?? null,
           weightUnit: p.weightUnit ?? 'g',
         });
         this.tagsFA.clear(); (p.tags || []).forEach(t => this.tagsFA.push(this.fb.control<string>(t)));
@@ -341,12 +393,11 @@ export class ProdutoComponent implements OnInit {
   isStepValid(i: number): boolean {
     switch (i) {
       case 0: {
-        // Imagem obrigatória (agora usando array images)
         const imgs = this.form.get('images') as FormArray;
-        return imgs && imgs.length > 0;
+        return !!imgs && imgs.length > 0;
       }
       case 1: {
-        // Fórmula opcional
+        // Fórmula é opcional
         return true;
       }
       case 2: {
@@ -442,10 +493,13 @@ export class ProdutoComponent implements OnInit {
   // (Removido: duplicidade de ngAfterViewInit)
 
   ngOnDestroy() {
-    document.removeEventListener('click', this.handleClickOutsideDropdown.bind(this));
+    try { document.removeEventListener('click', this.handleClickOutsideDropdown.bind(this)); } catch(e) {}
+    if (this.imagesSub) { this.imagesSub.unsubscribe(); this.imagesSub = null; }
   }
 
   handleClickOutsideDropdown(event: MouseEvent) {
+    const el = event.target as HTMLElement | null;
+    if (el && el.closest && (el.closest('.menu') || el.closest('.icon-menu') || el.closest('.nav-overlay'))) return;
     const dropdown = document.querySelector('.custom-dropdown');
     if (dropdown && !dropdown.contains(event.target as Node)) {
       this.showCategoryDropdown = false;
@@ -596,7 +650,7 @@ export class ProdutoComponent implements OnInit {
 
   // Mantém apenas a versão correta do resetForm
   // Atualizar resetForm para novo campo manipulado
-  resetForm() { this.form.reset({ manipulado: false, active: 1, price: 0, weightValue: 0, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; }
+  resetForm() { this.form.reset({ manipulado: false, active: 1, price: 0, weightValue: null, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; }
 
   fixRating(event: any) {
     const v = parseFloat(event.target.value);
@@ -609,66 +663,69 @@ export class ProdutoComponent implements OnInit {
     for (let s = 0; s <= 3; s++) {
       if (!this.isStepValid(s)) { this.markStepTouched(s); this.error.set('Preencha os campos obrigatórios.'); return; }
     }
-    this.error.set(null); this.saving.set(true);
+    this.error.set(null);
+    this.saving.set(true);
+    const fv: any = this.form?.value || {};
     // map tags names -> ids
     const tagNameToId = new Map(this.tagsList.map(t => [t.name, t.id] as [string, number | string]));
-    const tag_ids = (this.tagsFA.value as string[])
+    const tag_ids = (this.tagsFA.value as string[] || [])
       .map(n => tagNameToId.get(n))
       .filter((v): v is number | string => v != null);
-    const categoria_ids = this.form.value.categoryId ? [this.form.value.categoryId] : [];
+    const categoria_ids = fv.categoryId ? [fv.categoryId] : [];
     // imagens com posição: primeira do array é capa (posicao 0); se houver 'image' single, insere como capa antes da galeria
-    const gallery: string[] = this.imagesFA.value as string[];
+    const gallery: string[] = (this.imagesFA?.value || []) as string[];
     const imagens: Array<{ data: string; posicao: number }> = [];
-    const cover = this.form.value.image as string | null;
+    const cover = fv.image as string | null;
     let pos = 0;
-    if (cover) { imagens.push({ data: cover, posicao: pos++ }); }
-    gallery.forEach(img => imagens.push({ data: img, posicao: pos++ }));
+    if (cover) { imagens.push({ data: cover as string, posicao: pos++ }); }
+    gallery.forEach(img => { if (typeof img === 'string') imagens.push({ data: img, posicao: pos++ }); });
 
-    const tipo: 'pronto' | 'manipulado' = this.form.value.manipulado ? 'manipulado' : 'pronto';
+    const tipo: 'pronto' | 'manipulado' = fv.manipulado ? 'manipulado' : 'pronto';
+    const parsedWeight = this.parseWeightValue(fv.weightValue);
     const body: any = {
-      nome: this.form.value.name,
-      descricao: this.form.value.description,
-      preco: this.form.value.price,
+      nome: fv.name,
+      descricao: fv.description,
+      preco: fv.price,
       tipo,
-      ativo: this.form.value.active ?? 1,
+      ativo: fv.active ?? 1,
       destaque_home: this.destaqueHome ? 1 : 0,
       imagem_principal: this.imagemPrincipal,
       categoria_ids,
       tag_ids,
       imagens,
       customizations: {
-        dosage: this.dosageFA.value,
-        packaging: this.packagingFA.value
+        dosage: this.dosageFA.value ?? [],
+        packaging: this.packagingFA.value ?? []
       },
-      stock: this.form.value.stock ?? null,
-      weightValue: this.form.value.weightValue ?? null,
-      weightUnit: this.form.value.weightUnit ?? null,
-      discount: this.form.value.discount ?? null,
-      rating: this.form.value.rating ?? null,
-      estoque_id: this.form.value.estoqueId ?? null
+      stock: fv.stock ?? null,
+      weightValue: parsedWeight,
+      weightUnit: fv.weightUnit ?? null,
+      discount: fv.discount ?? null,
+      rating: fv.rating ?? null,
+      estoque_id: fv.estoqueId ?? null
     };
-    if (tipo === 'manipulado') body.formula_id = this.form.value.formulaId;
+    if (tipo === 'manipulado') body.formula_id = fv.formulaId;
     // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full
-    const legacyId = this.form.value.id;
+    const legacyId = fv.id;
     const req$ = legacyId ? this.api.updateProduto(legacyId, {
       id: legacyId,
-      name: this.form.value.name,
-      description: this.form.value.description,
-      price: this.form.value.price,
-      image: this.form.value.image ?? null,
-      category: (this.categoriasList.find(c => c.id === this.form.value.categoryId)?.name) || '',
-      customizations: { dosage: this.dosageFA.value, packaging: this.packagingFA.value },
-      tags: this.tagsFA.value,
-      discount: this.form.value.discount ?? null,
-      rating: this.form.value.rating ?? null,
-      stock: this.form.value.stock ?? null,
-      weightValue: this.form.value.weightValue ?? null,
-      weightUnit: this.form.value.weightUnit ?? null,
-      ativoId: this.form.value.ativoId ?? null,
-      estoqueId: this.form.value.estoqueId ?? null
+      name: fv.name,
+      description: fv.description,
+      price: fv.price,
+      image: fv.image ?? null,
+      category: (this.categoriasList.find((c: any) => c.id === fv.categoryId)?.name) || '',
+      customizations: { dosage: this.dosageFA.value ?? [], packaging: this.packagingFA.value ?? [] },
+      tags: this.tagsFA.value ?? [],
+      discount: fv.discount ?? null,
+      rating: fv.rating ?? null,
+      stock: fv.stock ?? null,
+      weightValue: parsedWeight,
+      weightUnit: fv.weightUnit ?? null,
+      ativoId: fv.ativoId ?? null,
+      estoqueId: fv.estoqueId ?? null
     }) : this.api.createMarketplaceProdutoFull(body);
     req$.subscribe({
-      next: (res) => {
+      next: (res: any) => {
         // Após criar, se houver promoção selecionada, vincular produto à promoção
         const newId = res?.id;
         const promoId = this.promocaoSelecionada?.id;
@@ -681,7 +738,7 @@ export class ProdutoComponent implements OnInit {
         }
         this.saving.set(false); this.success.set('Produto salvo com sucesso.'); this.form.patchValue({ id: res.id });
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error(err);
         this.saving.set(false);
         // Se backend retornar 409 por existir produto com mesmo ativo, oferecemos reativar/editar
@@ -691,8 +748,8 @@ export class ProdutoComponent implements OnInit {
           if (wantReactivate && alvo?.id != null) {
             this.saving.set(true);
             this.api.reativarProduto(alvo.id).subscribe({
-              next: (r) => { this.saving.set(false); this.success.set('Produto reativado com sucesso.'); this.form.patchValue({ id: r.id }); },
-              error: (e2) => { console.error(e2); this.saving.set(false); this.error.set('Falha ao reativar. Você pode editar o existente.'); }
+              next: (r: any) => { this.saving.set(false); this.success.set('Produto reativado com sucesso.'); this.form.patchValue({ id: r.id }); },
+              error: (e2: any) => { console.error(e2); this.saving.set(false); this.error.set('Falha ao reativar. Você pode editar o existente.'); }
             });
             return;
           } else {

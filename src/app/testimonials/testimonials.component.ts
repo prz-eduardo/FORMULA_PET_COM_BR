@@ -9,7 +9,7 @@ import 'swiper/element/bundle';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './testimonials.component.html',
-  styleUrl: './testimonials.component.scss',
+  styleUrls: ['./testimonials.component.scss'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class TestimonialsComponent implements OnInit, OnDestroy {

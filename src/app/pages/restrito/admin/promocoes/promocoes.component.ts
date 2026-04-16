@@ -126,6 +126,8 @@ export class AdminPromocoesComponent implements OnInit {
       });
       const ids = (det.produtos ?? []).map((x: any) => x.id);
       this.produtosVinculados.set(ids);
+      // Open the modal with the loaded promotion data
+      this.showCreateModal.set(true);
     });
   }
 

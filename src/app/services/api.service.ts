@@ -304,6 +304,24 @@ export class ApiService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/clientes`, cliente);
   }
 
+  // Cadastro público de anunciantes/parceiros
+  registerAnunciante(payload: any): Observable<any> {
+    const url = `${this.baseUrl}/anunciantes/register`;
+    return this.http.post<any>(url, payload).pipe(
+      catchError((err) => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/anunciantes/register`;
+            return this.http.post<any>(fallback, payload).pipe(catchError(() => of(null)));
+          } catch (e) {
+            return of(null);
+          }
+        }
+        return of(null);
+      }) as any
+    );
+  }
+
   // front
   loginVet(payload: { email?: string; senha?: string; idToken?: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/vets/login-vet`, payload);
@@ -561,6 +579,17 @@ export class ApiService {
   buscarCepBrasilAPI(cep: string): Observable<any> {
     const clean = (cep || '').replace(/\D/g, '');
     return this.http.get(`https://brasilapi.com.br/api/cep/v1/${clean}`);
+  }
+
+  // Geocode an address using Nominatim (OpenStreetMap) — returns an array of results
+  geocodeAddress(address: string): Observable<any[]> {
+    try {
+      const q = encodeURIComponent((address || '').trim() + ' Brasil');
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`;
+      return this.http.get<any[]>(url).pipe(catchError(() => of([])));
+    } catch (e) {
+      return of([]);
+    }
   }
 
   // Public maps endpoint: returns partner vets and mapsApiKey (if backend exposes it)

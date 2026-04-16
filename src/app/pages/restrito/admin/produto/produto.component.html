@@ -3,7 +3,7 @@
     <h2>{{ form.value.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
     <div class="stepper">
       <button type="button" *ngFor="let s of steps; let i = index"
-              [class.active]="step()===i" [class.done]="i<step()"
+              [class.active]="step() === i" [class.done]="i < step()"
               (click)="goToStep(i)">{{i+1}}. {{s.label}}</button>
     </div>
   </div>
@@ -328,6 +328,38 @@
   .sugestao-main { font-weight:600; color: #f8fbff; }
   .sugestao-sub { font-size:0.9rem; color: rgba(230,238,248,0.65); margin-top:4px; }
   .sugestao-item.focused, .sugestao.none.focused, .sugestao-item:hover, .sugestao.none:hover { background: rgba(255,255,255,0.02); }
+  
+  /* Review / layout */
+  .review-card { background: #0f1724; border-radius: 12px; padding: 1.1rem; color: #e6eef8; max-width: 920px; box-shadow: 0 8px 30px rgba(2,6,23,0.6); margin-bottom:1rem; }
+  .review-header h3 { margin:0 0 0.6rem 0; font-size:1.25rem; color:#fff; }
+  .review-layout { display:grid; grid-template-columns: 1fr 320px; gap:1rem; align-items:start; }
+  .review-left { min-width:0; }
+  .review-list { display:block; }
+  .review-row { display:flex; gap:1rem; align-items:flex-start; padding:0.5rem 0; border-bottom:1px solid rgba(255,255,255,0.02); }
+  .review-row:last-child { border-bottom:none; }
+  .review-label { width:160px; flex:0 0 160px; font-weight:700; color: rgba(230,238,248,0.75); }
+  .review-value { flex:1; color:#dbeafe; }
+  .review-tag { display:inline-block; background: rgba(13,184,222,0.08); color:#9fe8ff; padding:0.25rem 0.5rem; border-radius:999px; margin-right:0.4rem; margin-bottom:0.35rem; font-size:0.9rem; }
+
+  /* Right column - main image + thumbs */
+  .review-right { display:flex; flex-direction:column; gap:12px; align-items:stretch; }
+  .main-image { width:100%; height:220px; border-radius:8px; overflow:hidden; background:#061018; border:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; }
+  .main-image img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  .thumbs { display:flex; flex-wrap:wrap; gap:8px; }
+  .thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; background:#061018; border:2px solid transparent; flex:0 0 72px; cursor:pointer; }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb.selected { border-color:#27EF9F; box-shadow:0 4px 16px rgba(39,239,159,0.12); transform:translateY(-2px); }
+  .thumb .thumb-actions { position:absolute; right:6px; bottom:6px; display:flex; gap:6px; opacity:0; transition:opacity .12s; }
+  .thumb:hover .thumb-actions { opacity:1; }
+  .thumb .thumb-actions button { background:#0db8de; border-radius:6px; border:none; color:#071; padding:4px 6px; cursor:pointer; opacity:0.95; font-size:0.85rem; }
+  .thumb .main-label { position:absolute; top:6px; left:6px; background:#27EF9F; color:#071; padding:3px 7px; border-radius:6px; font-weight:700; font-size:0.72rem; z-index:2; }
+
+  @media (max-width: 880px) {
+    .review-layout { grid-template-columns: 1fr; }
+    .review-label { width: 140px; flex:0 0 140px; }
+    .main-image { height:180px; }
+  }
   </style>
 
   <!-- STEP 4: Categoria/Tags -->
@@ -360,51 +392,130 @@
 
 
 
-  <!-- STEP 6: Revisão e Envio -->
-  <section *ngIf="step()===6" class="step step-revisao">
-    <div class="review">
-      <h4>Revisão</h4>
-      <ul>
-        <li><strong>Tipo:</strong> {{ form.value.formulaId ? 'manipulado' : 'pronto' }}</li>
-        <li *ngIf="form.value.formulaId"><strong>Fórmula:</strong> {{ formulaNameById(form.value.formulaId) }}</li>
-        <li *ngIf="estoqueSelecionado"><strong>Lote:</strong> {{ estoqueSelecionado.lote || '—' }} ({{ estoqueSelecionado.quantity }} {{ estoqueSelecionado.unit_code }})</li>
-        <li><strong>Nome:</strong> {{ form.value.name }}</li>
-        <li><strong>Descrição:</strong> {{ form.value.description }}</li>
-        <li><strong>Preço:</strong> {{ form.value.price | currency:'BRL':'symbol-narrow' }}</li>
-        <li><strong>Estoque:</strong> {{ form.value.stock ?? '—' }}</li>
-        <li><strong>Categoria:</strong> {{ categoryNameById(form.value.categoryId) }}</li>
-        <li><strong>Tags:</strong> {{ (form.value.tags || []).join(', ') || '—' }}</li>
-        <li><strong>Campanha:</strong> {{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</li>
-        <li><strong>Ativo:</strong>
-          <button type="button" class="toggle-btn" [class.active]="form.value.active === 1" (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})">
-            <span class="toggle-bg"><span class="toggle-circle"></span></span>
-            <span class="toggle-label">{{ form.value.active === 1 ? 'Ativo' : 'Inativo' }}</span>
-          </button>
-        </li>
-        <li><strong>Destaque na Home:</strong>
-          <button type="button" class="toggle-btn" [class.active]="destaqueHome" (click)="destaqueHome = !destaqueHome">
-            <span class="toggle-bg"><span class="toggle-circle"></span></span>
-            <span class="toggle-label">{{ destaqueHome ? 'Sim' : 'Não' }}</span>
-          </button>
-        </li>
-        <li><strong>Imagem Principal:</strong>
-          <div class="thumbs">
-            <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index">
-              <img [src]="img.value" alt="img" [class.selected]="imagemPrincipal === img.value" (click)="imagemPrincipal = img.value">
-              <div class="thumb-actions">
-                <button type="button" (click)="moveImage(i,-1)">↑</button>
-                <button type="button" (click)="moveImage(i,1)">↓</button>
-                <button type="button" (click)="removeImageAt(i)">✕</button>
-              </div>
-              <div class="pos">{{ i }}</div>
+  <!-- STEP: Revisão e Envio (último passo) -->
+  <section *ngIf="step()===steps.length-1" class="step step-revisao">
+    <div class="review-v2">
+      <div class="review-v2-header">
+        <h3>Revisão do Produto</h3>
+      </div>
+
+      <div class="review-v2-body">
+        
+        <div class="review-left">
+          <section class="group">
+            <h4>Básico</h4>
+            <div class="kv"><div class="kv-row"><div class="k">Tipo</div><div class="v">{{ form.value.formulaId ? 'Manipulado' : 'Pronto' }}</div></div>
+              <div class="kv-row" *ngIf="form.value.formulaId"><div class="k">Fórmula</div><div class="v">{{ formulaNameById(form.value.formulaId) }}</div></div>
+              <div class="kv-row"><div class="k">Nome</div><div class="v">{{ form.value.name || '—' }}</div></div>
+              <div class="kv-row"><div class="k">Descrição</div><div class="v">{{ form.value.description || '—' }}</div></div>
+            </div>
+          </section>
+
+          <section class="group">
+            <h4>Preço & Estoque</h4>
+            <div class="kv">
+              <div class="kv-row"><div class="k">Preço</div><div class="v">{{ form.value.price | currency:'BRL':'symbol-narrow' }}</div></div>
+              <div class="kv-row"><div class="k">Estoque</div><div class="v">{{ form.value.stock ?? '—' }}</div></div>
+              <div class="kv-row"><div class="k">Unidade</div><div class="v">{{ form.value.weightValue ? (form.value.weightValue + ' ' + (form.value.weightUnit || 'g')) : '—' }}</div></div>
+            </div>
+          </section>
+
+          <section class="group">
+            <h4>Categoria & Tags</h4>
+            <div class="kv">
+              <div class="kv-row"><div class="k">Categoria</div><div class="v">{{ categoryNameById(form.value.categoryId) }}</div></div>
+              <div class="kv-row"><div class="k">Tags</div><div class="v">
+                <ng-container *ngIf="(form.value.tags || []).length; else noTagsV2">
+                  <span class="tag" *ngFor="let t of form.value.tags">{{ t }}</span>
+                </ng-container>
+                <ng-template #noTagsV2>—</ng-template>
+              </div></div>
+            </div>
+          </section>
+
+          <section class="group">
+            <h4>Campanha & Visibilidade</h4>
+            <div *ngIf="promocaoSelecionada && (promocaoSelecionada.ui?.status === 'expired' || promocaoSelecionada.ui?.status === 'inactive')" class="promo-alert">
+              <strong>Atenção:</strong>
+              <span *ngIf="promocaoSelecionada.ui?.status === 'expired'"> campanha expirada{{ promocaoSelecionada.ui?.end?.human ? ' (' + promocaoSelecionada.ui?.end?.human + ')' : '' }}.</span>
+              <span *ngIf="promocaoSelecionada.ui?.status === 'inactive'"> campanha inválida.</span>
+            </div>
+            <div class="kv">
+              <div class="kv-row"><div class="k">Campanha</div><div class="v">{{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</div></div>
+              <div class="kv-row"><div class="k">Ativo</div><div class="v"><button type="button" class="toggle-btn" [class.active]="form.value.active === 1" (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})"><span class="toggle-label">{{ form.value.active === 1 ? 'Ativo' : 'Inativo' }}</span></button></div></div>
+              <div class="kv-row"><div class="k">Destaque</div><div class="v"><button type="button" class="toggle-btn" [class.active]="destaqueHome" (click)="destaqueHome = !destaqueHome"><span class="toggle-label">{{ destaqueHome ? 'Sim' : 'Não' }}</span></button></div></div>
+            </div>
+          </section>
+
+        </div>
+
+        <aside class="review-right">
+          <div class="main-image" *ngIf="imagemPrincipal; else noMainV2">
+            <img [src]="imagemPrincipal" alt="Imagem principal">
+          </div>
+          <ng-template #noMainV2>
+            <div class="main-image empty">Sem imagem principal</div>
+          </ng-template>
+
+          <div class="thumbs-row">
+            <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index" [class.selected]="imagemPrincipal === img.value" (click)="imagemPrincipal = img.value; $event.stopPropagation()">
+              <img [src]="img.value" alt="thumb {{i+1}}">
               <div *ngIf="imagemPrincipal === img.value" class="main-label">Principal</div>
             </div>
           </div>
-          <input type="file" multiple (change)="onImagesSelected($event)">
-        </li>
-      </ul>
+
+          <div class="submit-row">
+            <button type="button" class="btn-sec" (click)="goToStep(0)">Editar imagens</button>
+          </div>
+
+        </aside>
+
+      </div>
     </div>
-  </section>
+
+    <style>
+    .review-v2 { background:#0d1417; border-radius:12px; padding:18px; color:#e6eef8; box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+    .review-v2-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .review-v2-header h3 { margin:0; font-size:1.2rem; color:#fff; }
+    .review-header-actions .link { background:transparent; border:none; color:#8bd7ff; cursor:pointer; margin-left:6px; }
+    .review-v2-body { display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start; }
+    .group { margin-bottom:12px; }
+    .group h4 { margin:0 0 8px 0; font-size:0.95rem; color:#9fe8ff; }
+    .kv { display:block; }
+    .kv-row { display:flex; gap:12px; padding:6px 0; border-bottom:1px dashed rgba(255,255,255,0.03); align-items:flex-start; }
+    .kv-row:last-child { border-bottom:0; }
+    .kv .k { width:130px; flex:0 0 130px; color:#9fb; font-weight:700; }
+    .kv .v { flex:1; color:#dbeafe; }
+    .tag { display:inline-block; background:rgba(39,239,159,0.08); color:#27ef9f; padding:4px 8px; border-radius:999px; margin:0 6px 6px 0; font-size:0.85rem; }
+
+    .review-right { display:flex; flex-direction:column; gap:12px; }
+    .main-image { width:100%; height:240px; border-radius:8px; overflow:hidden; background:#071017; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.03); }
+    .main-image img { width:100%; height:100%; object-fit:cover; display:block; }
+    .main-image.empty { color:rgba(255,255,255,0.35); font-size:0.95rem; display:flex; align-items:center; justify-content:center; }
+
+    .thumbs-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .thumb { width:64px; height:64px; border-radius:8px; overflow:hidden; border:2px solid transparent; cursor:pointer; position:relative; }
+    .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .thumb.selected { border-color:#27EF9F; box-shadow:0 6px 18px rgba(39,239,159,0.08); transform:translateY(-2px); }
+    .thumb-actions { position:absolute; right:4px; bottom:4px; display:flex; gap:6px; opacity:0; transition:opacity .12s; }
+    .thumb:hover .thumb-actions { opacity:1; }
+    .thumb-actions button { background:#0db8de; border-radius:6px; border:none; color:#071; padding:3px 6px; cursor:pointer; font-size:0.75rem; }
+    .main-label { position:absolute; top:6px; left:6px; background:#27EF9F; color:#071; padding:3px 7px; border-radius:6px; font-weight:700; font-size:0.72rem; z-index:2; }
+
+    .promo-alert { background: rgba(255,184,107,0.05); border-left: 4px solid #ffb86b; color: #ffddb8; padding:8px 12px; border-radius:8px; margin-bottom:8px; font-weight:700; }
+    .promo-alert strong { color: #ffd79a; margin-right:6px; }
+
+    .submit-row { display:flex; justify-content:space-between; gap:8px; margin-top:8px; }
+    .btn-sec { background:transparent; color:#9fe8ff; border:1px solid rgba(159,232,255,0.06); padding:8px 12px; border-radius:8px; }
+    .btn-primary { background:#27EF9F; color:#071; border:none; padding:8px 14px; border-radius:8px; font-weight:700; }
+
+    @media (max-width:900px) {
+      .review-v2-body { grid-template-columns:1fr; }
+      .kv .k { width:110px; flex:0 0 110px; }
+      .main-image { height:180px; }
+      .review-header-actions { display:none; }
+    }
+    </style>
 
   <!-- Sticky footer actions -->
   <div class="footer-actions">
@@ -413,7 +524,7 @@
   <button type="button" class="btn-next" *ngIf="step()<steps.length-1" (click)="nextStep()">{{ nextLabel() }}</button>
     <button type="button" class="btn-submit" *ngIf="step()===steps.length-1" (click)="submit()">{{ form.value.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
   </div>
-</div>
+</section>
 
   <!-- Modais Taxonomias -->
   <div class="modal" *ngIf="showCategoryModal">

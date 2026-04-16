@@ -1,12 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-// import { SwiperTopoComponent } from '../../swiper-topo/swiper-topo.component';
-// import { HeroComponent } from '../../hero/hero.component';
-import { FooterComponent } from '../../footer/footer.component';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { StoreService, ShopProduct } from '../../services/store.service';
-import { RouterLink } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 // import { HeroComponent } from '../hero/hero.component';
 // import { ProductPreviewComponent } from '../product-preview/product-preview.component';
@@ -21,8 +17,8 @@ import { CurrencyPipe } from '@angular/common';
     CommonModule,
   // SwiperTopoComponent,
   // HeroComponent,
-    FooterComponent,
-    NavmenuComponent,
+    // FooterComponent,
+    // NavmenuComponent,
     RouterLink,
     CurrencyPipe,
     // TestimonialsComponent,
@@ -34,9 +30,37 @@ import { CurrencyPipe } from '@angular/common';
 })
 export class HomeComponent implements OnInit {
   produtos: ShopProduct[] = [];
-  constructor(public store: StoreService) {}
+  loading = false;
+  constructor(public store: StoreService, private router: Router) {}
 
   async ngOnInit() {
-    this.produtos = await this.store.loadHomeHighlights();
+    const loadHighlights = async () => {
+      try {
+        this.loading = true;
+        // Prefer the dedicated highlights endpoint for Home so we display the
+        // curated items the backend provides (fall back to empty array).
+        const items = await this.store.loadHomeHighlights();
+        this.produtos = Array.isArray(items) ? (items.slice(0, 8) as ShopProduct[]) : [];
+      } catch {
+        // fail silently; keep produtos empty
+      } finally {
+        this.loading = false;
+      }
+    };
+
+    // Avoid running data fetches on the server to keep SSR fast.
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => void loadHighlights());
+      } else {
+        setTimeout(() => void loadHighlights(), 50);
+      }
+    }
+  }
+
+  goToStore() {
+    this.router.navigate(['/loja'], { queryParams: { src: 'home' } }).then(() => {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    });
   }
 }

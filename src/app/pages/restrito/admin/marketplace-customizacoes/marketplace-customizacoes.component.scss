@@ -12,6 +12,7 @@ section{background:#0f2135;border:1px solid #263241;border-radius:12px;padding:1
 .list{display:flex;flex-direction:column;gap:10px}
 .row{display:flex;gap:10px;flex-wrap:wrap;border:1px dashed #263241;border-radius:8px;padding:10px}
 .field{display:flex;flex-direction:column;min-width:140px}
+.field.tiny{min-width:56px;max-width:72px}
 .field.small{min-width:110px;max-width:140px}
 .field.grow{flex:1 1 260px}
 .field.center{justify-content:flex-end}
@@ -31,3 +32,9 @@ section{background:#0f2135;border:1px solid #263241;border-radius:12px;padding:1
 .ok{color:#22c55e}
 .err{color:#f87171}
 .empty{padding:24px;border:1px dashed #334155;border-radius:8px;color:#9aa4b2;text-align:center}
+
+.row.marked-for-delete{opacity:0.6;text-decoration:line-through}
+.row.disabled{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));opacity:0.9}
+.tools{display:flex;gap:8px;align-items:center}
+.select-all{display:inline-flex;align-items:center;gap:8px;color:#cbd5e1}
+.select-all input[type=checkbox]{width:16px;height:16px}

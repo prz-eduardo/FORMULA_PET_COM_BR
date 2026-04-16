@@ -100,7 +100,9 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     try { this.store.clearCart(); } catch {}
   }
 
-  private onDocClick = (_e: MouseEvent) => {
+  private onDocClick = (e: MouseEvent) => {
+    const el = e.target as HTMLElement | null;
+    if (el && el.closest && (el.closest('.menu') || el.closest('.icon-menu') || el.closest('.nav-overlay'))) return;
     if (this.menuAberto) this.menuAberto = false;
   };
 

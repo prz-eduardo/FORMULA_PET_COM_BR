@@ -12,7 +12,7 @@ import { ApiService } from '../services/api.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe, NavmenuComponent],
   templateUrl: './product-details.component.html',
-  styleUrl: './product-details.component.scss'
+  styleUrls: ['./product-details.component.scss']
 })
 export class ProductDetailsComponent implements OnInit {
   product: ShopProduct | null = null;
@@ -55,7 +55,15 @@ export class ProductDetailsComponent implements OnInit {
   async toggleFav() {
     if (!this.product) return;
     const ok = await this.store.toggleFavorite(this.product.id);
-    if (ok) this.isFavLocal = !this.isFavLocal;
+    if (ok) {
+      this.isFavLocal = !this.isFavLocal;
+      // update local snapshot for immediate UX feedback
+      if (this.product) {
+        const base = typeof this.product.favoritesCount === 'number' ? this.product.favoritesCount : 0;
+        const delta = this.isFavLocal ? 1 : -1;
+        this.product.favoritesCount = Math.max(0, base + delta);
+      }
+    }
   }
 
   async addToCart(ev: Event) {

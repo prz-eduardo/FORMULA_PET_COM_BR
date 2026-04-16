@@ -245,21 +245,20 @@
 
     <ng-template #vazio>
       <div class="card vazio">
-        <div class="empty-text">Seu carrinho ainda está vazio 😺</div>
-        <p class="empty-sub">Enquanto isso, separamos alguns favoritos da nossa loja para você começar:</p>
-        <div class="highlight-box" *ngIf="!loadingHighlights && highlights?.length">
-          <h3 class="h-title">Sugestões que seu pet vai amar</h3>
-          <div class="h-grid">
-            <div class="h-item" *ngFor="let p of highlights | slice:0:8">
-              <div class="h-img-box">
-                <img [src]="p.image" [alt]="p.name" />
-                <div class="h-name">{{ p.name }}</div>
-              </div>
-              <div class="h-bottom">
-                <div class="h-price">{{ store.getPriceWithDiscount(p) | currency:'BRL' }}</div>
-                <button type="button" class="btn add" (click)="store.addToCart(p, 1)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
-              </div>
-            </div>
+        <div class="empty-main">
+          <div class="empty-illustration" aria-hidden="true">🐾</div>
+          <div class="empty-text">Seu carrinho ainda está vazio 😺</div>
+          <p class="empty-sub">Enquanto isso, separamos alguns favoritos da nossa loja para você começar.</p>
+          <div class="vazio-actions">
+            <button class="btn primary" (click)="router.navigate(['/loja'])">Ir para a loja</button>
+            <button class="btn light" (click)="router.navigate(['/'])">Continuar navegando</button>
+          </div>
+        </div>
+
+        <div class="suggestions" *ngIf="!loadingHighlights && highlights?.length">
+          <h3 class="suggestions-title">Sugestões que seu pet vai amar</h3>
+          <div class="suggestions-grid">
+            <app-product-card-v2 *ngFor="let p of highlights | slice:0:8" [product]="p" (add)="store.addToCart(p,1)"></app-product-card-v2>
           </div>
         </div>
       </div>

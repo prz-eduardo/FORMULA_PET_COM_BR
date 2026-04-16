@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, NgZone } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, NgZone, OnDestroy } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { NavmenuComponent } from './navmenu/navmenu.component';
@@ -19,11 +19,12 @@ import { register } from 'swiper/element/bundle';
     RouterOutlet,
     ToastContainerComponent,
     NavmenuComponent,
+    FooterComponent,
   ],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'FORMULA_PET_COM_BR';
   deviceType: string = 'desktop';
 
@@ -33,7 +34,21 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.detectDevice();
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        document.documentElement.classList.add('force-light');
+        document.body.classList.add('force-light');
+      } catch (e) {}
+    }
+  }
 
+  ngOnDestroy(): void {
+    try {
+      if (isPlatformBrowser(this.platformId)) {
+        document.documentElement.classList.remove('force-light');
+        document.body.classList.remove('force-light');
+      }
+    } catch (e) {}
 
   }
 

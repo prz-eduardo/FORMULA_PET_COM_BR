@@ -5,13 +5,14 @@ import { StoreService, ShopProduct } from '../../services/store.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, Receita } from '../../services/api.service';
 import { PrescriptionPickerComponent } from '../../components/prescription-picker/prescription-picker.component';
+import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-carrinho',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule],
+  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule, ProductCardV2Component],
   templateUrl: './carrinho.component.html',
   styleUrls: ['./carrinho.component.scss']
 })
@@ -78,7 +79,7 @@ export class CarrinhoComponent implements OnInit {
   private revalidateTimer?: any;
   private needsRevalidate = false;
 
-  constructor(public store: StoreService, private api: ApiService, private router: Router, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(public store: StoreService, private api: ApiService, public router: Router, @Inject(PLATFORM_ID) private platformId: Object) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();

@@ -11,7 +11,7 @@ import { firstValueFrom } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login-cliente.component.html',
-  styleUrl: './login-cliente.component.scss'
+  styleUrls: ['./login-cliente.component.scss']
 })
 export class LoginClienteComponent {
   @Output() close = new EventEmitter<void>();

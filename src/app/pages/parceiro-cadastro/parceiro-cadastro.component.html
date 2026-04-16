@@ -1,0 +1,70 @@
+<div class="partner-register-wrap">
+  <h2>Cadastro de Parceiro</h2>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="grid">
+      <div>
+        <label>Nome *</label>
+        <input formControlName="nome" />
+      </div>
+      <div>
+        <label>Tipo *</label>
+        <select formControlName="tipo">
+          <option value="">-- selecione --</option>
+          <option *ngFor="let t of types" [value]="t.id">{{ t.nome || t.label || t.id }}</option>
+        </select>
+      </div>
+      <div>
+        <label>Email *</label>
+        <input type="email" formControlName="email" />
+      </div>
+      <div>
+        <label>Telefone *</label>
+        <input formControlName="telefone" maxlength="15" inputmode="tel" (input)="onTelefoneInput($event)" placeholder="(00) 00000-0000" />
+      </div>
+      <div>
+        <label>CEP *</label>
+        <input formControlName="cep" maxlength="9" inputmode="numeric" (input)="onCepInput($event)" placeholder="00000-000" />
+      </div>
+      <div class="colspan2">
+        <label>Endereço *</label>
+        <input formControlName="endereco" />
+      </div>
+      <div>
+        <label>Número</label>
+        <input formControlName="numero" />
+      </div>
+      <div>
+        <label>Complemento</label>
+        <input formControlName="complemento" />
+      </div>
+      <div>
+        <label>Cidade</label>
+        <input formControlName="cidade" />
+      </div>
+      <div>
+        <label>Estado</label>
+        <input formControlName="estado" />
+      </div>
+      <div>
+        <label>Latitude</label>
+        <input formControlName="latitude" readonly />
+      </div>
+      <div>
+        <label>Longitude</label>
+        <input formControlName="longitude" readonly />
+      </div>
+      <div class="colspan2">
+        <label>Descrição</label>
+        <textarea formControlName="descricao"></textarea>
+      </div>
+      <div class="colspan2">
+        <label>Logo URL</label>
+        <input formControlName="logoUrl" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary" [disabled]="form.invalid || loading">Enviar cadastro</button>
+    </div>
+  </form>
+</div>

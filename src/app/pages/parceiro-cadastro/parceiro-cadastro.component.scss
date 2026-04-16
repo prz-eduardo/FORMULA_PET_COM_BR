@@ -1,0 +1,24 @@
+.partner-register-wrap{padding:18px;background:#fff;border-radius:10px;max-width:820px;margin:18px auto}
+.partner-register-wrap h2{margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid > div{display:flex;flex-direction:column;gap:6px}
+.grid label{font-size:13px;color:#374151}
+.grid input, .grid textarea{padding:8px;border:1px solid #e5e7eb;border-radius:8px}
+.grid .colspan2{grid-column:span 2}
+.actions{display:flex;justify-content:flex-end;margin-top:12px}
+
+.actions button.primary{
+	background: linear-gradient(90deg, #ff6a85, #ff455f);
+	color: #fff;
+	border: 0;
+	padding: 10px 16px;
+	border-radius: 8px;
+	font-weight: 600;
+}
+.actions button.primary:disabled{
+	opacity: 0.65;
+	cursor: not-allowed;
+	filter: grayscale(10%);
+}
+
+@media (max-width:760px){.grid{grid-template-columns:1fr}.partner-register-wrap{padding:12px;margin:12px}}

@@ -50,33 +50,119 @@ export class MarketplaceCustomizacoesAdminComponent implements OnInit {
       nome: [c?.nome ?? '', Validators.required],
       slug: [c?.slug ?? ''],
       icone: [c?.icone ?? ''],
-      remove: [false]
+      remove: [false],
+      selected: [false],
+      disabled: [false]
     });
     this.categorias.push(g);
   }
-  removeCategoria(i: number) { this.categorias.removeAt(i); }
+  removeCategoria(i: number) {
+    const g = this.categorias.at(i);
+    const id = g?.get('id')?.value;
+    if (id) {
+      g.patchValue({ remove: true, selected: false });
+    } else {
+      this.categorias.removeAt(i);
+    }
+  }
 
   addTag(t?: Partial<MarketplaceTag>) {
     const g = this.fb.group({
       id: [t?.id ?? null],
       nome: [t?.nome ?? '', Validators.required],
-      remove: [false]
+      remove: [false],
+      selected: [false],
+      disabled: [false]
     });
     this.tags.push(g);
   }
-  removeTag(i: number) { this.tags.removeAt(i); }
+  removeTag(i: number) {
+    const g = this.tags.at(i);
+    const id = g?.get('id')?.value;
+    if (id) {
+      g.patchValue({ remove: true, selected: false });
+    } else {
+      this.tags.removeAt(i);
+    }
+  }
+
+  // Selection helpers
+  selectedCount() {
+    const cat = this.categorias.controls.reduce((acc: number, c: any) => acc + (c.get('selected')?.value ? 1 : 0), 0);
+    const tag = this.tags.controls.reduce((acc: number, t: any) => acc + (t.get('selected')?.value ? 1 : 0), 0);
+    return cat + tag;
+  }
+  areAnySelected() { return this.selectedCount() > 0; }
+  areAllSelected() {
+    const total = this.categorias.length + this.tags.length;
+    return total > 0 && this.selectedCount() === total;
+  }
+  toggleSelectAll(checked: boolean) {
+    this.categorias.controls.forEach((c: any) => c.patchValue({ selected: checked }));
+    this.tags.controls.forEach((t: any) => t.patchValue({ selected: checked }));
+  }
+
+  bulkDeleteSelected() {
+    const count = this.selectedCount();
+    if (!count) return;
+    if (!confirm(`Confirmar exclusão de ${count} itens selecionados?`)) return;
+    const catRemoveIdx: number[] = [];
+    this.categorias.controls.forEach((c: any, i: number) => {
+      const v = c.value;
+      if (v.selected) {
+        if (v.id) {
+          c.patchValue({ remove: true, selected: false });
+        } else {
+          catRemoveIdx.push(i);
+        }
+      }
+    });
+    catRemoveIdx.sort((a,b)=>b-a).forEach(i=> this.categorias.removeAt(i));
+
+    const tagRemoveIdx: number[] = [];
+    this.tags.controls.forEach((t: any, i: number) => {
+      const v = t.value;
+      if (v.selected) {
+        if (v.id) {
+          t.patchValue({ remove: true, selected: false });
+        } else {
+          tagRemoveIdx.push(i);
+        }
+      }
+    });
+    tagRemoveIdx.sort((a,b)=>b-a).forEach(i=> this.tags.removeAt(i));
+
+    this.save();
+  }
+
+  bulkDisableSelected() {
+    const count = this.selectedCount();
+    if (!count) return;
+    if (!confirm(`Confirmar desativação de ${count} itens selecionados?`)) return;
+    this.categorias.controls.forEach((c: any) => {
+      if (c.value.selected) c.patchValue({ disabled: true, selected: false });
+    });
+    this.tags.controls.forEach((t: any) => {
+      if (t.value.selected) t.patchValue({ disabled: true, selected: false });
+    });
+    this.save();
+  }
 
   private buildPayload() {
     const categorias = this.categorias.controls.map((c: any) => {
       const v = c.value;
       if (v.remove && v.id) return { id: Number(v.id), delete: true };
+      if (v.disabled && v.id) return { id: Number(v.id), disabled: true };
       if (v.id) return { id: Number(v.id), nome: v.nome || undefined, slug: v.slug || undefined, icone: v.icone || undefined };
+      if (v.disabled) return { nome: v.nome, slug: v.slug || undefined, icone: v.icone || undefined, disabled: true };
       return { nome: v.nome, slug: v.slug || undefined, icone: v.icone || undefined };
     });
     const tags = this.tags.controls.map((t: any) => {
       const v = t.value;
       if (v.remove && v.id) return { id: Number(v.id), delete: true };
+      if (v.disabled && v.id) return { id: Number(v.id), disabled: true };
       if (v.id) return { id: Number(v.id), nome: v.nome || undefined };
+      if (v.disabled) return { nome: v.nome, disabled: true };
       return { nome: v.nome };
     });
     return { categorias, tags };

@@ -170,7 +170,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       const menuLink: NodeListOf<HTMLElement> = document.querySelectorAll('.menu-link.sub');
 
       if (iconMenu && menu) {
-        iconMenu.addEventListener('click', this.openMenu.bind(this, menu, iconMenu));
         menuLink.forEach((el) => {
           el.addEventListener('click', this.openSubmenu);
         });

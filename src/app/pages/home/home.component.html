@@ -1,11 +1,18 @@
-<section id="header" class="header">  
-  <app-navmenu></app-navmenu>
-</section>
-
 <div class="spacer-1vh"></div>
 
   <!-- Seção de Banner -->
   <section id="swiper-topo" class="swiper-topo">
+    <!-- Inline SVG defs: clipPath to create a curved bottom that is truly transparent -->
+    <svg width="0" height="0" style="position:absolute;opacity:0;pointer-events:none;"> 
+      <defs>
+        <!-- clipPathUnits=objectBoundingBox lets us use normalized coordinates (0..1) so the curve scales with the element -->
+        <clipPath id="hero-clip" clipPathUnits="objectBoundingBox">
+          <!-- Visible area: top rectangle with a curved bottom edge. Lower the curve so it doesn't cut text -->
+          <path d="M0 0 L1 0 L1 0.96 C0.82 0.995 0.66 1 0.5 1 C0.34 1 0.18 0.995 0 0.96 Z" />
+        </clipPath>
+      </defs>
+    </svg>
+
     <!-- Banner estático da Home (imagem diferente da loja) -->
     <section class="home-hero-banner" aria-label="Farmácia de manipulação veterinária">
       <div class="banner-overlay" aria-hidden="true"></div>
@@ -31,11 +38,7 @@
           </div>
         </div>
       </div>
-      <div class="banner-wave" aria-hidden="true">
-        <svg viewBox="0 0 1440 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,80 C240,150 480,10 720,60 C960,110 1200,140 1440,60 L1440,140 L0,140 Z"></path>
-        </svg>
-      </div>
+      <!-- banner-wave removed: we now use clipPath to make the bottom of the hero truly transparent -->
     </section>
     <!-- <app-swiper-topo app-swiper-topo></app-swiper-topo> -->
   <section class="info-section">
@@ -186,7 +189,7 @@
 <section id="products-highlight" class="home-products" *ngIf="produtos?.length">
   <div class="highlight-header">
     <h3 class="hp-title">Em destaque</h3>
-    <a routerLink="/loja" class="btn link-all">Ir para a loja</a>
+    <button (click)="goToStore()" class="btn link-all" aria-label="Ir para a loja">Ir para a loja <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i></button>
   </div>
   <div class="hp-grid upgraded">
   <a class="hp-card pro" *ngFor="let p of produtos" [routerLink]="['/produto', p.id]" [queryParams]="{ src: 'home' }">
@@ -238,12 +241,7 @@
   <!-- Componente com formulário de contato e dados -->
 </section>
 
-<!-- Rodapé -->
- 
-<footer>
-  <app-footer></app-footer> 
-  <!-- Componente para o rodapé com informações gerais -->
-</footer>
+<!-- Rodapé: moved to app shell -->
 
   <!-- about -->
   <div class="about">

@@ -75,9 +75,9 @@ img, video, canvas, svg {
     --admin-bg: #0d151f;
     --admin-surface: #0f1722;
     --admin-border: rgba(255,255,255,0.08);
-    --admin-card: #ffffff;
-    --admin-text: #0f1722;
-    --admin-muted: #6b7280;
+    --admin-card: rgba(255,255,255,0.02);
+    --admin-text: #e5ecf5;
+    --admin-muted: #9fb0c3;
     --admin-primary: #0db8de;
     --admin-primary-ink: #05222b;
     --admin-warn: #f59e0b;
@@ -108,10 +108,9 @@ a, button, input, textarea, select {
 
 /* Target common admin wrappers to normalize controls */
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) {
-    color: #0f1722;
+    color: var(--admin-text);
 }
 
-/* Controls */
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) input,
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) select,
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) textarea {
@@ -119,8 +118,8 @@ a, button, input, textarea, select {
     padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid var(--admin-border);
-    background: #fff;
-    color: #111827;
+    background: var(--admin-card);
+    color: var(--admin-text);
     outline: none;
     transition: box-shadow .18s ease, border-color .18s ease;
 }
@@ -136,14 +135,14 @@ a, button, input, textarea, select {
     padding: 8px 12px;
     border-radius: 10px;
     border: 1px solid var(--admin-border);
-    background: #fff;
-    color: #0f1722;
+    background: var(--admin-card);
+    color: var(--admin-text);
     cursor: pointer;
     transition: transform .12s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button:hover {
     transform: translateY(-1px);
-    background: #f8fafc;
+    background: rgba(255,255,255,0.035);
 }
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.primary {
     background: var(--admin-primary);
@@ -175,6 +174,8 @@ a, button, input, textarea, select {
 }
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) button.secondary {
     background: #f8fafc;
+    color: var(--brand-ink);
+    border-color: rgba(0,0,0,0.06);
 }
 
 /* Chips / Badges */
@@ -182,8 +183,8 @@ a, button, input, textarea, select {
     font-size: 12px;
     border-radius: 999px;
     padding: 4px 8px;
-    border: 1px solid #e5e7eb;
-    background: #f8fafc;
+    border: 1px solid var(--admin-border);
+    background: var(--admin-card);
     display: inline-flex; align-items: center; gap: 6px;
 }
 .chip.ok, .badge.ok{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46 }
@@ -195,16 +196,16 @@ a, button, input, textarea, select {
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) table {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
     border-radius: 12px;
     overflow: hidden;
 }
-:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) thead { background: #f8fafc; }
+:where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) thead { background: rgba(255,255,255,0.02); }
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) th,
 :where(.promos-wrap, .people-wrap, .fornec-wrap, .estoque-wrapper, .lista-produtos-wrapper) td {
     padding: 10px 12px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
     text-align: left;
 }
 
@@ -491,4 +492,40 @@ body > #global-privacy-modal .modal-content,
         max-width: 760px !important;
         margin: 0 auto !important;
     }
+}
+
+/* === Force Light Mode override ===
+   When the `force-light` class is added to <html> or <body> we override
+   common CSS variables and surfaces so the UI stays in light mode even
+   if the browser attempts to force a dark theme (e.g., Opera forced dark).
+   This uses `color-scheme` and `forced-color-adjust` to opt-out of forced
+   color adjustments where supported, and applies explicit backgrounds/colors.
+*/
+html.force-light, body.force-light {
+    color-scheme: light;
+    forced-color-adjust: none;
+    --card-bg: #edf2f7;
+    --card-bg-dark: #edf2f7;
+    --primary: #2b2b2b;
+    --brand-50: #fbfde6;
+    --brand-ink: #222100;
+    --result-bg: #ffffff;
+    --result-ink: #111111;
+    background-color: #f5f5f5 !important;
+    color: #111827 !important;
+}
+
+/* Ensure the map container itself keeps the intended light surface */
+html.force-light .gmap, body.force-light .gmap {
+    background: linear-gradient(180deg,#f6f7fb,#ffffff) !important;
+    box-shadow: 0 8px 36px rgba(0,0,0,0.08) !important;
+    border: 1px solid rgba(0,0,0,0.04) !important;
+    filter: none !important;
+}
+
+/* Avoid browser forced alterations inside the forced-light scope */
+html.force-light *, body.force-light * {
+    color-scheme: light !important;
+    forced-color-adjust: none !important;
+    filter: none !important;
 }
