@@ -16,7 +16,6 @@
     justify-content: center;
     gap: 1rem;
     margin-bottom: 1.5rem;
-
     button {
       padding: 0.6rem 1.2rem;
       border-radius: 8px;
@@ -24,10 +23,66 @@
       cursor: pointer;
       border: none;
       transition: 0.2s all;
+      min-width: 150px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-add { background: #0DB8DE; color: #fff; &:hover { background: #27EF9F; color: #000; } }
     .btn-toggle { background: #fbbf24; color: #000; &:hover { background: #f59e0b; } }
+  }
+
+  /* compact switch used for Active toggle (shared) */
+  .switch {
+    width: 44px;
+    height: 26px;
+    border-radius: 999px;
+    background: #6b7280;
+    border: none;
+    position: relative;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.18s ease;
+    flex: 0 0 auto;
+  }
+  .switch::after { content: ''; position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left .18s ease; }
+  .switch.on { background: #10b981; }
+  .switch.on::after { left: calc(100% - 22px); }
+
+  .filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 1rem 0 1.25rem;
+    align-items: center;
+  }
+  .filters input[type="text"], .filters select {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.04);
+    color: #ECF0F5;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    outline: none;
+    min-width: 140px;
+    box-shadow: none;
+  }
+  .filters input[type="text"] { flex: 1 1 300px; }
+  .filters select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image: linear-gradient(45deg, rgba(236,240,245,0.7) 50%, transparent 50%), linear-gradient(135deg, transparent 50%, rgba(236,240,245,0.7) 50%);
+    background-position: calc(100% - 14px) calc(50% - 6px), calc(100% - 10px) calc(50% - 6px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    background-color: rgba(255,255,255,0.02);
+  }
+  .filters input[type="text"]:focus, .filters select:focus {
+    border-color: rgba(13,184,222,0.9);
+    box-shadow: 0 0 0 3px rgba(13,184,222,0.08);
   }
 
   /* GRID CARDS */
@@ -71,9 +126,24 @@
 
     .produto-actions {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
+      gap: 0.6rem;
       padding: 0.5rem 1rem 1rem 1rem;
-      button { border-radius: 6px; padding: 0.4rem 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+      align-items: center;
+      button {
+        border-radius: 6px;
+        padding: 0.4rem 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.12s ease;
+        min-width: 72px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-toggle { background: #6b7280; color: #fff; }
+      .btn-toggle.active { background: #10b981; color: #fff; }
       .btn-edit { background: #fbbf24; color: #000; &:hover { background: #f59e0b; } }
       .btn-delete { background: #ef4444; color: #fff; &:hover { background: #b91c1c; } }
     }
@@ -92,6 +162,10 @@
     .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
     .tag { background: #27EF9F; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 2px; }
     button { border-radius: 6px; padding: 0.3rem 0.6rem; font-weight: 600; cursor: pointer; }
+    .actions { display: flex; gap: 0.5rem; align-items: center; }
+      .btn-toggle { min-width: 72px; height: 32px; background: #6b7280; color: #fff; }
+      .btn-toggle.active { background: #10b981; color: #fff; }
+      
     .btn-edit { background: #fbbf24; color: #000; &:hover { background: #f59e0b; } }
     .btn-delete { background: #ef4444; color: #fff; &:hover { background: #b91c1c; } }
   }
@@ -118,6 +192,34 @@
 
 .produtos-table {
   min-width: 680px; /* força tabela a não ficar compacta demais */
+}
+
+/* Ajustes para evitar que os botões fujam da célula em vista de tabela */
+.produtos-table td.actions-cell { 
+  width: 220px; 
+  max-width: 220px; 
+  vertical-align: middle;
+}
+.produtos-table .actions { 
+  display: flex; 
+  gap: 0.4rem; 
+  align-items: center; 
+  justify-content: flex-end; 
+  flex-wrap: wrap; /* permite quebrar em linhas se não couber */
+}
+.produtos-table .actions button { 
+  padding: 0.25rem 0.6rem; 
+  min-width: 56px; 
+  height: 32px; 
+  font-size: 0.85rem; 
+}
+.produtos-table .btn-toggle { background: #6b7280; color: #fff; }
+.produtos-table .btn-toggle.active { background: #10b981; color: #fff; }
+
+@media(max-width: 900px){
+  .produtos-table td.actions-cell { width: 160px; max-width: 160px; }
+  .produtos-table .actions button { min-width: 48px; height: 28px; padding: 0.2rem 0.45rem; font-size: 0.78rem; }
+  .produto-actions button { min-width: auto; }
 }
 
 .preco-antigo {

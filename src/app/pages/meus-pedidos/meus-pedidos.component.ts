@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { RouterOutlet } from '@angular/router';
+import { AdminPaginationComponent } from '../restrito/admin/shared/admin-pagination/admin-pagination.component';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -12,7 +13,7 @@ import { isPlatformBrowser } from '@angular/common';
 @Component({
   selector: 'app-meus-pedidos',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavmenuComponent, RouterOutlet],
+  imports: [CommonModule, FormsModule, NavmenuComponent, RouterOutlet, AdminPaginationComponent],
   templateUrl: './meus-pedidos.component.html',
   styleUrls: ['./meus-pedidos.component.scss']
 })

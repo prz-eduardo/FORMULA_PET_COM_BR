@@ -3,6 +3,7 @@ import { CommonModule, DatePipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminApiService } from '../../../../services/admin-api.service';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 
 // We'll render charts with Chart.js directly to avoid Angular wrapper peer conflicts
 import Chart from 'chart.js/auto';
@@ -10,7 +11,7 @@ import Chart from 'chart.js/auto';
 @Component({
   selector: 'app-dashboard-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ButtonDirective, ButtonComponent],
   providers: [DatePipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -83,6 +84,8 @@ export class DashboardAdminComponent implements OnInit {
   }
 
   reload() { this.destroyCharts(); this.load(); }
+
+  goToRelatorios() { this.router.navigate(['/restrito/admin/relatorios']); }
 
   private load() {
     this.loading.set(true);

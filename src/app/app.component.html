@@ -1,11 +1,17 @@
 <!-- Header fixo -->
-<app-navmenu></app-navmenu>
+<app-navmenu *ngIf="showNav"></app-navmenu>
 
 <!-- Aqui entram todas as rotas (Home, Login, Admin) -->
-<router-outlet></router-outlet>
+<main class="app-main" [class.no-nav]="!showNav"><router-outlet></router-outlet></main>
 
 <!-- Footer fixo -->
-<app-footer></app-footer>
+<app-footer *ngIf="showFooter"></app-footer>
+
+<!-- Global login modal (opened by dispatching 'open-login' on window) -->
+<div class="login-overlay" *ngIf="showLoginModal" (click)="closeLoginModal()"></div>
+<div class="login-popover" *ngIf="showLoginModal" role="dialog" aria-label="Login do cliente" (click)="$event.stopPropagation()">
+	<app-login></app-login>
+</div>
 
 <!-- Global toast container -->
 <app-toast-container></app-toast-container>

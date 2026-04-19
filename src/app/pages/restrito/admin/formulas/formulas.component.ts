@@ -1,12 +1,16 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { AdminListingComponent } from '../../../../shared/admin-listing/admin-listing.component';
+import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, FormulaDto, FormulaItemDto, ProductFormDto, UnitDto } from '../../../../services/admin-api.service';
 
 @Component({
   selector: 'app-admin-formulas',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AdminPaginationComponent, ButtonDirective, ButtonComponent, AdminListingComponent, AdminCrudComponent],
   templateUrl: './formulas.component.html',
   styleUrls: ['./formulas.component.scss']
 })
@@ -23,12 +27,6 @@ export class FormulasAdminComponent implements OnInit {
   form = this.fb.group({
     id: [null as number | null],
     name: ['', Validators.required],
-    form_id: [null as number | null, Validators.required],
-    output_unit_code: ['', Validators.required],
-    dose_amount: [null as number | null],
-    dose_unit_code: [''],
-    output_quantity_per_batch: [null as number | null],
-    price: [null as number | null],
     notes: [''],
     active: [1 as 0 | 1]
   });
@@ -95,9 +93,19 @@ export class FormulasAdminComponent implements OnInit {
   // listagem
   loadRows() {
     this.loading.set(true);
-    this.api.listFormulas({ includeEstimates: 1, q: this.filterQ() || undefined, page: this.page(), pageSize: this.pageSize() }).subscribe({
-      next: (res) => { this.rows.set(res.data || []); this.total.set(res.total || 0); this.totalPages.set(res.totalPages || 0); this.loading.set(false); },
-      error: () => { this.rows.set([]); this.loading.set(false); }
+    this.api.listFormulas({ q: this.filterQ() || undefined, page: this.page(), pageSize: this.pageSize() }).subscribe({
+      next: (res) => {
+        // Debug: log API response to help diagnose empty table issue
+        // eslint-disable-next-line no-console
+        console.debug('listFormulas response', res);
+        this.rows.set(res.data || []);
+        this.total.set(res.total || 0);
+        this.totalPages.set(res.totalPages || 0);
+        // eslint-disable-next-line no-console
+        console.debug('rows length', (res.data || []).length);
+        this.loading.set(false);
+      },
+      error: (err) => { this.rows.set([]); this.loading.set(false); /* eslint-disable-next-line no-console */ console.error('listFormulas error', err); }
     });
   }
   changePage(delta: number) {
@@ -112,12 +120,6 @@ export class FormulasAdminComponent implements OnInit {
     this.form.patchValue({
       id: id ?? null,
       name: f.name,
-      form_id: f.form_id,
-      output_unit_code: f.output_unit_code,
-      dose_amount: (f.dose_amount as any) ?? null,
-      dose_unit_code: (f.dose_unit_code as any) ?? '',
-      output_quantity_per_batch: (f.output_quantity_per_batch as any) ?? null,
-      price: (f.price as any) ?? null,
       notes: (f.notes as any) ?? '',
       active: (f.active as any) ? 1 : 0
     });
@@ -147,20 +149,14 @@ export class FormulasAdminComponent implements OnInit {
   saveFormula() {
     if (this.form.invalid) { this.error.set('Preencha os campos obrigatórios.'); return; }
     this.error.set(null); this.saving.set(true);
-    const body: FormulaDto = {
+    const body: Partial<FormulaDto> = {
       id: (this.form.value.id as any) ?? undefined,
       name: this.form.value.name!,
-      form_id: Number(this.form.value.form_id!),
-      output_unit_code: String(this.form.value.output_unit_code!),
-      dose_amount: (this.form.value.dose_amount as any) ?? null,
-      dose_unit_code: (this.form.value.dose_unit_code as any) || null,
-      output_quantity_per_batch: (this.form.value.output_quantity_per_batch as any) ?? null,
-      price: (this.form.value.price as any) ?? null,
       notes: (this.form.value.notes as any) || null,
       active: (this.form.value.active as any) ? 1 : 0
     };
     const id = this.form.value.id as any;
-    const req$ = id ? this.api.updateFormula(id, body) : this.api.createFormula(body);
+    const req$ = id ? this.api.updateFormula(id, body) : this.api.createFormula(body as any);
     req$.subscribe({
       next: (res) => { this.form.patchValue({ id: (res as any).id || id }); this.saving.set(false); /* permanece na etapa 1 com itens abaixo */ },
       error: () => { this.saving.set(false); this.error.set('Falha ao salvar fórmula'); }
@@ -245,15 +241,9 @@ export class FormulasAdminComponent implements OnInit {
     if (this.form.invalid) { this.error.set('Preencha os campos obrigatórios da fórmula.'); return; }
     this.error.set(null); this.saving.set(true);
 
-    const body: FormulaDto = {
+    const body: Partial<FormulaDto> = {
       id: (this.form.value.id as any) ?? undefined,
       name: this.form.value.name!,
-      form_id: Number(this.form.value.form_id!),
-      output_unit_code: String(this.form.value.output_unit_code!),
-      dose_amount: (this.form.value.dose_amount as any) ?? null,
-      dose_unit_code: (this.form.value.dose_unit_code as any) || null,
-      output_quantity_per_batch: (this.form.value.output_quantity_per_batch as any) ?? null,
-      price: (this.form.value.price as any) ?? null,
       notes: (this.form.value.notes as any) || null,
       active: (this.form.value.active as any) ? 1 : 0
     };
@@ -276,10 +266,20 @@ export class FormulasAdminComponent implements OnInit {
         error: () => { done(); this.error.set('Falha ao salvar fórmula'); }
       });
     } else {
-      this.api.createFormula(body).subscribe({
+      const createBody: any = hasItems ? { ...body, items } : body;
+      this.api.createFormula(createBody as any).subscribe({
         next: (res) => { const newId = (res as any).id; this.form.patchValue({ id: newId }); afterFormula(Number(newId)); },
         error: () => { done(); this.error.set('Falha ao criar fórmula'); }
       });
+    }
+  }
+
+  onDrawerOpenChange(open: boolean) {
+    if (!open) {
+      this.step.set(0);
+      this.form.reset({ active: 1 });
+      this.itemsFA.clear();
+      this.error.set(null);
     }
   }
 }

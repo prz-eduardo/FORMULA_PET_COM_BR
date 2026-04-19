@@ -1,6 +1,8 @@
 import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, NgZone, OnDestroy } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { NavmenuComponent } from './navmenu/navmenu.component';
 import { SwiperTopoComponent } from './swiper-topo/swiper-topo.component';
 import { HeroComponent } from './hero/hero.component';
@@ -9,6 +11,7 @@ import { AboutComponent } from './about/about.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
 import { ProductPreviewComponent } from './product-preview/product-preview.component';
 import { ToastContainerComponent } from './shared/toast/toast-container.component';
+import { LoginComponent } from './pages/restrito/login/login.component';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -20,6 +23,7 @@ import { register } from 'swiper/element/bundle';
     ToastContainerComponent,
     NavmenuComponent,
     FooterComponent,
+    LoginComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -27,8 +31,13 @@ import { register } from 'swiper/element/bundle';
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'FORMULA_PET_COM_BR';
   deviceType: string = 'desktop';
+  showFooter: boolean = true;
+  showNav: boolean = true;
+  private routerSub?: Subscription;
+  showLoginModal = false;
+  private openLoginHandler?: EventListenerOrEventListenerObject;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: any, private zone: NgZone) {
+  constructor(@Inject(PLATFORM_ID) private platformId: any, private zone: NgZone, private router: Router) {
     register(); // Swiper
   }
 
@@ -40,6 +49,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         document.body.classList.add('force-light');
       } catch (e) {}
     }
+    // Hide global footer and nav on admin routes and product registration page
+    try {
+      const current = (this.router && (this.router.url || '')) as string;
+      const hide = current.startsWith('/restrito/admin') || current.startsWith('/restrito/produto');
+      this.showFooter = !hide;
+      this.showNav = !hide;
+      this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
+        const u = ev.urlAfterRedirects || ev.url || '';
+        const hideNow = u.startsWith('/restrito/admin') || u.startsWith('/restrito/produto');
+        this.showFooter = !hideNow;
+        this.showNav = !hideNow;
+      });
+    } catch (e) {}
+    // Global listener for programmatic login requests (from other components)
+    if (typeof window !== 'undefined') {
+      this.openLoginHandler = () => { this.showLoginModal = true; };
+      window.addEventListener('open-login', this.openLoginHandler as EventListener);
+    }
   }
 
   ngOnDestroy(): void {
@@ -49,7 +76,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         document.body.classList.remove('force-light');
       }
     } catch (e) {}
+    try { if (this.routerSub) this.routerSub.unsubscribe(); } catch (e) {}
+    try { if (this.openLoginHandler && typeof window !== 'undefined') window.removeEventListener('open-login', this.openLoginHandler as EventListener); } catch {}
 
+  }
+
+  closeLoginModal() {
+    this.showLoginModal = false;
   }
 
   ngAfterViewInit(): void {

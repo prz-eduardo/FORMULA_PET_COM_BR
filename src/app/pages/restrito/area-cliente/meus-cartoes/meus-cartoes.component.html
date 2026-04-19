@@ -1,0 +1,56 @@
+<div class="meus-cartoes">
+  <h2>Meus Cartões</h2>
+
+  <div *ngIf="loading">Carregando cartões...</div>
+  <div *ngIf="!loading && cards.length === 0">Nenhum cartão salvo.</div>
+
+  <ul *ngIf="!loading && cards.length">
+    <li *ngFor="let c of cards" class="card-item">
+      <div class="card-main">
+        <div class="card-label">{{ c.brand || 'Cartão' }} •••• {{ c.last4 }} <span *ngIf="c.is_default" class="badge">Padrão</span></div>
+        <div class="card-meta">Validade: {{ c.exp_month }}/{{ c.exp_year }} • Titular: {{ c.holder_name || '—' }}</div>
+      </div>
+      <div class="card-actions">
+        <button (click)="setDefault(c)" class="btn small">Definir Padrão</button>
+        <button (click)="remove(c)" class="btn danger small">Excluir</button>
+      </div>
+    </li>
+  </ul>
+
+  <hr />
+
+  <h3>Adicionar cartão</h3>
+  <form (submit)="onAdd($event)" class="add-form">
+    <div class="row">
+      <label>Nome no cartão
+        <input name="holder_name" [(ngModel)]="newCard.holder_name" (input)="onHolderNameInput($event)" autocomplete="cc-name" />
+      </label>
+      <label>Número do cartão
+        <input name="numero" [(ngModel)]="newCard.numero" (input)="onCardNumberInput($event)" placeholder="4111 1111 1111 1111" inputmode="numeric" pattern="[0-9 ]*" autocomplete="cc-number" maxlength="19" />
+      </label>
+    </div>
+    <div class="row">
+      <label>Validade (MM)
+        <input name="exp_month" [(ngModel)]="newCard.exp_month" (input)="onExpMonthInput($event)" placeholder="MM" inputmode="numeric" maxlength="2" autocomplete="cc-exp-month" />
+      </label>
+      <label>Validade (YYYY)
+        <input name="exp_year" [(ngModel)]="newCard.exp_year" (input)="onExpYearInput($event)" placeholder="YYYY" inputmode="numeric" maxlength="4" autocomplete="cc-exp-year" />
+      </label>
+      <label>CVV
+        <input name="cvv" [(ngModel)]="newCard.cvv" (input)="onCvvInput($event)" placeholder="123" inputmode="numeric" maxlength="4" autocomplete="cc-csc" />
+      </label>
+    </div>
+    <!-- Brand and last4 are detected automatically; keep hidden fields for submission -->
+    <div style="display:none;">
+      <input type="hidden" name="brand" [(ngModel)]="newCard.brand" />
+      <input type="hidden" name="last4" [(ngModel)]="newCard.last4" maxlength="4" />
+    </div>
+    <!-- provider_token kept as fallback if backend expects pre-generated token -->
+    <div style="display:none;">
+      <input name="provider_token" [(ngModel)]="newCard.provider_token" />
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn primary" [disabled]="tokenizing">{{ tokenizing ? 'Tokenizando...' : 'Gerar token e adicionar' }}</button>
+    </div>
+  </form>
+</div>

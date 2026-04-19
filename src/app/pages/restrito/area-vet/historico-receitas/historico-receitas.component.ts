@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { ApiService, PagedReceitasResponse, Receita } from '../../../../services/api.service';
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
+import { AdminPaginationComponent } from '../../admin/shared/admin-pagination/admin-pagination.component';
 
 @Component({
   standalone: true,
   selector: 'app-historico-receitas',
-  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, AdminPaginationComponent],
   templateUrl: './historico-receitas.component.html',
   styleUrls: ['./historico-receitas.component.scss']
 })

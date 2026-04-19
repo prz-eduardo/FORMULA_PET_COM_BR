@@ -1,0 +1,55 @@
+.sd-overlay, .create-drawer.sd-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: rgba(0,0,0,0.45);
+  z-index: 1200;
+}
+.sd-overlay.left, .create-drawer.sd-overlay.left { justify-content: flex-start; }
+
+.sd-overlay .drawer, .create-drawer.sd-overlay .drawer {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  background: var(--admin-surface, #0f1722);
+  color: var(--admin-text, #e5ecf5);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.32);
+  transform: translateX(100%);
+  transition: transform 240ms cubic-bezier(.22,.8,.36,1);
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+.sd-overlay.left .drawer, .create-drawer.sd-overlay.left .drawer { transform: translateX(-100%); box-shadow: 8px 0 24px rgba(0,0,0,0.32); }
+.sd-overlay.open .drawer, .create-drawer.sd-overlay.open .drawer { transform: translateX(0); }
+
+/* Inputs inside drawer should match admin theme */
+.sd-overlay .drawer input,
+.sd-overlay .drawer select,
+.sd-overlay .drawer textarea {
+  appearance: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.08));
+  background: var(--admin-card, rgba(255,255,255,0.02));
+  color: var(--admin-text, #e5ecf5);
+  outline: none;
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.sd-overlay .drawer input:focus,
+.sd-overlay .drawer select:focus,
+.sd-overlay .drawer textarea:focus {
+  border-color: rgba(13,184,222,.45);
+  box-shadow: 0 0 0 3px rgba(13,184,222,.12);
+}
+
+.sd-overlay .drawer .drawer-head {
+  display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;
+}
+.sd-overlay .drawer .drawer-actions { display:flex; gap:10px; margin-top:12px; }
+
+/* small responsive tweak */
+@media (max-width: 720px) {
+  .sd-overlay .drawer, .create-drawer.sd-overlay .drawer { width: 100%; }
+}

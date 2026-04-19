@@ -1,0 +1,5 @@
+<div *ngIf="rendered" class="create-drawer sd-overlay" [class.open]="isOpen" [class.left]="position==='left'" (click)="onBackdropClick($event)" role="presentation">
+  <div class="drawer" #drawer [style.width]="width" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" (transitionend)="onTransitionEnd($event)">
+    <ng-content></ng-content>
+  </div>
+</div>

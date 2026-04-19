@@ -47,6 +47,7 @@
         </div>
       </div>
       <div class="produto-actions">
+        <button class="switch" [class.on]="p.active===1" (click)="toggleActive(p)" [attr.aria-pressed]="p.active===1" title="Ativar / Desativar"></button>
         <button class="btn-edit" (click)="editProduto(p)">Editar</button>
         <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
       </div>
@@ -92,18 +93,17 @@
           <td>
             <span *ngFor="let t of p.tags" class="tag">{{t}}</span>
           </td>
-          <td>
-            <button class="btn-edit" (click)="editProduto(p)">Editar</button>
-            <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
+          <td class="actions-cell">
+            <div class="actions">
+              <button class="switch" [class.on]="p.active===1" (click)="toggleActive(p)" [attr.aria-pressed]="p.active===1" title="Ativar / Desativar"></button>
+              <button class="btn-edit" (click)="editProduto(p)">Editar</button>
+              <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
-    <div class="pager">
-      <button (click)="prev()" [disabled]="!canPrev()">Anterior</button>
-      <span>Página {{page}}</span>
-      <button (click)="next()" [disabled]="!canNext()">Próxima</button>
-    </div>
+    <admin-pagination [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; loadProdutos()"></admin-pagination>
   </div>
 </ng-template>
 
@@ -111,4 +111,16 @@
   <ng-template #empty>
     <p class="empty-msg">Nenhum produto cadastrado ainda.</p>
   </ng-template>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div id="global-delete-modal" *ngIf="showConfirmDelete" (click)="cancelDelete()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3>Deseja realmente excluir "{{selectedProduto?.name}}"?</h3>
+    <p>Esta ação não pode ser desfeita.</p>
+    <div class="modal-footer">
+      <button class="btn secondary" (click)="cancelDelete()">Cancelar</button>
+      <button class="btn danger" (click)="confirmDelete()" [disabled]="deleting">{{ deleting ? 'Excluindo...' : 'Excluir' }}</button>
+    </div>
+  </div>
 </div>

@@ -1,4 +1,6 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
 import { SwiperTopoComponent } from './swiper-topo.component';
 
@@ -8,16 +10,17 @@ describe('SwiperTopoComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SwiperTopoComponent]
+      imports: [SwiperTopoComponent, HttpClientTestingModule, RouterTestingModule]
     })
     .compileComponents();
 
     fixture = TestBed.createComponent(SwiperTopoComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('should create', fakeAsync(() => {
+    fixture.detectChanges();
+    tick();
     expect(component).toBeTruthy();
-  });
+  }));
 });

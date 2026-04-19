@@ -29,15 +29,16 @@ export class AuthService {
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(this.platformId);
 
-    // inicializa o loggedInSubject de forma segura
-    if (this.isBrowser) {
-      // Checa tanto localStorage quanto sessionStorage para suportar sessão persistente ou temporária
-      const hasToken = !!localStorage.getItem(this.tokenKey) || !!sessionStorage.getItem(this.tokenKey);
-      this.loggedInSubject = new BehaviorSubject<boolean>(hasToken);
-      this.loggedIn.next(hasToken);
-    } else {
-      this.loggedInSubject = new BehaviorSubject<boolean>(false);
+    // inicializa o loggedInSubject de forma segura (evita acessar localStorage no server)
+    let initialLogged = false;
+    if (this.isBrowser && typeof window !== 'undefined' && typeof (window as any).localStorage !== 'undefined') {
+      try {
+        const hasToken = !!(window as any).localStorage.getItem(this.tokenKey) || !!(window as any).sessionStorage.getItem(this.tokenKey);
+        initialLogged = !!hasToken;
+      } catch {}
     }
+    this.loggedInSubject = new BehaviorSubject<boolean>(initialLogged);
+    this.loggedIn.next(initialLogged);
 
     onAuthStateChanged(auth, user => {
       this.user$.next(user);
@@ -118,37 +119,44 @@ export class AuthService {
 
   getToken(): string | null {
     if (!this.isBrowser) return null;
+    if (typeof window === 'undefined' || typeof (window as any).localStorage === 'undefined') return null;
     // Prioriza localStorage (persistente), fallback para sessionStorage
-    const fromLocal = localStorage.getItem(this.tokenKey);
-    const fromSession = sessionStorage.getItem(this.tokenKey);
-    const pick = fromLocal || fromSession || null;
-    if (!pick) return null;
-    if (pick === 'undefined' || pick === 'null') return null;
-    return pick;
+    try {
+      const fromLocal = (window as any).localStorage.getItem(this.tokenKey);
+      const fromSession = (window as any).sessionStorage.getItem(this.tokenKey);
+      const pick = fromLocal || fromSession || null;
+      if (!pick) return null;
+      if (pick === 'undefined' || pick === 'null') return null;
+      return pick;
+    } catch {
+      return null;
+    }
   }
 
   setToken(token: string) {
-    // manter compatibilidade: armazena em localStorage
-    if (this.isBrowser) {
+    // manter compatibilidade: armazena em localStorage (no-op no server)
+    if (!this.isBrowser || typeof window === 'undefined') return;
+    try {
       if (token && token !== 'undefined' && token !== 'null') {
-        localStorage.setItem(this.tokenKey, token);
+        (window as any).localStorage.setItem(this.tokenKey, token);
         this.loggedIn.next(true);
         this.loggedInSubject.next(true);
       } else {
-        localStorage.removeItem(this.tokenKey);
+        (window as any).localStorage.removeItem(this.tokenKey);
         this.loggedIn.next(false);
         this.loggedInSubject.next(false);
       }
-    }
+    } catch {}
   }
 
   logout() {
-    if (this.isBrowser) {
+    if (!this.isBrowser || typeof window === 'undefined') return;
+    try {
       // remove de ambos os storages
-      localStorage.removeItem(this.tokenKey);
-      sessionStorage.removeItem(this.tokenKey);
+      (window as any).localStorage.removeItem(this.tokenKey);
+      (window as any).sessionStorage.removeItem(this.tokenKey);
       this.loggedIn.next(false);
       this.loggedInSubject.next(false);
-    }
+    } catch {}
   }
 }

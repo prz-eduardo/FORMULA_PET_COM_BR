@@ -1,106 +1,68 @@
-<div class="promos-wrap">
-  <h1>Promoções</h1>
+<app-admin-crud
+  [items]="list()"
+  [loading]="loadingList()"
+  [total]="total()"
+  [page]="page()"
+  [pageSize]="pageSize()"
+  [drawerOpen]="showCreateModal() || !!editingId()"
+  (drawerOpenChange)="onDrawerOpenChange($event)"
+  (pageChange)="page.set($event); loadList()"
+  (edit)="editarPromocao($event)"
+  (create)="novaPromocao()"
+  (remove)="remover($event)"
+  [useDefaultActions]="true"
+  [createLabel]="'Nova promoção'"
+  [useDefaultSearch]="true"
+  [searchPlaceholder]="'Buscar por nome/descrição'"
+  (quickSearch)="q.set($event); loadList()"
+  [formSchema]="promocoesFormSchema"
+  [editItem]="editingItem"
+  (submit)="onSchemaSubmit($event)"
+  (cancel)="closeCreateModal()">
 
-  <section class="list">
+  <div slot="title"><h1>Promoções</h1></div>
+
+  <div slot="search">
     <div class="filters">
-      <input type="text" [value]="q()" (input)="onQInput($event)" placeholder="Buscar por nome/descrição" />
       <select [value]="active()" (change)="onActiveChange($event)">
         <option value="all">Todos</option>
         <option value="1">Ativos</option>
         <option value="0">Inativos</option>
       </select>
       <button class="outline" (click)="loadList()">Atualizar</button>
-      <div class="spacer"></div>
-      <button class="primary" (click)="novaPromocao()">Nova promoção</button>
-    </div>
-    <div class="cards">
-      <div class="card" *ngFor="let p of list()">
-        <div class="card-head">
-          <h3 class="title">{{ p.nome }}</h3>
-          <span class="badge" [class.ok]="statusClass(p)==='ok'" [class.info]="statusClass(p)==='info'" [class.warn]="statusClass(p)==='warn'" [class.off]="statusClass(p)==='off'" [class.muted]="statusClass(p)==='muted'">{{ statusLabel(p) }}</span>
-        </div>
-        <p class="desc" *ngIf="p.descricao">{{ p.descricao }}</p>
-        <div class="meta">
-          <span class="pill">Tipo: <strong>{{ p.tipo || 'percentual' }}</strong></span>
-          <span class="pill">Valor: <strong>{{ formatValor(p) }}</strong></span>
-        </div>
-        <div class="periodo">
-          <span>Início: <strong>{{ p.inicio || '—' }}</strong></span>
-          <span>Fim: <strong>{{ p.fim || '—' }}</strong></span>
-          <span>Ativo: <strong>{{ (p.ativo ? 1 : 0) === 1 ? 'Sim' : 'Não' }}</strong></span>
-        </div>
-        <div class="actions">
-          <button (click)="editarPromocao(p)">Editar</button>
-          <button class="danger" (click)="remover(p)">Remover</button>
-        </div>
-      </div>
-    </div>
-    <div class="pagination" *ngIf="total() > pageSize()">
-      <button (click)="prevPage()" [disabled]="!canPrev()">Anterior</button>
-      <span>Página {{ page() }} de {{ totalPages() }}</span>
-      <button (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
-    </div>
-  </section>
-
-  <!-- Modal criar/editar promoção -->
-  <div class="modal-backdrop" *ngIf="showCreateModal()">
-    <div class="modal">
-      <div class="modal-head">
-        <h2>{{ editingId() ? 'Editar promoção #' + editingId() : 'Nova promoção' }}</h2>
-        <button class="ghost" (click)="closeCreateModal()">Fechar</button>
-      </div>
-      <form [formGroup]="form" (ngSubmit)="salvar()">
-        <div class="grid">
-          <label>
-            Nome
-            <input type="text" formControlName="nome" />
-          </label>
-          <label>
-            Descrição
-            <input type="text" formControlName="descricao" />
-          </label>
-          <label>
-            Tipo
-            <select formControlName="tipo">
-              <option value="percentual">Percentual</option>
-              <option value="valor">Valor</option>
-            </select>
-          </label>
-          <label>
-            Valor
-            <input type="number" formControlName="valor" />
-          </label>
-          <label>
-            Início
-            <input type="datetime-local" formControlName="inicio" />
-          </label>
-          <label>
-            Fim
-            <input type="datetime-local" formControlName="fim" />
-          </label>
-          <label class="chk">
-            <input type="checkbox" formControlName="ativo" /> Ativa
-          </label>
-        </div>
-
-        <div class="produtos">
-          <h3>Vincular produtos</h3>
-          <div class="add">
-            <input type="text" [formControl]="produtoBusca" (input)="buscarProdutos()" placeholder="Buscar produtos pelo nome" />
-            <ul class="sugestoes" *ngIf="produtoSugestoes().length">
-              <li *ngFor="let s of produtoSugestoes()" (click)="addProduto(s.id)">{{ s.name }} <small>#{{ s.id }}</small></li>
-            </ul>
-          </div>
-          <div class="selecionados" *ngIf="produtosVinculados().length">
-            <span class="pill" *ngFor="let id of produtosVinculados()">#{{ id }} <button type="button" (click)="removeProduto(id)">x</button></span>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="button" class="secondary" (click)="closeCreateModal()">Cancelar</button>
-          <button type="submit" class="primary">Salvar</button>
-        </div>
-      </form>
     </div>
   </div>
-</div>
+
+  <section slot="table" class="table-wrap" *ngIf="!loadingList(); else loadingTpl" #listRef tabindex="-1">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th>Valor</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of list()">
+          <td>{{ p.id }}</td>
+          <td>{{ p.nome }}</td>
+          <td>{{ p.tipo || 'percentual' }}</td>
+          <td>{{ formatValor(p) }}</td>
+          <td><span [class.ok]="statusClass(p)==='ok'" [class.info]="statusClass(p)==='info'" [class.warn]="statusClass(p)==='warn'" [class.off]="statusClass(p)==='off'" [class.muted]="statusClass(p)==='muted'">{{ statusLabel(p) }}</span></td>
+          <td>
+            <button class="btn secondary" (click)="editarPromocao(p)">Editar</button>
+            <button class="btn danger" (click)="remover(p)">Remover</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); loadList()"></admin-pagination>
+  </section>
+  <ng-template #loadingTpl><div class="empty">Carregando...</div></ng-template>
+
+  <!-- Using auto-generated schema-driven drawer (no projected drawer content) -->
+
+</app-admin-crud>

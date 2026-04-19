@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { SessionService } from '../../../services/session.service';
+import { ButtonDirective, ButtonComponent } from '../../../shared/button';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterOutlet, ButtonDirective, ButtonComponent],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
@@ -15,6 +18,8 @@ export class AdminComponent implements OnInit {
   isAdmin = false;
   isSuper = false;
   showUserMenu = false;
+  isRootView = true;
+  private routerSub?: Subscription;
 
   // Persist collapsible state by key
   private collapsed: Record<string, boolean> = {};
@@ -35,6 +40,20 @@ export class AdminComponent implements OnInit {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('admin_collapsed') : null;
       if (raw) this.collapsed = JSON.parse(raw);
     } catch {}
+
+    // Track whether we're on the admin root (dashboard) so we can show/hide the dashboard tiles
+    try {
+      const u = this.router.url || '';
+      this.isRootView = u === '/restrito/admin' || u === '/restrito/admin/';
+      this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
+        const nu = ev.urlAfterRedirects || ev.url || '';
+        this.isRootView = nu === '/restrito/admin' || nu === '/restrito/admin/';
+      });
+    } catch {}
+  }
+
+  ngOnDestroy() {
+    try { if (this.routerSub) this.routerSub.unsubscribe(); } catch (e) {}
   }
 
   logout() {
@@ -46,7 +65,6 @@ export class AdminComponent implements OnInit {
   goToCadastro() { this.router.navigate(['/restrito/produto']); }
   goToLista() { this.router.navigate(['/restrito/lista-produtos']); }
   goToUsuarios() { this.router.navigate(['/restrito/admin/usuarios']); }
-  goToGuiaAtivos() { this.router.navigate(['/restrito/admin/guia-ativos']); }
 
   // Extras úteis baseados no app
   goToHistoricoReceitas() { this.router.navigate(['/historico-receitas']); }

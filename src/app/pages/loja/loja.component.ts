@@ -9,6 +9,7 @@ import { FooterComponent } from '../../footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
+import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../constants/card.constants';
 
 @Component({
   selector: 'app-loja',
@@ -18,6 +19,7 @@ import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.co
   styleUrls: ['./loja.component.scss']
 })
 export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
+  public readonly defaultCardWidth = DEFAULT_PRODUCT_CARD_WIDTH;
   categorias: StoreCategory[] = [];
   produtos: ShopProduct[] = [];
   // Infinite scroll accumulation
@@ -66,6 +68,10 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   promoOnlyDraft = false;
   inStockOnlyDraft = false;
   minRatingDraft?: number;
+  // UI responsive flag: true when viewport matches mobile breakpoint
+  mobileView = false;
+  private resizeListener?: () => void;
+  private openLoginListener?: EventListenerOrEventListenerObject;
 
   @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLButtonElement>;
 
@@ -77,6 +83,17 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.store.categories$.subscribe(c => this.categorias = c);
     this.store.meta$.subscribe(m => this.storeMeta = m);
+
+    // Initialize mobileView and listen for resizes so template can conditionally
+    // hide/skip the first item only on small screens.
+    if (typeof window !== 'undefined') {
+      this.mobileView = window.innerWidth <= 640;
+      this.resizeListener = () => { this.mobileView = window.innerWidth <= 640; };
+      window.addEventListener('resize', this.resizeListener, { passive: true });
+      // Listen for global requests to open the login popover (e.g., from other components)
+      this.openLoginListener = () => this.openLoginAfterScrollTop();
+      window.addEventListener('open-login', this.openLoginListener as EventListener);
+    }
 
     // React to global auth changes: apenas atualiza perfil; não refaz produtos
     this.auth.isLoggedIn$.subscribe(async ok => {
@@ -161,6 +178,14 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     try { this.io?.disconnect(); } catch {}
+    try {
+      if (typeof window !== 'undefined' && this.resizeListener) {
+        window.removeEventListener('resize', this.resizeListener);
+      }
+      if (typeof window !== 'undefined' && this.openLoginListener) {
+        window.removeEventListener('open-login', this.openLoginListener as EventListener);
+      }
+    } catch {}
   }
 
   // Base list to display: accumulated (infinite) if present, else latest page

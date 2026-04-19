@@ -1,7 +1,7 @@
 import { environment } from '../../enviroments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError } from 'rxjs';
+import { Observable, of, catchError, throwError } from 'rxjs';
 
 export interface Ativo {
   id: string;
@@ -430,13 +430,21 @@ export class ApiService {
   }
 
   // Reações em pets
-  postPetReaction(petId: string | number, body: { tipo?: string; comentario?: string }, token: string) {
+  postPetReaction(petId: string | number, body: { tipo?: string; comentario?: string }, token?: string) {
+    // Defensive: do not attempt to send reactions without an auth token
+    if (!token) {
+      return throwError(() => new Error('Missing auth token'));
+    }
     const headers = { Authorization: `Bearer ${token}` } as any;
     return this.http.post<any>(`${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/reacoes`, body, { headers });
   }
 
   deletePetReaction(petId: string | number, body?: { tipo?: string }, token?: string) {
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    // Defensive: require token for deleting reactions as well
+    if (!token) {
+      return throwError(() => new Error('Missing auth token'));
+    }
+    const headers = { Authorization: `Bearer ${token}` } as any;
     // some backends accept body on DELETE; HttpClient allows it via options.body
     return this.http.request<any>('delete', `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/reacoes`, { headers, body: body || undefined });
   }
@@ -484,6 +492,14 @@ export class ApiService {
     return this.http.get<AlergiaLookup[]>(`${this.baseUrl}/get_lista_alergias${query}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+  }
+
+  // Checa alergias de um pet em relação a uma lista de produtos do carrinho
+  // Endpoint sugerido: POST /pets/:petId/alergias/check  -> body: { produto_ids: number[] }
+  checarAlergiasPet(petId: string | number, produtoIds: number[], token?: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    const url = `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/alergias/check`;
+    return this.http.post<any>(url, { produto_ids: produtoIds }, { headers });
   }
 
   // Receitas - histórico do vet autenticado
@@ -560,6 +576,27 @@ export class ApiService {
 
   deleteEnderecoCliente(token: string, id: string | number): Observable<any> {
     const url = `${this.baseUrl}/clientes/me/enderecos/${id}`;
+    return this.http.delete<any>(url, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  // Payment methods (cards) - cliente tokenized card management
+  listMyCards(token: string): Observable<any[]> {
+    const url = `${this.baseUrl}/clientes/me/cartoes`;
+    return this.http.get<any[]>(url, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  createCard(token: string, body: any) {
+    const url = `${this.baseUrl}/clientes/me/cartoes`;
+    return this.http.post<any>(url, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  updateCard(token: string, id: string | number, body: any) {
+    const url = `${this.baseUrl}/clientes/me/cartoes/${encodeURIComponent(String(id))}`;
+    return this.http.put<any>(url, body, { headers: { Authorization: `Bearer ${token}` } });
+  }
+
+  deleteCard(token: string, id: string | number) {
+    const url = `${this.baseUrl}/clientes/me/cartoes/${encodeURIComponent(String(id))}`;
     return this.http.delete<any>(url, { headers: { Authorization: `Bearer ${token}` } });
   }
 

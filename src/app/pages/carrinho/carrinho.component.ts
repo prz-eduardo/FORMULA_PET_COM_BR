@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy, ElementRef, ViewChild, Renderer2 } from '@angular/core';
 import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { StoreService, ShopProduct } from '../../services/store.service';
@@ -8,6 +8,7 @@ import { PrescriptionPickerComponent } from '../../components/prescription-picke
 import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-carrinho',
@@ -16,9 +17,13 @@ import { Router } from '@angular/router';
   templateUrl: './carrinho.component.html',
   styleUrls: ['./carrinho.component.scss']
 })
-export class CarrinhoComponent implements OnInit {
+export class CarrinhoComponent implements OnInit, OnDestroy {
   receitasDisponiveis: Receita[] = [];
   carregandoReceitas = false;
+  // Pets do cliente
+  pets: any[] = [];
+  carregandoPets = false;
+  selectedPetIds: number[] = [];
   // Highlights quando carrinho vazio
   loadingHighlights = false;
   highlights: ShopProduct[] = [];
@@ -79,12 +84,16 @@ export class CarrinhoComponent implements OnInit {
   private revalidateTimer?: any;
   private needsRevalidate = false;
 
-  constructor(public store: StoreService, private api: ApiService, public router: Router, @Inject(PLATFORM_ID) private platformId: Object) {}
+  @ViewChild('allergyPortal', { read: ElementRef }) allergyPortal?: ElementRef;
+  portalAppended = false;
+
+  constructor(public store: StoreService, private api: ApiService, public router: Router, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();
     await this.loadHighlights();
     await this.validarCarrinhoComBackend();
+    await this.loadPets();
     await this.loadEnderecos();
     // Se já estiver em modo entrega e há endereços, seleciona o primeiro e calcula
     if (this.entregaModo === 'entrega' && this.enderecos?.length) {
@@ -95,8 +104,33 @@ export class CarrinhoComponent implements OnInit {
     if (isPlatformBrowser(this.platformId)) {
       this.countdownTimer = setInterval(() => { this.nowTs = Date.now(); }, 1000);
     }
+    // Monitora o carrinho para limpar respostas de alergia caso o carrinho seja esvaziado
+    try {
+      this.cartSub = this.store.cart$.subscribe((cart: any[]) => {
+        if (!cart || cart.length === 0) {
+          try {
+            if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
+              this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
+            }
+          } catch {}
+          this.portalAppended = false;
+          this.petAllergyResponses.clear();
+          this.selectedPetIds = [];
+          this.showAllergyModal = false;
+        }
+      });
+    } catch {}
   }
-  ngOnDestroy() { if (this.countdownTimer) clearInterval(this.countdownTimer); }
+  ngOnDestroy() { 
+    if (this.countdownTimer) clearInterval(this.countdownTimer); 
+    try { if (this.cartSub) this.cartSub.unsubscribe(); } catch {}
+    try {
+      if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
+        this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
+        this.portalAppended = false;
+      }
+    } catch {}
+  }
   private getToken(): string | undefined { return isPlatformBrowser(this.platformId) ? (localStorage.getItem('token') || undefined) : undefined; }
   private getUserType(): string | undefined { return isPlatformBrowser(this.platformId) ? (localStorage.getItem('userType') || undefined) : undefined; }
 
@@ -258,6 +292,32 @@ export class CarrinhoComponent implements OnInit {
     }
   }
 
+  // Carrega pets do cliente para permitir seleção antes do checkout
+  async loadPets() {
+    try {
+      this.carregandoPets = true;
+      const token = this.getToken();
+      const userType = this.getUserType();
+      if (!token || userType !== 'cliente') { this.pets = []; return; }
+      const me = await this.api.getClienteMe(token).toPromise();
+      const clienteId = Number(me?.user?.id ?? 0);
+      if (!clienteId) { this.pets = []; return; }
+      const resp: any = await this.api.getPetsByCliente(clienteId, token).toPromise();
+      if (Array.isArray(resp)) this.pets = resp;
+      else if (resp && Array.isArray(resp.data)) this.pets = resp.data;
+      else this.pets = resp || [];
+      // Se havia seleção em contexto de checkout, restaura
+      const ctx = this.store.getCheckoutContext();
+      if (ctx && Array.isArray(ctx.selectedPets)) {
+        this.selectedPetIds = ctx.selectedPets.slice();
+      }
+    } catch {
+      this.pets = [];
+    } finally {
+      this.carregandoPets = false;
+    }
+  }
+
   async loadHighlights() {
     try {
       this.loadingHighlights = true;
@@ -305,7 +365,14 @@ export class CarrinhoComponent implements OnInit {
     this.scheduleRevalidate();
   }
   remove(id: number) { this.onRequestRemove(id); }
-  clear() { this.store.clearCart(); this.scheduleRevalidate(); }
+  clear() { 
+    this.store.clearCart(); 
+    // limpa estado relacionado a alergias e seleção de pets quando o carrinho é esvaziado via UI
+    try { this.petAllergyResponses.clear(); } catch {}
+    this.selectedPetIds = [];
+    this.showAllergyModal = false;
+    this.scheduleRevalidate(); 
+  }
   total() { return this.store.getCartTotals(); }
 
   private scheduleRevalidate(delayMs: number = 450) {
@@ -341,6 +408,106 @@ export class CarrinhoComponent implements OnInit {
   onUploadPrescriptionFileDirect(productId: number, file: File) {
     if (!file) return;
     this.store.setItemPrescriptionById(productId, { prescriptionFileName: file.name, prescriptionId: undefined });
+  }
+
+  // Seleção de pets no carrinho (permite múltiplos)
+  togglePetSelect(petId: number) {
+    const i = this.selectedPetIds.indexOf(petId);
+    if (i >= 0) {
+      this.selectedPetIds.splice(i, 1);
+    } else {
+      this.selectedPetIds.push(petId);
+      // Ao selecionar um pet, envia os ids dos produtos + id do pet para o backend
+      this.sendProductsForPetAllergyCheck(petId);
+    }
+  }
+  isPetSelected(petId: number) {
+    return this.selectedPetIds.indexOf(petId) >= 0;
+  }
+
+  // Armazena respostas do backend sobre alergias por pet (usado futuramente para modal)
+  petAllergyResponses: Map<number, any> = new Map();
+
+  // UI state for allergy modal (non-blocking)
+  showAllergyModal = false;
+  private cartSub?: Subscription;
+
+  private async sendProductsForPetAllergyCheck(petId: number) {
+    try {
+      const token = this.getToken();
+      const produtoIds = (this.store.cartSnapshot || []).map((ci: any) => ci.product.id);
+      if (!produtoIds || !produtoIds.length) return;
+      const res = await this.api.checarAlergiasPet(petId, produtoIds, token).toPromise();
+      // Guarda resposta para uso futuro (ex.: abrir modal com alergias)
+      this.petAllergyResponses.set(petId, res);
+      const hasWarnings = !!(res && Array.isArray(res.results) && res.results.some((r: any) => r.has_allergy === true || (r.matches && r.matches.length > 0)));
+      if (hasWarnings) {
+        this.openAllergyModal(petId, res);
+      }
+    } catch (e) {
+      // Silencioso por ora — backend pode não existir ainda
+    }
+  }
+
+  openAllergyModal(petId: number, res: any) {
+    // ensure the map contains the latest response and show the toast area
+    this.petAllergyResponses.set(petId, res);
+    this.showAllergyModal = true;
+    // Move portal element to document.body on next tick so it escapes any stacking context
+    setTimeout(() => {
+      try {
+        if (typeof document !== 'undefined' && this.allergyPortal && !this.portalAppended) {
+          this.renderer.appendChild(document.body, this.allergyPortal.nativeElement);
+          this.portalAppended = true;
+        }
+      } catch {}
+    }, 0);
+  }
+
+  closeAllergyModal() {
+    this.closeAllAllergies();
+  }
+
+  // Returns active allergy entries grouped by pet
+  getActiveAllergyEntries(): Array<{ petId: number; response: any }> {
+    const out: Array<{ petId: number; response: any }> = [];
+    for (const [petId, res] of this.petAllergyResponses.entries()) {
+      const hasWarnings = !!(res && Array.isArray(res.results) && res.results.some((r: any) => r.has_allergy === true || (r.matches && r.matches.length > 0)));
+      if (hasWarnings) out.push({ petId: Number(petId), response: res });
+    }
+    return out;
+  }
+
+  closeAllergyForPet(petId: number) {
+    this.petAllergyResponses.delete(petId);
+    if (!this.petAllergyResponses.size) {
+      // remove portal from body when no entries remain
+      try {
+        if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
+          this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
+          this.portalAppended = false;
+        }
+      } catch {}
+      this.showAllergyModal = false;
+    }
+  }
+
+  closeAllAllergies() {
+    try {
+      if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
+        this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
+        this.portalAppended = false;
+      }
+    } catch {}
+    this.petAllergyResponses.clear();
+    this.showAllergyModal = false;
+  }
+
+  // Returns a display name for a pet id (safe for template use)
+  getPetDisplayName(petId: number | null): string {
+    if (petId == null) return 'selecionado';
+    const p = (this.pets || []).find(x => x.id === petId);
+    return (p && (p.nome || p.name || p.pet_nome)) || 'selecionado';
   }
 
   // Endereços e frete
@@ -558,7 +725,8 @@ export class CarrinhoComponent implements OnInit {
       freteSelecionado: this.freteSelecionado || (this.freteValor ? { valor: this.freteValor } : null),
       freteOpcoes: this.freteOpcoes,
       freteOrigem: this.freteOrigem,
-      freteDestino: this.freteDestino
+      freteDestino: this.freteDestino,
+      selectedPets: this.selectedPetIds
     });
     this.router.navigate(['/checkout']);
   }
@@ -615,7 +783,8 @@ export class CarrinhoComponent implements OnInit {
         freteSelecionado: this.freteSelecionado || (this.freteValor ? { valor: this.freteValor } : null),
         freteOpcoes: this.freteOpcoes,
         freteOrigem: this.freteOrigem,
-        freteDestino: this.freteDestino
+        freteDestino: this.freteDestino,
+        selectedPets: this.selectedPetIds
       });
       this.router.navigate(['/checkout']);
     } catch (e) {

@@ -1,12 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, MarketplaceCategoria, MarketplaceTag, MarketplaceCustomizacoesResponse, MarketplaceCustomizacoesList } from '../../../../services/admin-api.service';
 
 @Component({
   selector: 'app-admin-marketplace-customizacoes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonDirective, ButtonComponent],
   templateUrl: './marketplace-customizacoes.component.html',
   styleUrls: ['./marketplace-customizacoes.component.scss']
 })
@@ -93,12 +94,19 @@ export class MarketplaceCustomizacoesAdminComponent implements OnInit {
     return cat + tag;
   }
   areAnySelected() { return this.selectedCount() > 0; }
-  areAllSelected() {
-    const total = this.categorias.length + this.tags.length;
-    return total > 0 && this.selectedCount() === total;
+  areAllSelectedCategories() {
+    const total = this.categorias.length;
+    return total > 0 && this.categorias.controls.every((c: any) => c.get('selected')?.value);
   }
-  toggleSelectAll(checked: boolean) {
+  toggleSelectAllCategories(checked: boolean) {
     this.categorias.controls.forEach((c: any) => c.patchValue({ selected: checked }));
+  }
+
+  areAllSelectedTags() {
+    const total = this.tags.length;
+    return total > 0 && this.tags.controls.every((t: any) => t.get('selected')?.value);
+  }
+  toggleSelectAllTags(checked: boolean) {
     this.tags.controls.forEach((t: any) => t.patchValue({ selected: checked }));
   }
 

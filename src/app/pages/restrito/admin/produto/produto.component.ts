@@ -1,24 +1,32 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
+import { EMBALAGENS } from '../../../../constants/embalagens';
+import { ProductCardV2Component } from '../../../../product-card-v2/product-card-v2.component';
+import { TaxonomyModalComponent } from '../../../../shared/taxonomy-modal/taxonomy-modal.component';
+import { ShopProduct } from '../../../../services/store.service';
+import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../../../constants/card.constants';
 
 interface AtivoBasic { id: number | string; nome: string; descricao?: string }
 
 @Component({
   selector: 'app-produto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardV2Component, TaxonomyModalComponent],
   templateUrl: './produto.component.html',
   styleUrls: ['./produto.component.scss']
 })
 export class ProdutoComponent implements OnInit {
+      public readonly defaultCardWidth = DEFAULT_PRODUCT_CARD_WIDTH;
     destaqueHome = false;
     imagemPrincipal: string | null = null;
-  public hoveredImg: number | null = null;
-    showCategoryDropdown = false;
+    public hoveredImg: number | null = null;
+    public isDragOver = false;
+      showCategoryDropdown = false;
     toggleCategoryDropdown() {
       this.showCategoryDropdown = !this.showCategoryDropdown;
     }
@@ -32,6 +40,8 @@ export class ProdutoComponent implements OnInit {
   private api = inject(AdminApiService);
   private route = inject(ActivatedRoute);
   public router = inject(Router);
+  private zone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
 
   form!: FormGroup;
   private imagesSub: Subscription | null = null;
@@ -39,15 +49,18 @@ export class ProdutoComponent implements OnInit {
   saving = signal(false);
   error = signal<string | null>(null);
   success = signal<string | null>(null);
+  // image upload constraints and feedback
+  MAX_IMAGES = 3;
+  MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+  ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  imageMessage = signal<string | null>(null);
 
   // stepper state
-  step = signal(0); // 0..6
+  step = signal(0); // 0..3
   steps = [
-    { key: 'imagem', label: 'Imagem' },
-    { key: 'formula', label: 'Fórmula' },
-    { key: 'basico', label: 'Básico' },
-    { key: 'preco', label: 'Preço/Estoque' },
-    { key: 'categorias', label: 'Categoria/Tags' },
+    { key: 'imagem', label: 'Imagens' },
+    { key: 'detalhes', label: 'Detalhes' },
+    { key: 'comercial', label: 'Comercial' },
     { key: 'revisao', label: 'Revisão' }
   ];
 
@@ -76,6 +89,14 @@ export class ProdutoComponent implements OnInit {
   promocaoSelecionada: PromocaoDto | null = null;
   showPromoDetail = false;
   promoDetalhe: PromocaoDto | null = null;
+  // overlay refs for promo modal
+  private promoOverlay: HTMLDivElement | null = null;
+  private promoListContainer: HTMLDivElement | null = null;
+  private loadingPromos = false;
+  private tagOverlay: HTMLDivElement | null = null;
+  private categoryOverlay: HTMLDivElement | null = null;
+  private _docDragOverHandler: any = null;
+  private _docDropHandler: any = null;
   
   // fórmulas para produtos manipulados
   formulas: ProductFormDto[] = [];
@@ -86,14 +107,26 @@ export class ProdutoComponent implements OnInit {
   formulaStatus: { missing: Array<{ ativo_id: number; ativo_nome?: string }>, items: Array<{ ativo_id: number; ativo_nome: string; required_per_unit: number; unit_code: string; available_converted: number; producible_units: number }>, lotsByAtivo: Record<string, EstoqueAtivoDto[]> } = { missing: [], items: [], lotsByAtivo: {} };
   // índice selecionado nas sugestões (-1 = 'Produto pronto')
   selectedFormulaIndex = -1;
+
+  // Autocomplete state for taxonomias (category, tags, packaging)
+  categoryQuery = signal('');
+  categoriesFiltered: Array<{ id: string | number; name: string }> = [];
+  selectedCategoryIndex: number = -1;
+
+  tagQuery = signal('');
+  tagsFiltered: Array<{ id: string | number; name: string }> = [];
+  selectedTagIndex: number = -1;
+
+  packagingQuery = signal('');
+  packagingFiltered: Array<{ id: string | number; name: string }> = [];
+  selectedPackagingIndex: number = -1;
   formulaEnabled = false;
 
   ngOnInit() {
       // Inicializa destaqueHome e imagemPrincipal
       this.destaqueHome = false;
       this.imagemPrincipal = null;
-    this.syncPrecoDigitsFromForm();
-    this.form = this.fb.group({
+      this.form = this.fb.group({
       id: [null],
       manipulado: [false], // novo toggle
       active: [1],
@@ -120,6 +153,8 @@ export class ProdutoComponent implements OnInit {
 
     // initialize formula toggle based on any pre-filled form value
     this.formulaEnabled = !!(this.form?.value?.formulaId);
+    // sincroniza máscara/ dígitos do preço com o formulário (para edição)
+    this.syncPrecoDigitsFromForm();
 
     // manter a imagem principal atualizada: selecionar automaticamente a primeira imagem quando houver
     this.imagesSub = this.imagesFA.valueChanges.subscribe((vals: string[]) => {
@@ -138,13 +173,18 @@ export class ProdutoComponent implements OnInit {
         this.tagsList = (res.tags || []).map((t: any) => ({ id: t.id, name: t.nome || t.name }));
         // dosagens/embalagens
         this.dosagesList = (res.dosages || []).map((d: any) => ({ id: d.id, name: d.nome || d.name }));
-        this.embalagensList = (res.embalagens || []).map((e: any) => ({ id: e.id, name: e.nome || e.name }));
+        const rspEmb = (res.embalagens || []).map((e: any, idx: number) => ({ id: e.id ?? idx + 1, name: e.nome || e.name || e }));
+        if (rspEmb && rspEmb.length > 0) {
+          this.embalagensList = rspEmb;
+        } else {
+          this.embalagensList = EMBALAGENS.map((name, idx) => ({ id: idx + 1, name }));
+        }
       },
       error: () => {
         this.categoriasList = [];
         this.tagsList = [];
         this.dosagesList = [];
-        this.embalagensList = [];
+        this.embalagensList = EMBALAGENS.map((name, idx) => ({ id: idx + 1, name }));
       }
     });
 
@@ -206,13 +246,21 @@ export class ProdutoComponent implements OnInit {
       };
     }
 
-    // Inicializa precoDigits ao abrir tela ou ao editar produto
+    // Inicializa precoDigits e atualiza máscara ao abrir tela ou ao editar produto
     private syncPrecoDigitsFromForm() {
       const price = this.form?.value?.price;
       if (typeof price === 'number' && !isNaN(price)) {
-        this.precoDigits = Math.round(price * 100).toString();
+        const num = Math.round(price * 100);
+        this.precoDigits = num.toString();
+        const reais = Math.floor(num / 100);
+        const centavos = num % 100;
+        this.priceMasked = {
+          int: reais.toLocaleString('pt-BR'),
+          dec: centavos.toString().padStart(2, '0')
+        };
       } else {
         this.precoDigits = '';
+        this.priceMasked = null;
       }
     }
   // Controle de edição do campo de preço
@@ -275,12 +323,44 @@ export class ProdutoComponent implements OnInit {
     }
     // Listener para fechar dropdown de categoria ao clicar fora
     document.addEventListener('click', this.handleClickOutsideDropdown.bind(this));
+    // Evitar que o navegador abra arquivos ao soltar fora da dropzone
+    this._docDragOverHandler = (ev: any) => { try { ev.preventDefault(); } catch(e) {} };
+    this._docDropHandler = (ev: any) => { try { ev.preventDefault(); } catch(e) {} };
+    document.addEventListener('dragover', this._docDragOverHandler);
+    document.addEventListener('drop', this._docDropHandler);
   }
 
   get tagsFA() { return this.form.get('tags') as FormArray; }
   get dosageFA() { return this.form.get(['customizations','dosage']) as FormArray; }
   get packagingFA() { return this.form.get(['customizations','packaging']) as FormArray; }
   get imagesFA() { return this.form.get('images') as FormArray; }
+
+  get previewProduct(): ShopProduct {
+    const fv = this.form?.value || {};
+    const price = Number(fv.price) || 0;
+    const promo = this.discountedPriceValue();
+    const img = this.imagemPrincipal || (this.imagesFA?.controls?.length ? this.imagesFA.controls[0].value : '/imagens/placeholder.png');
+    const discount = (fv.discount && Number(fv.discount) > 0) ? Number(fv.discount) : (promo != null && price > 0 ? Math.round((1 - (promo / price)) * 100) : 0);
+    return {
+      id: Number(fv.id) || 0,
+      name: fv.name || 'Nome do produto',
+      description: fv.description || '',
+      price: price,
+      image: img,
+      imageUrl: img,
+      category: this.categoryNameById(fv.categoryId) || '',
+      tipo: fv.manipulado ? 'manipulado' : 'pronto',
+      discount: discount as any,
+      rating: fv.rating ?? undefined,
+      ratingsCount: undefined,
+      stock: fv.stock ?? undefined,
+      tags: fv.tags || [],
+      weight: fv.weightValue ? `${fv.weightValue}${fv.weightUnit || 'g'}` : undefined,
+      promoPrice: promo ?? null,
+      inStock: fv.stock ?? null,
+      images: (this.imagesFA?.controls || []).map((c: any, i: number) => ({ id: i + 1, url: c.value })),
+    } as ShopProduct;
+  }
 
   // helpers for template display
   formulaNameById(id: number | null): string {
@@ -304,21 +384,49 @@ export class ProdutoComponent implements OnInit {
     return '—';
   }
 
+  promoStatusLabel(status?: string | null): string {
+    if (!status) return '—';
+    switch (status) {
+      case 'active': return 'Ativa';
+      case 'upcoming': return 'Agendada';
+      case 'expired': return 'Expirada';
+      case 'inactive': return 'Inativa';
+      default: return status;
+    }
+  }
+
   discountedPriceValue(): number | null {
-    const p: any = this.promocaoSelecionada as any;
     const price = Number(this.form?.value?.price);
-    if (!p || isNaN(price)) return null;
-    const valor = Number(p.valor);
-    if (isNaN(valor)) return null;
-    if (p.tipo === 'percentual') return Math.max(0, price * (1 - valor / 100));
-    if (p.tipo === 'valor') return Math.max(0, price - valor);
-    return null;
+    if (isNaN(price)) return null;
+    const p: any = this.promocaoSelecionada as any;
+    if (p) {
+      const valor = Number(p.valor);
+      if (isNaN(valor)) return null;
+      if (p.tipo === 'percentual') return Math.max(0, +((price * (1 - valor / 100))).toFixed(2));
+      if (p.tipo === 'valor') return Math.max(0, +((price - valor)).toFixed(2));
+      return null;
+    }
+    // fallback: form-level discount (coupon stored in form.discount)
+    const d = this.form?.value?.discount;
+    if (d == null || d === '') return null;
+    const disc = Number(d);
+    if (isNaN(disc)) return null;
+    if (disc > 0 && disc <= 100) {
+      return Math.max(0, +((price * (1 - disc / 100))).toFixed(2));
+    } else {
+      return Math.max(0, +((price - disc)).toFixed(2));
+    }
   }
 
   // limpa o valor 0 quando o usuário foca o campo (UX)
   clearWeightIfZero() {
     const v = this.form.get('weightValue')?.value;
     if (v === 0 || v === '0') this.form.patchValue({ weightValue: null });
+  }
+
+  setWeightUnit(unit: string) {
+    if (!this.form) return;
+    this.form.get('weightUnit')?.setValue(unit);
   }
 
   // normaliza o valor de weightValue para número ou null (não retornar 0)
@@ -348,6 +456,8 @@ export class ProdutoComponent implements OnInit {
     this.loading.set(true);
     this.api.getProduto(id).subscribe({
       next: (p) => {
+        // categoriaId: preferir id retornado pelo backend quando disponível, senão tentar mapear por nome
+        const catId = (p as any).categoryId ?? this.categoriasList.find(c => c.name === (p as any).category)?.id ?? null;
         this.form.patchValue({
           id: p.id,
           // mapeamento básico para compatibilidade de edição antiga
@@ -355,17 +465,33 @@ export class ProdutoComponent implements OnInit {
           description: p.description,
           price: p.price,
           image: p.image ?? null,
-          // vamos tentar mapear nome -> id se existir na lista
-          categoryId: this.categoriasList.find(c => c.name === (p as any).category)?.id ?? null,
+          categoryId: catId,
           discount: p.discount ?? null,
           rating: p.rating ?? null,
           stock: p.stock ?? null,
           weightValue: p.weightValue ?? null,
           weightUnit: p.weightUnit ?? 'g',
+          formulaId: (p as any).formId ?? null,
+          manipulado: !!((p as any).formId || (p as any).tipo === 'manipulado')
         });
-        this.tagsFA.clear(); (p.tags || []).forEach(t => this.tagsFA.push(this.fb.control<string>(t)));
-        this.dosageFA.clear(); (p.customizations?.dosage || []).forEach(d => this.dosageFA.push(this.fb.control<string>(d)));
-        this.packagingFA.clear(); (p.customizations?.packaging || []).forEach(e => this.packagingFA.push(this.fb.control<string>(e)));
+
+        // tags, dosages, packaging
+        this.tagsFA.clear(); (p.tags || []).forEach((t: any) => this.tagsFA.push(this.fb.control<string>(t)));
+        this.dosageFA.clear(); (p.customizations?.dosage || []).forEach((d: any) => this.dosageFA.push(this.fb.control<string>(d)));
+        this.packagingFA.clear(); (p.customizations?.packaging || []).forEach((e: any) => this.packagingFA.push(this.fb.control<string>(e)));
+
+        // imagens: popular FormArray e imagem principal
+        try {
+          this.imagesFA.clear();
+          const imgs = (p as any).images ?? [];
+          imgs.forEach((u: string) => this.imagesFA.push(this.fb.control<string>(u)));
+          // preferir imagem_principal / image
+          this.imagemPrincipal = p.image ?? (imgs.length ? imgs[0] : null);
+        } catch(e) { console.error('Erro ao popular imagens do produto', e); }
+
+        // garantir que máscara/dígitos do preço reflitam o valor carregado
+        try { this.syncPrecoDigitsFromForm(); } catch(e) { /* noop */ }
+
         this.loading.set(false);
       },
       error: (err) => { console.error(err); this.loading.set(false); }
@@ -379,16 +505,23 @@ export class ProdutoComponent implements OnInit {
     for (let s = 0; s < i; s++) {
       if (!this.isStepValid(s)) { this.markStepTouched(s); return; }
     }
+    this.closeAllModals();
     this.step.set(i);
   }
   nextStep() {
     const i = this.step();
     if (!this.isStepValid(i)) { this.markStepTouched(i); return; }
-    if (i < this.steps.length - 1) this.step.set(i + 1);
+    if (i < this.steps.length - 1) {
+      this.closeAllModals();
+      this.step.set(i + 1);
+    }
   }
   prevStep() {
     const i = this.step();
-    if (i > 0) this.step.set(i - 1);
+    if (i > 0) {
+      this.closeAllModals();
+      this.step.set(i - 1);
+    }
   }
   isStepValid(i: number): boolean {
     switch (i) {
@@ -397,21 +530,16 @@ export class ProdutoComponent implements OnInit {
         return !!imgs && imgs.length > 0;
       }
       case 1: {
-        // Fórmula é opcional
-        return true;
-      }
-      case 2: {
+        // Detalhes + Fórmula: nome/descrição obrigatórios, fórmula opcional
         const name = this.form.get('name');
         const desc = this.form.get('description');
         return !!name && !!desc && name.valid && desc.valid;
       }
-      case 3: {
+      case 2: {
+        // Comercial: preço e categoria obrigatórios
         const price = this.form.get('price');
-        return !!price && price.valid;
-      }
-      case 4: {
         const cat = this.form.get('categoryId');
-        return !!cat && cat.valid;
+        return !!price && price.valid && !!cat && cat.valid;
       }
       default:
         return true;
@@ -421,11 +549,32 @@ export class ProdutoComponent implements OnInit {
     const mark = (path: string) => this.form.get(path)?.markAsTouched();
     switch (i) {
       case 0: mark('image'); break;
-      case 1: mark('formulaId'); mark('estoqueId'); break;
-      case 2: mark('name'); mark('description'); break;
-      case 3: mark('price'); break;
-      case 4: mark('categoryId'); break;
+      case 1: mark('formulaId'); mark('name'); mark('description'); break;
+      case 2: mark('price'); mark('categoryId'); break;
     }
+  }
+
+  // Utility: close any open modals/overlays created by this component
+  private closeAllModals() {
+    // hide template-driven modals
+    this.showTagModal = false;
+    this.showCategoryModal = false;
+    this.showPackagingModal = false;
+    this.showDosageModal = false;
+    this.showPromoModal = false;
+    this.showPromoDetail = false;
+
+    // clear suggestion lists (close autocompletes)
+    this.tagsFiltered = [];
+    this.categoriesFiltered = [];
+    this.packagingFiltered = [];
+
+    // remove any dynamic overlays appended to body
+    try {
+      if (this.tagOverlay) { this.tagOverlay.remove(); this.tagOverlay = null; }
+      if (this.categoryOverlay) { this.categoryOverlay.remove(); this.categoryOverlay = null; }
+      if (this.promoOverlay) { this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; }
+    } catch (e) { /* noop */ }
   }
 
 
@@ -433,22 +582,76 @@ export class ProdutoComponent implements OnInit {
   onImageSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const { MAX_FILE_SIZE, ALLOWED_IMAGE_TYPES } = this;
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      this.imageMessage.set('Formato inválido. Use JPG, PNG ou WEBP.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      this.imageMessage.set('Arquivo maior que 3MB.');
+      event.target.value = '';
+      return;
+    }
+    const remaining = this.MAX_IMAGES - this.imagesFA.length;
+    if (remaining <= 0) {
+      this.imageMessage.set('Limite de 3 imagens atingido.');
+      event.target.value = '';
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (e: any) => this.imagesFA.push(this.fb.control<string>(e.target.result));
+    reader.onload = (e: any) => {
+      this.imagesFA.push(this.fb.control<string>(e.target.result));
+      this.imageMessage.set(null);
+      try { this.cdr.detectChanges(); } catch(e) { /* noop */ }
+    };
     reader.readAsDataURL(file);
+    event.target.value = '';
   }
 
   onImagesSelected(event: any) {
     const files: FileList | undefined = event.target.files;
     if (!files || files.length === 0) return;
-    const max = 3 - this.imagesFA.length;
-    Array.from(files).slice(0, max).forEach((file) => {
+    const beforeLen = this.imagesFA.length;
+    const maxToAdd = this.MAX_IMAGES - beforeLen;
+    if (maxToAdd <= 0) {
+      this.imageMessage.set('Limite de 3 imagens atingido.');
+      event.target.value = '';
+      return;
+    }
+    const arr = Array.from(files);
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+    for (const f of arr) {
+      if (accepted.length >= maxToAdd) break;
+      if (!this.ALLOWED_IMAGE_TYPES.includes(f.type)) { rejected.push(`${f.name}: formato inválido`); continue; }
+      if (f.size > this.MAX_FILE_SIZE) { rejected.push(`${f.name}: maior que 3MB`); continue; }
+      accepted.push(f);
+    }
+    accepted.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e: any) => this.imagesFA.push(this.fb.control<string>(e.target.result));
       reader.readAsDataURL(file);
     });
-    // reset input
+    const msgs: string[] = [];
+    if (accepted.length > 0) msgs.push(`${accepted.length} imagem(ns) adicionada(s).`);
+    if (rejected.length > 0) msgs.push(`Arquivos rejeitados: ${rejected.join(', ')}`);
+    if (beforeLen + accepted.length >= this.MAX_IMAGES) msgs.push('Limite de 3 imagens atingido.');
+    this.imageMessage.set(msgs.length ? msgs.join(' ') : null);
     event.target.value = '';
+  }
+  onDragEnter(e: DragEvent) {
+    e.preventDefault(); e.stopPropagation(); this.isDragOver = true;
+  }
+  onDragOver(e: DragEvent) { e.preventDefault(); e.stopPropagation(); }
+  onDragLeave(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragOver = false; }
+  onDrop(e: DragEvent) {
+    e.preventDefault(); e.stopPropagation(); this.isDragOver = false;
+    const files = e.dataTransfer?.files;
+    if (files && files.length) {
+      // reuse existing file handler
+      this.onImagesSelected({ target: { files } } as any);
+    }
   }
   removeImageAt(i: number) { if (i>=0) this.imagesFA.removeAt(i); }
   moveImage(i: number, dir: -1 | 1) {
@@ -468,6 +671,26 @@ export class ProdutoComponent implements OnInit {
   addPackaging(val: string) { if (!val) return; this.packagingFA.push(this.fb.control<string>(val)); this.showPackagingModal = false; }
   removePackagingAt(i: number) { this.packagingFA.removeAt(i); }
 
+  // handlers for inline '+' buttons to either add typed value or open modal
+  onTagAddButton(event?: Event) {
+    try {
+      // '+' should always open the modal; insertion via modal or search
+      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
+      console.log('onTagAddButton called - opening tag modal');
+      event?.stopPropagation();
+      this.openTagModal(event);
+    } catch (e) { console.error('onTagAddButton error', e); }
+  }
+
+  onPackagingAddButton(event?: Event) {
+    try {
+      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
+      console.log('onPackagingAddButton called - opening packaging modal');
+      event?.stopPropagation();
+      this.openPackagingModal(event);
+    } catch (e) { console.error('onPackagingAddButton error', e); }
+  }
+
   // toggles for selection chips
   toggleTagVal(name: string) {
     const idx = (this.tagsFA.value as any[]).findIndex((v: any) => v === name);
@@ -482,6 +705,153 @@ export class ProdutoComponent implements OnInit {
     if (idx > -1) this.removePackagingAt(idx); else this.addPackaging(name);
   }
 
+  // Autocomplete helpers for Categoria
+  onCategoryQueryInput(q: string) {
+    this.categoryQuery.set(q || '');
+    this.applyCategoryFilter();
+  }
+  applyCategoryFilter() {
+    const q = (this.categoryQuery() || '').toLowerCase();
+    if (!q) {
+      this.categoriesFiltered = this.categoriasList.slice(0, 50);
+      this.selectedCategoryIndex = this.categoriesFiltered.length ? 0 : -1;
+      return;
+    }
+    this.categoriesFiltered = this.categoriasList.filter(c => (c.name || '').toLowerCase().includes(q)).slice(0, 50);
+    this.selectedCategoryIndex = this.categoriesFiltered.length ? 0 : -1;
+  }
+  onCategoryKeydown(event: KeyboardEvent) {
+    const len = (this.categoriesFiltered?.length || 0);
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (len === 0) { this.selectedCategoryIndex = -1; }
+      else { this.selectedCategoryIndex = this.selectedCategoryIndex < len - 1 ? this.selectedCategoryIndex + 1 : -1; }
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (len === 0) { this.selectedCategoryIndex = -1; }
+      else { this.selectedCategoryIndex = this.selectedCategoryIndex === -1 ? len - 1 : (this.selectedCategoryIndex > 0 ? this.selectedCategoryIndex - 1 : -1); }
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.selectedCategoryIndex === -1) this.selectCategoryById(null);
+      else {
+        const c = this.categoriesFiltered[this.selectedCategoryIndex];
+        if (c) this.selectCategoryById(c.id);
+      }
+      return;
+    }
+    if (event.key === 'Escape') {
+      this.categoryQuery.set(''); this.categoriesFiltered = []; this.selectedCategoryIndex = -1;
+      return;
+    }
+  }
+  setCategoryIndex(i: number) { this.selectedCategoryIndex = i; }
+  selectCategoryById(id: number | string | null) {
+    this.form.patchValue({ categoryId: id });
+    this.categoryQuery.set('');
+    this.categoriesFiltered = [];
+    this.selectedCategoryIndex = -1;
+  }
+
+  selectCategoryModal(id: number | string | null) {
+    this.form.patchValue({ categoryId: id });
+    this.categoryQuery.set('');
+    this.categoriesFiltered = [];
+    this.selectedCategoryIndex = -1;
+    this.showCategoryModal = false;
+  }
+
+  // Autocomplete helpers for Tags (multi)
+  onTagQueryInput(q: string) {
+    this.tagQuery.set(q || '');
+    this.applyTagFilter();
+  }
+  applyTagFilter() {
+    const q = (this.tagQuery() || '').toLowerCase();
+    if (!q) { this.tagsFiltered = this.tagsList.slice(0, 50); this.selectedTagIndex = this.tagsFiltered.length ? 0 : -1; return; }
+    this.tagsFiltered = this.tagsList.filter(t => (t.name || '').toLowerCase().includes(q)).slice(0, 50);
+    this.selectedTagIndex = this.tagsFiltered.length ? 0 : -1;
+  }
+  onTagKeydown(event: KeyboardEvent) {
+    const len = (this.tagsFiltered?.length || 0);
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (len === 0) { this.selectedTagIndex = -1; }
+      else { this.selectedTagIndex = this.selectedTagIndex < len - 1 ? this.selectedTagIndex + 1 : -1; }
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (len === 0) { this.selectedTagIndex = -1; }
+      else { this.selectedTagIndex = this.selectedTagIndex === -1 ? len - 1 : (this.selectedTagIndex > 0 ? this.selectedTagIndex - 1 : -1); }
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.selectedTagIndex >= 0) {
+        const t = this.tagsFiltered[this.selectedTagIndex]; if (t) this.pickTag(t.name);
+      }
+      return;
+    }
+    if (event.key === 'Escape') { this.tagQuery.set(''); this.tagsFiltered = []; this.selectedTagIndex = -1; return; }
+  }
+  setTagIndex(i: number) { this.selectedTagIndex = i; }
+  pickTag(name: string) { const idx = (this.tagsFA.value as any[]).findIndex(v => v === name); if (idx > -1) this.removeTagAt(idx); else this.addTag(name); this.tagQuery.set(''); this.tagsFiltered = []; this.selectedTagIndex = -1; }
+
+  // Autocomplete helpers for Packaging (multi)
+  onPackagingQueryInput(q: string) { this.packagingQuery.set(q || ''); this.applyPackagingFilter(); }
+  applyPackagingFilter() {
+    const q = (this.packagingQuery() || '').toLowerCase();
+    if (!q) { this.packagingFiltered = this.embalagensList.slice(0, 50); this.selectedPackagingIndex = this.packagingFiltered.length ? 0 : -1; return; }
+    this.packagingFiltered = this.embalagensList.filter(p => (p.name || '').toLowerCase().includes(q)).slice(0, 50);
+    this.selectedPackagingIndex = this.packagingFiltered.length ? 0 : -1;
+  }
+  onPackagingKeydown(event: KeyboardEvent) {
+    const len = (this.packagingFiltered?.length || 0);
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (len === 0) { this.selectedPackagingIndex = -1; }
+      else { this.selectedPackagingIndex = this.selectedPackagingIndex < len - 1 ? this.selectedPackagingIndex + 1 : -1; }
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (len === 0) { this.selectedPackagingIndex = -1; }
+      else { this.selectedPackagingIndex = this.selectedPackagingIndex === -1 ? len - 1 : (this.selectedPackagingIndex > 0 ? this.selectedPackagingIndex - 1 : -1); }
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.selectedPackagingIndex >= 0) {
+        const p = this.packagingFiltered[this.selectedPackagingIndex]; if (p) this.pickPackaging(p.name);
+      }
+      return;
+    }
+    if (event.key === 'Escape') { this.packagingQuery.set(''); this.packagingFiltered = []; this.selectedPackagingIndex = -1; return; }
+  }
+  setPackagingIndex(i: number) { this.selectedPackagingIndex = i; }
+  pickPackaging(name: string) { const idx = (this.packagingFA.value as any[]).findIndex(v => v === name); if (idx > -1) this.removePackagingAt(idx); else this.addPackaging(name); this.packagingQuery.set(''); this.packagingFiltered = []; this.selectedPackagingIndex = -1; }
+
+  onPackagingSelectChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const selected = Array.from(select.selectedOptions).map(o => o.value);
+    // If user chose 'Outro', open modal for free-text and remove the marker
+    if (selected.includes('__outro')) {
+      const filtered = selected.filter(v => v !== '__outro');
+      this.packagingFA.clear();
+      filtered.forEach(val => { if (val) this.packagingFA.push(this.fb.control<string>(val)); });
+      this.showPackagingModal = true;
+      // Deselect the '__outro' option to avoid stuck selection
+      setTimeout(() => { const opt = Array.from(select.options).find(o => o.value === '__outro'); if (opt) (opt as HTMLOptionElement).selected = false; }, 10);
+      return;
+    }
+    this.packagingFA.clear();
+    selected.forEach(val => { if (val) this.packagingFA.push(this.fb.control<string>(val)); });
+  }
+
   editarProdutoExistente(p: ProdutoDto) {
     this.router.navigate(['/restrito/produto'], { queryParams: { produto_id: p.id } });
   }
@@ -494,7 +864,24 @@ export class ProdutoComponent implements OnInit {
 
   ngOnDestroy() {
     try { document.removeEventListener('click', this.handleClickOutsideDropdown.bind(this)); } catch(e) {}
+    try { if (this._docDragOverHandler) document.removeEventListener('dragover', this._docDragOverHandler); } catch(e) {}
+    try { if (this._docDropHandler) document.removeEventListener('drop', this._docDropHandler); } catch(e) {}
     if (this.imagesSub) { this.imagesSub.unsubscribe(); this.imagesSub = null; }
+  }
+
+  openPreviewPage() {
+    try {
+      const data = this.previewProduct;
+      if (typeof window !== 'undefined' && window && window.localStorage) {
+        window.localStorage.setItem('admin:product_preview', JSON.stringify(data));
+        window.open('/restrito/admin/produto-preview', '_blank');
+      } else {
+        this.router.navigate(['/restrito/admin/produto-preview']);
+      }
+    } catch (err) {
+      console.error('openPreviewPage error', err);
+      try { this.router.navigate(['/restrito/admin/produto-preview']); } catch(e) { /* noop */ }
+    }
   }
 
   handleClickOutsideDropdown(event: MouseEvent) {
@@ -503,6 +890,12 @@ export class ProdutoComponent implements OnInit {
     const dropdown = document.querySelector('.custom-dropdown');
     if (dropdown && !dropdown.contains(event.target as Node)) {
       this.showCategoryDropdown = false;
+    }
+    // Fechar autocompletes ao clicar fora
+    if (!(el && (el.closest('.formula-search-group') || el.closest('.sugestao-list')))) {
+      this.categoriesFiltered = [];
+      this.tagsFiltered = [];
+      this.packagingFiltered = [];
     }
   }
   hasDosage(name: string) { return this.dosageFA.controls.some(c => c.value === name); }
@@ -611,19 +1004,338 @@ export class ProdutoComponent implements OnInit {
     this.form.patchValue({ estoqueId: lote.id });
   }
   openPromoModal() {
-    // Se já temos promoções carregadas (por ativo), apenas abre
-    if (!this.promocoes || this.promocoes.length === 0) {
-      // Carregar promoções ativas gerais
-      this.api.listPromocoes({ active: 1, page: 1, pageSize: 50 }).subscribe({
-        next: (res) => this.promocoes = res.data || [],
-        error: () => this.promocoes = []
-      });
+    console.log('openPromoModal called');
+    try {
+      this.promocaoSelecionada = null;
+      // Always use dynamic overlay in browser to avoid *ngIf scoping issues
+      if (typeof document === 'undefined') {
+        // fallback for SSR/hosted render
+        if (!this.promocoes || this.promocoes.length === 0) {
+          this.promocoes = [];
+          this.api.listPromocoes({ active: 1, page: 1, pageSize: 50 }).subscribe({
+            next: (res) => { this.promocoes = res.data || []; },
+            error: () => { this.promocoes = []; }
+          });
+        }
+        this.showPromoModal = true;
+        return;
+      }
+
+      // show overlay immediately (will display loading or items)
+      this.showPromoOverlay();
+
+      // load promos if not already loaded, then update list
+      if (!this.promocoes || this.promocoes.length === 0) {
+        this.promocoes = [];
+        this.loadingPromos = true;
+        this.api.listPromocoes({ active: 1, page: 1, pageSize: 50 }).subscribe({
+          next: (res) => { this.promocoes = res.data || []; this.loadingPromos = false; this.updatePromoList(); },
+          error: () => { this.promocoes = []; this.loadingPromos = false; this.updatePromoList(); }
+        });
+      } else {
+        this.loadingPromos = false;
+        this.updatePromoList();
+      }
+      console.log('openPromoModal finished, promocoes.length ->', (this.promocoes || []).length);
+    } catch (err) {
+      console.error('openPromoModal error', err);
     }
-    this.showPromoModal = true;
   }
 
-  openPromoDetail(promoId: number) {
-    this.api.getPromocao(promoId).subscribe({
+  openCategoryModal(event?: Event) {
+    try {
+      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
+      console.log('openCategoryModal called', event);
+      event?.stopPropagation();
+      this.zone.run(() => {
+        this.showCategoryModal = true;
+        try { this.cdr.detectChanges(); } catch (e) { /* noop */ }
+      });
+    } catch (err) {
+      console.error('openCategoryModal error', err);
+    }
+  }
+
+  openTagModal(event?: Event) {
+    try {
+      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
+      console.log('openTagModal called', event);
+      event?.stopPropagation();
+      this.zone.run(() => {
+        this.showTagModal = true;
+        try { this.cdr.detectChanges(); } catch (e) { /* noop */ }
+      });
+    } catch (err) {
+      console.error('openTagModal error', err);
+    }
+  }
+
+  openPackagingModal(event?: Event) {
+    try {
+      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
+      console.log('openPackagingModal called', event);
+      event?.stopPropagation();
+      this.zone.run(() => {
+        this.showPackagingModal = true;
+        try { this.cdr.detectChanges(); } catch (e) { /* noop */ }
+      });
+    } catch (err) {
+      console.error('openPackagingModal error', err);
+    }
+  }
+
+  // remove any leftover overlays appended to document.body (defensive)
+  private removeStrayOverlays() {
+    if (typeof document === 'undefined') return;
+    try {
+      const els = Array.from(document.querySelectorAll('.modal.dynamic-overlay'));
+      els.forEach(e => { try { e.remove(); } catch(_) { /* noop */ } });
+    } catch (e) { /* noop */ }
+    this.tagOverlay = null;
+    this.categoryOverlay = null;
+    this.promoOverlay = null;
+    this.promoListContainer = null;
+  }
+
+  selectPackagingModal(item: any) {
+    try {
+      const name = item?.name || item;
+      // use existing pickPackaging logic to toggle and clear filters
+      this.pickPackaging(name);
+      this.zone.run(() => {
+        this.showPackagingModal = false;
+        try { this.cdr.detectChanges(); } catch(e) { /* noop */ }
+      });
+    } catch (e) { console.error('selectPackagingModal error', e); }
+  }
+
+  // Create a simple DOM overlay attached to document.body (browser-only)
+  private createOverlay(): HTMLDivElement | null {
+    if (typeof document === 'undefined') return null;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal dynamic-overlay';
+    Object.assign(overlay.style as any, {
+      position: 'fixed', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.45)', padding: '20px'
+    });
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+    return overlay;
+  }
+
+  private showPromoOverlay() {
+    if (typeof document === 'undefined') return;
+    // If overlay already exists, keep reference
+    if (this.promoOverlay) return;
+    const overlay = this.createOverlay();
+    if (!overlay) return;
+    this.promoOverlay = overlay;
+
+    const modal = document.createElement('div');
+    Object.assign(modal.style as any, { maxWidth: '920px', width: '100%', background: '#0d1419', borderRadius: '12px', padding: '18px', boxSizing: 'border-box', boxShadow: '0 16px 40px rgba(2,6,23,0.6)', color: '#fff', maxHeight: '90vh', overflow: 'auto' });
+
+    const header = document.createElement('div'); header.style.display = 'flex'; header.style.justifyContent = 'space-between'; header.style.alignItems = 'center';
+    const title = document.createElement('h2'); title.textContent = 'Selecionar Campanha'; title.style.margin = '0'; header.appendChild(title);
+    const closeX = document.createElement('button'); closeX.textContent = '✕'; Object.assign(closeX.style as any, { background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }); closeX.addEventListener('click', () => { overlay.remove(); this.promoOverlay = null; this.promoListContainer = null; try { this.zone.run(() => { this.showPromoModal = false; }); } catch(e) {} });
+    header.appendChild(closeX);
+    modal.appendChild(header);
+
+    // search box
+    const searchRow = document.createElement('div'); searchRow.style.margin = '12px 0';
+    const searchInput = document.createElement('input'); searchInput.placeholder = 'Buscar campanha...'; Object.assign(searchInput.style as any, { width: '100%', boxSizing: 'border-box', maxWidth: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: '#071217', color: '#e6eef8' });
+    searchRow.appendChild(searchInput);
+    modal.appendChild(searchRow);
+
+    // list container (kept in instance to update later)
+    const list = document.createElement('div'); list.style.maxHeight = '60vh'; list.style.overflow = 'auto'; list.style.display = 'flex'; list.style.flexDirection = 'column'; list.style.gap = '12px'; list.style.boxSizing = 'border-box';
+    this.promoListContainer = list;
+    modal.appendChild(list);
+
+    const footer = document.createElement('div'); footer.style.display = 'flex'; footer.style.justifyContent = 'flex-end'; footer.style.marginTop = '12px';
+    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Fechar'; Object.assign(closeBtn.style as any, { padding: '8px 12px', borderRadius: '8px' }); closeBtn.addEventListener('click', () => { overlay.remove(); this.promoOverlay = null; this.promoListContainer = null; try { this.zone.run(() => { this.showPromoModal = false; }); } catch(e) {} });
+    footer.appendChild(closeBtn);
+    modal.appendChild(footer);
+
+    // keep reference to allow programmatic removal
+    overlay.appendChild(modal); document.body.appendChild(overlay);
+    overlay.addEventListener('click', (ev) => {
+      if (ev.target === overlay) {
+        overlay.remove();
+        this.promoOverlay = null;
+        this.promoListContainer = null;
+        try { this.zone.run(() => { this.showPromoModal = false; }); } catch(e) {}
+      }
+    });
+
+    // search filtering
+    searchInput.addEventListener('input', () => { this.updatePromoList(searchInput.value || ''); });
+
+    // initial populate (may show loading)
+    this.updatePromoList();
+  }
+
+  private showCategoryOverlay() {
+    if (typeof document === 'undefined') return;
+    const overlay = this.createOverlay(); if (!overlay) return;
+    // keep a reference so it can be removed programmatically
+    this.categoryOverlay = overlay;
+    const modal = document.createElement('div'); Object.assign(modal.style as any, { maxWidth: '720px', width: '100%', background: '#0d1419', borderRadius: '12px', padding: '18px', color: '#fff' });
+    const title = document.createElement('h2'); title.textContent = 'Selecionar ou Adicionar Categoria'; title.style.marginTop = '0'; modal.appendChild(title);
+    const list = document.createElement('div'); list.style.display = 'flex'; list.style.flexWrap = 'wrap'; list.style.gap = '8px'; list.style.marginBottom = '12px';
+    (this.categoriasList || []).forEach(c => {
+      const b = document.createElement('button'); b.textContent = c.name; Object.assign(b.style as any, { padding: '6px 10px', borderRadius: '8px' }); b.addEventListener('click', () => { this.zone.run(() => { this.selectCategoryModal(c.id); }); overlay.remove(); this.categoryOverlay = null; });
+      list.appendChild(b);
+    });
+    modal.appendChild(list);
+    const input = document.createElement('input'); input.placeholder = 'Ex: Vitaminas'; input.style.width = '100%'; input.style.padding = '10px'; input.style.marginBottom = '8px'; modal.appendChild(input);
+    const addBtn = document.createElement('button'); addBtn.textContent = 'Adicionar'; addBtn.style.marginRight = '8px'; addBtn.addEventListener('click', () => { const val = input.value?.trim(); if (val) { this.zone.run(() => { this.createTaxonomia('categorias', val); }); overlay.remove(); this.categoryOverlay = null; } });
+    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Fechar'; closeBtn.addEventListener('click', () => { overlay.remove(); this.categoryOverlay = null; try { this.zone.run(() => { this.showCategoryModal = false; }); } catch(e) {} });
+    const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.justifyContent = 'flex-end'; actions.style.marginTop = '12px'; actions.appendChild(addBtn); actions.appendChild(closeBtn); modal.appendChild(actions);
+    overlay.appendChild(modal); document.body.appendChild(overlay);
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) { overlay.remove(); this.categoryOverlay = null; try { this.zone.run(() => { this.showCategoryModal = false; }); } catch(e) {} } });
+  }
+
+  private showTagOverlay() {
+    if (typeof document === 'undefined') return;
+    const overlay = this.createOverlay(); if (!overlay) return;
+    const modal = document.createElement('div');
+    Object.assign(modal.style as any, { maxWidth: '840px', width: '100%', background: '#0d1419', borderRadius: '12px', padding: '18px', color: '#fff' });
+    const title = document.createElement('h2'); title.textContent = 'Selecionar ou Adicionar Tag'; title.style.marginTop = '0'; modal.appendChild(title);
+
+    // tag chips container
+    const list = document.createElement('div');
+    Object.assign(list.style as any, { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', alignItems: 'center' });
+
+    const selected = new Set(this.tagsFA.value || []);
+    const applyActive = (el: HTMLElement) => {
+      el.style.background = 'linear-gradient(180deg,#27EF9F,#1fd08a)';
+      el.style.color = '#07121a';
+      el.style.border = '1px solid rgba(39,239,159,0.12)';
+      (el as HTMLElement).style.boxShadow = '0 10px 28px rgba(39,239,159,0.08)';
+    };
+    const applyIdle = (el: HTMLElement) => {
+      el.style.background = '#0b1114';
+      el.style.color = '#e6eef8';
+      el.style.border = '1px solid rgba(255,255,255,0.06)';
+      (el as HTMLElement).style.boxShadow = 'none';
+    };
+
+    const makeChip = (name: string) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = name;
+      Object.assign(b.style as any, { padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', outline: 'none', transition: 'all .12s ease' });
+      const isSel = selected.has(name);
+      if (isSel) applyActive(b); else applyIdle(b);
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        // toggle visually
+        const nowSel = !selected.has(name);
+        if (nowSel) { selected.add(name); applyActive(b); } else { selected.delete(name); applyIdle(b); }
+        // update Angular form model
+        this.zone.run(() => { this.toggleTagVal(name); });
+      });
+      return b;
+    };
+
+    (this.tagsList || []).forEach(t => list.appendChild(makeChip(t.name)));
+    modal.appendChild(list);
+
+    // input to add new tag (Enter to add)
+    const input = document.createElement('input');
+    input.placeholder = 'Ex: vitamina';
+    Object.assign(input.style as any, { width: '100%', padding: '10px', marginBottom: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: '#071217', color: '#e6eef8' });
+    input.addEventListener('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Enter') {
+        const val = (input.value || '').trim();
+        if (!val) return;
+        // add to model and add chip if missing
+        this.zone.run(() => { this.addTag(val); });
+        const exists = Array.from(list.children).some(ch => (ch as HTMLElement).textContent === val);
+        if (!exists) {
+          const chip = makeChip(val);
+          // ensure newly added is shown as selected
+          selected.add(val); applyActive(chip);
+          list.appendChild(chip);
+        }
+        input.value = '';
+      }
+    });
+    modal.appendChild(input);
+
+    // single Close button (avoid redundant actions)
+    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Fechar';
+    Object.assign(closeBtn.style as any, { padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' });
+    closeBtn.addEventListener('click', () => { overlay.remove(); this.tagOverlay = null; try { this.zone.run(() => { this.showTagModal = false; }); } catch(e) {} });
+    const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.justifyContent = 'flex-end'; actions.style.marginTop = '12px'; actions.appendChild(closeBtn); modal.appendChild(actions);
+    // keep reference so it can be removed programmatically
+    this.tagOverlay = overlay;
+    overlay.appendChild(modal); document.body.appendChild(overlay);
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) { overlay.remove(); this.tagOverlay = null; try { this.zone.run(() => { this.showTagModal = false; }); } catch(e) {} } });
+  }
+
+  private updatePromoList(filter: string = '') {
+    if (!this.promoListContainer) return;
+    // clear
+    this.promoListContainer.innerHTML = '';
+    if (this.loadingPromos) {
+      const loading = document.createElement('div'); loading.textContent = 'Carregando promoções...'; loading.style.padding = '12px'; loading.style.opacity = '0.9'; this.promoListContainer.appendChild(loading); return;
+    }
+    const items = (this.promocoes || []).filter(p => !filter || (p.nome || '').toLowerCase().includes(filter.toLowerCase()));
+    if (!items.length) {
+      const empty = document.createElement('div'); empty.textContent = 'Nenhuma promoção encontrada.'; empty.style.padding = '12px'; this.promoListContainer.appendChild(empty); return;
+    }
+    items.forEach(pr => {
+      const item = document.createElement('div');
+      Object.assign(item.style as any, { padding: '14px', borderRadius: '8px', background: '#0b1114', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.02)' });
+      const left = document.createElement('div'); left.style.flex = '1';
+      const rowTop = document.createElement('div'); rowTop.style.display = 'flex'; rowTop.style.justifyContent = 'space-between'; rowTop.style.alignItems = 'center';
+      const name = document.createElement('div'); name.textContent = pr.nome || '—'; name.style.fontWeight = '800'; name.style.fontSize = '1rem';
+      const st = (pr.ui && pr.ui.status) || '';
+      const status = document.createElement('span'); status.textContent = this.promoStatusLabel(st);
+      // status badge colors (keeps mapping by machine status)
+      let bg = '#6b7280'; let color = '#fff';
+      if (st === 'active') { bg = '#10b981'; color = '#072'; }
+      else if (st === 'upcoming') { bg = '#f59e0b'; color = '#2b1a00'; }
+      else if (st === 'expired' || st === 'inactive') { bg = '#374151'; color = '#cbd5e1'; }
+      Object.assign(status.style as any, { background: bg, color: color, padding: '6px 8px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700, boxSizing: 'border-box' });
+      rowTop.appendChild(name); rowTop.appendChild(status);
+      left.appendChild(rowTop);
+
+      if (pr.descricao) {
+        const desc = document.createElement('div'); desc.textContent = pr.descricao; desc.style.opacity = '0.85'; desc.style.marginTop = '6px'; desc.style.fontSize = '0.95rem'; desc.style.color = '#cfe8ff'; left.appendChild(desc);
+      }
+
+      const metaRow = document.createElement('div'); metaRow.style.display = 'flex'; metaRow.style.gap = '12px'; metaRow.style.marginTop = '8px'; metaRow.style.alignItems = 'center';
+      const valor = document.createElement('div'); valor.textContent = (pr.ui && pr.ui.valor_label) ? pr.ui.valor_label : (pr.tipo === 'percentual' ? (pr.valor + '%') : (pr.valor ? String(pr.valor) : ''));
+      valor.style.opacity = '0.9'; valor.style.fontWeight = '700'; metaRow.appendChild(valor);
+      if (pr.ui?.start?.human || pr.ui?.end?.human) {
+        const dates = document.createElement('div'); dates.textContent = 'De: ' + (pr.ui?.start?.human || '—') + ' • Até: ' + (pr.ui?.end?.human || 'sem validade'); dates.style.opacity = '0.65'; dates.style.fontSize = '0.85rem'; metaRow.appendChild(dates);
+      }
+      left.appendChild(metaRow);
+
+      const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.flexDirection = 'column'; actions.style.gap = '8px'; actions.style.alignItems = 'stretch'; actions.style.width = '120px';
+      const applyBtn = document.createElement('button'); applyBtn.textContent = 'Aplicar'; Object.assign(applyBtn.style as any, { padding: '6px 12px', borderRadius: '6px', background: '#e6eef8', color: '#07121a', border: 'none', cursor: 'pointer', width: '100%', boxSizing: 'border-box' });
+      applyBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.zone.run(() => { this.pickPromo(pr); }); if (this.promoOverlay) this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; });
+      const detailBtn = document.createElement('button'); detailBtn.textContent = 'Detalhes'; Object.assign(detailBtn.style as any, { padding: '6px 12px', borderRadius: '6px', background: 'transparent', color: '#cfe8ff', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', width: '100%', boxSizing: 'border-box' });
+      detailBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.zone.run(() => { this.openPromoDetail(pr.id); }); });
+      actions.appendChild(applyBtn); actions.appendChild(detailBtn);
+      item.appendChild(left); item.appendChild(actions);
+      item.addEventListener('click', () => { this.zone.run(() => { this.pickPromo(pr); }); if (this.promoOverlay) this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; });
+      this.promoListContainer!.appendChild(item);
+    });
+  }
+
+  // When a promo is selected from modal/list, set it on component and close modal
+  pickPromo(p: PromocaoDto | null) {
+    this.promocaoSelecionada = p;
+    this.showPromoModal = false;
+  }
+
+  openPromoDetail(promoId?: number | string) {
+    if (promoId == null) return;
+    const id = Number(promoId);
+    if (isNaN(id)) return;
+    this.api.getPromocao(id).subscribe({
       next: (res) => { this.promoDetalhe = res; this.showPromoDetail = true; },
       error: () => { this.promoDetalhe = null; this.showPromoDetail = false; }
     });
@@ -635,8 +1347,14 @@ export class ProdutoComponent implements OnInit {
     if (!name) return;
     this.api.createTaxonomia(tipo, name).subscribe({
       next: (res) => {
-        // Atualização da lista removida, pois agora vem de getMarketplaceCustomizacoes
-        if (tipo === 'categorias') this.form.patchValue({ categoryId: res.id });
+        // Atualização local da lista para refletir imediatamente a nova taxonomia
+        if (tipo === 'categorias') {
+          const r: any = res;
+          const newCat = { id: r.id, name: (r.nome || r.name || name) };
+          this.categoriasList = [newCat, ...this.categoriasList];
+          this.form.patchValue({ categoryId: r.id });
+          this.showCategoryModal = false;
+        }
       }
     });
   }
@@ -659,8 +1377,8 @@ export class ProdutoComponent implements OnInit {
   }
 
   submit() {
-    // require all required steps valid before submit
-    for (let s = 0; s <= 3; s++) {
+    // require all required steps valid before submit (check all except last review step)
+    for (let s = 0; s < this.steps.length - 1; s++) {
       if (!this.isStepValid(s)) { this.markStepTouched(s); this.error.set('Preencha os campos obrigatórios.'); return; }
     }
     this.error.set(null);
@@ -707,23 +1425,32 @@ export class ProdutoComponent implements OnInit {
     if (tipo === 'manipulado') body.formula_id = fv.formulaId;
     // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full
     const legacyId = fv.id;
-    const req$ = legacyId ? this.api.updateProduto(legacyId, {
-      id: legacyId,
-      name: fv.name,
-      description: fv.description,
-      price: fv.price,
-      image: fv.image ?? null,
-      category: (this.categoriasList.find((c: any) => c.id === fv.categoryId)?.name) || '',
-      customizations: { dosage: this.dosageFA.value ?? [], packaging: this.packagingFA.value ?? [] },
-      tags: this.tagsFA.value ?? [],
-      discount: fv.discount ?? null,
-      rating: fv.rating ?? null,
-      stock: fv.stock ?? null,
-      weightValue: parsedWeight,
-      weightUnit: fv.weightUnit ?? null,
-      ativoId: fv.ativoId ?? null,
-      estoqueId: fv.estoqueId ?? null
-    }) : this.api.createMarketplaceProdutoFull(body);
+    let req$: any;
+    if (legacyId) {
+      const updateBody: any = {
+        id: legacyId,
+        name: fv.name,
+        description: fv.description,
+        price: fv.price,
+        image: fv.image ?? null,
+        category: (this.categoriasList.find((c: any) => c.id === fv.categoryId)?.name) || '',
+        customizations: { dosage: this.dosageFA.value ?? [], packaging: this.packagingFA.value ?? [] },
+        tags: this.tagsFA.value ?? [],
+        discount: fv.discount ?? null,
+        rating: fv.rating ?? null,
+        stock: fv.stock ?? null,
+        weightValue: parsedWeight,
+        weightUnit: fv.weightUnit ?? null,
+        formId: fv.formulaId ?? null,
+        ativoId: fv.ativoId ?? null,
+        estoqueId: fv.estoqueId ?? null
+      };
+      console.debug('update produto payload:', updateBody);
+      req$ = this.api.updateProduto(legacyId, updateBody);
+    } else {
+      console.debug('create produto payload:', body);
+      req$ = this.api.createMarketplaceProdutoFull(body);
+    }
     req$.subscribe({
       next: (res: any) => {
         // Após criar, se houver promoção selecionada, vincular produto à promoção

@@ -125,7 +125,8 @@ export class StoreService {
           }
           return res;
         } catch (err: any) {
-          if (this.toast?.error) {
+          const inAdminRoute = !!(this.router && typeof this.router.url === 'string' && this.router.url.includes('/restrito'));
+          if (this.toast?.error && !inAdminRoute) {
             this.toast.error('Não foi possível carregar os dados do cliente.', 'Erro');
           }
           return null;

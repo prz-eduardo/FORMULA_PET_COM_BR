@@ -37,9 +37,8 @@
 .badge.sexo{ background: rgba(255,255,255,0.92); color: #b91c1c }
 .badge.peso{ background: rgba(255,255,255,0.92); color:#7a4e00 }
 
-.edit-fab{ position: absolute; top: 12px; right: -14px; z-index: 40; background: rgba(0,0,0,0.45); color: #fff; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; box-shadow: 0 8px 18px rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.06); font-size:16px; text-decoration:none; font-weight:700 }
-.edit-fab:hover{ background: rgba(0,0,0,0.55); transform: translateY(-2px) }
-.edit-fab.disabled{ opacity:.6; pointer-events:none }
+.pet-card[role="button"]{ cursor: pointer }
+.pet-card[role="button"]:focus{ outline: 3px solid rgba(255,165,0,0.08); outline-offset:2px }
 
 .pet-body.compact{ padding: 12px 6px 6px 6px; background: transparent }
 
@@ -59,6 +58,11 @@
 .chip{ background:#fff5f7; color:#9b1232; border:1px solid #ffd6e0; padding:6px 10px; border-radius:999px; font-size:13px }
 .observacoes .muted{ font-size:13px; color:#6b7280; margin-bottom:6px }
 .obs-text{ color:#0b1220 }
+
+.status-row{ display:flex; gap:8px; align-items:center }
+.badge.aprovado{ background:#eefbf0; color:#0b6623; border:1px solid #c9f0d0 }
+.badge.not-aprovado{ background:#fff7f7; color:#9b1232; border:1px solid #ffd6d6 }
+.badge.publico{ background:#f0f7ff; color:#0f172a; border:1px solid #dbeafe }
 
 .acoes{ display:flex; justify-content:flex-end; margin-top:16px }
 .btn{ padding:10px 16px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block }

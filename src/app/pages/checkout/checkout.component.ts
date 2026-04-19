@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../services/store.service';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
+import { CardsService } from '../../services/cards.service';
+import { AuthService } from '../../services/auth.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 
 @Component({
@@ -102,7 +104,9 @@ export class CheckoutComponent implements OnInit {
   showPixModal = false;
   showCardModal = false;
   pixMock: { copiaCola: string; qrDataUrl: string } | null = null;
-  cardMock = { nome: '', numero: '', validade: '', cvv: '' };
+  // Saved card selection
+  savedCards: any[] = [];
+  selectedCardId: string | number | null = null;
 
   // Info da loja para retirada (fallback)
   lojaInfo = {
@@ -117,6 +121,8 @@ export class CheckoutComponent implements OnInit {
     private api: ApiService,
     private toast: ToastService,
     private router: Router,
+    private cardsService: CardsService,
+    private auth: AuthService,
   ){}
 
   ngOnInit(): void {
@@ -142,6 +148,13 @@ export class CheckoutComponent implements OnInit {
       ];
       this._pagamentoMetodo = 'pix';
     }
+    // Load saved cards (tokenized) for this cliente if logged in
+    try {
+      const t = this.auth.getToken();
+      if (t) {
+        this.cardsService.list(t).subscribe({ next: (r) => { this.savedCards = r || []; }, error: () => {}, });
+      }
+    } catch {}
     // Carrega contexto salvo do carrinho (se disponível)
     const ctx = this.store.getCheckoutContext();
     if (ctx) {
@@ -240,7 +253,13 @@ export class CheckoutComponent implements OnInit {
       return;
     }
     if (this.pagamentoMetodo === 'cartao') {
-      this.openCardModal();
+      // If user selected a saved card, pay with that token; otherwise redirect to Meus Cartões to add one.
+      if (this.selectedCardId) {
+        await this.pagarComCartaoSalvo();
+        return;
+      }
+      this.toast.info('Selecione um cartão salvo ou adicione um novo em Meus Cartões');
+      this.router.navigate(['/meus-cartoes']);
       return;
     }
     try {
@@ -358,6 +377,35 @@ export class CheckoutComponent implements OnInit {
   async confirmarCartaoPago() {
     this.closeCardModal();
     await this.pagarReal('cartao');
+  }
+
+  private async pagarComCartaoSalvo() {
+    if (!this.pedidoCodigo) return;
+    try {
+      this.carregando = true;
+      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? (localStorage.getItem('token') || '') : '';
+      const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
+        metodo: 'cartao',
+        valor: this.resumo.total,
+        payment_method_id: this.selectedCardId,
+      }).toPromise();
+
+      await this.api.atualizarPedido(token, this.pedidoCodigo, { status: 'pago', pagamento }).toPromise();
+      this.pagamentoStatus = 'pago';
+      this.toast.success('Pagamento confirmado!');
+      this.store.clearCart();
+      this.store.setCreatedOrder(null);
+      this.router.navigate(['/meus-pedidos']);
+    } catch (e) {
+      this.pagamentoStatus = 'falhou';
+      this.toast.error('Falha ao processar o pagamento.');
+    } finally {
+      this.carregando = false;
+    }
+  }
+
+  goToMeusCartoes() {
+    try { this.router.navigate(['/meus-cartoes']); } catch { window.location.href = '/meus-cartoes'; }
   }
 
   private async pagarReal(metodo: string) {

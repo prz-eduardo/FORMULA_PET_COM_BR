@@ -149,11 +149,7 @@
             </tr>
           </tbody>
         </table>
-        <div class="actions">
-          <button class="btn secondary" (click)="changeTablePage(-1)" [disabled]="tablePage()===1">Anterior</button>
-          <span>Página {{ tablePage() }} / {{ tableTotalPages() || 1 }}</span>
-          <button class="btn secondary" (click)="changeTablePage(1)" [disabled]="tablePage() === (tableTotalPages() || 1)">Próxima</button>
-        </div>
+        <admin-pagination [page]="tablePage()" [total]="tableTotal()" [pageSize]="tablePageSize()" (pageChange)="loadEstoqueTable($event)"></admin-pagination>
       </div>
       <ng-template #tableLoadingTpl>
         <div class="empty">Carregando...</div>

@@ -3,6 +3,7 @@ import { Component, Input, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
 import { AdminApiService, Paged, PessoaDto, PessoaDocDto } from '../../../../services/admin-api.service';
 
 type TipoPessoa = 'cliente' | 'vet' | 'admin';
@@ -10,7 +11,7 @@ type TipoPessoa = 'cliente' | 'vet' | 'admin';
 @Component({
   selector: 'app-admin-people',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent],
   templateUrl: './people.component.html',
   styleUrls: ['./people.component.scss']
 })

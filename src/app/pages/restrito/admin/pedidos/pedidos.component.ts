@@ -1,6 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { ButtonDirective } from '../../../../shared/button';
+import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
 import { ApiService } from '../../../../services/api.service';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../../../../services/session.service';
@@ -8,7 +11,7 @@ import { SessionService } from '../../../../services/session.service';
 @Component({
   selector: 'app-admin-pedidos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminPaginationComponent, ButtonDirective, AdminCrudComponent],
   templateUrl: './pedidos.component.html',
   styleUrls: ['./pedidos.component.scss']
 })
@@ -33,6 +36,16 @@ export class AdminPedidosComponent implements OnInit {
   selectedCliente: { nome?: string|null; email?: string|null; cpf?: string|null; id?: string|number|null } | null = null;
   selectedFrete: any = null;
   shippingOptions: any[] = [];
+
+  // Columns for admin CRUD table
+  ordersColumns = [
+    { key: 'id', label: 'ID', width: '60px' },
+    { key: 'created_at', label: 'Criado', width: '180px' },
+    { key: 'cliente_nome', label: 'Cliente' },
+    { key: 'cliente_email', label: 'Email' },
+    { key: 'status', label: 'Status', width: '110px' },
+    { key: 'total_liquido', label: 'Total', width: '110px' }
+  ];
 
   constructor(private api: ApiService, private session: SessionService, private http: HttpClient) {}
 
@@ -87,7 +100,7 @@ export class AdminPedidosComponent implements OnInit {
       this.resolveDerived();
     } catch {
       this.selected = o || null;
-      this.view = 'details';
+      // drawer will open via binding
       this.resolveDerived();
     }
   }
@@ -172,5 +185,18 @@ export class AdminPedidosComponent implements OnInit {
     const resp = await this.http.post(url, { motivo }, { headers }).toPromise() as any;
     this.selected = resp;
     this.resolveDerived();
+  }
+
+  onQuickSearch(q: string) {
+    this.q = q || '';
+    this.page = 1;
+    this.load(true);
+  }
+
+  onDrawerOpenChange(open: boolean) {
+    if (!open) {
+      this.selected = null;
+      this.selectedId = null;
+    }
   }
 }

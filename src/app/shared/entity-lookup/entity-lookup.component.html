@@ -1,0 +1,15 @@
+<div class="entity-lookup">
+  <div class="lookup-input">
+    <input [formControl]="searchControl" type="text" (input)="onInput()" [placeholder]="placeholder" />
+  </div>
+  <ul class="sugestoes" *ngIf="suggestions?.length">
+    <li *ngFor="let s of suggestions" (click)="add(s.id)">
+      <span class="name">{{ s.name }}</span>
+      <small class="id">#{{ s.id }}</small>
+    </li>
+  </ul>
+
+  <div class="selecionados" *ngIf="selectedIds?.length">
+    <span class="pill" *ngFor="let id of selectedIds">#{{ id }} <button type="button" (click)="remove(id)">x</button></span>
+  </div>
+</div>

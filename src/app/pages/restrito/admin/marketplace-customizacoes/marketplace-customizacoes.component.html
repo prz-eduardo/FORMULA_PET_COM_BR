@@ -5,10 +5,6 @@
       <p class="sub">Gerencie categorias e tags usadas na vitrine e filtros.</p>
     </div>
     <div class="tools">
-      <label class="select-all">
-        <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll($any($event.target).checked)" />
-        Selecionar todos
-      </label>
       <button class="btn danger" (click)="bulkDeleteSelected()" [disabled]="!areAnySelected()">Excluir selecionados</button>
       <button class="btn" (click)="bulkDisableSelected()" [disabled]="!areAnySelected()">Desativar selecionados</button>
       <button class="btn ghost" (click)="load()" [disabled]="loading()">{{ loading() ? 'Atualizando…' : 'Atualizar' }}</button>
@@ -20,7 +16,13 @@
     <section>
       <div class="section-head">
         <h3>Categorias</h3>
-        <button class="btn" (click)="addCategoria()">+ Adicionar</button>
+        <div>
+          <label class="select-all">
+            <input type="checkbox" [checked]="areAllSelectedCategories()" (change)="toggleSelectAllCategories($any($event.target).checked)" />
+            Selecionar todas
+          </label>
+          <button class="btn" (click)="addCategoria()">+ Adicionar</button>
+        </div>
       </div>
       <div class="empty" *ngIf="!categorias.length">Nenhuma categoria ainda.</div>
       <div class="list" *ngIf="categorias.length">
@@ -45,10 +47,7 @@
             <label>Ícone</label>
             <input type="text" formControlName="icone" placeholder="mdi-..." />
           </div>
-          <div class="field small center">
-            <label>Remover</label>
-            <input type="checkbox" formControlName="remove" />
-          </div>
+          
           <div class="field small center">
             <label>&nbsp;</label>
             <button type="button" class="btn danger" (click)="removeCategoria(i)">Excluir</button>
@@ -60,7 +59,13 @@
     <section>
       <div class="section-head">
         <h3>Tags</h3>
-        <button class="btn" (click)="addTag()">+ Adicionar</button>
+        <div>
+          <label class="select-all">
+            <input type="checkbox" [checked]="areAllSelectedTags()" (change)="toggleSelectAllTags($any($event.target).checked)" />
+            Selecionar todas
+          </label>
+          <button class="btn" (click)="addTag()">+ Adicionar</button>
+        </div>
       </div>
       <div class="empty" *ngIf="!tags.length">Nenhuma tag ainda.</div>
       <div class="list" *ngIf="tags.length">
@@ -77,10 +82,7 @@
             <label>Nome</label>
             <input type="text" formControlName="nome" placeholder="Ex.: pet-idoso" />
           </div>
-          <div class="field small center">
-            <label>Remover</label>
-            <input type="checkbox" formControlName="remove" />
-          </div>
+          
           <div class="field small center">
             <label>&nbsp;</label>
             <button type="button" class="btn danger" (click)="removeTag(i)">Excluir</button>

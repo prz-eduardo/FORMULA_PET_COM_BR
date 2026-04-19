@@ -57,7 +57,7 @@
     <h2 class="sec-title">Destaques</h2>
     <!-- faixa horizontal com alguns cards em destaque -->
     <div class="destaque-row">
-  <a class="d-card" *ngFor="let p of featuredRowList; trackBy: trackProduct" [routerLink]="'/produto/' + p.id" [queryParams]="{ src: 'loja' }" [title]="p.name">
+  <a class="d-card" *ngFor="let p of featuredRowList; trackBy: trackProduct" [routerLink]="'/produto/' + p.id" [queryParams]="{ src: 'loja' }" [title]="p.name" style="width:100%" [style.max-width]="defaultCardWidth">
   <img class="d-img" [src]="p.image || p.imageUrl" loading="lazy" decoding="async" [alt]="p.name" title="{{ p.name }}" />
         <div class="d-overlay">
           <div class="d-topline">
@@ -94,9 +94,9 @@
       <div class="grid-loader" *ngIf="loading">
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
       </div>
-      <!-- Mobile: destaque do primeiro produto -->
-      <ng-container *ngIf="interleavedList.length > 0 && interleavedList[0].type === 'product'">
-        <a class="d-card banner mobile-feature" [routerLink]="'/produto/' + interleavedList[0].product.id" [queryParams]="{ src: 'loja' }" [title]="interleavedList[0].product.name">
+      <!-- Mobile: destaque do primeiro produto (only on mobileView) -->
+      <ng-container *ngIf="interleavedList.length > 0 && interleavedList[0].type === 'product' && mobileView">
+        <a class="d-card banner mobile-feature" [routerLink]="'/produto/' + interleavedList[0].product.id" [queryParams]="{ src: 'loja' }" [title]="interleavedList[0].product.name" style="width:100%" [style.max-width]="defaultCardWidth">
           <img class="d-img" [src]="interleavedList[0].product.image || interleavedList[0].product.imageUrl" loading="lazy" decoding="async" [alt]="interleavedList[0].product.name" title="{{ interleavedList[0].product.name }}" />
           <div class="d-overlay">
             <div class="d-topline">
@@ -112,8 +112,8 @@
         </a>
       </ng-container>
       <ng-container *ngFor="let it of interleavedList; let i = index; trackBy: trackInterleaved">
-        <ng-container *ngIf="!(i === 0 && it.type === 'product')" [ngSwitch]="it.type">
-          <a *ngSwitchCase="'banner'" class="d-card banner" [routerLink]="'/produto/' + it.product.id" [queryParams]="{ src: 'loja' }" [title]="it.product.name">
+        <ng-container *ngIf="!(i === 0 && it.type === 'product' && mobileView)" [ngSwitch]="it.type">
+          <a *ngSwitchCase="'banner'" class="d-card banner" [routerLink]="'/produto/' + it.product.id" [queryParams]="{ src: 'loja' }" [title]="it.product.name" style="width:100%" [style.max-width]="defaultCardWidth">
             <img class="d-img" [src]="it.product.image || it.product.imageUrl" loading="lazy" decoding="async" [alt]="it.product.name" title="{{ it.product.name }}" />
             <div class="d-overlay">
               <div class="d-topline">
@@ -138,6 +138,7 @@
             [favoriteActive]="isFav(it.product)"
             (toggleFav)="toggleFav(it.product)"
             (add)="onAddToCart(it.product, $event)"
+            [cardWidth]="defaultCardWidth"
           ></app-product-card-v2>
         </ng-container>
       </ng-container>

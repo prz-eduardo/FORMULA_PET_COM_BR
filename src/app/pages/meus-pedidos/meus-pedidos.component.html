@@ -147,10 +147,8 @@
       <div class="erro" *ngIf="!carregando && erro">{{ erro }}</div>
     </ng-template>
 
-    <div class="paginacao" *ngIf="totalPages > 1">
-      <button class="btn btn-sec" (click)="prevPage()" [disabled]="page<=1">Anterior</button>
-      <span class="muted">Página {{ page }} / {{ totalPages }}</span>
-      <button class="btn" (click)="nextPage()" [disabled]="page>=totalPages">Próxima</button>
+    <div class="paginacao" *ngIf="total > pageSize">
+      <admin-pagination [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; load()"></admin-pagination>
     </div>
   </main>
 </div>

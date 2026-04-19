@@ -26,11 +26,7 @@
     <div class="empty">Nenhum fornecedor encontrado.</div>
   </ng-template>
 
-  <div class="pagination" *ngIf="total() > pageSize()">
-    <button (click)="prev()" [disabled]="!canPrev()">Anterior</button>
-    <span>Página {{ page() }} de {{ totalPages() }}</span>
-    <button (click)="next()" [disabled]="!canNext()">Próxima</button>
-  </div>
+  <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
 
   <div class="detail" *ngIf="selected() as s">
     <div class="panel">

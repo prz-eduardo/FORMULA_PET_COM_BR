@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { getCollectionItems, addCollectionItem, updateCollectionItem, deleteCollectionItem } from '../firebase-helpers';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 
 // Import Node libs para scraping (vai rodar só no backend ou numa task Node)
 import axios from 'axios';
@@ -10,7 +11,7 @@ import * as cheerio from 'cheerio';
 @Component({
   selector: 'app-guia-ativos-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ButtonDirective, ButtonComponent],
   templateUrl: './guia-ativos.component.html',
   styleUrls: ['./guia-ativos.component.scss']
 })

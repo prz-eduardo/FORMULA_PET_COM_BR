@@ -151,9 +151,7 @@
     }
  }
 
- body {
-    padding-top: 60px;
-  }
+/* body top padding moved to global .app-main to properly account for safe-area insets */
 
  .testimonial-slider{
     display: flex;

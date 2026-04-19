@@ -1,0 +1,9 @@
+<ng-container *ngIf="!href && !routerLink">
+  <button [type]="type" [disabled]="disabled" class="btn"><ng-content></ng-content></button>
+</ng-container>
+<ng-container *ngIf="href && !routerLink">
+  <a [href]="href" class="btn" [attr.aria-disabled]="disabled ? 'true' : null"><ng-content></ng-content></a>
+</ng-container>
+<ng-container *ngIf="routerLink">
+  <a [routerLink]="routerLink" class="btn" [attr.aria-disabled]="disabled ? 'true' : null"><ng-content></ng-content></a>
+</ng-container>

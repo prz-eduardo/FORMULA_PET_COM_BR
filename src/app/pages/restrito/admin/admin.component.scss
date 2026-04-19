@@ -220,3 +220,15 @@
   0% { opacity: 0; transform: translateY(40px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+
+/* Compact admin footer */
+.admin-footer {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding: 12px 0;
+  text-align: center;
+  color: #9fb0c3;
+  font-size: 13px;
+  background: transparent;
+}
+.admin-footer-inner { max-width: 1100px; margin: 0 auto; }

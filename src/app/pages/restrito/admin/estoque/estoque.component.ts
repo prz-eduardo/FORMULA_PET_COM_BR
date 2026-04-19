@@ -1,13 +1,15 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, EstoqueAtivoDto, EstoqueMovimentoDto, UnitDto, FornecedorDto, InsumoDto } from '../../../../services/admin-api.service';
 // removed reusable search import to use literal markup/logic
 
 @Component({
   selector: 'app-admin-estoque',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AdminPaginationComponent, ButtonDirective, ButtonComponent],
   templateUrl: './estoque.component.html',
   styleUrls: ['./estoque.component.scss']
 })

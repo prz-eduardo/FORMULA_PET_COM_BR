@@ -1,18 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
-import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
+import { FormSchema } from '../../../../shared/admin-crud/form-schema';
 import { RouterModule } from '@angular/router';
+import { map } from 'rxjs/operators';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, PromocaoDto, ProdutoDto } from '../../../../services/admin-api.service';
+import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
+import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-lookup.component';
 
 @Component({
   selector: 'app-admin-promocoes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent, ButtonDirective, ButtonComponent, AdminCrudComponent, EntityLookupComponent],
   templateUrl: './promocoes.component.html',
   styleUrls: ['./promocoes.component.scss']
 })
 export class AdminPromocoesComponent implements OnInit {
-  fb = new FormBuilder();
 
   // listagem
   q = signal('');
@@ -26,26 +31,31 @@ export class AdminPromocoesComponent implements OnInit {
   // edição/criação
   editingId = signal<number | null>(null);
   showCreateModal = signal(false);
-  form: FormGroup = this.fb.group({
-    nome: ['', Validators.required],
-    descricao: [''],
-    tipo: ['percentual'],
-    valor: [0, [Validators.required]],
-    inicio: [''],
-    fim: [''],
-    ativo: [true]
-  });
-
   // seleção de produtos vinculados (IDs)
   produtosVinculados = signal<number[]>([]);
-  // busca de produtos
-  produtoBusca = new FormControl<string>('');
-  produtoSugestoes = signal<Array<{ id: number; name: string; price?: number }>>([]);
+  // schema-driven form config
+  promocoesFormSchema: FormSchema | null = null;
+  // object passed to admin-crud as editItem
+  editingItem: any | null = null;
 
   constructor(private api: AdminApiService) {}
 
   ngOnInit(): void {
     this.loadList();
+    this.promocoesFormSchema = {
+      title: 'Promoção',
+      submitLabel: 'Salvar',
+      fields: [
+        { key: 'nome', label: 'Nome', type: 'text', required: true },
+        { key: 'descricao', label: 'Descrição', type: 'textarea' },
+        { key: 'tipo', label: 'Tipo', type: 'select', options: [{ value: 'percentual', label: 'Percentual' }, { value: 'valor', label: 'Valor' }], default: 'percentual' },
+        { key: 'valor', label: 'Valor', type: 'number', required: true, default: 0 },
+        { key: 'inicio', label: 'Início', type: 'datetime' },
+        { key: 'fim', label: 'Fim', type: 'datetime' },
+        { key: 'ativo', label: 'Ativa', type: 'checkbox', default: true },
+        { key: 'produtos', label: 'Produtos vinculados', type: 'multi-suggest', placeholder: 'Buscar produtos pelo nome', searchFn: this.searchProdutos.bind(this) }
+      ]
+    };
   }
 
   loadList() {
@@ -102,7 +112,7 @@ export class AdminPromocoesComponent implements OnInit {
 
   resetEditor() {
     this.editingId.set(null);
-    this.form.reset({ tipo: 'percentual', valor: 0, ativo: true });
+    this.editingItem = null;
     this.produtosVinculados.set([]);
   }
 
@@ -115,42 +125,42 @@ export class AdminPromocoesComponent implements OnInit {
     if (!p.id) return;
     this.editingId.set(p.id);
     this.api.getPromocao(p.id).subscribe((det: PromocaoDto) => {
-      this.form.patchValue({
+      const ids = (det.produtos ?? []).map((x: any) => Number(x.id));
+      this.produtosVinculados.set(ids);
+      this.editingItem = {
+        id: det.id,
         nome: det.nome,
         descricao: det.descricao ?? '',
         tipo: det.tipo ?? 'percentual',
         valor: det.valor ?? 0,
         inicio: det.inicio ?? '',
         fim: det.fim ?? '',
-        ativo: !!(det.ativo ?? true)
-      });
-      const ids = (det.produtos ?? []).map((x: any) => x.id);
-      this.produtosVinculados.set(ids);
-      // Open the modal with the loaded promotion data
+        ativo: !!(det.ativo ?? true),
+        produtos: ids
+      };
+      // Open the drawer with the loaded promotion data
       this.showCreateModal.set(true);
     });
   }
 
-  salvar() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+  onSchemaSubmit(ev: { id?: any; values: any }) {
+    const id = ev.id;
+    const values = ev.values || {};
     const body: PromocaoDto = {
-      nome: this.form.value.nome,
-      descricao: this.form.value.descricao || undefined,
-      tipo: this.form.value.tipo || 'percentual',
-      valor: Number(this.form.value.valor || 0),
-      inicio: this.form.value.inicio || undefined,
-      fim: this.form.value.fim || undefined,
-      ativo: !!this.form.value.ativo
+      nome: values.nome,
+      descricao: values.descricao || undefined,
+      tipo: values.tipo || 'percentual',
+      valor: Number(values.valor || 0),
+      inicio: values.inicio || undefined,
+      fim: values.fim || undefined,
+      ativo: !!values.ativo
     } as any;
 
-    const id = this.editingId();
+    const productIds: number[] = Array.isArray(values.produtos) ? values.produtos.map((x: any) => Number(x)) : [];
+
     const afterSave = (saved: PromocaoDto) => {
-      const ids = this.produtosVinculados();
-      if (ids.length) {
-        this.api.setPromocaoProdutos(saved.id!, ids).subscribe(() => {
+      if (productIds.length) {
+        this.api.setPromocaoProdutos(saved.id!, productIds).subscribe(() => {
           this.resetEditor();
           this.showCreateModal.set(false);
           this.loadList();
@@ -162,11 +172,8 @@ export class AdminPromocoesComponent implements OnInit {
       }
     };
 
-    if (id) {
-      this.api.updatePromocao(id, body).subscribe(afterSave);
-    } else {
-      this.api.createPromocao(body).subscribe(afterSave);
-    }
+    if (id) this.api.updatePromocao(id, body).subscribe(afterSave);
+    else this.api.createPromocao(body).subscribe(afterSave);
   }
 
   remover(p: PromocaoDto) {
@@ -178,22 +185,16 @@ export class AdminPromocoesComponent implements OnInit {
 
   // Produtos - busca e seleção
   buscarProdutos() {
-    const q = (this.produtoBusca.value || '').trim();
-    if (!q) { this.produtoSugestoes.set([]); return; }
-    this.api.listProdutos({ q, page: 1, pageSize: 10, active: 1 }).subscribe(res => {
-      const items = (res.data || []).map((p: ProdutoDto) => ({ id: Number(p.id), name: p.name, price: p.price }));
-      this.produtoSugestoes.set(items);
-    });
+    // This method is no longer needed as product search is handled by EntityLookup
   }
-  addProduto(id: number) {
-    const set = new Set(this.produtosVinculados());
-    set.add(id);
-    this.produtosVinculados.set(Array.from(set));
+
+  // New helper to provide a search function to the EntityLookup component
+  searchProdutos(q: string) {
+    return this.api.listProdutos({ q, page: 1, pageSize: 10, active: 1 }).pipe(
+      map((res: any) => (res.data || []).map((p: ProdutoDto) => ({ id: Number(p.id), name: p.name, price: p.price })))
+    );
   }
-  removeProduto(id: number) {
-    const list = this.produtosVinculados().filter(x => x !== id);
-    this.produtosVinculados.set(list);
-  }
+  // addProduto/removeProduto removed: EntityLookup now manages selection
 
   // Filtros
   onQInput(ev: Event) {
@@ -207,5 +208,14 @@ export class AdminPromocoesComponent implements OnInit {
     this.loadList();
   }
 
-  closeCreateModal(){ this.showCreateModal.set(false); }
+  onDrawerOpenChange(open: boolean) {
+    // Keep parent state in sync with the drawer's internal state. When the drawer
+    // is closed via backdrop/ESC the SideDrawer emits openChange(false) but the
+    // component-level `showCreateModal` could still be true — leaving the parent
+    // thinking the drawer is open. Sync the signal and reset editor when closed.
+    this.showCreateModal.set(open);
+    if (!open) this.resetEditor();
+  }
+
+  closeCreateModal(){ this.resetEditor(); this.showCreateModal.set(false); }
 }

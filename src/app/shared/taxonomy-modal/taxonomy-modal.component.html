@@ -1,0 +1,19 @@
+<div class="modal" role="dialog" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h4>{{ title }}</h4>
+    <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+      <span *ngFor="let it of items" class="badge" [class.selected]="isSelected(it)" (click)="toggle(it)">
+        {{ it.name }}
+        <span class="badge-remove" (click)="onDelete(it, $event)">-</span>
+      </span>
+    </div>
+    <hr>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input [(ngModel)]="newValue" type="text" placeholder="Ex: valor" style="flex:1;" />
+      <button type="button" class="inline-add-btn" (click)="onAdd()" aria-label="Adicionar">+</button>
+    </div>
+    <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+      <button type="button" (click)="onClose()">Fechar</button>
+    </div>
+  </div>
+</div>

@@ -40,11 +40,15 @@ export class SwiperTopoComponent implements OnInit, AfterViewInit {
       
 
       if (window.innerWidth < 768) {
-        this.imagem = '/imagens/banner-cel.png';
-        console.log('imagem', this.imagem);
+        Promise.resolve().then(() => {
+          this.imagem = '/imagens/banner-cel.png';
+          console.log('imagem', this.imagem);
+        });
       } else {
-        this.imagem = '/imagens/1.png';
-        console.log('imagem', this.imagem);
+        Promise.resolve().then(() => {
+          this.imagem = '/imagens/1.png';
+          console.log('imagem', this.imagem);
+        });
       }
     } else {
     }

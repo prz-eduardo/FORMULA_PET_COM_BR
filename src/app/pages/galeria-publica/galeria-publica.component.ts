@@ -7,6 +7,7 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { StoreService } from '../../services/store.service';
 
 @Component({
   selector: 'app-galeria-publica',
@@ -33,7 +34,7 @@ export class GaleriaPublicaComponent {
 
   private observer?: IntersectionObserver;
   @ViewChild('sentinel', { static: false }) sentinel?: ElementRef;
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private api: ApiService, private auth: AuthService, private toast: ToastService) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private api: ApiService, private auth: AuthService, private toast: ToastService, private store: StoreService) {}
   // placeholder mode when API returns empty: show curated random pet images
   placeholderMode = false;
   placeholderImages: string[] = [];
@@ -51,6 +52,19 @@ export class GaleriaPublicaComponent {
     { tipo: 'sad', emoji: '😢' },
     { tipo: 'angry', emoji: '😡' }
   ];
+
+  // throttle for showing the login toast when unauthenticated
+  private _lastLoginToastAt: number | null = null;
+  private _loginToastCooldown = 1500; // ms
+
+  private _maybeShowLoginToast() {
+    try {
+      const now = Date.now();
+      if (this._lastLoginToastAt && (now - this._lastLoginToastAt) < this._loginToastCooldown) return;
+      this._lastLoginToastAt = now;
+      try { this.toast.info('Faça login para reagir às fotos.'); } catch (e) {}
+    } catch (e) {}
+  }
 
   // template-friendly lookup for an emoji by tipo
   getReactionEmoji(tipo: string) {
@@ -182,7 +196,7 @@ export class GaleriaPublicaComponent {
     // require auth
     const token = this.auth.getToken();
     if (!token) {
-      this.toast.info('Faça login para reagir às fotos.');
+      this._maybeShowLoginToast();
       return;
     }
     const petId = pet.id;
@@ -219,7 +233,12 @@ export class GaleriaPublicaComponent {
 
   // Open/close reaction picker; clicking the heart toggles the picker instead
   // We accept the pet object and the client _uid so the picker is unique per card instance
-  openReactionPicker(pet: any, uid?: string, ev?: Event) {
+  async openReactionPicker(pet: any, uid?: string, ev?: Event) {
+    // Block opening when user is not logged in as a cliente
+    try {
+      const isCliente = await this.store.isClienteLoggedSilent();
+      if (!isCliente) return;
+    } catch (e) {}
     // Positioning is handled via CSS (absolute inside the card). We only toggle state here.
     const key = uid ?? pet?._uid ?? pet?.id;
       if (this.reactionPickerOpenFor === key) {
@@ -340,7 +359,7 @@ export class GaleriaPublicaComponent {
   async selectReaction(pet: any, tipo: string) {
     const token = this.auth.getToken();
     if (!token) {
-      this.toast.info('Faça login para reagir às fotos.');
+      this._maybeShowLoginToast();
       return;
     }
 
@@ -468,6 +487,9 @@ export class GaleriaPublicaComponent {
     return '🐾';
   }
 
+  // Track floating pickers moved to body so we can restore them later
+  private _floatingPickers = new Map<string | number, { picker: HTMLElement, wrapper: HTMLElement, parent: Node | null, nextSibling: Node | null }>();
+
   // Safe image error handler used from templates. Accepts the event target or element
   // and sets a fallback src only if the element exists and isn't already the fallback
   onImgError(target: any, fallback: string) {
@@ -517,6 +539,11 @@ export class GaleriaPublicaComponent {
   onPhotoClick(pet: any, ev?: Event) {
     try {
       if (ev && (ev as Event).stopPropagation) (ev as Event).stopPropagation();
+      const __token = this.auth.getToken();
+      if (!__token) {
+        this._maybeShowLoginToast();
+        return;
+      }
       // If user already reacted, open picker
       if (pet.userReacted) {
         try { this.openReactionPicker(pet, pet._uid, ev); } catch (e) {}
@@ -561,6 +588,7 @@ export class GaleriaPublicaComponent {
     } catch (e) {}
     this.pickerFlippedFor = null;
     try { this._clearAllAutoTimers(); } catch (e) {}
+    try { this._unfloatAllPickers(); } catch (e) {}
   }
 
   // Compute if the picker would be clipped by the top of the viewport and flip it below the button
@@ -577,9 +605,108 @@ export class GaleriaPublicaComponent {
       } else {
         this.pickerFlippedFor = null;
       }
+      // Ensure picker is rendered above content by floating it to document.body when possible.
+      try { this._floatPickerFor(id, wrapper, picker); } catch (e) {}
     } catch (e) {
       this.pickerFlippedFor = null;
     }
+  }
+
+  // Move the picker element to document.body and position it as fixed so it is not
+  // clipped or occluded by ancestor stacking contexts. We keep a record so it can
+  // be restored when the picker closes.
+  private _floatPickerFor(id: string | number, wrapper?: HTMLElement | null, picker?: HTMLElement | null) {
+    try {
+      if (!picker || !wrapper) {
+        wrapper = document.querySelector(`.reaction-wrapper[data-pet-id="${id}"]`) as HTMLElement | null;
+        if (!wrapper) return;
+        picker = wrapper.querySelector('.reaction-picker') as HTMLElement | null;
+        if (!picker) return;
+      }
+      // If already floating, update position
+      if (this._floatingPickers.has(id)) {
+        // adjust coordinates only
+        this._positionFloatingPicker(id, wrapper, picker);
+        return;
+      }
+
+      // Save original parent/nextSibling so we can restore later
+      const meta = { picker, wrapper, parent: picker.parentNode, nextSibling: picker.nextSibling };
+      this._floatingPickers.set(id, meta as any);
+
+      // Append to body so it leaves any ancestor stacking contexts
+      document.body.appendChild(picker);
+      // mark wrapper so earlier :has rules still have a fallback (older browsers)
+      try { wrapper.classList.add('picker-floating'); } catch (e) {}
+      picker.classList.add('picker-floating');
+      // position and style
+      picker.style.position = 'fixed';
+      picker.style.right = 'auto';
+      picker.style.bottom = 'auto';
+      // ensure picker is above typical content but below global modals (choose 11000)
+      picker.style.zIndex = '11000';
+      this._positionFloatingPicker(id, wrapper, picker);
+    } catch (e) {
+      // swallow errors — non-critical
+    }
+  }
+
+  private _positionFloatingPicker(id: string | number, wrapper: HTMLElement, picker: HTMLElement) {
+    try {
+      const btn = wrapper.querySelector('.btn-like') as HTMLElement | null;
+      const anchor = btn || wrapper;
+      const anchorRect = anchor.getBoundingClientRect();
+      // ensure picker has layout (might be newly appended)
+      const pRect = picker.getBoundingClientRect();
+      // default: position above the anchor, aligned to the anchor's right edge
+      let top = Math.round(anchorRect.top - pRect.height - 8);
+      // if too close to top, flip below
+      if (top < 8) top = Math.round(anchorRect.bottom + 8);
+      // align right edge with some padding
+      let left = Math.round(anchorRect.right - pRect.width + 8);
+      // clamp into viewport
+      left = Math.max(8, Math.min(left, window.innerWidth - pRect.width - 8));
+      picker.style.left = `${left}px`;
+      picker.style.top = `${top}px`;
+    } catch (e) {}
+  }
+
+  private _unfloatPickerFor(id: string | number) {
+    try {
+      const meta = this._floatingPickers.get(id);
+      if (!meta) return;
+      const { picker, wrapper, parent, nextSibling } = meta;
+      // If the picker DOM node was destroyed by Angular, nothing to restore
+      if (!picker || !picker.isConnected) {
+        try { wrapper.classList.remove('picker-floating'); } catch (e) {}
+        this._floatingPickers.delete(id);
+        return;
+      }
+      // restore to original parent/position
+      try {
+        if (parent) {
+          if (nextSibling && (nextSibling.parentNode === parent)) parent.insertBefore(picker, nextSibling);
+          else parent.appendChild(picker);
+        }
+      } catch (e) {}
+      try { wrapper.classList.remove('picker-floating'); } catch (e) {}
+      picker.classList.remove('picker-floating');
+      picker.style.position = '';
+      picker.style.left = '';
+      picker.style.top = '';
+      picker.style.right = '';
+      picker.style.bottom = '';
+      picker.style.zIndex = '';
+      this._floatingPickers.delete(id);
+    } catch (e) {}
+  }
+
+  private _unfloatAllPickers() {
+    try {
+      for (const k of Array.from(this._floatingPickers.keys())) {
+        try { this._unfloatPickerFor(k); } catch (e) {}
+      }
+    } catch (e) {}
   }
 
   private async loadPage(pageNum: number) {
@@ -597,7 +724,6 @@ export class GaleriaPublicaComponent {
       // support API returning { data: [], page, totalPages } or plain array
       const items = Array.isArray(data) ? data : (data?.data || []);
       // normalize items: ensure likes and userReacted fields exist
-      const sizeVariants = ['small', 'medium', 'large'];
       const normalized = (items || []).map((it: any, idx: number) => ({
         ...it,
         // assign a client-unique uid to each rendered card so duplicate server ids don't collide
@@ -620,8 +746,7 @@ export class GaleriaPublicaComponent {
           sad: Number(it.total_reacao_sad ?? it.total_reacoes_sad ?? 0),
           angry: Number(it.total_reacao_angry ?? it.total_reacoes_angry ?? 0)
         },
-        // pseudo-random but stable per session: use index to pick variant
-        size: sizeVariants[(idx + this.page + (this.placeholderPage || 0)) % sizeVariants.length]
+        // size removed: visual sizing now handled by CSS and original image dimensions
       }));
 
       // When appending pages, avoid exact duplicate ids and distribute incoming items

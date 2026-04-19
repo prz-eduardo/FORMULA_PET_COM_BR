@@ -247,6 +247,23 @@ export interface PromocaoDto {
   produtos?: Array<{ id: number; nome?: string; name?: string; preco?: string | number; price?: string | number }>; // resumo
 }
 
+export interface BannerDto {
+  id?: number;
+  nome?: string;
+  link?: string | null;
+  alt?: string | null;
+  posicao?: string | null;
+  ordem?: number | null;
+  inicio?: string | null;
+  fim?: string | null;
+  ativo?: 0 | 1;
+  desktop_image_url?: string | null;
+  mobile_image_url?: string | null;
+  target_blank?: 0 | 1;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Cupons (admin)
 export interface CupomDto {
   id?: number | string;
@@ -277,6 +294,52 @@ export class AdminApiService {
 
   constructor(private http: HttpClient, private session: SessionService) {}
 
+  // Normaliza payloads de produto vindos do backend (vários formatos possíveis)
+  private normalizeProduto(raw: any): ProdutoDto {
+    if (!raw) return { id: undefined, name: '', description: '', price: 0, category: '', customizations: { dosage: [], packaging: [] }, tags: [] } as ProdutoDto;
+    const id = raw.id ?? raw.product_id ?? raw.produto_id;
+    const name = raw.name ?? raw.nome ?? raw.nome_produto ?? '';
+    const description = raw.description ?? raw.descricao ?? '';
+    const priceRaw = raw.price ?? raw.preco ?? raw.preco_br ?? raw.valor ?? 0;
+    const price = (typeof priceRaw === 'string') ? parseFloat(priceRaw.replace(',', '.')) || 0 : (typeof priceRaw === 'number' ? priceRaw : 0);
+    const imagensArr = Array.isArray(raw.imagens) ? raw.imagens : (Array.isArray(raw.images) ? raw.images : []);
+    const images = imagensArr.map((it: any) => (typeof it === 'string' ? it : (it?.url ?? it?.data ?? it?.image ?? ''))).filter((u: string) => !!u);
+    const image = raw.image ?? raw.imagem_principal ?? images[0] ?? raw.imageUrl ?? null;
+    const tags = Array.isArray(raw.tags) ? raw.tags.map((t: any) => (typeof t === 'string' ? t : (t?.nome ?? t?.name ?? ''))).filter((s: string) => !!s) : [];
+    const category = raw.category ?? (Array.isArray(raw.categorias) && raw.categorias.length ? (raw.categorias[0].nome ?? raw.categorias[0].name) : (raw.categoria ?? raw.category ?? ''));
+    const categoryId = (Array.isArray(raw.categorias) && raw.categorias.length) ? (raw.categorias[0].id ?? null) : (raw.categoria_id ?? raw.categoryId ?? raw.categoria_id ?? null);
+    const customizations = raw.customizations ?? raw.customizacoes ?? { dosage: raw.dosages ?? [], packaging: raw.embalagens ?? [] };
+    return {
+      id,
+      // keep original aliases for compatibility
+      nome: raw.nome ?? raw.name,
+      preco: raw.preco ?? raw.price,
+      name,
+      description,
+      price,
+      image,
+      category,
+      categoryId,
+      images,
+      customizations: {
+        dosage: customizations?.dosage ?? customizations?.dosagem ?? customizations?.dosages ?? [],
+        packaging: customizations?.packaging ?? customizations?.embalagens ?? customizations?.packaging ?? []
+      },
+      discount: raw.discount ?? raw.desconto ?? null,
+      rating: raw.rating ?? null,
+      stock: raw.stock ?? raw.estoque ?? null,
+      tags,
+      weightValue: raw.weightValue ?? raw.peso ?? null,
+      weightUnit: raw.weightUnit ?? raw.peso_unidade ?? null,
+      ativoId: raw.ativo_id ?? raw.ativoId ?? null,
+      estoqueId: raw.estoque_id ?? raw.estoqueId ?? null,
+      formId: raw.formula_id ?? raw.formId ?? null,
+      active: raw.active ?? raw.ativo ?? undefined,
+      created_at: raw.created_at ?? raw.createdAt,
+      updated_at: raw.updated_at ?? raw.updatedAt
+    } as ProdutoDto;
+  }
+
   private headers(): HttpHeaders {
     const token = this.session.getBackendToken();
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -305,19 +368,30 @@ export class AdminApiService {
       if (params.ativo_nome) httpParams = httpParams.set('ativo_nome', params.ativo_nome);
       if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
     }
-    return this.http.get<Paged<ProdutoDto>>(`${this.baseUrl}/produtos`, { headers: this.headers(), params: httpParams });
+    return this.http.get<any>(`${this.baseUrl}/produtos`, { headers: this.headers(), params: httpParams }).pipe(
+      map((res: any) => {
+        const data = Array.isArray(res?.data) ? res.data.map((it: any) => this.normalizeProduto(it)) : [];
+        return { ...res, data } as Paged<ProdutoDto>;
+      })
+    );
   }
 
   getProduto(id: string | number): Observable<ProdutoDto> {
-    return this.http.get<ProdutoDto>(`${this.baseUrl}/produtos/${id}`, { headers: this.headers() });
+    return this.http.get<any>(`${this.baseUrl}/produtos/${id}`, { headers: this.headers() }).pipe(
+      map((p: any) => this.normalizeProduto(p))
+    );
   }
 
   createProduto(body: ProdutoDto): Observable<ProdutoDto> {
-    return this.http.post<ProdutoDto>(`${this.baseUrl}/produtos`, body, { headers: this.headers() });
+    return this.http.post<any>(`${this.baseUrl}/produtos`, body, { headers: this.headers() }).pipe(
+      map((p: any) => this.normalizeProduto(p))
+    );
   }
 
   updateProduto(id: string | number, body: Partial<ProdutoDto>): Observable<ProdutoDto> {
-    return this.http.put<ProdutoDto>(`${this.baseUrl}/produtos/${id}`, body, { headers: this.headers() });
+    return this.http.put<any>(`${this.baseUrl}/produtos/${id}`, body, { headers: this.headers() }).pipe(
+      map((p: any) => this.normalizeProduto(p))
+    );
   }
 
   deleteProduto(id: string | number): Observable<{ ok: boolean }> {
@@ -332,11 +406,15 @@ export class AdminApiService {
   }
 
   reativarProduto(id: string | number): Observable<ProdutoDto> {
-    return this.http.post<ProdutoDto>(`${this.baseUrl}/produtos/${id}/reativar`, {}, { headers: this.headers() });
+    return this.http.post<any>(`${this.baseUrl}/produtos/${id}/reativar`, {}, { headers: this.headers() }).pipe(
+      map((p: any) => this.normalizeProduto(p))
+    );
   }
 
   produtosPorAtivo(ativoId: string | number): Observable<ProdutoDto[]> {
-    return this.http.get<ProdutoDto[]>(`${this.baseUrl}/produtos-por-ativo/${ativoId}`, { headers: this.headers() });
+    return this.http.get<any[]>(`${this.baseUrl}/produtos-por-ativo/${ativoId}`, { headers: this.headers() }).pipe(
+      map((arr: any[]) => Array.isArray(arr) ? arr.map(a => this.normalizeProduto(a)) : [])
+    );
   }
 
   produtosMeta(): Observable<{ categorias: Array<{id: string|number; name: string}>; tags: Array<{id: string|number; name: string}>; dosages: Array<{id: string|number; name: string}>; embalagens: Array<{id: string|number; name: string}>; }>{
@@ -348,8 +426,8 @@ export class AdminApiService {
     return this.http.get<{ data: Array<{ id: string | number; name: string }> }>(`${this.baseUrl}/taxonomias/${tipo}`, { headers: this.headers() });
   }
 
-  createTaxonomia(tipo: TaxonomyType, name: string): Observable<{ id: string | number; name: string }> {
-    return this.http.post<{ id: string | number; name: string }>(`${this.baseUrl}/taxonomias/${tipo}`, { name }, { headers: this.headers() });
+  createTaxonomia(tipo: TaxonomyType, name: string): Observable<{ id: string | number; name?: string; nome?: string }> {
+    return this.http.post<{ id: string | number; name?: string; nome?: string }>(`${this.baseUrl}/taxonomias/${tipo}`, { name }, { headers: this.headers() });
   }
 
   updateTaxonomia(tipo: TaxonomyType, id: string | number, name: string): Observable<{ id: string | number; name: string }> {
@@ -782,5 +860,41 @@ export class AdminApiService {
   }
   vetAuditLogs(id: string | number): Observable<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>> {
     return this.http.get<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>>(`${this.baseUrl}/vets/${id}/audit-logs`, { headers: this.headers() });
+  }
+  
+  // Banners (admin)
+  listBanners(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1; posicao?: string }): Observable<Paged<BannerDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+      if (params.posicao) httpParams = httpParams.set('posicao', params.posicao);
+    }
+    return this.http.get<Paged<BannerDto>>(`${this.baseUrl}/banners`, { headers: this.headers(), params: httpParams });
+  }
+
+  getBanner(id: string | number): Observable<BannerDto> {
+    return this.http.get<BannerDto>(`${this.baseUrl}/banners/${id}`, { headers: this.headers() });
+  }
+
+  createBanner(body: Partial<BannerDto>): Observable<BannerDto> {
+    return this.http.post<BannerDto>(`${this.baseUrl}/banners`, body, { headers: this.headers() });
+  }
+
+  updateBanner(id: string | number, body: Partial<BannerDto>): Observable<BannerDto> {
+    return this.http.put<BannerDto>(`${this.baseUrl}/banners/${id}`, body, { headers: this.headers() });
+  }
+
+  deleteBanner(id: string | number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/banners/${id}`, { headers: this.headers() });
+  }
+
+  uploadBannerImage(id: string | number, file: File, tipo: 'desktop'|'mobile'): Observable<{ imageUrl: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('type', tipo);
+    return this.http.post<{ imageUrl: string }>(`${this.baseUrl}/banners/${id}/imagem`, form, { headers: this.headers() });
   }
 }

@@ -14,6 +14,10 @@
         </select>
       </div>
       <div>
+        <label>CNPJ</label>
+        <input formControlName="cnpj" maxlength="18" inputmode="numeric" (input)="onCnpjInput($event)" placeholder="00.000.000/0000-00" />
+      </div>
+      <div>
         <label>Email *</label>
         <input type="email" formControlName="email" />
       </div>
@@ -58,8 +62,11 @@
         <textarea formControlName="descricao"></textarea>
       </div>
       <div class="colspan2">
-        <label>Logo URL</label>
-        <input formControlName="logoUrl" />
+        <label>Logo (imagem)</label>
+        <input type="file" accept="image/*" (change)="onLogoSelected($event)" />
+        <div *ngIf="logoPreview" class="logo-preview">
+          <img [src]="logoPreview" alt="Logo preview" />
+        </div>
       </div>
     </div>
 

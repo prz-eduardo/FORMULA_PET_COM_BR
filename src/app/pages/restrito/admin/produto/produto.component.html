@@ -4,28 +4,35 @@
     <div class="stepper">
       <button type="button" *ngFor="let s of steps; let i = index"
               [class.active]="step() === i" [class.done]="i < step()"
-              (click)="goToStep(i)">{{i+1}}. {{s.label}}</button>
+              [attr.data-step]="i+1"
+              (click)="goToStep(i)">{{ s.label }}</button>
     </div>
   </div>
-
   <!-- STEP 0: Imagem (obrigatória) -->
   <section *ngIf="step()===0" class="step step-imagem">
     <div class="imagem-card">
       <div class="image-upload">
-        <div class="img-stack">
+        <div class="img-stack" (dragenter)="onDragEnter($event)" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)" [class.drag-over]="isDragOver">
           <div *ngFor="let img of form.value.images; let i = index" 
                class="img-preview-stack" 
                [ngClass]="{'hovered': hoveredImg === i}"
                (mouseenter)="hoveredImg = i" (mouseleave)="hoveredImg = null">
             <img [src]="img" alt="Imagem {{i+1}} do produto">
-            <button type="button" class="remove-img-btn" (click)="removeImageAt(i)">&times;</button>
+            <button type="button" class="remove-img-btn" (click)="removeImageAt(i)" [attr.aria-label]="'Remover imagem ' + (i+1)">&times;</button>
           </div>
-          <label *ngIf="form.value.images.length < 3" class="img-add-btn">
-            <span class="plus-icon">+</span>
-            <input type="file" multiple accept="image/*" (change)="onImagesSelected($event)" style="display:none">
+          <label *ngIf="form.value.images.length < 3" class="img-add-btn" [class.full]="form.value.images.length === 0" role="button" tabindex="0">
+            <div class="img-add-content">
+              <span class="plus-icon">+</span>
+              <span *ngIf="form.value.images.length === 0" class="img-placeholder-text">Adicionar imagens<br><small>Arraste ou clique para selecionar</small></span>
+            </div>
+            <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onImagesSelected($event)" style="display:none">
           </label>
         </div>
-        <div class="hint">Adicione até 3 imagens do produto.</div>
+        <div class="hint">
+          <div class="image-counter">{{ (form.value.images?.length || 0) }}/3 imagens</div>
+          <div *ngIf="imageMessage()" class="image-feedback">{{ imageMessage() }}</div>
+          <div>Adicione até 3 imagens do produto.</div>
+        </div>
       </div>
     </div>
   </section>
@@ -33,86 +40,75 @@
   <!-- STEP 1: Fórmula (opcional) -->
   <section *ngIf="step()===1" class="step step-formula">
     <div class="formula-card">
-      <div class="form-group full-width formula-search-group">
-        <label>Este produto usa uma fórmula?</label>
-        <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
-          <button type="button"
-            class="toggle-btn"
-            [class.active]="formulaEnabled"
-            (click)="toggleFormulaEnabled()"
-            [attr.aria-pressed]="formulaEnabled">
-            <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
-            <span class="toggle-label">Usa Fórmula</span>
-          </button>
-
-          <div *ngIf="form.value.formulaId" class="selected-formula">
-            <span class="label">Fórmula selecionada:</span>
-            <strong class="name">{{ formulaNameById(form.value.formulaId) }}</strong>
-            <button type="button" class="link small" (click)="selectFormula(null)">Remover</button>
-          </div>
+      <div class="formula-grid">
+        <div class="formula-right">
+          <label for="nomeProduto" class="basico-label">Nome do Produto</label>
+          <input id="nomeProduto" type="text" formControlName="name" placeholder="Digite o nome do produto" class="basico-input product-artistic" aria-label="Nome do Produto">
+          <label for="descricaoProduto" class="basico-label" style="margin-top:12px;">Descrição</label>
+          <textarea id="descricaoProduto" formControlName="description" rows="4" placeholder="Descreva o produto (opcional)" class="basico-input"></textarea>
         </div>
-
-        <div *ngIf="formulaEnabled" class="search-box" style="margin-top:0.75rem;">
-          <input type="text" placeholder="Buscar fórmula (nome ou forma)"
-            [value]="formulaQuery()"
-            (input)="onFormulaQueryInput($any($event.target).value)"
-            (keydown)="onFormulaKeydown($event)"
-            aria-autocomplete="list"
-            [attr.aria-expanded]="(formulasFiltered.length || 0) > 0"
-            aria-controls="formula-list"
-            id="formulaInput"
-          />
-          <button *ngIf="formulaQuery()" type="button" class="clear-btn" (click)="onFormulaQueryInput('')">✕</button>
-        </div>
-
-        <div class="sugestoes" *ngIf="formulaEnabled && (formulasFiltered.length || 0) > 0">
-          <div id="formula-list" role="listbox" class="sugestao-list">
-            <div class="sugestao none" role="option" (click)="selectFormula(null)" [class.focused]="selectedFormulaIndex===-1" (mouseenter)="setFormulaIndex(-1)">
-              <strong>Produto pronto</strong>
-              <div class="muted">Sem fórmula</div>
+                  <div class="form-group full-width formula-search-group">
+            <label>Este produto usa uma fórmula?</label>
+            <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
+              <button type="button"
+                class="toggle-btn"
+                [class.active]="!!form.get('manipulado')?.value"
+                (click)="form.patchValue({ manipulado: !form.get('manipulado')?.value })"
+                [attr.aria-pressed]="!!form.get('manipulado')?.value">
+                <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
+                <span class="toggle-label">Manipulado</span>
+              </button>
             </div>
-            <div class="sugestao-item" *ngFor="let f of formulasFiltered; let i = index" role="option"
-                 [attr.aria-selected]="selectedFormulaIndex===i"
-                 [class.focused]="selectedFormulaIndex===i"
-                 (click)="selectFormula(f.id)"
-                 (mouseenter)="setFormulaIndex(i)">
-              <div class="sugestao-main">{{ f.name }}</div>
-              <div class="sugestao-sub">{{ f.form_name || '—' }}</div>
+              <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
+              <button type="button"
+                class="toggle-btn"
+                [class.active]="formulaEnabled"
+                (click)="toggleFormulaEnabled()"
+                [attr.aria-pressed]="formulaEnabled">
+                <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
+                <span class="toggle-label">Usa Fórmula</span>
+              </button>
+            </div>
+
+
+            <div *ngIf="formulaEnabled" class="search-box" style="margin-top:0.75rem;">
+              <input type="text" placeholder="Buscar fórmula (nome ou forma)"
+                [value]="form.get('formulaId')?.value ? formulaNameById(form.get('formulaId')?.value) : formulaQuery()"
+                (input)="form.get('formulaId')?.value ? selectFormula(null) : null; onFormulaQueryInput($any($event.target).value)"
+                (keydown)="onFormulaKeydown($event)"
+                aria-autocomplete="list"
+                [attr.aria-expanded]="(formulasFiltered.length || 0) > 0"
+                aria-controls="formula-list"
+                id="formulaInput"
+              />
+              <button *ngIf="formulaQuery() || form.get('formulaId')?.value" type="button" class="clear-btn" (click)="form.get('formulaId')?.value ? selectFormula(null) : onFormulaQueryInput('')">✕</button>
+            </div>
+
+            <div class="sugestoes" *ngIf="formulaEnabled && (formulasFiltered.length || 0) > 0">
+              <div id="formula-list" role="listbox" class="sugestao-list">
+                <div class="sugestao none" role="option" (click)="selectFormula(null)" [class.focused]="selectedFormulaIndex===-1" (mouseenter)="setFormulaIndex(-1)">
+                  <strong>Produto pronto</strong>
+                  <div class="muted">Sem fórmula</div>
+                </div>
+                <div class="sugestao-item" *ngFor="let f of formulasFiltered; let i = index" role="option"
+                     [attr.aria-selected]="selectedFormulaIndex===i"
+                     [class.focused]="selectedFormulaIndex===i"
+                     (click)="selectFormula(f.id)"
+                     (mouseenter)="setFormulaIndex(i)">
+                  <div class="sugestao-main">{{ f.name }}</div>
+                  <div class="sugestao-sub">{{ f.form_name || '—' }}</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- STEP 2: Básico (novo layout) -->
-  <section *ngIf="step()===2" class="step step-basico">
-    <div class="basico-bloco">
-      <div class="form-group manipulado-toggle-group">
-        <button type="button"
-          class="toggle-btn"
-          [class.active]="!!form.get('manipulado')?.value"
-          (click)="form.patchValue({ manipulado: !form.get('manipulado')?.value })"
-          [attr.aria-pressed]="!!form.get('manipulado')?.value"
-        >
-          <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
-          <span class="toggle-label">Manipulado</span>
-        </button>
-      </div>
-      <div class="basico-card">
-        <label for="nomeProduto" class="basico-label">Nome do Produto</label>
-        <input id="nomeProduto" type="text" formControlName="name" placeholder="Digite o nome do produto" class="basico-input" aria-label="Nome do Produto">
-        <div class="basico-hint">Este será o nome exibido para o cliente.</div>
-      </div>
-      <div class="basico-card">
-        <label for="descricaoProduto" class="basico-label">Descrição</label>
-        <textarea id="descricaoProduto" formControlName="description" rows="4" placeholder="Descreva o produto (opcional)" class="basico-input"></textarea>
-      </div>
-    </div>
-  </section>
+  <!-- STEP 1: Detalhes (Básico + Fórmula) moved into formula card above -->
 
-  <!-- STEP 3: Preço/Estoque e Campanha -->
-  <section *ngIf="step()===3" class="step step-preco">
+  <!-- STEP 2: Preço/Estoque e Campanha -->
+  <section *ngIf="step()===2" class="step step-preco">
     <div class="preco-peso-bloco">
       <div class="preco-card">
         <label for="precoProduto" class="preco-label">Preço</label>
@@ -130,6 +126,47 @@
             <span *ngIf="editingPreco" class="preco-cursor">|</span>
           </span>
         </div>
+        
+        <ng-container *ngIf="discountedPriceValue() !== null">
+          <div class="preco-desconto" style="margin-top:8px;">
+            <div class="muted">Preço com desconto</div>
+            <div style="display:flex; gap:0.75rem; align-items:baseline;">
+              <div class="preco-orig" style="color:rgba(255,255,255,0.5); text-decoration:line-through;">
+                {{ form.value.price | currency:'BRL':'symbol-narrow' }}
+              </div>
+              <div class="preco-final" style="color:#27EF9F; font-weight:700;">
+                {{ discountedPriceValue() | currency:'BRL':'symbol-narrow' }}
+              </div>
+            </div>
+            <div class="muted" *ngIf="promocaoSelecionada">Aplicado: {{ promoLabel() }}</div>
+            <div class="muted" *ngIf="!promocaoSelecionada && form.value.discount">Aplicado: {{ form.value.discount }}{{ form.value.discount <= 100 ? '%' : '' }}</div>
+          </div>
+        </ng-container>
+
+            <div class="form-group full-width campanha-bloco promotion-info">
+      <ng-container *ngIf="promocaoSelecionada; else noPromo">
+        <div class="promo-card">
+          <div class="promo-header">
+            <span class="badge" [class.active]="promocaoSelecionada.ui?.status==='active'" [class.upcoming]="promocaoSelecionada.ui?.status==='upcoming'" [class.expired]="promocaoSelecionada.ui?.status==='expired'" [class.inactive]="promocaoSelecionada.ui?.status==='inactive'">{{ promoStatusLabel(promocaoSelecionada?.ui?.status) }}</span>
+            <strong>{{ promocaoSelecionada.nome }}</strong>
+            <span class="valor">{{ promoLabel() }}</span>
+          </div>
+          <div class="promo-meta">
+            <div *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</div>
+            <div>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</div>
+          </div>
+          <div class="promo-actions">
+            <button type="button" (click)="$event.stopPropagation(); openPromoModal()">Trocar campanha</button>
+            <button type="button" class="link" (click)="promocaoSelecionada=null">Remover</button>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #noPromo>
+        <div class="empty">
+          <button type="button" (click)="$event.stopPropagation(); openPromoModal()">+ Aplicar campanha</button>
+        </div>
+      </ng-template>
+    </div>
       </div>
       <div class="peso-card destaque">
         <label class="peso-label">Peso / Volume / Unidade</label>
@@ -140,254 +177,89 @@
         <div class="peso-toggle-list">
           <button type="button" *ngFor="let unit of ['mg','g','kg','ml','un']"
             class="peso-toggle-btn"
-            [class.active]="form.value.weightUnit === unit"
-            (click)="form.patchValue({weightUnit: unit})"
-            [attr.aria-pressed]="form.value.weightUnit === unit">
+            [class.active]="form.get('weightUnit')?.value === unit"
+            (click)="setWeightUnit(unit)"
+            [attr.aria-pressed]="form.get('weightUnit')?.value === unit">
             {{unit}}
           </button>
         </div>
-        <div class="embalagem-select" style="margin-top:1.5rem;">
-          <label for="embalagemSelect" style="font-weight:600; color:#27EF9F;">Tipo de Embalagem</label>
-          <select id="embalagemSelect" formControlName="packaging" style="margin-top:0.5rem; width:100%; padding:0.5rem 1rem; border-radius:8px; border:2px solid #0DB8DE; background:#0E151A; color:#ECF0F5;">
-            <option value="" disabled selected>Selecione</option>
-            <option value="Caixa">Caixa</option>
-            <option value="Frasco">Frasco</option>
-            <option value="Blister">Blister</option>
-            <option value="Envelope">Envelope</option>
-            <option value="Saco">Saco</option>
-            <option value="Cartela">Cartela</option>
-            <option value="Pote">Pote</option>
-            <option value="Seringa">Seringa</option>
-          </select>
+          <div class="estoque-card destaque">
+          <label for="estoqueProduto" class="estoque-label">Quantidade em Estoque</label>
+          <input id="estoqueProduto" type="number" min="0" formControlName="stock" placeholder="Digite a quantidade disponível" class="basico-input estoque-input" />
         </div>
-        <div class="peso-card destaque">
-          <label for="estoqueProduto" style="font-weight:600; color:#27EF9F;">Quantidade em Estoque</label>
-          <input id="estoqueProduto" type="number" min="0" formControlName="stock" placeholder="Digite a quantidade disponível" class="basico-input" style="max-width: 100%; margin-top:0.5rem;" />
+
+          <div class="embalagem-select">
+            <label>Tipo de Embalagem</label>
+            <div class="formula-search-group" style="margin-top:0.5rem;">
+              <div class="search-box">
+                <input type="text" autocomplete="off" placeholder="Buscar embalagem" [value]="packagingQuery()" (input)="onPackagingQueryInput($any($event.target).value)" (keydown)="onPackagingKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(packagingFiltered.length || 0) > 0" aria-controls="pack-list" id="packInput" />
+                <button *ngIf="packagingQuery()" type="button" class="clear-btn" (click)="onPackagingQueryInput('')">✕</button>
+                <button type="button" class="inline-add-btn" (click)="openPackagingModal($event)">+</button>
+              </div>
+              <div class="sugestao-list" *ngIf="(packagingFiltered.length || 0) > 0">
+                <div id="pack-list" role="listbox">
+                  <div class="sugestao-item" *ngFor="let p of packagingFiltered; let i=index" role="option" [class.focused]="selectedPackagingIndex===i" (click)="pickPackaging(p.name)" (mouseenter)="setPackagingIndex(i)">
+                    <div class="sugestao-main">{{ p.name }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="packaging-list">
+              <span class="badge" *ngFor="let p of packagingFA.value; let i = index">{{ p }} <span class="badge-remove" (click)="removePackagingAt(i)">-</span></span>
+            </div>
+          </div>
+        <!-- Taxonomias (Categoria + Tags) movidas para cá para ficarem próximas ao Preço/Estoque) -->
+        <div class="taxonomia-card" style="margin-top:12px;">
+          <div class="form-group">
+            <label>Categoria</label>
+            <div class="formula-search-group">
+              <div class="search-box">
+                <input type="text" autocomplete="off" placeholder="Buscar categoria" [value]="categoryQuery()" (input)="onCategoryQueryInput($any($event.target).value)" (keydown)="onCategoryKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(categoriesFiltered.length || 0) > 0" aria-controls="category-list" id="categoryInput" />
+                <button *ngIf="categoryQuery()" type="button" class="clear-btn" (click)="onCategoryQueryInput('')">✕</button>
+                <button type="button" class="inline-add-btn" (click)="openCategoryModal($event)" aria-label="Selecionar categoria">+</button>
+              </div>
+              <div class="sugestao-list" *ngIf="(categoriesFiltered.length || 0) > 0">
+                <div id="category-list" role="listbox">
+                  <div class="sugestao none" role="option" (click)="selectCategoryById(null)" [class.focused]="selectedCategoryIndex===-1" (mouseenter)="setCategoryIndex(-1)">
+                    <strong>Sem categoria</strong>
+                    <div class="muted">Remover seleção</div>
+                  </div>
+                  <div class="sugestao-item" *ngFor="let c of categoriesFiltered; let i = index" role="option" [attr.aria-selected]="selectedCategoryIndex===i" [class.focused]="selectedCategoryIndex===i" (click)="selectCategoryById(c.id)" (mouseenter)="setCategoryIndex(i)">
+                    <div class="sugestao-main">{{ c.name }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="form.value.categoryId" style="margin-top:8px;">
+              <span class="badge selected">{{ categoryNameById(form.value.categoryId) }}
+                <button type="button" class="link small" (click)="selectCategoryById(null)">✕</button>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Tags</label>
+            <div class="formula-search-group">
+              <div class="search-box">
+                <input type="text" autocomplete="off" placeholder="Buscar ou adicionar tag" [value]="tagQuery()" (input)="onTagQueryInput($any($event.target).value)" (keydown)="onTagKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(tagsFiltered.length || 0) > 0" aria-controls="tag-list" id="tagInput" />
+                <button *ngIf="tagQuery()" type="button" class="clear-btn" (click)="onTagQueryInput('')">✕</button>
+                <button type="button" class="inline-add-btn" (click)="openTagModal($event)">+</button>
+              </div>
+              <div class="sugestao-list" *ngIf="(tagsFiltered.length || 0) > 0">
+                <div id="tag-list" role="listbox">
+                  <div class="sugestao-item" *ngFor="let t of tagsFiltered; let i=index" role="option" [class.focused]="selectedTagIndex===i" (click)="pickTag(t.name)" (mouseenter)="setTagIndex(i)">
+                    <div class="sugestao-main">{{ t.name }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tags" style="margin-top:8px;">
+              <span class="badge" *ngFor="let t of tagsFA.value; let i=index">{{ t }} <button type="button" class="badge-remove" (click)="removeTagAt(i)">×</button></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="form-group full-width campanha-bloco">
-      <label>Campanha/Promoção</label>
-      <ng-container *ngIf="promocaoSelecionada; else noPromo">
-        <div class="promo-card">
-          <div class="promo-header">
-            <span class="badge" [class.active]="promocaoSelecionada.ui?.status==='active'" [class.upcoming]="promocaoSelecionada.ui?.status==='upcoming'" [class.expired]="promocaoSelecionada.ui?.status==='expired'" [class.inactive]="promocaoSelecionada.ui?.status==='inactive'">{{ promocaoSelecionada.ui?.status || '—' }}</span>
-            <strong>{{ promocaoSelecionada.nome }}</strong>
-            <span class="valor">{{ promocaoSelecionada.ui?.valor_label }}</span>
-          </div>
-          <div class="promo-meta">
-            <div *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</div>
-            <div>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</div>
-          </div>
-          <div class="promo-actions">
-            <button type="button" (click)="openPromoModal()">Trocar campanha</button>
-            <button type="button" class="link" (click)="promocaoSelecionada=null">Remover</button>
-          </div>
-        </div>
-      </ng-container>
-      <ng-template #noPromo>
-        <div class="empty">Nenhuma campanha aplicada.
-          <button type="button" (click)="openPromoModal()">+ Aplicar campanha</button>
-        </div>
-      </ng-template>
-    </div>
-  </section>
 
-  <style>
-  .manipulado-toggle-group {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.2rem;
-  }
-  .toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    border: none;
-    background: none;
-    padding: 0.2rem 0.35rem;
-    cursor: pointer;
-    outline: none;
-    gap: 0.6rem;
-    transition: filter 0.2s;
-  }
-  .toggle-btn:focus { filter: brightness(0.95); }
-  .toggle-bg {
-    width: 48px;
-    height: 28px;
-    background: #ccc;
-    border-radius: 28px;
-    transition: background 0.3s;
-    display: inline-block;
-    position: relative;
-    flex: 0 0 auto;
-  }
-  .toggle-btn.active .toggle-bg { background: #007bff; }
-  .toggle-circle {
-    position: absolute;
-    left: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    color: #007bff;
-    transition: left 0.3s;
-    z-index: 2;
-  }
-  .toggle-btn.active .toggle-circle { left: 24px; color: #fff; background: #0056b3; }
-  .toggle-label {
-    margin-left: 0.1rem;
-    font-weight: 600;
-    font-size: 1.05rem;
-    color: #e6eef8;
-    transition: color 0.2s;
-    position: static;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 320px;
-  }
-  .toggle-btn.active .toggle-label { color: #27EF9F; }
-
-  /* ensure header layout doesn't overlap */
-  .formula-header { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; justify-content: space-between; }
-  .formula-header .selected-formula { display:flex; align-items:center; gap:0.5rem; min-width:0; }
-  .formula-header .selected-formula .name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:360px; }
-  .formula-header .selected-formula .label { color: rgba(230,238,248,0.7); font-size:0.95rem; }
-  .preco-group {
-    margin-bottom: 1.5rem;
-  }
-  .preco-input-wrapper {
-    display: flex;
-    align-items: baseline;
-    gap: 0.3rem;
-    background: #f8f9fa;
-    border: 2px solid #007bff;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    width: fit-content;
-    min-width: 120px;
-    min-height: 48px;
-    cursor: pointer;
-    transition: box-shadow 0.2s, border-color 0.2s;
-  }
-  .preco-input-wrapper.editing {
-    box-shadow: 0 0 0 2px #007bff44;
-    border-color: #0056b3;
-    background: #eaf4ff;
-    cursor: text;
-  }
-  .preco-cifrao {
-    font-size: 1.5rem;
-    color: #007bff;
-    font-weight: 700;
-    user-select: none;
-  }
-  .preco-mascara {
-    margin-left: 0.5rem;
-    display: flex;
-    align-items: flex-end;
-    opacity: 0.8;
-    pointer-events: none;
-    user-select: none;
-    transition: opacity 0.2s;
-  }
-  .preco-mascara.preco-hover {
-    opacity: 1;
-    text-decoration: underline dotted #007bff 2px;
-  }
-  .preco-int {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #222;
-  }
-  .preco-dec {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: #666;
-    margin-left: 2px;
-  }
-  /* Fórmula - busca e sugestões (adaptado para tema escuro) */
-  .formula-search-group { position: relative; max-width: 720px; }
-  .search-box { display:flex; align-items:center; gap:0.5rem; border:1px solid rgba(255,255,255,0.06); padding:0.4rem 0.6rem; border-radius:6px; background: rgba(255,255,255,0.02); }
-  .search-box input { border: none; outline:none; width:100%; font-size:1rem; padding:0.2rem; color: var(--text-color, #e6eef8); background: transparent; }
-  .search-box input::placeholder { color: rgba(230,238,248,0.5); }
-  .search-box .clear-btn { background:transparent; border:none; cursor:pointer; color: rgba(230,238,248,0.7); font-size:1rem; padding:0 0.4rem; }
-  .sugestao-list { position:absolute; z-index:99999 !important; top: calc(100% + 8px); left:0; right:0; background:#0f1724; border-radius:8px; box-shadow:0 8px 30px rgba(2,6,23,0.6); max-height:260px; overflow:auto; border:1px solid rgba(255,255,255,0.04); pointer-events:auto; }
-  .sugestao { padding:0.75rem 1rem; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.02); color: #e6eef8; }
-  .sugestao.none { font-weight:700; color:#fff; display:flex; flex-direction:column; }
-  .sugestao-item { padding:0.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column; cursor:pointer; }
-  .sugestao-item:last-child, .sugestao:last-child { border-bottom:none; }
-  .sugestao-main { font-weight:600; color: #f8fbff; }
-  .sugestao-sub { font-size:0.9rem; color: rgba(230,238,248,0.65); margin-top:4px; }
-  .sugestao-item.focused, .sugestao.none.focused, .sugestao-item:hover, .sugestao.none:hover { background: rgba(255,255,255,0.02); }
-  
-  /* Review / layout */
-  .review-card { background: #0f1724; border-radius: 12px; padding: 1.1rem; color: #e6eef8; max-width: 920px; box-shadow: 0 8px 30px rgba(2,6,23,0.6); margin-bottom:1rem; }
-  .review-header h3 { margin:0 0 0.6rem 0; font-size:1.25rem; color:#fff; }
-  .review-layout { display:grid; grid-template-columns: 1fr 320px; gap:1rem; align-items:start; }
-  .review-left { min-width:0; }
-  .review-list { display:block; }
-  .review-row { display:flex; gap:1rem; align-items:flex-start; padding:0.5rem 0; border-bottom:1px solid rgba(255,255,255,0.02); }
-  .review-row:last-child { border-bottom:none; }
-  .review-label { width:160px; flex:0 0 160px; font-weight:700; color: rgba(230,238,248,0.75); }
-  .review-value { flex:1; color:#dbeafe; }
-  .review-tag { display:inline-block; background: rgba(13,184,222,0.08); color:#9fe8ff; padding:0.25rem 0.5rem; border-radius:999px; margin-right:0.4rem; margin-bottom:0.35rem; font-size:0.9rem; }
-
-  /* Right column - main image + thumbs */
-  .review-right { display:flex; flex-direction:column; gap:12px; align-items:stretch; }
-  .main-image { width:100%; height:220px; border-radius:8px; overflow:hidden; background:#061018; border:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; }
-  .main-image img { width:100%; height:100%; object-fit:cover; display:block; }
-
-  .thumbs { display:flex; flex-wrap:wrap; gap:8px; }
-  .thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; background:#061018; border:2px solid transparent; flex:0 0 72px; cursor:pointer; }
-  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-  .thumb.selected { border-color:#27EF9F; box-shadow:0 4px 16px rgba(39,239,159,0.12); transform:translateY(-2px); }
-  .thumb .thumb-actions { position:absolute; right:6px; bottom:6px; display:flex; gap:6px; opacity:0; transition:opacity .12s; }
-  .thumb:hover .thumb-actions { opacity:1; }
-  .thumb .thumb-actions button { background:#0db8de; border-radius:6px; border:none; color:#071; padding:4px 6px; cursor:pointer; opacity:0.95; font-size:0.85rem; }
-  .thumb .main-label { position:absolute; top:6px; left:6px; background:#27EF9F; color:#071; padding:3px 7px; border-radius:6px; font-weight:700; font-size:0.72rem; z-index:2; }
-
-  @media (max-width: 880px) {
-    .review-layout { grid-template-columns: 1fr; }
-    .review-label { width: 140px; flex:0 0 140px; }
-    .main-image { height:180px; }
-  }
-  </style>
-
-  <!-- STEP 4: Categoria/Tags -->
-  <section *ngIf="step()===4" class="step step-categorias">
-    <div style="margin-top: 2.5rem;"></div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Categoria</label>
-        <div class="custom-dropdown" [class.open]="showCategoryDropdown" (click)="toggleCategoryDropdown()" tabindex="0">
-          <div class="selected-value">{{ categoryNameById(form.value.categoryId) || 'Selecione' }}</div>
-          <div class="dropdown-list" *ngIf="showCategoryDropdown">
-            <div class="dropdown-item" *ngFor="let c of categoriasList" [class.selected]="form.value.categoryId === c.id" (click)="selectCategory(c.id, $event)">{{ c.name }}</div>
-          </div>
-        </div>
-        <button type="button" (click)="showCategoryModal=true">+ Nova Categoria</button>
-      </div>
-      <div class="form-group full-width">
-        <label>Tags</label>
-        <div class="tags tags-toggle">
-          <button type="button" *ngFor="let t of tagsList"
-                  [class.selected]="hasTag(t.name)"
-                  (click)="toggleTagVal(t.name)">
-            <span class="tag-label">{{t.name}}</span>
-          </button>
-          <button type="button" class="add-tag-btn" (click)="showTagModal=true">+ Adicionar</button>
-        </div>
-      </div>
-    </div>
   </section>
 
 
@@ -400,122 +272,115 @@
       </div>
 
       <div class="review-v2-body">
-        
-        <div class="review-left">
-          <section class="group">
-            <h4>Básico</h4>
-            <div class="kv"><div class="kv-row"><div class="k">Tipo</div><div class="v">{{ form.value.formulaId ? 'Manipulado' : 'Pronto' }}</div></div>
-              <div class="kv-row" *ngIf="form.value.formulaId"><div class="k">Fórmula</div><div class="v">{{ formulaNameById(form.value.formulaId) }}</div></div>
-              <div class="kv-row"><div class="k">Nome</div><div class="v">{{ form.value.name || '—' }}</div></div>
-              <div class="kv-row"><div class="k">Descrição</div><div class="v">{{ form.value.description || '—' }}</div></div>
+        <div class="review-layout">
+          <div class="review-left">
+            <div class="review-card" aria-labelledby="basic-title">
+              <h4 id="basic-title">Básico</h4>
+              <div class="review-row"><div class="review-label">Tipo</div><div class="review-value">{{ form.value.formulaId ? 'Manipulado' : 'Pronto' }}</div></div>
+              <div class="review-row" *ngIf="form.value.formulaId"><div class="review-label">Fórmula</div><div class="review-value">{{ formulaNameById(form.value.formulaId) }}</div></div>
+              <div class="review-row"><div class="review-label">Nome</div><div class="review-value">{{ form.value.name || '—' }}</div></div>
+              <div class="review-row"><div class="review-label">Descrição</div><div class="review-value">{{ form.value.description || '—' }}</div></div>
             </div>
-          </section>
 
-          <section class="group">
-            <h4>Preço & Estoque</h4>
-            <div class="kv">
-              <div class="kv-row"><div class="k">Preço</div><div class="v">{{ form.value.price | currency:'BRL':'symbol-narrow' }}</div></div>
-              <div class="kv-row"><div class="k">Estoque</div><div class="v">{{ form.value.stock ?? '—' }}</div></div>
-              <div class="kv-row"><div class="k">Unidade</div><div class="v">{{ form.value.weightValue ? (form.value.weightValue + ' ' + (form.value.weightUnit || 'g')) : '—' }}</div></div>
+            <div class="review-card" aria-labelledby="price-title">
+              <h4 id="price-title">Preço & Estoque</h4>
+              <div class="review-row"><div class="review-label">Preço</div><div class="review-value">{{ form.value.price | currency:'BRL':'symbol-narrow' }}</div></div>
+              <div class="review-row"><div class="review-label">Unidade</div><div class="review-value">{{ form.value.weightValue ? (form.value.weightValue + ' ' + (form.value.weightUnit || 'g')) : '—' }}</div></div>
+              <div class="review-row"><div class="review-label">Estoque</div><div class="review-value">{{ form.value.stock ?? '—' }}</div></div>
             </div>
-          </section>
 
-          <section class="group">
-            <h4>Categoria & Tags</h4>
-            <div class="kv">
-              <div class="kv-row"><div class="k">Categoria</div><div class="v">{{ categoryNameById(form.value.categoryId) }}</div></div>
-              <div class="kv-row"><div class="k">Tags</div><div class="v">
-                <ng-container *ngIf="(form.value.tags || []).length; else noTagsV2">
-                  <span class="tag" *ngFor="let t of form.value.tags">{{ t }}</span>
+            <div class="review-card" aria-labelledby="category-title">
+              <h4 id="category-title">Categoria & Tags</h4>
+              <div class="review-row"><div class="review-label">Categoria</div><div class="review-value">{{ categoryNameById(form.value.categoryId) || '—' }}</div></div>
+              <div class="review-row"><div class="review-label">Tags</div><div class="review-value">
+                <ng-container *ngIf="(form.value.tags || []).length; else noTagsV3">
+                  <span class="review-tag" *ngFor="let t of form.value.tags">{{ t }}</span>
                 </ng-container>
-                <ng-template #noTagsV2>—</ng-template>
+                <ng-template #noTagsV3>—</ng-template>
               </div></div>
             </div>
-          </section>
 
-          <section class="group">
-            <h4>Campanha & Visibilidade</h4>
-            <div *ngIf="promocaoSelecionada && (promocaoSelecionada.ui?.status === 'expired' || promocaoSelecionada.ui?.status === 'inactive')" class="promo-alert">
-              <strong>Atenção:</strong>
-              <span *ngIf="promocaoSelecionada.ui?.status === 'expired'"> campanha expirada{{ promocaoSelecionada.ui?.end?.human ? ' (' + promocaoSelecionada.ui?.end?.human + ')' : '' }}.</span>
-              <span *ngIf="promocaoSelecionada.ui?.status === 'inactive'"> campanha inválida.</span>
+            <div class="review-card" aria-labelledby="promo-title">
+              <h4 id="promo-title">Campanha & Visibilidade</h4>
+              <div *ngIf="promocaoSelecionada && (promocaoSelecionada.ui?.status === 'expired' || promocaoSelecionada.ui?.status === 'inactive')" class="promo-alert">
+                <strong>Atenção:</strong>
+                <span *ngIf="promocaoSelecionada.ui?.status === 'expired'"> campanha expirada{{ promocaoSelecionada.ui?.end?.human ? ' (' + promocaoSelecionada.ui?.end?.human + ')' : '' }}.</span>
+                <span *ngIf="promocaoSelecionada.ui?.status === 'inactive'"> campanha inválida.</span>
+              </div>
+
+              <div class="review-row"><div class="review-label">Campanha</div><div class="review-value">{{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</div></div>
+
+              <div class="review-row" *ngIf="promocaoSelecionada?.descricao"><div class="review-label">Descrição</div><div class="review-value">{{ promocaoSelecionada?.descricao }}</div></div>
+              <div class="review-row" *ngIf="promocaoSelecionada?.tipo"><div class="review-label">Tipo</div><div class="review-value">{{ promocaoSelecionada?.tipo }} {{ promocaoSelecionada?.ui?.tipo_simbolo ? ('(' + promocaoSelecionada?.ui?.tipo_simbolo + ')') : '' }}</div></div>
+              <div class="review-row" *ngIf="promocaoSelecionada?.ui?.start?.human"><div class="review-label">Início</div><div class="review-value">{{ promocaoSelecionada?.ui?.start?.human }}</div></div>
+              <div class="review-row"><div class="review-label">Fim</div><div class="review-value">{{ promocaoSelecionada?.ui?.end?.human || 'sem validade' }}</div></div>
+              <div class="review-row" *ngIf="promocaoSelecionada?.produtos?.length"><div class="review-label">Produtos vinculados</div><div class="review-value">{{ promocaoSelecionada?.produtos?.length }} produto(s)</div></div>
+
+              <div class="review-row"><div class="review-label">Ativo</div><div class="review-value"><button type="button" class="toggle-btn" [class.active]="form.value.active === 1" (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})" [attr.aria-pressed]="form.value.active === 1" title="Ativar / Desativar"><span class="toggle-label">{{ form.value.active === 1 ? 'Sim' : 'Não' }}</span></button></div></div>
+              <div class="review-row"><div class="review-label">Destaque</div><div class="review-value"><button type="button" class="toggle-btn" [class.active]="destaqueHome" (click)="destaqueHome = !destaqueHome"><span class="toggle-label">{{ destaqueHome ? 'Sim' : 'Não' }}</span></button></div></div>
+
+              <div class="review-row" *ngIf="promocaoSelecionada?.id"><div class="review-label"></div><div class="review-value"><button type="button" class="link" (click)="openPromoDetail(promocaoSelecionada!.id)">Ver detalhes da campanha</button></div></div>
             </div>
-            <div class="kv">
-              <div class="kv-row"><div class="k">Campanha</div><div class="v">{{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</div></div>
-              <div class="kv-row"><div class="k">Ativo</div><div class="v"><button type="button" class="toggle-btn" [class.active]="form.value.active === 1" (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})"><span class="toggle-label">{{ form.value.active === 1 ? 'Ativo' : 'Inativo' }}</span></button></div></div>
-              <div class="kv-row"><div class="k">Destaque</div><div class="v"><button type="button" class="toggle-btn" [class.active]="destaqueHome" (click)="destaqueHome = !destaqueHome"><span class="toggle-label">{{ destaqueHome ? 'Sim' : 'Não' }}</span></button></div></div>
+
+          </div>
+
+          <aside class="review-right">
+            <!-- Preview do card da loja (simulação) - mostrar os dois tipos usados na loja -->
+            <div class="preview-wrapper">
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                <button type="button" class="btn-sec" (click)="openPreviewPage()">Abrir pré-visualização (nova aba)</button>
+                <small class="muted">(não altera o formulário atual)</small>
+              </div>
+
+              <!-- D-card (banner style) - versão não clicável com botão de adicionar visual -->
+              <div class="d-card banner mobile-feature admin-preview-card" [attr.aria-label]="form.value.name || 'Preview'" style="width:100%" [style.max-width]="defaultCardWidth">
+                <img class="d-img" [src]="imagemPrincipal || (imagesFA?.controls?.length ? imagesFA.controls[0].value : '/imagens/placeholder.png')" loading="lazy" decoding="async" [alt]="form.value.name || 'Preview'" />
+                <div class="d-overlay">
+                  <div class="d-topline">
+                    <span class="d-badge" *ngIf="promocaoSelecionada || (form.value.discount && form.value.discount > 0)">{{ promocaoSelecionada ? (promocaoSelecionada.ui?.valor_label || promocaoSelecionada.nome) : ('-' + (form.value.discount | number:'1.0-0') + '%') }}</span>
+                    <span class="d-type" *ngIf="form.value.formulaId">Manipulado</span>
+                  </div>
+                  <h3 class="d-title">{{ form.value.name || 'Nome do produto' }}</h3>
+                  <div class="d-price">
+                    <span class="new">{{ (discountedPriceValue() ?? form.value.price) | currency:'BRL' }}</span>
+                    <span class="old" *ngIf="form.value.discount && form.value.discount > 0">{{ form.value.price | currency:'BRL' }}</span>
+                  </div>
+                  <div class="d-actions">
+                    <button type="button" class="btn add" (click)="$event.stopPropagation();" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Product card V2 (componente real da loja) com link bloqueado no admin preview -->
+              <div style="display:inline-block; position:relative; width:100%;" [style.max-width]="defaultCardWidth">
+                <app-product-card-v2 [product]="previewProduct" [supportsFavorites]="false" [supportsRatings]="true" [favoriteActive]="false" [disableLink]="true" [cardWidth]="defaultCardWidth" [extraClass]="'review-preview'"></app-product-card-v2>
+              </div>
             </div>
-          </section>
+            <div class="main-image" *ngIf="imagemPrincipal; else noMainV2">
+              <img [src]="imagemPrincipal" alt="Imagem principal">
+            </div>
+            <ng-template #noMainV2>
+              <div class="main-image empty">Sem imagem principal</div>
+            </ng-template>
+
+            <div class="thumbs-row">
+              <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index" [class.selected]="imagemPrincipal === img.value" (click)="imagemPrincipal = img.value; $event.stopPropagation()">
+                <img [src]="img.value" alt="thumb {{i+1}}">
+                <div *ngIf="imagemPrincipal === img.value" class="main-label">Principal</div>
+              </div>
+            </div>
+
+            <div class="submit-row">
+              <button type="button" class="btn-sec" (click)="goToStep(0)">Editar imagens</button>
+            </div>
+          </aside>
 
         </div>
-
-        <aside class="review-right">
-          <div class="main-image" *ngIf="imagemPrincipal; else noMainV2">
-            <img [src]="imagemPrincipal" alt="Imagem principal">
-          </div>
-          <ng-template #noMainV2>
-            <div class="main-image empty">Sem imagem principal</div>
-          </ng-template>
-
-          <div class="thumbs-row">
-            <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index" [class.selected]="imagemPrincipal === img.value" (click)="imagemPrincipal = img.value; $event.stopPropagation()">
-              <img [src]="img.value" alt="thumb {{i+1}}">
-              <div *ngIf="imagemPrincipal === img.value" class="main-label">Principal</div>
-            </div>
-          </div>
-
-          <div class="submit-row">
-            <button type="button" class="btn-sec" (click)="goToStep(0)">Editar imagens</button>
-          </div>
-
-        </aside>
-
       </div>
     </div>
 
-    <style>
-    .review-v2 { background:#0d1417; border-radius:12px; padding:18px; color:#e6eef8; box-shadow:0 12px 40px rgba(0,0,0,0.5); }
-    .review-v2-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
-    .review-v2-header h3 { margin:0; font-size:1.2rem; color:#fff; }
-    .review-header-actions .link { background:transparent; border:none; color:#8bd7ff; cursor:pointer; margin-left:6px; }
-    .review-v2-body { display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start; }
-    .group { margin-bottom:12px; }
-    .group h4 { margin:0 0 8px 0; font-size:0.95rem; color:#9fe8ff; }
-    .kv { display:block; }
-    .kv-row { display:flex; gap:12px; padding:6px 0; border-bottom:1px dashed rgba(255,255,255,0.03); align-items:flex-start; }
-    .kv-row:last-child { border-bottom:0; }
-    .kv .k { width:130px; flex:0 0 130px; color:#9fb; font-weight:700; }
-    .kv .v { flex:1; color:#dbeafe; }
-    .tag { display:inline-block; background:rgba(39,239,159,0.08); color:#27ef9f; padding:4px 8px; border-radius:999px; margin:0 6px 6px 0; font-size:0.85rem; }
 
-    .review-right { display:flex; flex-direction:column; gap:12px; }
-    .main-image { width:100%; height:240px; border-radius:8px; overflow:hidden; background:#071017; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.03); }
-    .main-image img { width:100%; height:100%; object-fit:cover; display:block; }
-    .main-image.empty { color:rgba(255,255,255,0.35); font-size:0.95rem; display:flex; align-items:center; justify-content:center; }
 
-    .thumbs-row { display:flex; flex-wrap:wrap; gap:8px; }
-    .thumb { width:64px; height:64px; border-radius:8px; overflow:hidden; border:2px solid transparent; cursor:pointer; position:relative; }
-    .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-    .thumb.selected { border-color:#27EF9F; box-shadow:0 6px 18px rgba(39,239,159,0.08); transform:translateY(-2px); }
-    .thumb-actions { position:absolute; right:4px; bottom:4px; display:flex; gap:6px; opacity:0; transition:opacity .12s; }
-    .thumb:hover .thumb-actions { opacity:1; }
-    .thumb-actions button { background:#0db8de; border-radius:6px; border:none; color:#071; padding:3px 6px; cursor:pointer; font-size:0.75rem; }
-    .main-label { position:absolute; top:6px; left:6px; background:#27EF9F; color:#071; padding:3px 7px; border-radius:6px; font-weight:700; font-size:0.72rem; z-index:2; }
-
-    .promo-alert { background: rgba(255,184,107,0.05); border-left: 4px solid #ffb86b; color: #ffddb8; padding:8px 12px; border-radius:8px; margin-bottom:8px; font-weight:700; }
-    .promo-alert strong { color: #ffd79a; margin-right:6px; }
-
-    .submit-row { display:flex; justify-content:space-between; gap:8px; margin-top:8px; }
-    .btn-sec { background:transparent; color:#9fe8ff; border:1px solid rgba(159,232,255,0.06); padding:8px 12px; border-radius:8px; }
-    .btn-primary { background:#27EF9F; color:#071; border:none; padding:8px 14px; border-radius:8px; font-weight:700; }
-
-    @media (max-width:900px) {
-      .review-v2-body { grid-template-columns:1fr; }
-      .kv .k { width:110px; flex:0 0 110px; }
-      .main-image { height:180px; }
-      .review-header-actions { display:none; }
-    }
-    </style>
 
   <!-- Sticky footer actions -->
   <div class="footer-actions">
@@ -524,24 +389,18 @@
   <button type="button" class="btn-next" *ngIf="step()<steps.length-1" (click)="nextStep()">{{ nextLabel() }}</button>
     <button type="button" class="btn-submit" *ngIf="step()===steps.length-1" (click)="submit()">{{ form.value.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
   </div>
-</section>
+
 
   <!-- Modais Taxonomias -->
-  <div class="modal" *ngIf="showCategoryModal">
-    <div class="modal-content">
-      <h4>Selecionar ou Adicionar Categoria</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let c of categoriasList" class="badge" [class.selected]="form.value.categoryId === c.id" (click)="form.patchValue({ categoryId: c.id })">
-          {{ c.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('categorias', c)">-</span>
-        </span>
-      </div>
-      <hr>
-      <input #catInput type="text" placeholder="Ex: Vitaminas">
-      <button (click)="createTaxonomia('categorias', catInput.value); catInput.value=''">Adicionar</button>
-      <button (click)="showCategoryModal=false">Fechar</button>
-    </div>
-  </div>
+  <app-taxonomy-modal *ngIf="showCategoryModal"
+    [title]="'Selecionar ou Adicionar Categoria'"
+    [items]="categoriasList"
+    [selected]="form.value.categoryId"
+    (select)="selectCategoryModal($event.id || $event)"
+    (add)="createTaxonomia('categorias', $event)"
+    (delete)="deleteTaxonomia('categorias', $event)"
+    (close)="showCategoryModal=false">
+  </app-taxonomy-modal>
 
   <div class="modal" *ngIf="showDosageModal">
     <div class="modal-content">
@@ -549,7 +408,7 @@
       <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
   <span *ngFor="let d of dosagesList" class="badge" [class.selected]="hasDosage(d.name)" (click)="toggleDosageVal(d.name)">
          {{ d.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('dosages', d)">-</span>
+          <span class="badge-remove" (click)="deleteTaxonomia('dosages', d); $event.stopPropagation()">-</span>
         </span>
       </div>
       <hr>
@@ -558,38 +417,27 @@
       <button (click)="showDosageModal=false">Cancelar</button>
     </div>
   </div>
+  <app-taxonomy-modal *ngIf="showPackagingModal"
+    [title]="'Selecionar ou Adicionar Embalagem'"
+    [items]="embalagensList"
+    [selected]="packagingFA.value"
+    [multiple]="true"
+    (select)="selectPackagingModal($event)"
+    (add)="addPackaging($event); onPackagingQueryInput('')"
+    (delete)="deleteTaxonomia('embalagens', $event)"
+    (close)="showPackagingModal=false">
+  </app-taxonomy-modal>
 
-  <div class="modal" *ngIf="showPackagingModal">
-    <div class="modal-content">
-      <h4>Selecionar ou Adicionar Embalagem</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-  <span *ngFor="let p of embalagensList" class="badge" [class.selected]="hasPackaging(p.name)" (click)="togglePackagingVal(p.name)">
-         {{ p.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('embalagens', p)">-</span>
-        </span>
-      </div>
-      <hr>
-      <input #packInput type="text" placeholder="Ex: Caixa grande">
-      <button (click)="addPackaging(packInput.value); packInput.value=''">Adicionar</button>
-      <button (click)="showPackagingModal=false">Fechar</button>
-    </div>
-  </div>
-
-  <div class="modal" *ngIf="showTagModal">
-    <div class="modal-content">
-      <h4>Selecionar ou Adicionar Tag</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-  <span *ngFor="let t of tagsList" class="badge" [class.selected]="hasTag(t.name)" (click)="toggleTagVal(t.name)">
-         {{ t.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('tags', t)">-</span>
-        </span>
-      </div>
-      <hr>
-      <input #tagInput type="text" placeholder="Ex: vitamina">
-      <button (click)="addTag(tagInput.value); tagInput.value=''">Adicionar</button>
-      <button (click)="showTagModal=false">Fechar</button>
-    </div>
-  </div>
+  <app-taxonomy-modal *ngIf="showTagModal"
+    [title]="'Selecionar ou Adicionar Tag'"
+    [items]="tagsList"
+    [selected]="tagsFA.value"
+    [multiple]="true"
+    (select)="toggleTagVal($event.name || $event)"
+    (add)="addTag($event); onTagQueryInput('')"
+    (delete)="deleteTaxonomia('tags', $event)"
+    (close)="showTagModal=false">
+  </app-taxonomy-modal>
 
   <div class="modal" *ngIf="success()">
     <div class="modal-content">
@@ -605,7 +453,7 @@
       <div class="promo-list" *ngIf="promocoes.length; else promoEmpty">
         <div class="promo-item" *ngFor="let pr of promocoes" (click)="promocaoSelecionada=pr; showPromoModal=false">
           <div class="promo-item-header">
-            <span class="badge" [class.active]="pr.ui?.status==='active'" [class.upcoming]="pr.ui?.status==='upcoming'" [class.expired]="pr.ui?.status==='expired'" [class.inactive]="pr.ui?.status==='inactive'">{{ pr.ui?.status || '—' }}</span>
+            <span class="badge" [class.active]="pr.ui?.status==='active'" [class.upcoming]="pr.ui?.status==='upcoming'" [class.expired]="pr.ui?.status==='expired'" [class.inactive]="pr.ui?.status==='inactive'">{{ promoStatusLabel(pr.ui?.status) }}</span>
             <strong class="name">{{ pr.nome }}</strong>
             <span class="valor">{{ pr.ui?.valor_label }}</span>
           </div>
@@ -632,7 +480,7 @@
     <div class="modal-content promo-detail">
       <h4>{{ promoDetalhe?.nome }}</h4>
       <div class="detail-header">
-        <span class="badge" [class.active]="promoDetalhe?.ui?.status==='active'" [class.upcoming]="promoDetalhe?.ui?.status==='upcoming'" [class.expired]="promoDetalhe?.ui?.status==='expired'" [class.inactive]="promoDetalhe?.ui?.status==='inactive'">{{ promoDetalhe?.ui?.status || '—' }}</span>
+        <span class="badge" [class.active]="promoDetalhe?.ui?.status==='active'" [class.upcoming]="promoDetalhe?.ui?.status==='upcoming'" [class.expired]="promoDetalhe?.ui?.status==='expired'" [class.inactive]="promoDetalhe?.ui?.status==='inactive'">{{ promoStatusLabel(promoDetalhe?.ui?.status) }}</span>
         <span class="valor">{{ promoDetalhe?.ui?.valor_label }}</span>
       </div>
       <p class="descricao" *ngIf="promoDetalhe?.descricao">{{ promoDetalhe?.descricao }}</p>
@@ -658,8 +506,11 @@
       </div>
       <div class="actions">
         <button type="button" (click)="promocaoSelecionada=promoDetalhe!; showPromoDetail=false">Aplicar esta campanha</button>
+        <button *ngIf="promocaoSelecionada?.id === promoDetalhe?.id" type="button" class="link" (click)="promocaoSelecionada=null; showPromoDetail=false">Remover campanha</button>
         <button type="button" (click)="showPromoDetail=false">Fechar</button>
       </div>
     </div>
   </div>
+
+
 

@@ -1,5 +1,4 @@
-.formulas-wrapper{min-height:100vh;background:linear-gradient(135deg,#0d151f,#1a2230);color:#ecf0f5;font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;padding:72px 16px}
-.formulas-wrapper h2{margin:0 0 16px}
+.formulas-wrapper { /* visuals moved to global .admin-listing */ }
 .actions{display:flex;align-items:center;gap:10px;margin:12px 0}
 .btn{background:#2563eb;border:1px solid transparent;color:#fff;padding:8px 12px;border-radius:6px;cursor:pointer;transition:all .15s}
 .btn:hover{filter:brightness(1.1)}
@@ -16,10 +15,14 @@
 .field.small{min-width:130px;max-width:180px}
 .field.grow{flex:1 1 260px}
 .field.full{grid-column:1/-1}
-.table-wrap{width:100%; overflow-x:auto; -webkit-overflow-scrolling: touch; border-radius:8px}
-.table{width:100%;border-collapse:collapse;background:#0f2135;border:1px solid #263241}
-.table thead{background:#132235}
-.table th,.table td{border-bottom:1px solid #263241;padding:10px; white-space: nowrap}
+.table-wrap{
+	width:100%;
+	overflow-x:auto;
+	-webkit-overflow-scrolling: touch;
+	border-radius:12px;
+	background:transparent;
+}
+.table{ /* table visuals are handled globally in src/styles.scss */ }
 .items{display:flex;flex-direction:column;gap:10px}
 .item{display:flex;gap:8px;flex-wrap:wrap;background:#0f2135;border:1px solid #263241;border-radius:8px;padding:10px}
 .items-section{margin-top:24px}

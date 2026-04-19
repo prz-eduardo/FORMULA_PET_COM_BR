@@ -15,9 +15,10 @@
     </div>
 
     <section *ngIf="!carregando && pets.length" class="pet-list">
-      <article class="pet-card card photo-card" *ngFor="let p of pets">
+      <article class="pet-card card photo-card" *ngFor="let p of pets; let i = index" role="button" tabindex="0"
+               (click)="onEditClick(p)" (keydown.enter)="onEditClick(p)">
         <div class="photo-bg">
-          <img class="photo-img" [src]="p.photoURL || '/imagens/image.png'" (error)="onImgError($event)" [attr.alt]="p.nome || 'Pet'" />
+          <img class="photo-img" [src]="p.photoURL || '/imagens/image.png'" (error)="onImgError($event)" (load)="onImgLoad(p, i)" [attr.alt]="p.nome || 'Pet'" />
             <div class="top-overlay">
               <h2 class="pet-title pf-poppins" [class.long]="p.nome && p.nome.length > 18">{{ p.nome }}</h2>
               <div class="species-rows">
@@ -30,20 +31,42 @@
                 <div class="badges">
                   <span class="badge sexo" *ngIf="p.sexo">{{ p.sexo === 'F' || p.sexo === 'Fêmea' ? '♀' : (p.sexo === 'M' || p.sexo === 'Macho' ? '♂' : p.sexo) }}</span>
                   <span class="badge peso" *ngIf="p.pesoKg">{{ p.pesoKg | number:'1.2-2' }} kg</span>
-                  <span class="badge" *ngIf="p.idadeAnos">{{ p.idadeAnos }} anos</span>
+                  <span class="badge" *ngIf="p.idade || p.idadeAnos">{{ p.idade || p.idadeAnos }} anos</span>
                 </div>
               </div>
             </div>
         </div>
 
-  <a class="edit-fab" [routerLink]="p.id ? ['/editar-pet', p.id] : null" [class.disabled]="!p.id" [attr.aria-label]="'Editar ' + p.nome">✎</a>
-
         <div class="pet-body compact">
-          <div class="alergias" *ngIf="p.alergias?.length">
+          <div class="meta">
+            <div><strong>Idade:</strong> {{ p.idade || p.idadeAnos || '-' }} anos</div>
+            <div><strong>Peso:</strong> {{ p.pesoKg ? (p.pesoKg | number:'1.2-2') + ' kg' : '-' }}</div>
+            <div><strong>Sexo:</strong> {{ p.sexo || '-' }}</div>
+          </div>
+
+          <div class="observacoes" *ngIf="p.observacoes">
+            <label class="muted">Observações:</label>
+            <p class="obs-text">{{ p.observacoes }}</p>
+          </div>
+
+          <div class="alergias" *ngIf="p._alergiasNormalized?.length">
             <label class="muted">Alergias:</label>
             <div class="alergia-list">
-              <span class="chip" *ngFor="let a of p.alergias">{{ a?.nome || a?.nome_alergia || a?.name || a }}</span>
+              <span class="chip" *ngFor="let a of p._alergiasNormalized">{{ a }}</span>
             </div>
+          </div>
+
+          <div class="predefined" *ngIf="p.alergias_predefinidas?.length">
+            <label class="muted">Alergias pré-definidas:</label>
+            <div class="alergia-list">
+              <span class="chip" *ngFor="let a of p.alergias_predefinidas">{{ a.nome }}</span>
+            </div>
+          </div>
+
+          <div class="status-row">
+            <span class="badge aprovado" *ngIf="p.aprovado_por_admin">Aprovado</span>
+            <span class="badge not-aprovado" *ngIf="!p.aprovado_por_admin">Pendente</span>
+            <span class="badge publico" *ngIf="p.exibir_galeria_publica">Galeria</span>
           </div>
         </div>
       </article>

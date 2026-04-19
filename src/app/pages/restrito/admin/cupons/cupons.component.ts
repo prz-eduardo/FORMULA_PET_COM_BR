@@ -2,12 +2,18 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, CupomDto, CupomPayload, Paged } from '../../../../services/admin-api.service';
+import { FormSchema } from '../../../../shared/admin-crud/form-schema';
+import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
+import { AdminListingComponent } from '../../../../shared/admin-listing/admin-listing.component';
+import { SideDrawerComponent } from '../../../../shared/side-drawer/side-drawer.component';
 
 @Component({
   selector: 'app-admin-cupons',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent, ButtonDirective, ButtonComponent, AdminListingComponent, SideDrawerComponent, AdminCrudComponent],
   templateUrl: './cupons.component.html',
   styleUrls: ['./cupons.component.scss']
 })
@@ -25,6 +31,37 @@ export class CuponsAdminComponent implements OnInit {
 
   showCreate = signal(false);
   createForm!: FormGroup;
+
+  cuponsColumns = [
+    { key: 'codigo', label: 'Código' },
+    { key: 'descricao', label: 'Descrição' },
+    { key: 'tipo', label: 'Tipo', width: '120px' },
+    { key: 'valorLabel', label: 'Valor', width: '120px' },
+    { key: 'validade', label: 'Validade', width: '140px' },
+    { key: 'ativoLabel', label: 'Ativo', width: '90px' },
+    { key: 'usado', label: 'Usado', width: '80px' }
+  ];
+
+  cuponsFormSchema: FormSchema = {
+    fields: [
+      { key: 'codigo', label: 'Código', type: 'text', required: true },
+      { key: 'descricao', label: 'Descrição', type: 'text' },
+      { key: 'tipo', label: 'Tipo', type: 'select', options: [{ value: 'percentual', label: 'Percentual' }, { value: 'valor', label: 'Valor' }], default: 'percentual' },
+      { key: 'valor', label: 'Valor', type: 'number' },
+      { key: 'valor_minimo', label: 'Valor mínimo', type: 'number' },
+      { key: 'desconto_maximo', label: 'Desconto máximo', type: 'number' },
+      { key: 'validade', label: 'Validade', type: 'date' },
+      { key: 'primeira_compra', label: 'Primeira compra', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
+      { key: 'frete_gratis', label: 'Frete grátis', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
+      { key: 'ativo', label: 'Ativo', type: 'select', options: [{ value: 1, label: 'Ativo' }, { value: 0, label: 'Inativo' }], default: 1 },
+      { key: 'usado', label: 'Usado', type: 'number' },
+      { key: 'restricoes_json', label: 'Restrições (JSON)', type: 'textarea' },
+      { key: 'max_uso', label: 'Max uso', type: 'number' },
+      { key: 'limite_por_cliente', label: 'Limite por cliente', type: 'number' }
+    ],
+    submitLabel: 'Salvar',
+    title: 'Cupom'
+  };
 
   constructor(private api: AdminApiService, private fb: FormBuilder) {}
 
@@ -58,7 +95,12 @@ export class CuponsAdminComponent implements OnInit {
     if (this.active() !== 'all') params.active = this.active() === '1' ? 1 : 0;
     this.api.listCupons(params).subscribe({
       next: (res: Paged<CupomDto>) => {
-        this.items.set(res.data || []);
+        const list = (res.data || []).map((it: any) => ({
+          ...it,
+          valorLabel: it.tipo === 'percentual' ? `${it.valor}%` : (it.frete_gratis ? 'Frete grátis' : `R$ ${it.valor}`),
+          ativoLabel: (it.ativo ?? 1) === 1 ? 'Ativo' : 'Inativo'
+        }));
+        this.items.set(list as any);
         this.total.set(res.total || 0);
         this.loading.set(false);
       },
@@ -156,5 +198,54 @@ export class CuponsAdminComponent implements OnInit {
     }, err => {
       alert('Erro ao validar cupom');
     });
+  }
+
+  // Schema-driven submit handler (used by app-admin-crud)
+  onSchemaSubmit(ev: { id?: any; values: any }) {
+    const id = ev.id;
+    const body: any = { ...ev.values };
+    body.valor = Number(body.valor || 0);
+    if (body.valor_minimo != null) body.valor_minimo = Number(body.valor_minimo);
+    if (body.desconto_maximo != null) body.desconto_maximo = Number(body.desconto_maximo);
+    body.primeira_compra = Number(body.primeira_compra) ? 1 : 0;
+    body.frete_gratis = Number(body.frete_gratis) ? 1 : 0;
+    body.ativo = Number(body.ativo) ? 1 : 0;
+    body.usado = Number(body.usado || 0);
+    if (body.restricoes_json) {
+      try { JSON.parse(body.restricoes_json); } catch (e) { alert('restricoes_json inválido'); return; }
+    }
+
+    if (id) {
+      this.api.updateCupom(id, body).subscribe((updated: any) => {
+        this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x));
+        this.selected.set(updated);
+        this.load();
+      });
+    } else {
+      this.api.createCupom(body).subscribe((created: any) => {
+        this.showCreate.set(false);
+        this.page.set(1);
+        this.load();
+        setTimeout(() => this.view(created), 0);
+      });
+    }
+  }
+
+  removeFromTable(item: any) {
+    if (!item?.id) return;
+    if (!confirm('Remover cupom?')) return;
+    this.api.deleteCupom(item.id).subscribe(() => this.load());
+  }
+
+  openCreateForSchema() {
+    this.selected.set(null);
+    this.showCreate.set(true);
+  }
+
+  onDrawerOpenChange(open: boolean) {
+    if (!open) {
+      try { this.showCreate.set(false); } catch (e) {}
+      try { this.selected.set(null); } catch (e) {}
+    }
   }
 }

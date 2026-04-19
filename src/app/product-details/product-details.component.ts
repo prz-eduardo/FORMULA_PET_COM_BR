@@ -41,6 +41,19 @@ export class ProductDetailsComponent implements OnInit {
     return this.store.getPriceWithDiscount(this.product);
   }
 
+  get discountPercent(): number | null {
+    if (!this.product) return null;
+    if (typeof this.product.discount === 'number' && this.product.discount > 0) return Math.round(this.product.discount);
+    const orig = this.product.price;
+    const now = this.priceNow();
+    if (orig && now && orig > now) return Math.round((1 - now / orig) * 100);
+    return null;
+  }
+
+  hasRating(): boolean {
+    return !!this.product && typeof this.product.rating === 'number' && this.product.rating > 0;
+  }
+
   get displayImageUrl(): string {
     if (!this.product) return '/imagens/image.png';
     const imgs = this.product.images || [];
@@ -54,6 +67,12 @@ export class ProductDetailsComponent implements OnInit {
 
   async toggleFav() {
     if (!this.product) return;
+    const logged = await this.store.isClienteLoggedSilent();
+    if (!logged) {
+      // Open global login popover/modal (Loja listens for this event)
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('open-login'));
+      return;
+    }
     const ok = await this.store.toggleFavorite(this.product.id);
     if (ok) {
       this.isFavLocal = !this.isFavLocal;
@@ -66,14 +85,28 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
-  async addToCart(ev: Event) {
-    if (!this.product) return;
+  async addToCart(ev?: Event): Promise<boolean> {
+    if (!this.product) return false;
     const ok = await this.store.addToCart(this.product, this.qty);
-    if (ok) this.flyToCart(ev);
+    if (ok && ev) this.flyToCart(ev);
+    return !!ok;
   }
 
-  buyNow(ev: Event) {
-    this.addToCart(ev).then(() => this.router.navigate(['/carrinho']));
+  async buyNow(ev?: Event): Promise<void> {
+    const ok = await this.addToCart(ev);
+    if (ok) this.router.navigate(['/carrinho']);
+  }
+
+  decrease() {
+    if (this.qty > 1) this.qty -= 1;
+  }
+
+  increase() {
+    this.qty += 1;
+  }
+
+  goToCart() {
+    this.router.navigate(['/carrinho']);
   }
 
   back() {

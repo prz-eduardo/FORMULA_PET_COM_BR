@@ -1,98 +1,81 @@
 <app-navmenu></app-navmenu>
-<div class="pd-wrap" *ngIf="!loading && product; else loadingTpl">
-	<header class="pd-header">
-		<a class="back" (click)="back()" aria-label="Voltar para loja">← Voltar</a>
-		<div class="header-center">
-			<h1 id="product-title" class="title" [title]="product!.name">{{ product!.name }}</h1>
-			<div class="meta-sm">
-				<span class="badge tipo" *ngIf="product!.tipo">{{ product!.tipo }}</span>
-				<span class="small-cat" *ngIf="product!.category">{{ product!.category }}</span>
-			</div>
-		</div>
-		<div class="header-actions">
-			<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho" aria-label="Carrinho">
-				<img src="/icones/carrinho.png" class="icones-menu" width="28" height="28" alt="Carrinho">
-			</button>
-		</div>
-	</header>
-
-	<section class="pd-main">
-		<div class="media">
-			<div class="thumbs vertical" *ngIf="product!.images?.length">
-				<img *ngFor="let im of product!.images; let i = index" [src]="im.url" [alt]="product!.name" loading="lazy" [class.active]="i === selectedImageIndex" (click)="selectImage(i)" tabindex="0" role="button" (keydown.enter)="selectImage(i)" (keydown.space)="$event.preventDefault(); selectImage(i)" />
-			</div>
-			<div class="thumb main">
-				<img [src]="displayImageUrl" [alt]="product!.name" loading="lazy" />
-			</div>
-			<div class="thumbs mobile" *ngIf="product!.images?.length">
-				<img *ngFor="let im of product!.images; let i = index" [src]="im.url" [alt]="product!.name" loading="lazy" [class.active]="i === selectedImageIndex" (click)="selectImage(i)" tabindex="0" role="button" (keydown.enter)="selectImage(i)" (keydown.space)="$event.preventDefault(); selectImage(i)" />
-			</div>
-		</div>
-
-		<aside class="info" role="complementary" aria-labelledby="product-title">
-			<div class="price-row">
-				<div>
-					<div class="price-now">{{ priceNow() | currency:'BRL' }}</div>
-					<div class="price-old" *ngIf="product!.price && product!.price > priceNow()">{{ product!.price | currency:'BRL' }}</div>
-					<div class="badge promo" *ngIf="product!.promoPrice">Promoção</div>
-				</div>
-				<div class="stock" [attr.aria-label]="'Disponibilidade: ' + availabilityLabel">{{ availabilityLabel }}</div>
-			</div>
-
-			<div class="meta">
-				<div class="rating" *ngIf="product!.rating != null">
-					<span class="star">★</span>
-					{{ product!.rating | number:'1.1-1' }}
-					<span class="r-total" *ngIf="product!.ratingsCount">({{ product!.ratingsCount }})</span>
-				</div>
-				<div class="fav">
-					<button class="btn fav" (click)="toggleFav()" [attr.aria-pressed]="isFavLocal" [title]="isFavLocal ? 'Remover dos favoritos' : 'Adicionar aos favoritos'">
-						<span [class.on]="isFavLocal">❤</span>
-						<span class="fav-count">{{ product!.favoritesCount || 0 }}</span>
-					</button>
-				</div>
-			</div>
-
-			<p class="desc" *ngIf="product!.description">{{ product!.description }}</p>
-
-			<div class="chips" *ngIf="product!.tags?.length">
-				<button class="chip" *ngFor="let t of product!.tags">#{{ t }}</button>
-			</div>
-
-			<div class="actions">
-				<div class="qty" role="group" aria-label="Quantidade">
-					<button class="btn light" (click)="qty = qty > 1 ? qty - 1 : 1" aria-label="Diminuir quantidade">−</button>
-					<input type="number" min="1" [(ngModel)]="qty" aria-label="Quantidade" />
-					<button class="btn light" (click)="qty = qty + 1" aria-label="Aumentar quantidade">+</button>
-				</div>
-
-				<div class="cta">
-					<button class="btn primary large" (click)="buyNow($event)" aria-label="Comprar agora">Comprar agora</button>
-					<button class="btn outline" (click)="addToCart($event)" aria-label="Adicionar ao carrinho">Adicionar ao carrinho</button>
-					<button class="btn light" (click)="toggleFav()" aria-label="Favoritar">{{ isFavLocal ? 'Remover dos favoritos' : 'Favoritar' }}</button>
-				</div>
-			</div>
-		</aside>
-	</section>
-
-	<section class="pd-extra">
-		<h2>Informações</h2>
-		<ul>
-			<li><strong>Disponibilidade:</strong> {{ availabilityLabel }}</li>
-			<li *ngIf="product!.category"><strong>Categoria:</strong> {{ product!.category }}</li>
-			<li *ngIf="product!.tipo"><strong>Tipo:</strong> {{ product!.tipo }}</li>
-			<li *ngIf="product!['created_at']"><strong>Criado em:</strong> {{ product!['created_at'] | date }}</li>
-		</ul>
-	</section>
-</div>
 
 <ng-template #loadingTpl>
 	<div class="pd-loading">Carregando produto...</div>
 	<header class="pd-header">
-		<a class="back" (click)="back()">← Voltar</a>
-		<h1 class="title">Produto</h1>
+		<div class="header-center">
+			<h1 class="page-title">Produto</h1>
+			<p class="page-subtitle">Aguarde — carregando detalhes</p>
+			<div class="page-title-line"></div>
+		</div>
+		<div class="header-actions">
 			<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho" aria-label="Carrinho">
 				<img src="/icones/carrinho.png" class="icones-menu" width="28" height="28" alt="Carrinho" loading="lazy">
 			</button>
+		</div>
 	</header>
 </ng-template>
+
+<div class="pd-wrap" *ngIf="!loading && product; else loadingTpl">
+	<div class="pd-inner">
+		<header class="pd-header">
+			<div class="header-center">
+				<h1 id="product-title" class="page-title" [title]="product!.name">{{ product!.name }}</h1>
+				<p class="page-subtitle" *ngIf="product!.category">{{ product!.category }}</p>
+				<div class="page-title-line" aria-hidden="true"></div>
+			</div>
+			<div class="header-actions">
+				<button #cartBtn type="button" class="btn cart" (click)="goToCart()" title="Carrinho" aria-label="Carrinho">
+					<img src="/icones/carrinho.png" class="icones-menu" width="28" height="28" alt="Carrinho" />
+				</button>
+			</div>
+		</header>
+
+		<div class="pd-main">
+			<div class="media">
+				<div class="thumb main">
+					<img [src]="displayImageUrl" [alt]="product!.name" />
+					<div class="badge promo percent" *ngIf="discountPercent">-{{ discountPercent }}%</div>
+				</div>
+				<div class="thumbs mobile" *ngIf="product?.images?.length">
+					<img *ngFor="let t of product!.images; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" />
+				</div>
+			</div>
+			<aside class="info">
+				<div class="price-row">
+					<div>
+						<div class="price-meta">
+							<span class="badge tipo" *ngIf="product?.tipo">{{ product?.tipo | titlecase }}</span>
+						</div>
+						<div class="price-now">R$ {{ priceNow() | number:'1.2-2' }}</div>
+						<div class="price-old" *ngIf="product?.promoPrice">R$ {{ product!.price | number:'1.2-2' }}</div>
+					</div>
+					<div class="badge promo" *ngIf="product?.promoPrice || product?.discount">PROMO</div>
+				</div>
+				<div class="meta">
+					<div class="rating" *ngIf="hasRating()">
+						<span class="icon icon-star">★</span>
+						<span>{{ product!.rating }}</span>
+						<span class="r-total">({{ product!.ratingsCount || 0 }})</span>
+					</div>
+					<button class="btn fav" (click)="toggleFav()"><span [class.on]="isFavLocal || product!.isFavorited">♥</span></button>
+				</div>
+				<div class="desc">{{ product!.description }}</div>
+				<div class="chips">
+					<span class="chip" *ngFor="let tag of product?.tags">{{ tag }}</span>
+				</div>
+				<div class="actions">
+					<div class="qty">
+						<button type="button" (click)="decrease()">-</button>
+						<input type="number" [value]="qty" readonly />
+						<button type="button" (click)="increase()">+</button>
+					</div>
+					<div class="cta">
+						<button class="btn primary large" (click)="addToCart($event)">Adicionar ao Carrinho 🛒</button>
+						<button class="btn outline" (click)="buyNow($event)">Comprar Agora</button>
+					</div>
+				</div>
+			</aside>
+		</div>
+	</div>
+</div>

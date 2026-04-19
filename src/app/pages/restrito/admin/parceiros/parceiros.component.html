@@ -1,6 +1,6 @@
 <div class="fornec-wrap">
   <div class="header">
-    <h2>Parceiros</h2>
+    <h2>Gerenciar Parceiros</h2>
     <div class="filters">
       <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, CNPJ, contato…" />
       <select [value]="active()" (change)="onActive($event)">
@@ -8,18 +8,26 @@
         <option value="1">Ativos</option>
         <option value="0">Inativos</option>
       </select>
-      <button class="outline" (click)="openTypes()">Gerir Tipos</button>
-      <button (click)="openCreate()" class="primary">Novo</button>
+      <button appBtn class="outline" (click)="openTypes()">Gerir Tipos</button>
+      <button appBtn (click)="openCreate()" class="primary">Novo</button>
     </div>
   </div>
 
   <div class="list" *ngIf="items().length; else emptyTpl">
     <div class="row" *ngFor="let s of items()" (click)="view(s)">
-      <div class="name">{{ s.nome }}</div>
-      <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : '-' }}</div>
-      <div class="muted">{{ s.email || s.telefone || s.contato || '-' }}</div>
-      <div class="badges">
-        <span class="chip" [class.ok]="(s.ativo ?? 1)===1">{{ (s.ativo ?? 1)===1 ? 'Ativo' : 'Inativo' }}</span>
+      <div class="avatar">{{ initials(s) }}</div>
+      <div class="col main">
+        <div class="name">{{ s.nome }}</div>
+        <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : '-' }}</div>
+        <div class="chips">
+          <span class="chip tipo">{{ s.tipo || '-' }}</span>
+        </div>
+      </div>
+      <div class="col meta">
+        <div class="muted">{{ s.email || s.telefone || s.contato || '-' }}</div>
+      </div>
+      <div class="col actions" (click)="$event.stopPropagation()">
+        <button appBtn (click)="view(s)">Ver/Editar</button>
       </div>
     </div>
   </div>
@@ -27,22 +35,18 @@
     <div class="empty">Nenhum parceiro encontrado.</div>
   </ng-template>
 
-  <div class="pagination" *ngIf="total() > pageSize()">
-    <button (click)="prev()" [disabled]="!canPrev()">Anterior</button>
-    <span>Página {{ page() }} de {{ totalPages() }}</span>
-    <button (click)="next()" [disabled]="!canNext()">Próxima</button>
-  </div>
+  <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
 
   <div class="detail" *ngIf="selected() as s">
     <div class="panel">
       <div class="panel-head">
         <h3>{{ s.nome }}</h3>
         <div class="head-actions">
-          <button (click)="closeDetail()">Fechar</button>
-          <button class="ok" (click)="approveSelected()">Aceitar</button>
-          <button class="ghost" (click)="toggleActive()">{{ (s.ativo ?? 1) === 1 ? 'Inativar' : 'Ativar' }}</button>
-          <button class="danger" (click)="remove()">Remover</button>
-          <button class="primary" (click)="save()" [disabled]="form.invalid">Salvar</button>
+          <button appBtn (click)="closeDetail()">Fechar</button>
+          <button appBtn class="ok" (click)="approveSelected()">Aceitar</button>
+          <button appBtn class="ghost" (click)="toggleActive()">{{ (s.ativo ?? 1) === 1 ? 'Inativar' : 'Ativar' }}</button>
+          <button appBtn class="danger" (click)="remove()">Remover</button>
+          <button appBtn class="primary" (click)="save()" [disabled]="form.invalid">Salvar</button>
         </div>
       </div>
       <form [formGroup]="form" class="grid">
@@ -106,9 +110,9 @@
           </select>
         </div>
         <div class="drawer-actions">
-          <button type="button" class="ghost" (click)="cancelCreate()">Cancelar</button>
-          <button type="submit" class="primary" [disabled]="createForm.invalid">Criar</button>
-        </div>
+            <button appBtn type="button" class="ghost" (click)="cancelCreate()">Cancelar</button>
+            <button appBtn type="submit" class="primary" [disabled]="createForm.invalid">Criar</button>
+          </div>
       </form>
     </div>
   </div>
@@ -117,21 +121,21 @@
     <div class="drawer">
       <div class="drawer-head">
         <h3>Tipos de Parceiros</h3>
-        <button class="ghost" (click)="closeTypes()">Fechar</button>
+        <button appBtn class="ghost" (click)="closeTypes()">Fechar</button>
       </div>
       <div class="drawer-body">
         <div class="types-list">
           <div *ngFor="let t of partnerTypes()" class="type-row">
             <span>{{ t.name }}</span>
             <div>
-              <button class="ghost" (click)="editType(t)">Editar</button>
-              <button class="danger" (click)="deleteType(t.id)">Remover</button>
+              <button appBtn class="ghost" (click)="editType(t)">Editar</button>
+              <button appBtn class="danger" (click)="deleteType(t.id)">Remover</button>
             </div>
           </div>
         </div>
         <div class="types-create">
           <input #newType placeholder="Nome do tipo" />
-          <button (click)="createType(newType.value); newType.value='';" class="primary">Criar</button>
+          <button appBtn (click)="createType(newType.value); newType.value='';" class="primary">Criar</button>
         </div>
       </div>
     </div>

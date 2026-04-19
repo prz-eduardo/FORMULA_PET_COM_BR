@@ -99,6 +99,16 @@
             <span class="desc" *ngIf="p.metodo==='cartao'">Cartão de crédito</span>
           </label>
         </div>
+        <div *ngIf="pagamentoMetodo==='cartao'" class="saved-cards">
+          <h4>Cartões salvos</h4>
+          <div *ngIf="savedCards.length === 0">Nenhum cartão salvo. <a role="button" (click)="goToMeusCartoes()">Adicionar cartão</a></div>
+          <div *ngFor="let c of savedCards" class="saved-card">
+            <label>
+              <input type="radio" name="savedCard" [(ngModel)]="selectedCardId" [value]="c.id" />
+              {{ c.brand }} •••• {{ c.last4 }} ({{ c.exp_month }}/{{ c.exp_year }}) <span *ngIf="c.is_default">Padrão</span>
+            </label>
+          </div>
+        </div>
         <div class="pix-badge" *ngIf="temDescontoPix">
           <span class="ico">💚</span>
           <strong>10% OFF no PIX</strong>
@@ -159,33 +169,6 @@
       <button class="btn success" (click)="confirmarPixPago()">Já paguei</button>
     </div>
     <div class="simulado">Transação simulada - nenhum valor será cobrado.</div>
-  </div>
-
-  <!-- Modal Cartão (simulado) -->
-  <div class="overlay" *ngIf="showCardModal" (click)="closeCardModal()"></div>
-  <div class="modal card" *ngIf="showCardModal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-    <h3>Cartão de crédito (simulado)</h3>
-    <div class="card-form">
-      <label>Nome impresso
-        <input [(ngModel)]="cardMock.nome" placeholder="FULANO DE TAL"/>
-      </label>
-      <label>Número do cartão
-        <input [(ngModel)]="cardMock.numero" placeholder="4111 1111 1111 1111"/>
-      </label>
-      <div class="grid2">
-        <label>Validade
-          <input [(ngModel)]="cardMock.validade" placeholder="12/30"/>
-        </label>
-        <label>CVV
-          <input [(ngModel)]="cardMock.cvv" placeholder="123"/>
-        </label>
-      </div>
-    </div>
-    <div class="acoes">
-      <button class="btn light" (click)="closeCardModal()">Cancelar</button>
-      <button class="btn success" (click)="confirmarCartaoPago()">Pagar {{ resumo.total | currency:'BRL' }}</button>
-    </div>
-    <div class="simulado">Pagamento simulado - use dados fictícios.</div>
   </div>
 </div>
 

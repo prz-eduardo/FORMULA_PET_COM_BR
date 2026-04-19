@@ -47,14 +47,34 @@ export class MeusPetsComponent implements OnChanges {
   // When edit is requested from a pet card
   onEditClick(pet: any) {
     if (!pet) return;
-    const id = pet.id || pet._id || null;
+    const id = this.resolvePetId(pet);
+    // debug log to help local testing
+    try { console.debug('MeusPetsComponent.onEditClick -> resolved id:', id, pet); } catch {}
     if (this.modal) {
-      // emit so parent modal can open the edit form inside itself
       if (id) this.editPet.emit(id);
+      else this.toast?.info('ID do pet não encontrado para edição');
     } else {
-      // when not in modal, navigate normally to the edit route
-      try { (window as any).location.href = '/editar-pet/' + encodeURIComponent(String(id)); } catch { }
+      if (id) {
+        try { this.router.navigateByUrl('/editar-pet/' + encodeURIComponent(String(id))); }
+        catch (e) { try { (window as any).location.href = '/editar-pet/' + encodeURIComponent(String(id)); } catch {} }
+      } else {
+        // no id — avoid navigating to /editar-pet/null
+        try { console.warn('Não é possível navegar: pet sem id', pet); } catch {}
+      }
     }
+  }
+
+  // Robust pet id resolver: supports `id`, `_id` and `_id.$oid` shapes
+  private resolvePetId(pet: any): string | null {
+    if (!pet) return null;
+    if (pet.id) return String(pet.id);
+    if (pet._id) {
+      if (typeof pet._id === 'object' && pet._id !== null) {
+        if ((pet._id as any).$oid) return String((pet._id as any).$oid);
+      }
+      return String(pet._id);
+    }
+    return null;
   }
 
   private get token(): string | null {

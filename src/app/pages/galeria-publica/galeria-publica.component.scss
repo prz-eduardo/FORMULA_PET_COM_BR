@@ -98,9 +98,7 @@
 
 .vet-photo{ display:block; width:100%; height:220px; object-fit:cover; border-radius:10px; background: transparent }
 
-.masonry-item.small .pet-photo{ height:160px }
-.masonry-item.medium .pet-photo{ height:240px }
-.masonry-item.large .pet-photo{ height:320px }
+/* Removed fixed-size variants; images render with natural dimensions now */
 
 .overlay{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:10px; box-sizing:border-box }
 .overlay-top{ display:flex; justify-content:space-between; color:rgba(255,255,255,0.95); font-size:12px; font-weight:700; text-shadow:0 1px 2px rgba(0,0,0,0.6) }
@@ -176,12 +174,14 @@
 */
 .reaction-picker.picker-floating { padding-left: 18px; padding-right: 12px; }
 
-.reaction-wrapper:has(.reaction-picker.picker-floating) {
+/* :has fallback — some browsers don't support :has; add explicit wrapper class when picker is floated */
+.reaction-wrapper:has(.reaction-picker.picker-floating), .reaction-wrapper.picker-floating {
 	/* slightly offset the wrapper so the floating picker and button feel spacious */
 	padding-left: 6px;
 }
 
-.reaction-wrapper:has(.reaction-picker.picker-floating) .btn-like {
+.reaction-wrapper:has(.reaction-picker.picker-floating) .btn-like,
+.reaction-wrapper.picker-floating .btn-like {
 	/* area-cliente like/button visual: light surface, subtle border and soft shadow */
 	background: linear-gradient(180deg, #ffffff, #f7f7f9);
 	color: #07101a;
@@ -194,7 +194,8 @@
 	align-items: center;
 }
 
-.reaction-wrapper:has(.reaction-picker.picker-floating) .btn-like .likes-count {
+.reaction-wrapper:has(.reaction-picker.picker-floating) .btn-like .likes-count,
+.reaction-wrapper.picker-floating .btn-like .likes-count {
 	color: #0b1621;
 }
 	.reaction-picker.picker-floating .reaction-btn{
@@ -262,3 +263,48 @@
 
 .loading-more{ text-align:center; padding:12px; color:#374151 }
 .sentinel{ height:1px }
+/* Mobile grid layout and reaction-picker adjustments (<=640px) */
+@media screen and (max-width: 640px) {
+	.masonry {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 12px;
+	}
+	.masonry-item {
+		/* keep spacing visually similar to columns flow */
+		break-inside: avoid-column;
+		-webkit-column-break-inside: avoid;
+		margin-bottom: 12px;
+		width: 100%;
+	}
+	/* make vet-ad span full width in grid layout */
+	.masonry-item.vet-ad {
+		grid-column: 1 / -1;
+	}
+	/* stabilize image aspect to reduce layout shift */
+	.pet-photo {
+		aspect-ratio: 4 / 3;
+		width: 100%;
+		height: auto;
+		object-fit: cover;
+	}
+	/* ensure reaction controls remain visible above content */
+	.reaction-wrapper {
+		right: 8px;
+		bottom: 8px;
+		z-index: 11000;
+	}
+	.reaction-picker {
+		max-width: calc(100vw - 24px);
+		right: 8px;
+		left: auto;
+		bottom: calc(100% + 8px);
+		z-index: 11000;
+	}
+	/* Fix: for left-column items, ensure picker doesn't overflow viewport */
+	.masonry .masonry-item:nth-child(2n+1) .reaction-picker {
+		left: 40px;
+		right: auto;
+		transform-origin: left bottom;
+	}
+}

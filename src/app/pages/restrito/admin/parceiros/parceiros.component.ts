@@ -2,12 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, AdminFornecedorDto, PartnerTypeDto, Paged } from '../../../../services/admin-api.service';
 
 @Component({
   selector: 'app-admin-parceiros',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent, ButtonDirective, ButtonComponent],
   templateUrl: './parceiros.component.html',
   styleUrls: ['./parceiros.component.scss']
 })
@@ -210,5 +212,10 @@ export class ParceirosAdminComponent implements OnInit {
     el.value = masked;
     if (ctx === 'edit') this.form?.get('cnpj')?.setValue(masked, { emitEvent: false });
     else this.createForm?.get('cnpj')?.setValue(masked, { emitEvent: false });
+  }
+
+  initials(item: AdminFornecedorDto | null | undefined): string {
+    if (!item || !item.nome) return '';
+    return (item.nome || '').split(/\s+/).filter(Boolean).map(s => s[0]).slice(0,2).join('').toUpperCase();
   }
 }

@@ -30,9 +30,7 @@
     </div>
   </div>
 
-  <div class="paginacao" *ngIf="totalPages > 1">
-    <button class="btn-sec" [disabled]="page<=1" (click)="paginaAnterior()">Anterior</button>
-    <span>Página {{ page }} de {{ totalPages }} ({{ total }} pacientes)</span>
-    <button class="btn-sec" [disabled]="page>=totalPages" (click)="proximaPagina()">Próxima</button>
+  <div class="paginacao" *ngIf="total > pageSize">
+    <admin-pagination [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; load()"></admin-pagination>
   </div>
 </div>

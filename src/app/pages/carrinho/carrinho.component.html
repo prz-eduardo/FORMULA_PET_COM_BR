@@ -8,7 +8,8 @@
       <div class="carrinho-title-line"></div>
     </header>
 
-    <div class="layout" *ngIf="(store.cart$ | async)?.length; else vazio">
+    <div class="layout" *ngIf="(store.cart$ | async)?.length">
+    <div class="main">
     <div class="card warn" *ngIf="!validandoCarrinho && avisosCarrinho?.length">
       <ul>
         <li *ngFor="let m of avisosCarrinho">{{ m }}</li>
@@ -20,6 +21,9 @@
         <img [src]="it.product.image" alt="{{ it.product.name }}" />
         <div class="info">
           <div class="nome">{{ it.product.name }}</div>
+
+    <!-- Allergy non-blocking alert (pet composition warnings) - single toast area with stacked pet cards -->
+    <!-- allergy toast moved below the items loop to avoid duplicates -->
           <div class="precos">
             <ng-container *ngIf="getUnitPrices(it.product.id, it.product.price, it.product.promoPrice) as p">
               <span class="de" *ngIf="p.final < p.unit">{{ p.unit | currency:'BRL' }}</span>
@@ -56,7 +60,51 @@
         </div>
         <button class="remove" (click)="onRequestRemove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
         </div>
+      <div class="allergy-toast" *ngIf="showAllergyModal" #allergyPortal (click)="$event.stopPropagation()" role="status" aria-live="polite">
+        <div class="allergy-top">
+          <strong>Atenção: possível alergia</strong>
+          <button class="btn small light" (click)="closeAllAllergies()" title="Fechar tudo">✕</button>
+        </div>
+        <div class="allergy-stack">
+          <div class="allergy-pet-card" *ngFor="let entry of getActiveAllergyEntries()">
+            <div class="pet-header">
+              <div class="pet-title"><strong>{{ getPetDisplayName(entry.petId) }}</strong> pode ser alérgico a:</div>
+              <div class="pet-actions">
+                <button class="btn light small" (click)="closeAllergyForPet(entry.petId)">Ignorar</button>
+              </div>
+            </div>
+            <div class="allergy-list">
+              <ng-container *ngFor="let r of (entry.response?.results || [])">
+                <div class="al-item" *ngIf="r && (r.has_allergy || (r.matches && r.matches.length))">
+                  <div class="al-prod">
+                    <div class="prod-name"><strong>{{ r.nome || r.product_name || ('#' + (r.produto_id || r.produto)) }}</strong></div>
+                    <div class="muted small" *ngIf="r.matches && r.matches.length">Possíveis causadores: <span *ngFor="let m of r.matches; let i = index">{{ m.ativo_nome || m.name || m.ativo_nome }}<span *ngIf="i < r.matches.length - 1">, </span></span></div>
+                  </div>
+                  <div class="actions">
+                    <button class="btn primary small" *ngIf="r.produto_id" (click)="router.navigate(['/produto', r.produto_id])">Ver produto</button>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="card pets-card">
+        <h3>Para qual pet você está fazendo a sua compra?</h3>
+        <p class="muted small">Você pode selecionar múltiplos.</p>
+        <div class="pets-grid">
+          <div class="pet-loading" *ngIf="carregandoPets">Carregando pets...</div>
+          <div class="muted" *ngIf="!carregandoPets && (!pets || pets.length===0)">Nenhum pet cadastrado.</div>
+          <div class="pet-card" *ngFor="let p of pets" [class.selected]="isPetSelected(p.id)">
+            <button type="button" class="pet-thumb" (click)="togglePetSelect(p.id)" [attr.aria-pressed]="isPetSelected(p.id)" title="Selecionar {{ p.nome || p.name || p.pet_nome }}">
+              <img [src]="p.photoURL || p.foto || '/imagens/image.png'" alt="{{ p.nome || p.name || p.pet_nome }}" loading="lazy" />
+            </button>
+            <div class="pet-name">{{ p.nome || p.name || p.pet_nome }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
       <div class="aside">
         <div class="card frete">
@@ -243,7 +291,7 @@
       </div>
     </div>
 
-    <ng-template #vazio>
+    <div *ngIf="!(store.cart$ | async)?.length">
       <div class="card vazio">
         <div class="empty-main">
           <div class="empty-illustration" aria-hidden="true">🐾</div>
@@ -262,7 +310,7 @@
           </div>
         </div>
       </div>
-    </ng-template>
+    </div>
 
     <!-- Confirmação de remoção -->
     <div class="overlay" *ngIf="showConfirmRemove" (click)="cancelRemove()"></div>
@@ -355,5 +403,4 @@
         </form>
       </ng-template>
     </div>
-  </main>
 </div>

@@ -34,7 +34,8 @@ export class ParceiroCadastroComponent implements OnInit {
       latitude: [''],
       longitude: [''],
       descricao: [''],
-      logoUrl: ['']
+      logo: [''],
+      cnpj: ['']
     });
 
     this.api.getProfessionalTypes().subscribe({ next: (res) => { this.types = res?.types || []; }, error: () => { this.types = []; } });
@@ -108,6 +109,44 @@ export class ParceiroCadastroComponent implements OnInit {
     this.form.get('telefone')?.setValue(masked, { emitEvent: false });
   }
 
+  formatCnpj(value: string) {
+    const d = this.onlyDigits(value).slice(0, 14);
+    if (!d) return '';
+    if (d.length <= 2) return d;
+    if (d.length <= 5) return d.slice(0, 2) + '.' + d.slice(2);
+    if (d.length <= 8) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5);
+    if (d.length <= 12) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8);
+    return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8, 12) + '-' + d.slice(12);
+  }
+
+  onCnpjInput(e: any) {
+    const raw = e?.target?.value || '';
+    const masked = this.formatCnpj(raw);
+    this.form.get('cnpj')?.setValue(masked, { emitEvent: false });
+  }
+
+  logoPreview: string | null = null;
+
+  onLogoSelected(e: any) {
+    const file: File = e?.target?.files?.[0];
+    if (!file) return;
+    if (!file.type?.startsWith('image/')) {
+      this.toast.error('Formato de arquivo inválido. Envie uma imagem.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.toast.error('Imagem muito grande. Máx 2MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      this.logoPreview = dataUrl;
+      this.form.get('logo')?.setValue(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
   submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -119,6 +158,8 @@ export class ParceiroCadastroComponent implements OnInit {
       ...raw,
       cep: this.onlyDigits(raw.cep),
       telefone: this.onlyDigits(raw.telefone),
+      cnpj: raw.cnpj ? this.onlyDigits(raw.cnpj) : undefined,
+      logo: raw.logo || undefined,
       latitude: raw.latitude ? Number(raw.latitude) : undefined,
       longitude: raw.longitude ? Number(raw.longitude) : undefined,
       status: 'pending'
@@ -128,6 +169,7 @@ export class ParceiroCadastroComponent implements OnInit {
         this.loading = false;
         this.toast.success('Cadastro enviado com sucesso. Aguardando aprovação.');
         this.form.reset();
+        this.logoPreview = null;
       },
       error: (err) => {
         this.loading = false;

@@ -44,7 +44,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private lastProfileToken?: string | null = null;
 
   // Internal navigation state when in modal
-  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | null = null;
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | null = null;
   // track which internal view originated the last navigation (used to return)
   private lastInternalOrigin: string | null = null;
 
@@ -274,7 +274,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
 
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes') {
     if (!this.modal) {
       // Navigate normally when not in modal
       if (view === 'meus-pedidos') return this.router.navigateByUrl('/meus-pedidos');
@@ -283,6 +283,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       if (view === 'perfil') return this.router.navigateByUrl('/editar-perfil');
       if (view === 'favoritos') return this.router.navigateByUrl('/favoritos');
       if (view === 'carrinho') return this.router.navigateByUrl('/carrinho');
+      if (view === 'meus-cartoes') return this.router.navigateByUrl('/meus-cartoes');
       if (view === 'loja') return this.router.navigateByUrl('/loja');
       if (view === 'consultar-pedidos') {
         return this.router.navigate([{ outlets: { modal: ['consultar-pedidos'] } }], { relativeTo: this.route });
@@ -305,6 +306,28 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     if (view === 'consultar-pedidos') {
       this.titulo = 'Histórico de receitas';
       return this.openConsultarPedidosOverlay();
+    }
+    if (view === 'meus-cartoes') {
+      if (!this.modal) return this.router.navigateByUrl('/meus-cartoes');
+      this.internalView = 'meus-cartoes';
+      this.titulo = 'Meus Cartões';
+      if (!this.internalHost) return;
+      this.internalHost.clear();
+      try {
+        const mod = await import('./meus-cartoes/meus-cartoes.component');
+        const Cmp = (mod as any).MeusCartoesComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      } catch (e) {
+        console.error('Falha ao abrir Meus Cartões', e);
+        this.toast.error('Não foi possível abrir agora');
+      }
+      return;
     }
       if (view === 'meus-enderecos') {
       if (!this.modal) return this.router.navigateByUrl('/meus-enderecos');
@@ -396,6 +419,28 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           if ((ref.instance as any).newPet) {
             (ref.instance as any).newPet.subscribe(() => {
               try { this.open('novo-pet'); } catch (e) {}
+            });
+          }
+          // If MeusPets requests editing a pet (emits id), open the NovoPetComponent
+          // inside the modal and pass the `editId` so it loads the pet for editing.
+          if ((ref.instance as any).editPet) {
+            (ref.instance as any).editPet.subscribe(async (petId: string | number) => {
+              try {
+                this.internalHost?.clear();
+                const mod2 = await import('../../../pages/novo-pet/novo-pet.component');
+                const Cmp2 = (mod2 as any).NovoPetComponent;
+                const ref2 = this.internalHost!.createComponent(Cmp2);
+                if (ref2?.instance) {
+                  (ref2.instance as any).modal = true;
+                  try { (ref2.instance as any).editId = petId; } catch {}
+                  if ((ref2.instance as any).close) {
+                    (ref2.instance as any).close.subscribe(() => this.goBack());
+                  }
+                }
+              } catch (e) {
+                console.error('Falha ao abrir editor de pet', e);
+                this.toast.error('Não foi possível abrir o editor do pet agora');
+              }
             });
           }
         }

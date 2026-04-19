@@ -1,0 +1,25 @@
+<div class="preview-page">
+  <div class="preview-top">
+    <h2>Pré-visualização (Admin)</h2>
+    <div class="muted">Dados simulados a partir do editor</div>
+  </div>
+
+  <div class="preview-cards">
+    <div class="d-card banner" *ngIf="product" style="width:100%" [style.max-width]="defaultCardWidth">
+      <img class="d-img" [src]="product.image || '/imagens/placeholder.png'" [alt]="product.name">
+      <div class="d-overlay">
+        <div class="d-topline">
+          <span class="d-type" *ngIf="product.tipo === 'manipulado'">Manipulado</span>
+        </div>
+        <h3 class="d-title">{{ product.name }}</h3>
+        <div class="d-price">
+          <span class="new">{{ (product.promoPrice != null ? product.promoPrice : product.price) | currency:'BRL' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="v2-card" *ngIf="product" style="width:100%" [style.max-width]="defaultCardWidth">
+      <app-product-card-v2 [product]="product" [disableLink]="true" [cardWidth]="defaultCardWidth" [extraClass]="'review-preview'"></app-product-card-v2>
+    </div>
+  </div>
+</div>

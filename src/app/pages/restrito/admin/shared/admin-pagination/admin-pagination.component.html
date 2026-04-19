@@ -1,0 +1,12 @@
+<div *ngIf="totalPages() > 1">
+  <div class="pager numbered">
+    <button class="btn secondary" (click)="goFirst()" [disabled]="!canPrev()">«</button>
+    <button class="btn secondary" (click)="prev()" [disabled]="!canPrev()">‹</button>
+    <ng-container *ngFor="let p of pages()">
+      <button *ngIf="p !== '...'" class="btn" [class.active]="p === page" (click)="emitPageNumber(p)">{{ p }}</button>
+      <span *ngIf="p === '...'" class="ellipsis">…</span>
+    </ng-container>
+    <button class="btn secondary" (click)="next()" [disabled]="!canNext()">›</button>
+    <button class="btn secondary" (click)="goLast()" [disabled]="!canNext()">»</button>
+  </div>
+</div>

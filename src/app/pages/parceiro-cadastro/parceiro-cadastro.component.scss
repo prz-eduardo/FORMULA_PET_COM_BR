@@ -21,4 +21,6 @@
 	filter: grayscale(10%);
 }
 
+.logo-preview img{max-height:96px;margin-top:8px;border-radius:6px;border:1px solid #eee}
+
 @media (max-width:760px){.grid{grid-template-columns:1fr}.partner-register-wrap{padding:12px;margin:12px}}

@@ -92,6 +92,15 @@
               <li>30 dias: <strong>{{ (d.snapshots?.last_30d?.revenue || 0) | currency:'BRL':'symbol-narrow' }}</strong> · {{ d.snapshots?.last_30d?.orders || 0 }} pedidos</li>
             </ul>
           </div>
+          <div class="card">
+            <h3>Relatórios</h3>
+            <ul>
+              <li>Centralize e baixe relatórios do sistema aqui.</li>
+            </ul>
+            <div class="card-actions">
+              <button class="btn" (click)="goToRelatorios()">Abrir Relatórios</button>
+            </div>
+          </div>
         </section>
 
         <!-- Breakdowns (tables for quick scan) -->

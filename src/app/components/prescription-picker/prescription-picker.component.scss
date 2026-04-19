@@ -2,7 +2,12 @@
 .rx-picker.disabled { opacity: 0.6; pointer-events: none; }
 .tabs { display: inline-flex; gap: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 999px; padding: 4px; max-width: 100%; overflow-x: auto; }
 .tab { appearance: none; border: 0; background: transparent; padding: 8px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; color: #374151; }
-.tab[aria-selected="true"] { background: #0ea5e9; color: #fff; box-shadow: 0 4px 12px rgba(14,165,233,0.3); }
+.tab[aria-selected="true"] {
+  background: #f3f4f6; /* fundo claro */
+  color: #0f172a; /* texto escuro */
+  box-shadow: 0 6px 18px rgba(15,23,42,0.08); /* destaque sutil */
+  border: 1px solid rgba(15,23,42,0.06);
+}
 .pane { margin-top: 10px; }
 .search { margin-bottom: 8px; }
 .input { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; font-size: 16px; }

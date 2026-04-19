@@ -1,0 +1,95 @@
+@mixin admin-layout {
+  padding: 16px;
+
+  .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px }
+  .header .filters { display: flex; gap: 8px; align-items: center }
+  .header .filters input { min-width: 280px; background: var(--admin-card); border: 1px solid var(--admin-border); color: var(--admin-text); padding: 8px 10px; border-radius: 8px }
+  .header .filters .primary { background: var(--admin-primary); color: #fff; border-color: rgba(13,184,222,.5) }
+
+  .filters-adv { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px }
+  .filters-adv input, .filters-adv select { padding: 6px 8px; border: 1px solid var(--admin-border); border-radius: 8px; background: var(--admin-card); color: var(--admin-text) }
+  .filters-adv .spacer { flex: 1 }
+  .filters-adv .cols { display: flex; gap: 12px }
+
+  .list { display: flex; flex-direction: column; gap: 8px }
+  .row { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; border: 1px solid var(--admin-border); background: var(--admin-card); border-radius: 10px; padding: 10px; overflow: hidden; cursor: pointer; color: var(--admin-text) }
+  .row.expanded { box-shadow: 0 2px 10px rgba(0,0,0,.06) }
+
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--admin-primary); color: var(--admin-primary-ink); display: flex; align-items: center; justify-content: center; font-weight: 700 }
+  .avatar.lg { width: 48px; height: 48px }
+
+  .name { font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--admin-text) }
+  .muted { color: var(--admin-muted); font-size: 12px }
+
+  .badge { font-size: 12px; border-radius: 999px; padding: 4px 8px; border: 1px solid var(--admin-border); background: var(--admin-card); color: var(--admin-text) }
+  .badge.ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46 }
+
+  .chip { font-size: 12px; border-radius: 999px; padding: 2px 8px; border: 1px solid var(--admin-border); background: var(--admin-card); color: var(--admin-text) }
+  .chip.ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46 }
+  .chip.warn { background: #fffbeb; border-color: #fde68a; color: #92400e }
+  .chip.danger { background: #fef2f2; border-color: #fecaca; color: #991b1b }
+  .chip.info { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8 }
+  .chip.tipo { background: #eef2ff; border-color: #c7d2fe; color: #3730a3 }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end }
+  .actions button { padding: 6px 10px; border: 1px solid var(--admin-border); border-radius: 8px; background: var(--admin-card); cursor: pointer; white-space: nowrap; color: var(--admin-text) }
+  .actions .warn { background: #fff7ed; border-color: #fed7aa }
+  .actions .ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46 }
+
+  .empty { padding: 24px; border: 1px dashed rgba(255,255,255,0.03); border-radius: 8px; text-align: center; color: var(--admin-muted) }
+
+  .pagination { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin: 12px 0 }
+  .pagination .left { display: flex; align-items: center; gap: 10px }
+  .pagination .right { display: flex; align-items: center; gap: 8px }
+  .pagination .range { color: var(--admin-muted); font-size: 12px }
+
+  .detail .panel, .row-expand .panel { margin-top: 12px; border: 1px solid var(--admin-border); border-radius: 12px; background: var(--admin-card); padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.04); position: relative; transition: all .18s ease; color: var(--admin-text) }
+  .detail .panel .close-x, .row-expand .panel .close-x { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--admin-border); background: var(--admin-card); font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer }
+  .detail .panel .close-x:hover { background: rgba(255,255,255,0.02) }
+
+  .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px }
+  .panel-head .id { display: flex; gap: 10px; align-items: center }
+  .panel-head .head-actions { display: flex; gap: 8px }
+
+  .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--admin-border); margin: 8px 0 }
+  .tabs button { padding: 8px 10px; border: none; background: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--admin-text) }
+  .tabs button.active { border-color: var(--admin-text); font-weight: 600 }
+  .tab-body { padding-top: 8px }
+
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px }
+  .placeholder { padding: 24px; border: 1px dashed rgba(255,255,255,0.03); border-radius: 8px; color: var(--admin-muted); text-align: center }
+  .uploaders { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; margin-bottom: 8px }
+  .gallery { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px }
+  .thumb { border: 1px solid var(--admin-border); border-radius: 8px; padding: 8px; background: var(--admin-card) }
+  .thumb img { width: 100%; height: 120px; object-fit: cover; border-radius: 6px }
+  .thumb .tipo { font-size: 12px; color: var(--admin-muted); margin-bottom: 4px }
+  .thumb .file { font-size: 12px; color: var(--admin-text); background: var(--admin-card); border-radius: 6px; padding: 12px; text-align: center }
+
+  .edit-actions { display: flex; gap: 8px; align-items: center; margin-top: 8px }
+
+  .create-drawer { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: flex-start; justify-content: flex-end; z-index: 50 }
+  .drawer { width: 480px; background: var(--admin-card); height: 100%; padding: 16px 16px 24px; border-left: 1px solid var(--admin-border); box-shadow: -4px 0 12px rgba(0,0,0,.1) }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px }
+  .drawer .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px }
+  .drawer .grid input, .drawer .grid select { background: var(--admin-card); border: 1px solid var(--admin-border); color: var(--admin-text) }
+  .drawer .grid input:focus, .drawer .grid select:focus { background: transparent }
+  .drawer-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .uploaders { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .gallery { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    .header { flex-direction: column; align-items: stretch; }
+    .header .filters { flex-wrap: wrap }
+    .row { grid-template-columns: auto 1fr; gap: 8px; }
+    .col.actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-start }
+    .grid { grid-template-columns: 1fr }
+    .uploaders { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .gallery { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .drawer { width: 100vw }
+  }
+}

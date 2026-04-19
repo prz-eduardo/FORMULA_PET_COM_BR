@@ -1,0 +1,10 @@
+:host { display: inline-block; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; padding: 8px 12px; border-radius: 8px; border: 0; cursor: pointer; background: transparent; color: inherit; }
+
+:host(.primary) .btn, :host(.btn-primary) .btn { background: #27EF9F; color: #07121a; }
+:host(.ghost) .btn, :host(.outline) .btn { background: transparent; color: #9fe8ff; border: 1px solid rgba(159,232,255,0.06); }
+:host(.danger) .btn { background: #ff6b6b; color: #fff; }
+
+:host(.small) .btn { padding: 6px 8px; font-size: 0.9rem; border-radius: 6px; }
+
+:host([disabled]) .btn, :host(.disabled) .btn { opacity: 0.6; pointer-events: none; }

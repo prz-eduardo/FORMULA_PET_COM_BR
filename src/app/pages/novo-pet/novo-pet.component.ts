@@ -31,6 +31,8 @@ export class NovoPetComponent {
   // Predefinidas (get_lista_alergias)
   listaAlergias: { nome: string; alergia_id: string | number; ativo_id?: string | number }[] = [];
   alergiasSelecionadas: Array<{ nome: string; alergia_id: string | number; ativo_id?: string | number }> = [];
+  // Temporarily store free-form allergy names until predef list is loaded
+  pendingAlergiasLivres: string[] | null = null;
   alergiaBusca = '';
   sugestoes: Array<{ nome: string; alergia_id: string | number; ativo_id?: string | number }> = [];
   showSugestoes = false;
@@ -77,7 +79,7 @@ export class NovoPetComponent {
       const loadPet = (clienteId: number) => {
         this.api.getPetsByCliente(clienteId, t).subscribe({
           next: (lista) => {
-            const pet = (lista || []).find((p: any) => String(p.id) === String(id));
+            const pet = (lista || []).find((p: any) => String(p.id || p._id) === String(id));
             if (pet) {
               this.nome = pet.nome || '';
               this.especie = pet.especie || '';
@@ -88,12 +90,22 @@ export class NovoPetComponent {
               const rawIdade = (pet.idadeAnos ?? pet.idade);
               this.idadeAnos = rawIdade != null && rawIdade !== '' ? Number(rawIdade) : null;
               this.observacoes = pet.observacoes || '';
-              // Se backend retornar alergias por nome, tente mapear para lista predefinida depois de carregar a lista
-              const livres = Array.isArray(pet.alergias)
-                ? pet.alergias
-                : (pet.alergias ? String(pet.alergias).split(/[;,]/).map((s:string)=>s.trim()).filter(Boolean) : []);
-              // armazena provisoriamente e mapeia após carregar lista
-              setTimeout(() => this.mapearAlergiasLivres(livres), 0);
+              // Mostrar foto atual do pet (vários nomes possíveis retornados pelo backend)
+              this.fotoPreview = pet.photoURL || pet.photoUrl || pet.foto || pet.photo || pet.photo_url || null;
+              this.fotoFile = null;
+
+              // Se backend retornar alergias já estruturadas (alergias_predefinidas), use-as
+              if (Array.isArray(pet.alergias_predefinidas) && pet.alergias_predefinidas.length) {
+                this.alergiasSelecionadas = pet.alergias_predefinidas.map((a: any) => ({ nome: a.nome || '', alergia_id: a.alergia_id ?? a.id ?? '', ativo_id: a.ativo_id }));
+              } else {
+                // Se backend retornar alergias por nome, tente mapear para lista predefinida depois de carregar a lista
+                const livres = Array.isArray(pet.alergias)
+                  ? pet.alergias
+                  : (pet.alergias ? String(pet.alergias).split(/[;,]/).map((s:string)=>s.trim()).filter(Boolean) : []);
+                // Se já temos a lista predefinida, mapeia imediatamente; senão guarda em pendente
+                if (this.listaAlergias && this.listaAlergias.length) this.mapearAlergiasLivres(livres);
+                else this.pendingAlergiasLivres = livres;
+              }
             }
           }
         });
@@ -120,7 +132,17 @@ export class NovoPetComponent {
 
   carregarListaAlergias() {
     if (!this.token) return;
-    // Inicialmente não carrega sem termo; sugestões só aparecem quando digitar
+    // Carrega lista predefinida completa (usada para mapear nomes livres e sugestões rápidas)
+    this.api.getListaAlergias(this.token).subscribe({
+      next: (lista) => {
+        this.listaAlergias = Array.isArray(lista) ? lista : [];
+        if (this.pendingAlergiasLivres && this.pendingAlergiasLivres.length) {
+          this.mapearAlergiasLivres(this.pendingAlergiasLivres);
+          this.pendingAlergiasLivres = null;
+        }
+      },
+      error: () => {}
+    });
   }
 
   private buscarOutrasPredefinida() {

@@ -1,0 +1,108 @@
+<app-admin-listing [loading]="loading">
+  <div slot="title"><ng-content select="[slot=title]"></ng-content></div>
+
+  <div slot="search">
+    <ng-content select="[slot=search]"></ng-content>
+    <div *ngIf="useDefaultSearch" class="admin-default-search">
+      <input type="search" [placeholder]="searchPlaceholder" (input)="onQuickSearch($event)" />
+    </div>
+  </div>
+
+  <div slot="actions">
+    <ng-content select="[slot=actions]"></ng-content>
+    <div *ngIf="useDefaultActions" class="admin-default-actions">
+      <button class="btn primary" (click)="emitCreate()">{{ createLabel }}</button>
+    </div>
+  </div>
+
+  <section slot="table" class="table-wrap">
+    <ng-container *ngIf="columns && columns.length > 0; else projectedTable">
+      <ng-container *ngIf="loading; else tableContent">
+        <div class="admin-loading">Carregando...</div>
+      </ng-container>
+
+      <ng-template #tableContent>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th *ngFor="let col of columns" [style.width]="col.width">{{ col.label || col.key }}</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items">
+              <td *ngFor="let col of columns" [ngClass]="col.class">{{ item[col.key] }}</td>
+              <td class="actions-cell">
+                <button class="btn small" (click)="emitEdit(item)">Editar</button>
+                <button class="btn small danger" (click)="emitRemove(item)">Remover</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-content select="[slot=pagination]"></ng-content>
+      </ng-template>
+    </ng-container>
+
+    <ng-template #projectedTable>
+      <ng-content select="[slot=table]"></ng-content>
+      <ng-content select="[slot=fallback-table]"></ng-content>
+      <ng-content select="[slot=pagination]"></ng-content>
+    </ng-template>
+  </section>
+
+  <div class="detail-wrap">
+    <ng-content select="[slot=detail]"></ng-content>
+  </div>
+  <div class="pagination-wrap">
+    <ng-content select="[slot=pagination-bottom]"></ng-content>
+  </div>
+</app-admin-listing>
+
+<!-- Drawer area: project any content marked with slot="drawer" inside the shared side-drawer -->
+<app-side-drawer [open]="drawerOpen" (openChange)="onSideDrawerOpenChange($event)" (closeRequest)="onSideDrawerCloseRequest($event)" [width]="drawerWidth">
+  <ng-content select="[slot=drawer]"></ng-content>
+
+  <!-- Auto-generated form: render only when page did not provide a projected drawer and a schema is available -->
+  <ng-container *ngIf="!hasProjectedDrawer && formSchema?.fields?.length">
+    <form [formGroup]="autoForm" (ngSubmit)="onSubmitAutoForm()">
+      <div class="drawer-head">
+        <h3>{{ editItem?.id ? ('Editar ' + (formTitle || 'registro')) : ('Novo ' + (formTitle || 'registro')) }}</h3>
+        <div class="head-actions"><button class="btn secondary" type="button" (click)="onCancelAutoForm()">Fechar</button></div>
+      </div>
+
+      <div class="grid">
+        <ng-container *ngFor="let f of formSchema!.fields">
+          <div class="field" [style.width]="f.width || 'auto'">
+            <label *ngIf="f.type !== 'hidden'">{{ f.label || f.key }}
+              <ng-container [ngSwitch]="f.type">
+                <input *ngSwitchCase="'text'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                <input *ngSwitchCase="'cpf'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                <input *ngSwitchCase="'email'" type="email" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                <input *ngSwitchCase="'number'" type="number" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                <input *ngSwitchCase="'date'" type="date" [formControlName]="f.key" />
+                <input *ngSwitchCase="'datetime'" type="datetime-local" [formControlName]="f.key" />
+                <textarea *ngSwitchCase="'textarea'" [formControlName]="f.key" [placeholder]="f.placeholder"></textarea>
+                <select *ngSwitchCase="'select'" [formControlName]="f.key">
+                  <option *ngFor="let o of f.options" [ngValue]="o.value">{{ o.label }}</option>
+                </select>
+                <app-entity-lookup *ngSwitchCase="'multi-suggest'"
+                  [selectedIds]="autoForm.get(f.key)?.value || []"
+                  (selectedIdsChange)="autoForm.get(f.key)?.setValue($event)"
+                  [searchFn]="f.searchFn"
+                  [placeholder]="f.placeholder || 'Buscar...'"></app-entity-lookup>
+                <input *ngSwitchCase="'checkbox'" type="checkbox" [formControlName]="f.key" />
+                <input *ngSwitchCase="'hidden'" type="hidden" [formControlName]="f.key" />
+                <input *ngSwitchDefault type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+              </ng-container>
+            </label>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="drawer-actions actions">
+        <button class="btn secondary" type="button" (click)="onCancelAutoForm()">Cancelar</button>
+        <button class="btn primary" type="submit">{{ formSubmitLabel || 'Salvar' }}</button>
+      </div>
+    </form>
+  </ng-container>
+</app-side-drawer>

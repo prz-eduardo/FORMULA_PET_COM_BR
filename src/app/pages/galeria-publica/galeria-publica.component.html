@@ -13,7 +13,7 @@
   <div *ngIf="error" class="card danger">{{ error }}</div>
 
   <div class="masonry">
-  <div *ngFor="let p of pets" class="masonry-item" [ngClass]="[p.size, (p.type === 'vet_ad' ? 'vet-ad' : '')]">
+  <div *ngFor="let p of pets" class="masonry-item" [class.vet-ad]="p.type === 'vet_ad'">
       <ng-container *ngIf="p.type === 'vet_ad'; else regularPet">
         <!-- Veterinarian ad: special standalone layout -->
         <article class="vet-ad-card" role="article" aria-label="Anúncio Veterinário">

@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from 
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShopProduct } from '../services/store.service';
+import { DEFAULT_PRODUCT_CARD_WIDTH } from '../constants/card.constants';
 
 @Component({
   selector: 'app-product-card-v2',
@@ -16,6 +17,9 @@ export class ProductCardV2Component {
   @Input() supportsFavorites = true;
   @Input() supportsRatings = true;
   @Input() favoriteActive?: boolean;
+  @Input() disableLink = false;
+  @Input() cardWidth: string = DEFAULT_PRODUCT_CARD_WIDTH;
+  @Input() extraClass: string = '';
 
   @Output() add = new EventEmitter<MouseEvent>();
   @Output() toggleFav = new EventEmitter<void>();

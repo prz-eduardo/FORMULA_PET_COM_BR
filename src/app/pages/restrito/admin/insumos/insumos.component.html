@@ -32,9 +32,7 @@
       </tbody>
     </table>
     <div class="pager">
-      <button class="btn secondary" (click)="prev()" [disabled]="!canPrev()">Anterior</button>
-      <span>Página {{page()}} / {{ totalPages() }}</span>
-      <button class="btn secondary" (click)="next()" [disabled]="!canNext()">Próxima</button>
+        <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
     </div>
   </section>
   <ng-template #loadingTpl><div class="empty">Carregando...</div></ng-template>

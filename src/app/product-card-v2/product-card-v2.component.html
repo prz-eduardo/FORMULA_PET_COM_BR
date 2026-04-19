@@ -1,12 +1,12 @@
-<a class="p-card" [class.has-discount]="product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }">
+<ng-template #cardInner>
   <div class="thumb">
-  <img [src]="product.image" [alt]="product.name" title="{{ product.name }}" width="320" height="200" loading="lazy" decoding="async" class="thumb-img"/>
+    <img [src]="product.image" [alt]="product.name" title="{{ product.name }}" width="320" height="200" loading="lazy" decoding="async" class="thumb-img"/>
     <div class="badge" *ngIf="product.discount && product.discount > 0">-{{ product.discount | number:'1.0-0' }}%</div>
     <button class="fav" *ngIf="supportsFavorites" (click)="onFavClick($event)" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
       <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>
       <span class="count" *ngIf="product.favoritesCount != null">{{ product.favoritesCount }}</span>
     </button>
-  <button type="button" class="btn add" (click)="onAddClick($event)" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
+    <button type="button" class="btn add" (click)="onAddClick($event)" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
   </div>
   <div class="info">
     <h3 class="nome" [title]="product.name">{{ product.name }}</h3>
@@ -33,4 +33,11 @@
       <span class="old placeholder" *ngIf="!showOldPrice" aria-hidden="true">{{ product.price | currency:'BRL' }}</span>
     </div>
   </div>
+</ng-template>
+
+<a *ngIf="!disableLink" class="p-card" [ngClass]="extraClass" [class.has-discount]="product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" style="width:100%" [style.max-width]="cardWidth">
+  <ng-container *ngTemplateOutlet="cardInner"></ng-container>
 </a>
+<div *ngIf="disableLink" class="p-card" [ngClass]="extraClass" [class.has-discount]="product.promoPrice != null || (product.discount && product.discount > 0)" style="width:100%" [style.max-width]="cardWidth">
+  <ng-container *ngTemplateOutlet="cardInner"></ng-container>
+</div>

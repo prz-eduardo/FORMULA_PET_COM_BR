@@ -16,7 +16,9 @@
     </div>
   </div>
 
-  <div class="admin-actions">
+  <router-outlet></router-outlet>
+
+  <div *ngIf="isRootView" class="admin-actions">
     <!-- Inteligência -->
     <section class="section-card" [class.collapsed]="isCollapsed('inteligencia')">
       <header class="section-header" role="button" tabindex="0" (click)="toggleSection('inteligencia')" (keydown.enter)="toggleSection('inteligencia')" (keydown.space)="toggleSection('inteligencia')" [attr.aria-expanded]="!isCollapsed('inteligencia')">
@@ -87,19 +89,7 @@
       </div>
     </section>
 
-    <!-- Clínico -->
-    <section class="section-card" [class.collapsed]="isCollapsed('clinico')">
-      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('clinico')" (keydown.enter)="toggleSection('clinico')" (keydown.space)="toggleSection('clinico')" [attr.aria-expanded]="!isCollapsed('clinico')">
-        <h3 class="sec-title">Clínico</h3>
-        <i class="fa fa-chevron-down chevron"></i>
-      </header>
-      <div class="items" *ngIf="!isCollapsed('clinico')">
-        <button class="item" (click)="goToGuiaAtivos()" tabindex="0">
-          <i class="fa fa-book"></i>
-          <span>Guia de Ativos</span>
-        </button>
-      </div>
-    </section>
+    <!-- Clínico (removido) -->
 
     <!-- Operação -->
     <section class="section-card" [class.collapsed]="isCollapsed('operacao')">
@@ -124,41 +114,16 @@
           <i class="fa fa-bullhorn"></i>
           <span>Promoções</span>
         </button>
-        <button class="item" (click)="goToRelatorios()" tabindex="0">
-          <i class="fa fa-bar-chart"></i>
-          <span>Relatórios</span>
-        </button>
+        <!-- Relatórios removido daqui — será centralizado no Dashboard -->
       </div>
     </section>
 
-    <!-- Atalhos -->
-    <section class="section-card" [class.collapsed]="isCollapsed('atalhos')">
-      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('atalhos')" (keydown.enter)="toggleSection('atalhos')" (keydown.space)="toggleSection('atalhos')" [attr.aria-expanded]="!isCollapsed('atalhos')">
-        <h3 class="sec-title">Atalhos</h3>
-        <i class="fa fa-chevron-down chevron"></i>
-      </header>
-      <div class="items" *ngIf="!isCollapsed('atalhos')">
-        <button class="item" (click)="goToConfiguracoes()" tabindex="0">
-          <i class="fa fa-sliders"></i>
-          <span>Configurações</span>
-        </button>
-        <button class="item" (click)="goToHistoricoReceitas()" tabindex="0">
-          <i class="fa fa-file-text"></i>
-          <span>Histórico de Receitas</span>
-        </button>
-        <button class="item" (click)="goToPacientes()" tabindex="0">
-          <i class="fa fa-users"></i>
-          <span>Pacientes</span>
-        </button>
-        <button class="item" (click)="goToAreaVet()" tabindex="0">
-          <i class="fa fa-stethoscope"></i>
-          <span>Área do Veterinário</span>
-        </button>
-        <button class="item" (click)="goToLoja()" tabindex="0">
-          <i class="fa fa-shopping-bag"></i>
-          <span>Loja</span>
-        </button>
-      </div>
-    </section>
+    <!-- Atalhos removidos conforme solicitado -->
 
   </div>
+
+  <footer class="admin-footer">
+    <div class="admin-footer-inner">©2026. | Designed By: xxprz. | All rights reserved.</div>
+  </footer>
+
+</div>

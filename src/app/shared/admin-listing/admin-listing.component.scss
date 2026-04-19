@@ -1,0 +1,33 @@
+.admin-listing { }
+
+.admin-listing .page-header { display:flex; align-items:center; gap:12px; }
+.admin-listing .page-header .title { font-size:1.25rem; font-weight:700; }
+.admin-listing .actions { display:flex; align-items:center; gap:12px; width:100%; }
+.admin-listing .action-buttons { margin-left:auto; display:flex; gap:8px; }
+.admin-listing .table-wrap { margin-top:12px; }
+.admin-listing .detail-wrap { margin-top:18px; }
+.admin-listing .pagination-wrap { margin-top:12px; display:flex; justify-content:flex-end; }
+
+/* Table width and alignment rules (override defaults so tables fill container) */
+.admin-listing .table {
+	width: 100% !important;
+	border-collapse: collapse;
+	table-layout: fixed;
+	min-width: 0;
+}
+.admin-listing .table th,
+.admin-listing .table td {
+	padding: 10px 12px;
+	text-align: left;
+	vertical-align: middle;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.admin-listing .table th.align-center,
+.admin-listing .table td.align-center { text-align: center; }
+.admin-listing .table th.align-right,
+.admin-listing .table td.align-right { text-align: right; }
+.admin-listing .table .col-name { width: 40%; min-width: 160px; }
+.admin-listing .table .col-status { width: 18%; min-width: 90px; text-align: center; }
+.admin-listing .table .col-actions { width: 120px; min-width: 100px; text-align: right; }

@@ -1,0 +1,6 @@
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:10px}
+.pager.numbered{justify-content:center;gap:8px;flex-wrap:wrap}
+.pager.numbered .btn{min-width:36px;padding:6px 8px}
+.pager.numbered .btn.active{background:#0db8de;color:#05222b;border-color:rgba(13,184,222,.5)}
+.pager.numbered .ellipsis{color:#9aa4b2;padding:0 6px}
+.pager.compact{justify-content:flex-end}

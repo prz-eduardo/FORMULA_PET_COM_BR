@@ -1,0 +1,25 @@
+<div class="admin-listing" [class.loading]="loading">
+  <header class="page-header">
+    <div class="title">
+      <ng-content select="[slot=title]"></ng-content>
+    </div>
+    <div class="actions">
+      <ng-content select="[slot=search]"></ng-content>
+      <div class="action-buttons">
+        <ng-content select="[slot=actions]"></ng-content>
+      </div>
+    </div>
+  </header>
+
+  <div class="table-wrap">
+    <ng-content select="[slot=table]"></ng-content>
+  </div>
+
+  <div class="detail-wrap">
+    <ng-content select="[slot=detail]"></ng-content>
+  </div>
+
+  <div class="pagination-wrap">
+    <ng-content select="[slot=pagination]"></ng-content>
+  </div>
+</div>

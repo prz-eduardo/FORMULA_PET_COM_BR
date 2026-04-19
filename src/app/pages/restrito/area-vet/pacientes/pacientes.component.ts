@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService, PacienteSummary, PagedPacientesResponse } from '../../../../services/api.service';
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
+import { AdminPaginationComponent } from '../../admin/shared/admin-pagination/admin-pagination.component';
 
 @Component({
   standalone: true,
   selector: 'app-pacientes',
-  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, AdminPaginationComponent],
   templateUrl: './pacientes.component.html',
   styleUrls: ['./pacientes.component.scss']
 })
