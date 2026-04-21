@@ -3,3 +3,21 @@
 /* Keep drawer content visually aligned with admin surfaces */
 .admin-crud .drawer-head { margin-bottom: 12px; display:flex; align-items:center; justify-content:space-between }
 .admin-crud .drawer-actions { display:flex; gap:10px; margin-top:12px }
+
+/* Standardize form field layout: label above control */
+.admin-crud .field { margin-bottom: 10px; }
+.admin-crud .field > label { display:block; margin-bottom:6px; font-weight:600; font-size:0.95rem; }
+.admin-crud .field .control input,
+.admin-crud .field .control select,
+.admin-crud .field .control textarea { width:100%; box-sizing:border-box; padding:8px; border:1px solid #e0e0e0; border-radius:4px; }
+.admin-crud .field .control input[type='checkbox'] { width:auto; }
+
+/* Small toggle switch used in drawer header */
+.admin-crud .switch { display:inline-block; width:40px; height:22px; border-radius:22px; background:#eee; border:1px solid #ddd; position:relative; vertical-align:middle; cursor:pointer }
+.admin-crud .switch::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:left .12s ease; }
+.admin-crud .switch.on { background:#2ecc71; border-color:#27ae60 }
+.admin-crud .switch.on::after { left:20px; }
+
+/* Active radio cell (read-only) */
+.admin-crud .active-cell { display:flex; align-items:center; justify-content:center; gap:8px; }
+.admin-crud .switch.readonly { pointer-events: none; cursor: default; }

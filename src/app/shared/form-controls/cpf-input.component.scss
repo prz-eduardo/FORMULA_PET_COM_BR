@@ -1,0 +1,21 @@
+.cpf-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.08));
+  background: var(--admin-card, rgba(255,255,255,0.02));
+  color: var(--admin-text, #e5ecf5);
+  outline: none;
+  transition: box-shadow .18s ease, border-color .18s ease;
+  font-size: 14px;
+}
+.cpf-input:focus {
+  border-color: rgba(13,184,222,.45);
+  box-shadow: 0 0 0 3px rgba(13,184,222,.12);
+}
+.cpf-input::placeholder { color: var(--admin-muted, rgba(159,176,195,0.6)); }
+.error {
+  color: var(--admin-danger, #ef4444);
+  font-size: 0.85em;
+  margin-top: 4px;
+}

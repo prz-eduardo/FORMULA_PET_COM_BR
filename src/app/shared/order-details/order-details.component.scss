@@ -1,0 +1,167 @@
+.order-details { padding: 18px; font-size: 14px; color: #d6e2ea; box-sizing: border-box; max-width: 100%; }
+.order-details .head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.order-details .head .title h3 { margin:0; font-size:20px; }
+.order-details .actions button { margin-left:8px; }
+.items-list { list-style:none; padding:0; margin:8px 0; }
+.items-list li { padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.items-list .it-name { font-weight:700; color:#fff; }
+.totals { margin-top:12px; }
+.totals .grand { margin-top:6px; font-size:16px; }
+.raw { background:rgba(255,255,255,0.02); padding:8px; max-height:200px; overflow:auto; }
+
+.status-row { display:flex; gap:12px; align-items:center; margin:12px 0; flex-wrap:wrap; }
+.status-badge { background: rgba(255,255,255,0.06); color: #bfe6ff; padding:6px 10px; border-radius:8px; font-weight:600; }
+.status-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+.status-buttons .btn.small[disabled] { opacity:0.5; }
+.current-status { font-size:14px; color:#cfeffb; }
+.cliente-foto { width:56px; height:56px; object-fit:cover; border-radius:6px; margin-right:8px; }
+
+/* Stepper styles */
+.status-stepper { display:flex; gap:10px; align-items:center; margin-right:12px; flex-wrap:wrap; justify-content:center; }
+.status-stepper .step { display:flex; }
+.status-stepper .seg { display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 8px; border-radius:6px; cursor:default; }
+.status-stepper .seg .dot { width:28px; height:28px; border-radius:50%; background: rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; font-weight:700; }
+.status-stepper .seg.done .dot { background: #2ecc71; color: #fff; }
+.status-stepper .seg.active .dot { box-shadow: 0 0 0 3px rgba(0,0,0,0.06); background: rgba(255,255,255,0.12); }
+.status-stepper .seg .lab { font-size:12px; color: rgba(214,226,234,0.8); white-space:nowrap; }
+.status-stepper .seg.clickable { cursor:pointer; }
+.status-stepper .seg.clickable:hover { transform: translateY(-2px); }
+
+.content-grid { display:grid; grid-template-columns: 1fr; gap:18px; align-items:start; justify-items: center; width: 100%; }
+.left { width: 100%; }
+.right { width: 100%; }
+
+/* Make the right column scrollable when its content grows too tall. Adjusts for drawer/header space. */
+.right {
+	max-height: calc(100vh - 220px);
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	padding-right: 8px;
+}
+.it-row { display:flex; gap:12px; align-items:flex-start; min-width: 0; }
+.it-img { width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.04); }
+.it-main { min-width: 0; }
+.it-main .it-name { font-weight:700; color:#ffffff; overflow-wrap:anywhere; word-break:break-word; }
+.it-meta { color: rgba(214,226,234,0.7); font-size:13px; margin-top:4px; }
+.it-desc { margin-top:6px; color: rgba(214,226,234,0.6); font-size:13px; }
+
+.card { background: rgba(12,18,22,0.7); border:1px solid rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-bottom:12px; color: #d6e2ea; box-sizing: border-box; width: 100%; }
+.card h4 { margin:0 0 8px 0; color:#cfeffb; }
+.segment { margin-bottom:14px; }
+.segment-title { font-size:15px; margin:0 0 8px 0; color:#cfeffb; }
+.segment-body { padding:6px 0; color: rgba(214,226,234,0.9); }
+
+/* Items card / accordion */
+.items-card { padding: 10px; }
+.items-card .card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.items-card .card-actions { display:flex; gap:8px; }
+.items-grid { display:flex; flex-direction:column; gap:8px; width:100%; }
+.item-card { padding:10px; display:flex; align-items:flex-start; gap:12px; width:100%; box-sizing:border-box; }
+.item-card .thumb { flex: 0 0 56px; }
+.item-card .it-img { width:56px; height:56px; border-radius:6px; object-fit:cover; }
+.item-body { flex: 1 1 auto; min-width: 0; }
+.item-top { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+.it-sub { color: rgba(214,226,234,0.85); font-weight:700; }
+.item-bottom { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
+.item-card .it-name { font-weight:700; color:inherit; overflow-wrap:anywhere; max-width: calc(100% - 120px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Center and stack meta row content when drawer is single-column */
+.meta-row { display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:12px; }
+.meta-row .meta-info { text-align:center; }
+.meta-row .meta-actions { display:flex; gap:8px; justify-content:center; }
+
+/* Banner shown when an order is cancelled */
+.cancelled-banner {
+	background: rgba(229,57,53,0.06);
+	color: #e53935;
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-weight: 700;
+}
+
+
+.cliente-header { display:flex; align-items:center; }
+.cliente-info { display:flex; flex-direction:column; }
+.cliente-name { font-weight:700; color:#fff; }
+.cliente-email { font-size:13px; color: rgba(214,226,234,0.8); }
+.cliente-cpf { font-size:13px; color: rgba(214,226,234,0.75); }
+
+/* Clickable card head */
+.card-head--clickable { display:flex; align-items:center; justify-content:space-between; padding:10px; border-radius:8px; background: rgba(255,255,255,0.01); cursor:pointer; }
+.card-head--clickable:hover { background: rgba(255,255,255,0.02); }
+.card-head--clickable .segment-title { margin:0; color: var(--admin-primary); font-weight:700; }
+.card-body { padding: 8px 10px 12px 10px; }
+.chev { color: rgba(214,226,234,0.7); transition: transform .18s ease; transform: rotate(0deg); }
+.chev.open { transform: rotate(180deg); }
+
+/* Payments list */
+.payments-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.payment-item { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:8px; border-radius:8px; }
+.payment-left { display:flex; flex-direction:column; }
+.payment-right { display:flex; flex-direction:column; align-items:flex-end; }
+
+/* Totals lines spacing */
+.tot-line { margin-bottom:6px; }
+
+.shipping-name { font-weight:600; }
+.shipping-price { color: rgba(214,226,234,0.8); font-weight:500; }
+
+.payment-row { display:flex; gap:8px; align-items:center; justify-content:space-between; color: rgba(214,226,234,0.9); }
+.payment-method { font-weight:600; }
+.payment-status { font-size:13px; color: rgba(214,226,234,0.75); }
+.payment-amount { font-weight:700; }
+.payment-ref { color: rgba(214,226,234,0.7); font-size:13px; }
+
+.compact-row { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:8px 0; }
+.compact-left .small-title { color:#cfeffb; font-weight:700; }
+.compact-client { font-weight:600; }
+.compact-email { color:rgba(214,226,234,0.75); font-size:13px; }
+.compact-right { text-align:right; }
+
+@media (max-width: 1000px) {
+	.content-grid { grid-template-columns: 1fr; }
+	.right { order: 2; max-height: none; overflow: visible; padding-right: 0; }
+}
+:host-context(html.force-light) {
+	.content-grid { display:grid; grid-template-columns: 1fr; gap:16px; align-items:start; justify-items: center; width: 100%; }
+	.left { width: 100%; }
+	.right { width: 100%; }
+	.it-row { display:flex; gap:12px; align-items:flex-start; }
+	.it-img { width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid rgba(0,0,0,0.06); }
+	.it-main .it-name { font-weight:700; }
+	.it-meta { color: rgba(0,0,0,0.6); font-size:13px; margin-top:4px; }
+	.it-desc { margin-top:6px; color: rgba(0,0,0,0.65); font-size:13px; }
+
+	.card { background:#fff; border:1px solid rgba(0,0,0,0.04); padding:12px; border-radius:8px; margin-bottom:12px; box-sizing: border-box; width: 100%; }
+	.card h4 { margin:0 0 8px 0; }
+
+	.cliente-header { display:flex; align-items:center; }
+	.cliente-info { display:flex; flex-direction:column; }
+	.cliente-name { font-weight:700; }
+	.drawer-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+	.cliente-email { font-size:13px; color: rgba(0,0,0,0.7); }
+	.cliente-cpf { font-size:13px; color: rgba(0,0,0,0.65); }
+
+	.shipping-name { font-weight:600; }
+	.shipping-price { color: rgba(0,0,0,0.55); font-weight:500; }
+
+	.payment-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+	.payment-method { font-weight:600; }
+	.payment-status { font-size:13px; color: rgba(0,0,0,0.6); }
+	.payment-amount { font-weight:700; }
+	.payment-ref { color: rgba(0,0,0,0.6); font-size:13px; }
+}
+/* Ensure cards inside the admin side-drawer keep dark styling */
+.sd-overlay .drawer .order-details .card {
+	background: rgba(12,18,22,0.7) !important;
+	border: 1px solid rgba(255,255,255,0.03) !important;
+	color: #d6e2ea !important;
+}
+/* Ensure key text inside the admin drawer remains legible on dark background */
+.sd-overlay .drawer .order-details .cliente-email,
+.sd-overlay .drawer .order-details .cliente-cpf,
+.sd-overlay .drawer .order-details .it-meta,
+.sd-overlay .drawer .order-details .it-desc,
+.sd-overlay .drawer .order-details .item-card .it-name {
+    color: #d6e2ea !important;
+}

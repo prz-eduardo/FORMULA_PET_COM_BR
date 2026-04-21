@@ -1,7 +1,6 @@
 <div class="admin-wrapper animate-fade">
-  <div class="admin-header">
-    <h1>ADMIN PANEL <small *ngIf="isSuper" class="badge-super">SUPER</small></h1>
-    <div class="header-actions">
+  <app-admin-header [title]="headerTitle" [isSuper]="isSuper">
+    <div header-actions>
       <div class="command" [class.open]="showUserMenu">
         <button class="btn-command" (click)="toggleUserMenu()" aria-haspopup="menu" [attr.aria-expanded]="showUserMenu">
           <i class="fa fa-user-circle"></i>
@@ -14,8 +13,10 @@
         </div>
       </div>
     </div>
-  </div>
+  </app-admin-header>
 
+
+  <app-admin-notification></app-admin-notification>
   <router-outlet></router-outlet>
 
   <div *ngIf="isRootView" class="admin-actions">

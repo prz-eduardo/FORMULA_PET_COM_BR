@@ -17,14 +17,18 @@
           <tr *ngFor="let r of rows()">
             <td>{{ r.id }}</td>
             <td>{{ r.name }}</td>
-            <td><span [style.color]="(r.active ? '#22c55e' : '#f59e0b')">{{ r.active ? 'Ativa' : 'Inativa' }}</span></td>
+            <td>
+              <div class="active-cell">
+                <button class="switch readonly" [class.on]="r.active" disabled [attr.aria-pressed]="r.active" [attr.aria-label]="r.active ? 'Ativo' : 'Inativo'"></button>
+              </div>
+            </td>
             <td>
               <button class="btn secondary" (click)="editFormula(r)">Editar</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <div *ngIf="(rows()?.length || 0) === 0 && !loading()" class="empty">Nenhuma fórmula encontrada.</div>
+      <div *ngIf="(rows().length || 0) === 0 && !loading()" class="empty">Nenhuma fórmula encontrada.</div>
     </div>
 
         <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); loadRows()"></admin-pagination>
@@ -32,11 +36,7 @@
   <ng-template #loadingTpl><div class="empty">Carregando...</div></ng-template>
 
   <div slot="drawer">
-    <div *ngIf="step()===1">
-      <div class="drawer-head">
-        <h3>Cadastro de Fórmula</h3>
-        <div class="head-actions"><button class="btn secondary" (click)="step.set(0)">Fechar</button></div>
-      </div>
+    <div class="drawer-content" [hidden]="step() !== 1">
       <form [formGroup]="form">
         <div class="grid">
           <div class="field">

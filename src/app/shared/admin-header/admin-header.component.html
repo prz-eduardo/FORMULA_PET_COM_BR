@@ -1,0 +1,6 @@
+<div class="admin-header">
+  <h1>{{ title || 'ADMIN PANEL' }} <small *ngIf="isSuper" class="badge-super">SUPER</small></h1>
+  <div class="header-actions">
+    <ng-content select="[header-actions]"></ng-content>
+  </div>
+</div>

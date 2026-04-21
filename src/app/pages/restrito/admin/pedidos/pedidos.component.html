@@ -7,11 +7,14 @@
   [total]="total"
   [drawerOpen]="selected != null"
   (drawerOpenChange)="onDrawerOpenChange($event)"
+  [drawerFull]="drawerFull"
   (pageChange)="page = $event; load()"
   (edit)="openDetails($event)"
   (quickSearch)="onQuickSearch($event)"
   [useDefaultSearch]="true"
-  [searchPlaceholder]="'Buscar por ID/cliente'">
+  [searchPlaceholder]="'Buscar por ID/cliente'"
+  (customAction)="onCustomAction($event)">
+
 
   <div slot="title"><h2>Pedidos</h2></div>
 
@@ -19,29 +22,19 @@
 
   <div slot="drawer">
     <div *ngIf="selected">
-      <h3>Pedido #{{ selected?.id }}</h3>
-      <div>
-        <div>Status: <b>{{ selected?.status || '-' }}</b></div>
-        <div>Criado: <b>{{ selected?.created_at | date:'short' }}</b></div>
-      </div>
+      <app-order-details *ngIf="selected"
+        [order]="selected"
+        [mode]="drawerFull ? 'full' : 'compact'"
+        (expand)="onExpandDetails()"
+        (collapse)="onCollapseDetails()"
+        (statusChange)="setStatus($event)"
+        (cancel)="cancelarPedido()"
+        (close)="backToList()"
+      ></app-order-details>
 
-      <h4>Cliente</h4>
-      <div>Nome: <b>{{ selectedCliente?.nome || selected?.cliente_nome || '-' }}</b></div>
-      <div>Email: <b>{{ selectedCliente?.email || selected?.cliente_email || '-' }}</b></div>
-      <div>CPF: <b>{{ selectedCliente?.cpf || selected?.cliente_cpf || '-' }}</b></div>
+      <app-confirm-cancel-modal *ngIf="showCancelModal" (confirm)="confirmCancel($event)" (cancel)="showCancelModal = false"></app-confirm-cancel-modal>
 
-      <h4>Itens</h4>
-      <ul>
-        <li *ngFor="let it of (selected?.itens || selected?.raw_snapshot?.input?.itens || [])">
-          {{ it.nome || ('#' + (it.produto_id || it.id)) }} — Qtd: {{ it.quantidade || it.qtd || 1 }} — R$ {{ (it.preco_unit || it.valor_unitario || it.preco || 0) | number:'1.2-2' }}
-        </li>
-      </ul>
-
-      <div>
-        <button class="btn" (click)="backToList()">Fechar</button>
-        <button class="btn primary" *ngIf="(selected?.status || '').toLowerCase() === 'pago'" (click)="setStatus('em_preparo')">Aceitar</button>
-        <button class="btn danger" *ngIf="(selected?.status || '').toLowerCase() === 'pago'" (click)="cancelarPedido()">Cancelar</button>
-      </div>
+      <!-- Order edit removed: edit UI disabled per request -->
     </div>
   </div>
 

@@ -1,168 +1,110 @@
 <div class="fornec-wrap">
-  <div class="header">
-    <h2>Banners</h2>
-    <div class="filters">
-      <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, link…" />
-      <div class="fornec-wrap">
-        <app-admin-crud
-          [items]="items()"
-          [loading]="loading()"
-          [total]="total()"
-          [page]="page()"
-          [pageSize]="pageSize()"
-          [columns]="columns"
-          [drawerOpen]="showCreate() || !!selected()"
-          [drawerWidth]="'900px'"
-          (drawerOpenChange)="onDrawerOpenChange($event)"
-          (pageChange)="page.set($event); load()"
-          (edit)="onCrudEdit($event)"
-          (create)="onCrudCreate()"
-          (remove)="removeItem($event)"
-        >
-          <div slot="title">
-            <h2>Banners</h2>
-          </div>
+  <app-admin-crud
+    [items]="items()"
+    [loading]="loading()"
+    [total]="total()"
+    [page]="page()"
+    [pageSize]="pageSize()"
+    [columns]="columns"
+    [drawerOpen]="showCreate() || !!selected()"
+    [drawerWidth]="'520px'"
+    (drawerOpenChange)="onDrawerOpenChange($event)"
+    (pageChange)="page.set($event); load()"
+    (edit)="onCrudEdit($event)"
+    (create)="onCrudCreate()"
+    (remove)="removeItem($event)"
+    [formSchema]="bannerFormSchema"
+    (submit)="onSchemaSubmit($event)"
+  >
+    <div slot="title">
+      <h2>Banners</h2>
+    </div>
 
-          <div slot="search">
-            <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, link…" />
-            <select [value]="active()" (change)="onActive($event)">
-              <option value="all">Todos</option>
-              <option value="1">Ativos</option>
-              <option value="0">Inativos</option>
-            </select>
-          </div>
+    <div slot="actions">
+      <button class="primary" (click)="openCreate()">Novo</button>
+    </div>
 
-          <div slot="actions">
-            <button class="primary" (click)="openCreate()">Novo</button>
-          </div>
-
-          <div slot="drawer">
-            <div class="drawer">
-              <div class="drawer-head">
-                <h3 *ngIf="selected(); else createTitle">{{ selected()?.nome || 'Editar banner' }}</h3>
-                <ng-template #createTitle><h3>Novo banner</h3></ng-template>
-                <div class="head-actions">
-                  <button class="ghost" (click)="onCrudCancel()">Fechar</button>
-                </div>
-              </div>
-
-              <ng-container *ngIf="selected(); else createTpl">
-                <form [formGroup]="form" (ngSubmit)="save()" class="grid">
-                  <div><label>Nome</label><input formControlName="nome" /></div>
-                  <div><label>Link</label><input formControlName="link" /></div>
-                  <div><label>Alt</label><input formControlName="alt" /></div>
-                  <div><label>Posição</label>
-                    <select formControlName="posicao">
-                      <ng-container *ngFor="let p of positions">
-                        <option *ngIf="p.value !== 'home'" [value]="p.value">{{ p.label }}</option>
-                      </ng-container>
-                    </select>
-                  </div>
-                  <div><label>Ordem</label><input type="number" formControlName="ordem" /></div>
-                  <div><label>Início</label><input type="datetime-local" formControlName="inicio" /></div>
-                  <div><label>Fim</label><input type="datetime-local" formControlName="fim" /></div>
-                  <div>
-                    <label>Status</label>
-                    <select formControlName="ativo">
-                      <option [ngValue]="1">Ativo</option>
-                      <option [ngValue]="0">Inativo</option>
-                    </select>
-                  </div>
-
-                  <div class="colspan2 image-uploader">
-                    <label class="field-label">Imagem Desktop</label>
-                    <app-banner-image-editor
-                      #desktopEditorComp
-                      [expectedRatio]="desktopExpected"
-                      [initialImage]="desktopPreview()"
-                      (previewChange)="desktopPreview.set($event)"
-                      (fileChange)="desktopFile = $event"
-                      (warnChange)="desktopWarn.set($event)"
-                    ></app-banner-image-editor>
-                    <div *ngIf="desktopWarn()" class="warn">{{ desktopWarn() }}</div>
-                  </div>
-
-                  <div class="colspan2 image-uploader">
-                    <label class="field-label">Imagem Mobile</label>
-                    <app-banner-image-editor
-                      #mobileEditorComp
-                      [expectedRatio]="mobileExpected"
-                      [initialImage]="mobilePreview()"
-                      (previewChange)="mobilePreview.set($event)"
-                      (fileChange)="mobileFile = $event"
-                      (warnChange)="mobileWarn.set($event)"
-                    ></app-banner-image-editor>
-                    <div *ngIf="mobileWarn()" class="warn">{{ mobileWarn() }}</div>
-                  </div>
-
-                  <div class="drawer-actions">
-                    <button type="button" class="ghost" (click)="onCrudCancel()">Cancelar</button>
-                    <button type="submit" class="primary" [disabled]="form.invalid">Salvar</button>
-                  </div>
-                </form>
-              </ng-container>
-
-              <ng-template #createTpl>
-                <form [formGroup]="createForm" (ngSubmit)="create()" class="grid">
-                  <div><label>Nome</label><input formControlName="nome" /></div>
-                  <div><label>Link</label><input formControlName="link" /></div>
-                  <div><label>Alt</label><input formControlName="alt" /></div>
-                  <div><label>Posição</label>
-                    <select formControlName="posicao">
-                      <ng-container *ngFor="let p of positions">
-                        <option *ngIf="p.value !== 'home'" [value]="p.value">{{ p.label }}</option>
-                      </ng-container>
-                    </select>
-                  </div>
-                  <div><label>Ordem</label><input type="number" formControlName="ordem" /></div>
-                  <div><label>Início</label><input type="datetime-local" formControlName="inicio" /></div>
-                  <div><label>Fim</label><input type="datetime-local" formControlName="fim" /></div>
-                  <div>
-                    <label>Status</label>
-                    <select formControlName="ativo">
-                      <option [ngValue]="1">Ativo</option>
-                      <option [ngValue]="0">Inativo</option>
-                    </select>
-                  </div>
-
-                  <div class="colspan2 image-uploader">
-                    <label class="field-label">Imagem Desktop</label>
-                    <app-banner-image-editor
-                      #desktopEditorCreate
-                      [expectedRatio]="desktopExpected"
-                      [initialImage]="desktopPreview()"
-                      (previewChange)="desktopPreview.set($event)"
-                      (fileChange)="desktopFile = $event"
-                      (warnChange)="desktopWarn.set($event)"
-                    ></app-banner-image-editor>
-                    <div *ngIf="desktopWarn()" class="warn">{{ desktopWarn() }}</div>
-                  </div>
-
-                  <div class="colspan2 image-uploader">
-                    <label class="field-label">Imagem Mobile</label>
-                    <app-banner-image-editor
-                      #mobileEditorCreate
-                      [expectedRatio]="mobileExpected"
-                      [initialImage]="mobilePreview()"
-                      (previewChange)="mobilePreview.set($event)"
-                      (fileChange)="mobileFile = $event"
-                      (warnChange)="mobileWarn.set($event)"
-                    ></app-banner-image-editor>
-                    <div *ngIf="mobileWarn()" class="warn">{{ mobileWarn() }}</div>
-                  </div>
-
-                  <div class="drawer-actions">
-                    <button type="button" class="ghost" (click)="onCrudCancel()">Cancelar</button>
-                    <button type="submit" class="primary" [disabled]="createForm.invalid">Criar</button>
-                  </div>
-                </form>
-              </ng-template>
-
+    <div slot="drawer" *ngIf="selected() || showCreate()">
+        <div class="drawer-content">
+          <form [formGroup]="selected() ? form : createForm" (ngSubmit)="selected() ? save() : create()" class="admin-form-grid">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nome">Nome</label>
+              <input id="nome" formControlName="nome" class="basico-input" placeholder="Nome do banner" />
+            </div>
+            <div class="form-group">
+              <label for="link">Link</label>
+              <input id="link" formControlName="link" class="basico-input" placeholder="https://" />
             </div>
           </div>
-
-          <div slot="pagination">
-            <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="alt">Alt</label>
+              <input id="alt" formControlName="alt" class="basico-input" placeholder="Texto alternativo" />
+            </div>
+            <div class="form-group">
+              <label for="posicao">Posição</label>
+              <select id="posicao" formControlName="posicao" class="basico-input">
+                <option value="loja">Loja</option>
+              </select>
+            </div>
           </div>
-        </app-admin-crud>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ordem">Ordem</label>
+              <input id="ordem" type="number" formControlName="ordem" class="basico-input" min="1" />
+            </div>
+            <div class="form-group">
+              <label for="inicio">Início</label>
+              <input id="inicio" type="datetime-local" formControlName="inicio" class="basico-input" />
+            </div>
+            <div class="form-group">
+              <label for="fim">Fim</label>
+              <input id="fim" type="datetime-local" formControlName="fim" class="basico-input" />
+            </div>
+            <div class="form-group">
+              <label for="ativo">Status</label>
+              <select id="ativo" formControlName="ativo" class="basico-input">
+                <option [ngValue]="1">Ativo</option>
+                <option [ngValue]="0">Inativo</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>Banner Desktop (4:1)</label>
+              <div>
+                <ng-container *ngIf="!showCreate(); else createDesktopEditor">
+                  <app-banner-image-editor #desktopEditor [expectedRatio]="desktopExpected" [initialImage]="desktopPreviewUrl" (previewChange)="desktopPreviewUrl=$event" (fileChange)="desktopFile=$event" (warnChange)="desktopWarn.set($event)"></app-banner-image-editor>
+                </ng-container>
+                <ng-template #createDesktopEditor>
+                  <app-banner-image-editor #desktopEditorCreate [expectedRatio]="desktopExpected" [initialImage]="desktopPreviewUrl" (previewChange)="desktopPreviewUrl=$event" (fileChange)="desktopFile=$event" (warnChange)="desktopWarn.set($event)"></app-banner-image-editor>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>Banner Mobile (4:1)</label>
+              <div>
+                <ng-container *ngIf="!showCreate(); else createMobileEditor">
+                  <app-banner-image-editor #mobileEditor [expectedRatio]="mobileExpected" [initialImage]="mobilePreviewUrl" (previewChange)="mobilePreviewUrl=$event" (fileChange)="mobileFile=$event" (warnChange)="mobileWarn.set($event)"></app-banner-image-editor>
+                </ng-container>
+                <ng-template #createMobileEditor>
+                  <app-banner-image-editor #mobileEditorCreate [expectedRatio]="mobileExpected" [initialImage]="mobilePreviewUrl" (previewChange)="mobilePreviewUrl=$event" (fileChange)="mobileFile=$event" (warnChange)="mobileWarn.set($event)"></app-banner-image-editor>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-actions">
+            <button type="button" class="ghost" (click)="onCrudCancel()">Cancelar</button>
+            <button type="submit" class="primary" [disabled]="(selected() ? form : createForm).invalid">{{ selected() ? 'Salvar' : 'Criar' }}</button>
+          </div>
+        </form>
       </div>
+    </div>
+
+    <div slot="pagination">
+      <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
+    </div>
+  </app-admin-crud>

@@ -4,18 +4,43 @@ import { FormsModule } from '@angular/forms';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
 import { ButtonDirective } from '../../../../shared/button';
 import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
+import { OrderDetailsComponent } from '../../../../shared/order-details/order-details.component';
+import { ConfirmCancelModalComponent } from '../../../../shared/confirm-cancel-modal/confirm-cancel-modal.component';
 import { ApiService } from '../../../../services/api.service';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../../../../services/session.service';
+import { OrderService } from '../../../../services/order.service';
+import { normalizeOrder, extractCliente, extractShipping } from '../../../../shared/order-utils';
+import { getNextStatus } from '../../../../constants/order-status.constants';
 
 @Component({
   selector: 'app-admin-pedidos',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminPaginationComponent, ButtonDirective, AdminCrudComponent],
+  imports: [CommonModule, FormsModule, AdminPaginationComponent, ButtonDirective, AdminCrudComponent, OrderDetailsComponent, ConfirmCancelModalComponent],
+  
   templateUrl: './pedidos.component.html',
   styleUrls: ['./pedidos.component.scss']
 })
 export class AdminPedidosComponent implements OnInit {
+  // ...existing properties...
+
+  // Ação rápida de status
+  onCustomAction(evt: {action: string, item: any}) {
+    if (!evt || !evt.action || !evt.item) return;
+    this.selectedId = evt.item.id;
+    if (evt.action === 'advance') {
+      this.handleAdvanceStatus(evt.item);
+    } else if (evt.action === 'cancel') {
+      this.cancelarPedido();
+    }
+  }
+
+  // Avança o status do pedido conforme o atual
+  async handleAdvanceStatus(item: any) {
+    const next = getNextStatus(item?.status || null);
+    if (next) await this.setStatus(next);
+    this.load();
+  }
   // filters
   q = '';
   status = '';
@@ -29,13 +54,16 @@ export class AdminPedidosComponent implements OnInit {
   summary: Record<string, number> = {};
 
   // selection/state
-  view: 'list' | 'details' | 'payments' | 'shipping' | 'invoices' = 'list';
+  view: 'list' | 'details' | 'payments' | 'shipping' | 'invoices' | 'edit' = 'list';
   selected: any | null = null;
   selectedId: number | null = null;
+  // drawer full-screen state
+  drawerFull = false;
   // derived details
   selectedCliente: { nome?: string|null; email?: string|null; cpf?: string|null; id?: string|number|null } | null = null;
   selectedFrete: any = null;
   shippingOptions: any[] = [];
+  showCancelModal: boolean = false;
 
   // Columns for admin CRUD table
   ordersColumns = [
@@ -47,7 +75,7 @@ export class AdminPedidosComponent implements OnInit {
     { key: 'total_liquido', label: 'Total', width: '110px' }
   ];
 
-  constructor(private api: ApiService, private session: SessionService, private http: HttpClient) {}
+  constructor(private api: ApiService, private session: SessionService, private http: HttpClient, private orderService: OrderService) {}
 
   ngOnInit(): void {
     this.fetchSummary();
@@ -98,10 +126,13 @@ export class AdminPedidosComponent implements OnInit {
       this.selected = await this.http.get(url, { headers }).toPromise() as any;
       this.view = 'details';
       this.resolveDerived();
+      // ensure drawer starts in compact mode
+      this.drawerFull = false;
     } catch {
       this.selected = o || null;
       // drawer will open via binding
       this.resolveDerived();
+      this.drawerFull = false;
     }
   }
   openPayments(o: any) { this.selected = o; this.view = 'payments'; }
@@ -126,65 +157,52 @@ export class AdminPedidosComponent implements OnInit {
   }
 
   private resolveDerived() {
-    const o = this.selected || {};
-    this.selectedCliente = this.extractCliente(o);
-    const ship = this.extractShipping(o);
+    if (!this.selected) {
+      this.selectedCliente = null;
+      this.selectedFrete = null;
+      this.shippingOptions = [];
+      return;
+    }
+    this.selected = normalizeOrder(this.selected || {});
+    this.selectedCliente = extractCliente(this.selected);
+    const ship = extractShipping(this.selected);
     this.selectedFrete = ship.frete;
     this.shippingOptions = ship.opcoes || [];
   }
 
-  private extractCliente(o: any) {
-    const top = {
-      nome: o?.cliente_nome ?? null,
-      email: o?.cliente_email ?? null,
-      cpf: o?.cliente_cpf ?? null,
-      id: o?.cliente_id ?? null,
-    };
-    const rs = o?.raw_snapshot || {};
-    const candidate = rs?.cliente || rs?.customer || rs?.input?.cliente || rs?.input?.customer || rs?.input?.cliente_dados || rs?.input?.dados_cliente || rs?.input?.user || rs?.user || {};
-    // Direct fields possibly present at snapshot level
-    const rsNome = rs?.input?.cliente_nome || rs?.cliente_nome || rs?.input?.nome || rs?.nome || null;
-    const rsEmail = rs?.input?.cliente_email || rs?.cliente_email || rs?.input?.email || rs?.email || null;
-    const rsCpf = rs?.input?.cliente_cpf || rs?.cliente_cpf || rs?.input?.cpf || rs?.cpf || null;
-    const rp = o?.raw_payment || {};
-    const payer = rp?.payer || rp?.pagador || rp?.customer || {};
-    const payerFirst = payer.first_name || payer.given_name || null;
-    const payerLast = payer.last_name || payer.surname || null;
-    const payerName = payer.name || payer.full_name || [payerFirst, payerLast].filter(Boolean).join(' ').trim() || null;
-    return {
-      nome: top.nome || candidate.nome || candidate.name || rsNome || payerName || null,
-      email: top.email || candidate.email || rsEmail || payer.email || null,
-      cpf: top.cpf || candidate.cpf || candidate.documento || candidate.document || candidate.tax_id || rsCpf || payer.cpf || payer.document || payer.tax_id || null,
-      id: top.id || candidate.id || null,
-    };
-  }
-
-  private extractShipping(o: any) {
-    const raw = o?.raw_shipping || {};
-    const frete = raw?.frete || (o?.frete_valor != null ? { nome: 'Frete', valor: o.frete_valor } : null);
-    const opcoes = Array.isArray(raw?.opcoes) ? raw.opcoes : [];
-    return { frete, opcoes };
-  }
-
-  async setStatus(status: 'em_preparo' | 'enviado' | 'concluido') {
+  async setStatus(status: string) {
     if (!this.selectedId) return;
-    const base = this.session.getBackendBaseUrl();
-    const headers = this.session.getAuthHeaders();
-    const url = `${base}/admin/orders/${this.selectedId}/status`;
-    const resp = await this.http.post(url, { status }, { headers }).toPromise() as any;
+    const resp = await this.orderService.setStatus(this.selectedId, status).toPromise() as any;
     this.selected = resp;
     this.resolveDerived();
   }
 
   async cancelarPedido() {
     if (!this.selectedId) return;
-    const motivo = window.prompt('Informe o motivo do cancelamento (opcional):') || '';
-    const base = this.session.getBackendBaseUrl();
-    const headers = this.session.getAuthHeaders();
-    const url = `${base}/admin/orders/${this.selectedId}/cancelar`;
-    const resp = await this.http.post(url, { motivo }, { headers }).toPromise() as any;
+    this.showCancelModal = true;
+  }
+
+  async confirmCancel(motivo: string) {
+    if (!this.selectedId) return;
+    const resp = await this.orderService.cancel(this.selectedId, motivo).toPromise() as any;
     this.selected = resp;
     this.resolveDerived();
+    this.showCancelModal = false;
+  }
+
+  async saveOrder(payload: any) {
+    if (!this.selectedId) return;
+    this.loading = true;
+    try {
+      const base = this.session.getBackendBaseUrl();
+      const headers = this.session.getAuthHeaders();
+      const url = `${base}/admin/orders/${this.selectedId}`;
+      const resp = await this.http.put(url, payload, { headers }).toPromise() as any;
+      this.selected = resp;
+      this.resolveDerived();
+      this.view = 'details';
+      this.load();
+    } finally { this.loading = false; }
   }
 
   onQuickSearch(q: string) {
@@ -197,6 +215,10 @@ export class AdminPedidosComponent implements OnInit {
     if (!open) {
       this.selected = null;
       this.selectedId = null;
+      this.drawerFull = false;
     }
   }
+
+  onExpandDetails() { this.drawerFull = true; }
+  onCollapseDetails() { this.drawerFull = false; }
 }

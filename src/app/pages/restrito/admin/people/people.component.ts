@@ -39,6 +39,21 @@ export class PeopleAdminComponent implements OnInit {
   showCreate = signal(false);
   createForm!: FormGroup;
 
+  // admin-specific options
+  areasList = [
+    { key: 'pedidos', label: 'Pedidos' },
+    { key: 'produtos', label: 'Produtos' },
+    { key: 'promocoes', label: 'Promoções' },
+    { key: 'banners', label: 'Banners' },
+    { key: 'ativos', label: 'Ativos' }
+  ];
+
+  roleOptions = [
+    { value: 'super', label: 'Super' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'funcionario', label: 'Funcionário' }
+  ];
+
   // filtros avançados
   status = signal<'all' | '1' | '0'>('all');
   verification = signal<'all' | 'pending' | 'approved' | 'rejected'>('all');
@@ -166,7 +181,9 @@ export class PeopleAdminComponent implements OnInit {
       city: [u.city || ''],
       uf: [u.uf || ''],
       cpf: [u.cpf || ''],
-      crmv: [u.crmv || '']
+      crmv: [u.crmv || ''],
+      role: [(u as any).role || ''],
+      areas: [(u as any).areas || []]
     });
     const id = (u.id ?? (u as any).uid) as any;
     if (id) {
@@ -205,7 +222,7 @@ export class PeopleAdminComponent implements OnInit {
     // Map aliases to backend field names
     if ('name' in payload) { payload.nome = payload.name; delete payload.name; }
     if ('phone' in payload) { payload.telefone = payload.phone; delete payload.phone; }
-    const update$ = this.api.updatePerson ? this.api.updatePerson(id, tipo, payload) : this.api.updateUsuario(id, this.form.value);
+    const update$ = this.api.updatePerson ? this.api.updatePerson(id, tipo, payload) : this.api.updateUsuario(id, payload as any);
     update$.subscribe(() => {
       const arr = this.items().map(x => (x.id === id || (x as any).uid === id) ? { ...x, ...this.form.value } : x);
       this.items.set(arr);
@@ -299,7 +316,10 @@ export class PeopleAdminComponent implements OnInit {
       phone: [''],
       senha: [''],
       ativo: [1],
-      approved: [this.tipo === 'vet' ? 0 : 1]
+      approved: [this.tipo === 'vet' ? 0 : 1],
+      // admin-specific
+      role: [this.tipo === 'admin' ? 'funcionario' : ''],
+      areas: [[]]
     });
   }
   openCreate() { this.showCreate.set(true); this.initCreateForm(); }
@@ -313,6 +333,9 @@ export class PeopleAdminComponent implements OnInit {
     if (v.crmv) body.crmv = v.crmv;
     if (v.phone) body.telefone = v.phone;
     if (v.senha) body.senha = v.senha;
+    // include admin-specific fields when present
+    if (v.role) body.role = v.role;
+    if (Array.isArray(v.areas) && v.areas.length) body.areas = v.areas;
     if (tipo === 'vet') body.approved = Number(v.approved) || 0; else body.ativo = Number(v.ativo) || 1;
     this.api.createPerson(body).subscribe(created => {
       this.showCreate.set(false);
@@ -320,6 +343,22 @@ export class PeopleAdminComponent implements OnInit {
       this.load();
       setTimeout(() => this.view(created as any), 0);
     });
+  }
+  toggleCreateArea(ev: Event, key: string) {
+    const input = ev.target as HTMLInputElement;
+    const ctrl = this.createForm.get('areas');
+    const arr = Array.isArray(ctrl?.value) ? [...(ctrl?.value as any[])] : [];
+    if (input.checked) { if (!arr.includes(key)) arr.push(key); }
+    else { const i = arr.indexOf(key); if (i >= 0) arr.splice(i, 1); }
+    ctrl?.setValue(arr);
+  }
+  toggleEditArea(ev: Event, key: string) {
+    const input = ev.target as HTMLInputElement;
+    const ctrl = this.form.get('areas');
+    const arr = Array.isArray(ctrl?.value) ? [...(ctrl?.value as any[])] : [];
+    if (input.checked) { if (!arr.includes(key)) arr.push(key); }
+    else { const i = arr.indexOf(key); if (i >= 0) arr.splice(i, 1); }
+    ctrl?.setValue(arr);
   }
   removeSelected() {
     const s = this.selected();

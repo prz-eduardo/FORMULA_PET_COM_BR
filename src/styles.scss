@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
+@import 'app/shared/styles/form-layout';
 html, body{
     margin: 0;
     padding: 0;
@@ -397,6 +398,23 @@ a, button, input, textarea, select {
     border-radius: 10px;
     border: 3px solid rgba(255,255,255,0.03); /* padding around thumb for a softer look */
 }
+
+/* Force dark card appearance inside admin side-drawer to avoid conflicting white card rules */
+.sd-overlay .drawer .card,
+.create-drawer.sd-overlay .drawer .card,
+.sd-overlay .drawer .order-details .card {
+    background: var(--admin-card) !important;
+    border: 1px solid var(--admin-border) !important;
+    color: var(--admin-text) !important;
+    box-shadow: none !important;
+}
+
+/* Ensure item-card (inner cards) also inherit dark background */
+.sd-overlay .drawer .order-details .item-card {
+    background: var(--admin-card) !important;
+    border: 1px solid var(--admin-border) !important;
+    color: var(--admin-text) !important;
+}
 ::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, rgba(10,10,10,0.26), rgba(10,10,10,0.4));
 }
@@ -697,3 +715,137 @@ html.force-light *, body.force-light * {
     forced-color-adjust: none !important;
     filter: none !important;
 }
+
+/* -------------------------------------------------------------------------
+   Global drawer form control styles
+   Ensure any inputs, selects, textareas or custom form components placed
+   inside the side-drawer receive a consistent admin style regardless of
+   whether they are implemented as native inputs or as custom components
+   (e.g., <app-cpf-input>, <app-entity-lookup>, etc.). These rules are
+   global (in `styles.scss`) so they apply to projected content.
+   ---------------------------------------------------------------------- */
+.sd-overlay .drawer input:not([type="checkbox"]):not([type="hidden"]),
+.sd-overlay .drawer select,
+.sd-overlay .drawer textarea,
+.sd-overlay .drawer app-cpf-input,
+.sd-overlay .drawer app-entity-lookup,
+.sd-overlay .drawer app-entity-lookup input,
+.sd-overlay .drawer app-entity-lookup .search-input,
+.sd-overlay .drawer .control input,
+.sd-overlay .drawer .control select,
+.sd-overlay .drawer .control textarea {
+    appearance: none;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border, rgba(255,255,255,0.08));
+    background: var(--admin-card, rgba(255,255,255,0.02));
+    color: var(--admin-text, #e5ecf5);
+    outline: none;
+    transition: box-shadow .18s ease, border-color .18s ease;
+    box-sizing: border-box;
+}
+
+.sd-overlay .drawer input::placeholder,
+.sd-overlay .drawer textarea::placeholder,
+.sd-overlay .drawer select::placeholder,
+.sd-overlay .drawer app-cpf-input::placeholder {
+    color: var(--admin-muted, rgba(159,176,195,0.6));
+}
+
+.sd-overlay .drawer input:focus,
+.sd-overlay .drawer select:focus,
+.sd-overlay .drawer textarea:focus,
+.sd-overlay .drawer app-cpf-input:focus-within,
+.sd-overlay .drawer app-entity-lookup:focus-within {
+    border-color: rgba(13,184,222,.45);
+    box-shadow: 0 0 0 3px rgba(13,184,222,.12);
+}
+
+.sd-overlay .drawer label {
+    font-size: 0.9rem;
+    color: var(--admin-muted, rgba(229,236,245,0.6));
+    font-weight: 600;
+    display: block;
+}
+
+.sd-overlay .drawer .field { margin-bottom: 10px; }
+.sd-overlay .drawer app-cpf-input { display: block; width: 100%; }
+.sd-overlay .drawer app-entity-lookup { display: block; width: 100%; }
+
+/* Keep checkboxes native but align spacing */
+.sd-overlay .drawer input[type="checkbox"] { margin-right: 8px; }
+
+/* Actions row alignment inside projected forms */
+.sd-overlay .drawer .drawer-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+
+/* -------------------------------------------------------------------------
+   Drawer & global buttons: base + variants
+   These ensure any buttons inside the drawer (projected content or
+   component-local) look consistent with the admin theme.
+   ---------------------------------------------------------------------- */
+.sd-overlay .drawer .btn,
+.sd-overlay .drawer button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border, rgba(255,255,255,0.08));
+    background: var(--admin-card, rgba(255,255,255,0.02));
+    color: var(--admin-text, #e5ecf5);
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
+    font-weight: 700;
+    text-align: center;
+}
+.sd-overlay .drawer .btn:hover,
+.sd-overlay .drawer button:hover { transform: translateY(-1px); background: rgba(255,255,255,0.035); }
+
+/* Primary / action */
+.sd-overlay .drawer .btn.primary,
+.sd-overlay .drawer button.primary {
+    background: var(--admin-primary);
+    color: #fff;
+    border-color: rgba(13,184,222,0.5);
+}
+.sd-overlay .drawer .btn.primary:hover,
+.sd-overlay .drawer button.primary:hover { filter: brightness(1.03); }
+
+/* Secondary / neutral */
+.sd-overlay .drawer .btn.secondary,
+.sd-overlay .drawer button.secondary {
+    background: #f8fafc;
+    color: var(--brand-ink);
+    border-color: rgba(0,0,0,0.06);
+}
+
+/* Danger */
+.sd-overlay .drawer .btn.danger,
+.sd-overlay .drawer button.danger {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+/* Small modifier */
+.sd-overlay .drawer .btn.small,
+.sd-overlay .drawer button.small { padding: 6px 8px; font-size: 0.875rem; border-radius: 8px; }
+
+/* Focus ring for keyboard users */
+.sd-overlay .drawer .btn:focus-visible,
+.sd-overlay .drawer button:focus-visible {
+    outline: 3px solid rgba(13,184,222,0.12);
+    outline-offset: 2px;
+}
+
+/* Ensure create-drawer panels are visually opaque and readable.
+   This overrides the very-low-alpha `--admin-card` used elsewhere
+   so the 'Novo' drawer doesn't look transparent on dark themes. */
+.create-drawer .drawer {
+    background: var(--admin-surface) !important;
+    color: var(--admin-text) !important;
+    box-shadow: 0 8px 36px rgba(2,6,23,0.55);
+    border-left: 1px solid rgba(255,255,255,0.03);
+}
+
+

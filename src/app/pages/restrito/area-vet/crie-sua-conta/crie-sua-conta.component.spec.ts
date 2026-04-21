@@ -1,6 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 
 import { CrieSuaContaComponent } from './crie-sua-conta.component';
 
@@ -10,7 +8,7 @@ describe('CrieSuaContaComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CrieSuaContaComponent, HttpClientTestingModule, RouterTestingModule]
+      imports: [CrieSuaContaComponent]
     })
     .compileComponents();
 

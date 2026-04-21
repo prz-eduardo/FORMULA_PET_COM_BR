@@ -80,10 +80,6 @@
 
   <div class="create-drawer" *ngIf="showCreate()">
     <div class="drawer">
-      <div class="drawer-head">
-        <h3>Novo parceiro</h3>
-        <button class="ghost" (click)="cancelCreate()">Fechar</button>
-      </div>
       <form [formGroup]="createForm" (ngSubmit)="create()" class="grid">
         <div><label>Nome</label><input formControlName="nome" /></div>
         <div><label>CNPJ</label><input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'create')" /></div>

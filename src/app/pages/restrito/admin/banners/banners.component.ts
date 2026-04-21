@@ -8,6 +8,7 @@ import { SideDrawerComponent } from '../../../../shared/side-drawer/side-drawer.
 import { AdminApiService, BannerDto, Paged } from '../../../../services/admin-api.service';
 import { BannerImageEditorComponent } from '../../../../shared/banner-image-editor/banner-image-editor.component';
 import { AdminCrudComponent, ColumnDef } from '../../../../shared/admin-crud/admin-crud.component';
+import { FormSchema } from '../../../../shared/admin-crud/form-schema';
 
 @Component({
   selector: 'app-admin-banners',
@@ -17,6 +18,7 @@ import { AdminCrudComponent, ColumnDef } from '../../../../shared/admin-crud/adm
   styleUrls: ['./banners.component.scss']
 })
 export class BannersAdminComponent implements OnInit {
+  // image preview and drag/drop handlers implemented below
   q = signal('');
   active = signal<'all'|'1'|'0'>('all');
   page = signal(1);
@@ -31,32 +33,27 @@ export class BannersAdminComponent implements OnInit {
   showCreate = signal(false);
   createForm!: FormGroup;
 
-  desktopPreview = signal<string|null>(null);
-  mobilePreview = signal<string|null>(null);
+  // Preview simples e arquivos
+  desktopPreviewUrl: string | null = null;
+  mobilePreviewUrl: string | null = null;
   desktopFile: File | null = null;
   mobileFile: File | null = null;
-  desktopWarn = signal<string|null>(null);
-  mobileWarn = signal<string|null>(null);
-  // expected aspect ratios (width / height)
-  desktopExpected = 16 / 5;
-  mobileExpected = 16 / 9;
+  desktopWarn = signal<string | null>(null);
+  mobileWarn = signal<string | null>(null);
+  desktopExpected = 4;
+  mobileExpected = 4;
+  @ViewChild('desktopEditor') desktopEditorComp?: BannerImageEditorComponent | null;
+  @ViewChild('mobileEditor') mobileEditorComp?: BannerImageEditorComponent | null;
+  @ViewChild('desktopEditorCreate') desktopEditorCreateComp?: BannerImageEditorComponent | null;
+  @ViewChild('mobileEditorCreate') mobileEditorCreateComp?: BannerImageEditorComponent | null;
+  @ViewChild('desktopFrame') desktopFrame?: ElementRef | null;
+  @ViewChild('mobileFrame') mobileFrame?: ElementRef | null;
+  desktopEditor: any = { img: null, naturalWidth: 0, naturalHeight: 0, scale: 1, x: 0, y: 0, edited: false, dragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0 };
+  mobileEditor: any = { img: null, naturalWidth: 0, naturalHeight: 0, scale: 1, x: 0, y: 0, edited: false, dragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0 };
 
   positions = [
-    { value: 'home', label: 'Home' },
-    { value: 'loja', label: 'Loja' },
-    { value: 'topo', label: 'Topo' }
+    { value: 'loja', label: 'Loja' }
   ];
-
-  // Image editor state for pan/zoom
-  @ViewChild('desktopFrame', { static: false }) desktopFrame?: ElementRef<HTMLDivElement>;
-  @ViewChild('mobileFrame', { static: false }) mobileFrame?: ElementRef<HTMLDivElement>;
-  @ViewChild('desktopEditorComp', { static: false }) desktopEditorComp?: BannerImageEditorComponent;
-  @ViewChild('mobileEditorComp', { static: false }) mobileEditorComp?: BannerImageEditorComponent;
-  @ViewChild('desktopEditorCreate', { static: false }) desktopEditorCreateComp?: BannerImageEditorComponent;
-  @ViewChild('mobileEditorCreate', { static: false }) mobileEditorCreateComp?: BannerImageEditorComponent;
-
-  desktopEditor: any = { img: null, scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0, naturalWidth: 0, naturalHeight: 0, edited: false };
-  mobileEditor: any = { img: null, scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0, naturalWidth: 0, naturalHeight: 0, edited: false };
 
   // table columns for admin-crud
   columns: ColumnDef[] = [
@@ -122,15 +119,15 @@ export class BannersAdminComponent implements OnInit {
       nome: [item.nome || '', [Validators.required, Validators.minLength(2)]],
       link: [item.link || ''],
       alt: [item.alt || ''],
-      posicao: [item.posicao || 'home'],
+      posicao: ['loja'],
       ordem: [item.ordem ?? 1],
       inicio: [item.inicio ? this.toDateTimeLocal(item.inicio) : ''],
       fim: [item.fim ? this.toDateTimeLocal(item.fim) : ''],
       ativo: [item.ativo ?? 1],
       target_blank: [ (item as any).target_blank ?? 1 ]
     });
-    this.desktopPreview.set((item as any).desktop_image_url || null);
-    this.mobilePreview.set((item as any).mobile_image_url || null);
+    this.desktopPreviewUrl = (item as any).desktop_image_url || null;
+    this.mobilePreviewUrl = (item as any).mobile_image_url || null;
     this.desktopFile = null;
     this.mobileFile = null;
     // initialize editor state from existing URLs
@@ -142,31 +139,37 @@ export class BannersAdminComponent implements OnInit {
 
   closeDetail() { this.selected.set(null); }
 
-  save() {
+  async save() {
+    console.log('BannersAdminComponent.save called', { selected: this.selected(), formValid: this.form ? !this.form.invalid : null, formValue: this.form?.value, desktopFile: this.desktopFile, mobileFile: this.mobileFile });
     const s = this.selected(); if (!s || !this.form || this.form.invalid) { this.form?.markAllAsTouched(); return; }
     const payload: any = { ...this.form.value };
     // convert datetime-local (if present) to ISO strings
     payload.inicio = payload.inicio ? new Date(payload.inicio).toISOString() : null;
     payload.fim = payload.fim ? new Date(payload.fim).toISOString() : null;
     payload.ordem = Number(payload.ordem || 0) || 0;
-    this.api.updateBanner(s.id!, payload).subscribe(updated => {
+
+    // Build FormData so we can include images with the same PUT request
+    const form = new FormData();
+    for (const [k, v] of Object.entries(payload)) {
+      if (v === undefined || v === null) continue;
+      form.append(k, String(v));
+    }
+
+    if (this.desktopFile) {
+      const blob = await this.exportCroppedBlob('desktop');
+      const file = blob ? new File([blob], (this.desktopFile?.name || 'desktop.jpg'), { type: blob.type }) : this.desktopFile!;
+      form.append('bannerDesktop', file);
+    }
+    if (this.mobileFile) {
+      const blob = await this.exportCroppedBlob('mobile');
+      const file = blob ? new File([blob], (this.mobileFile?.name || 'mobile.jpg'), { type: blob.type }) : this.mobileFile!;
+      form.append('bannerMobile', file);
+    }
+
+    this.api.updateBanner(s.id!, form).subscribe(updated => {
       this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x));
       this.selected.set(updated);
-      // upload images: prefer cropped/exported blob when available
-      if (this.desktopFile) {
-        (async () => {
-          const blob = await this.exportCroppedBlob('desktop');
-          const file = blob ? new File([blob], (this.desktopFile?.name || 'desktop.jpg'), { type: blob.type }) : this.desktopFile!;
-          this.api.uploadBannerImage(updated.id!, file as File, 'desktop').subscribe(() => this.load());
-        })();
-      }
-      if (this.mobileFile) {
-        (async () => {
-          const blob = await this.exportCroppedBlob('mobile');
-          const file = blob ? new File([blob], (this.mobileFile?.name || 'mobile.jpg'), { type: blob.type }) : this.mobileFile!;
-          this.api.uploadBannerImage(updated.id!, file as File, 'mobile').subscribe(() => this.load());
-        })();
-      }
+      this.load();
     });
   }
 
@@ -184,7 +187,7 @@ export class BannersAdminComponent implements OnInit {
     this.api.deleteBanner(id).subscribe(() => { this.selected.set(null); this.load(); });
   }
 
-  openCreate() { this.showCreate.set(true); this.initCreateForm(); this.desktopPreview.set(null); this.mobilePreview.set(null); this.desktopFile = null; this.mobileFile = null; }
+  openCreate() { this.initCreateForm(); this.desktopPreviewUrl = null; this.mobilePreviewUrl = null; this.desktopFile = null; this.mobileFile = null; this.showCreate.set(true); }
   cancelCreate() { this.showCreate.set(false); }
 
   onCrudEdit(item: BannerDto) {
@@ -211,39 +214,107 @@ export class BannersAdminComponent implements OnInit {
   }
 
   private resetEditors() {
-    this.desktopFile = null; this.mobileFile = null; this.desktopPreview.set(null); this.mobilePreview.set(null);
+    this.desktopFile = null; this.mobileFile = null; this.desktopPreviewUrl = null; this.mobilePreviewUrl = null;
     try { this.desktopEditorComp?.clearImage(); } catch {};
     try { this.mobileEditorComp?.clearImage(); } catch {};
     try { this.desktopEditorCreateComp?.clearImage(); } catch {};
     try { this.mobileEditorCreateComp?.clearImage(); } catch {};
   }
 
-  create() {
+  async create() {
+    console.log('BannersAdminComponent.create called', { createFormValid: this.createForm ? !this.createForm.invalid : null, createFormValue: this.createForm?.value, desktopFile: this.desktopFile, mobileFile: this.mobileFile });
     if (this.createForm.invalid) { this.createForm.markAllAsTouched(); return; }
     const payload: any = { ...this.createForm.value };
     payload.inicio = payload.inicio ? new Date(payload.inicio).toISOString() : null;
     payload.fim = payload.fim ? new Date(payload.fim).toISOString() : null;
     payload.ordem = Number(payload.ordem || 0) || 0;
-    this.api.createBanner(payload).subscribe(created => {
+
+    const form = new FormData();
+    for (const [k, v] of Object.entries(payload)) {
+      if (v === undefined || v === null) continue;
+      form.append(k, String(v));
+    }
+
+    if (this.desktopFile) {
+      const blob = await this.exportCroppedBlob('desktop');
+      const file = blob ? new File([blob], (this.desktopFile?.name || 'desktop.jpg'), { type: blob.type }) : this.desktopFile!;
+      form.append('bannerDesktop', file);
+    }
+    if (this.mobileFile) {
+      const blob = await this.exportCroppedBlob('mobile');
+      const file = blob ? new File([blob], (this.mobileFile?.name || 'mobile.jpg'), { type: blob.type }) : this.mobileFile!;
+      form.append('bannerMobile', file);
+    }
+
+    this.api.createBanner(form).subscribe(created => {
       this.showCreate.set(false);
       this.page.set(1);
       this.load();
       setTimeout(() => this.view(created), 0);
-      if (this.desktopFile) {
-        (async () => {
+    });
+  }
+
+  // Auto-generated form schema used by `app-admin-crud` when no projected drawer is present (create flow).
+  bannerFormSchema: FormSchema = {
+    fields: [
+      { key: 'nome', label: 'Nome', type: 'text', required: true },
+      { key: 'link', label: 'Link', type: 'text' },
+      { key: 'alt', label: 'Alt', type: 'text' },
+      { key: 'posicao', label: 'Posição', type: 'select', options: [ { label: 'Loja', value: 'loja' } ] },
+      { key: 'ordem', label: 'Ordem', type: 'number' },
+      { key: 'inicio', label: 'Início', type: 'datetime' },
+      { key: 'fim', label: 'Fim', type: 'datetime' },
+      { key: 'ativo', label: 'Status', type: 'select', options: [ { label: 'Ativa', value: 1 }, { label: 'Inativa', value: 0 } ] }
+    ]
+  };
+
+  async onSchemaSubmit(evt: { id?: any; values: any }) {
+    const id = evt.id;
+    const values = evt.values || {};
+    const payload: any = { ...values };
+    payload.inicio = payload.inicio ? new Date(payload.inicio).toISOString() : null;
+    payload.fim = payload.fim ? new Date(payload.fim).toISOString() : null;
+    payload.ordem = Number(payload.ordem || 0) || 0;
+
+    const needsFiles = !!(this.desktopFile || this.mobileFile);
+
+    if (id) {
+      if (needsFiles) {
+        const form = new FormData();
+        for (const [k, v] of Object.entries(payload)) { if (v !== undefined && v !== null) form.append(k, String(v)); }
+        if (this.desktopFile) {
           const blob = await this.exportCroppedBlob('desktop');
           const file = blob ? new File([blob], (this.desktopFile?.name || 'desktop.jpg'), { type: blob.type }) : this.desktopFile!;
-          this.api.uploadBannerImage(created.id!, file as File, 'desktop').subscribe(() => this.load());
-        })();
-      }
-      if (this.mobileFile) {
-        (async () => {
+          form.append('bannerDesktop', file);
+        }
+        if (this.mobileFile) {
           const blob = await this.exportCroppedBlob('mobile');
           const file = blob ? new File([blob], (this.mobileFile?.name || 'mobile.jpg'), { type: blob.type }) : this.mobileFile!;
-          this.api.uploadBannerImage(created.id!, file as File, 'mobile').subscribe(() => this.load());
-        })();
+          form.append('bannerMobile', file);
+        }
+        this.api.updateBanner(id, form).subscribe(updated => { this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x)); this.selected.set(updated); this.load(); });
+      } else {
+        this.api.updateBanner(id, payload).subscribe(updated => { this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x)); this.selected.set(updated); this.load(); });
       }
-    });
+    } else {
+      if (needsFiles) {
+        const form = new FormData();
+        for (const [k, v] of Object.entries(payload)) { if (v !== undefined && v !== null) form.append(k, String(v)); }
+        if (this.desktopFile) {
+          const blob = await this.exportCroppedBlob('desktop');
+          const file = blob ? new File([blob], (this.desktopFile?.name || 'desktop.jpg'), { type: blob.type }) : this.desktopFile!;
+          form.append('bannerDesktop', file);
+        }
+        if (this.mobileFile) {
+          const blob = await this.exportCroppedBlob('mobile');
+          const file = blob ? new File([blob], (this.mobileFile?.name || 'mobile.jpg'), { type: blob.type }) : this.mobileFile!;
+          form.append('bannerMobile', file);
+        }
+        this.api.createBanner(form).subscribe(created => { this.showCreate.set(false); this.page.set(1); this.load(); setTimeout(() => this.view(created), 0); });
+      } else {
+        this.api.createBanner(payload).subscribe(created => { this.showCreate.set(false); this.page.set(1); this.load(); setTimeout(() => this.view(created), 0); });
+      }
+    }
   }
 
   onDesktopSelected(ev: Event) {
@@ -252,7 +323,7 @@ export class BannersAdminComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       const data = String(reader.result);
-      this.desktopPreview.set(data);
+      this.desktopPreviewUrl = data;
       if (typeof window !== 'undefined') {
         this.checkImageAspect(data, this.desktopExpected).then(msg => this.desktopWarn.set(msg));
         setTimeout(() => this.setupEditor('desktop', data), 0);
@@ -261,13 +332,18 @@ export class BannersAdminComponent implements OnInit {
     reader.readAsDataURL(f);
   }
 
+  onDesktopImageInput(event: Event) {
+    // wrapper used by template file input
+    try { this.onDesktopSelected(event); } catch (e) { /* noop */ }
+  }
+
   onMobileSelected(ev: Event) {
     const el = ev.target as HTMLInputElement | null; if (!el || !el.files || !el.files[0]) return;
     const f = el.files[0]; this.mobileFile = f;
     const reader = new FileReader();
     reader.onload = () => {
       const data = String(reader.result);
-      this.mobilePreview.set(data);
+      this.mobilePreviewUrl = data;
       if (typeof window !== 'undefined') {
         this.checkImageAspect(data, this.mobileExpected).then(msg => this.mobileWarn.set(msg));
         setTimeout(() => this.setupEditor('mobile', data), 0);
@@ -275,6 +351,28 @@ export class BannersAdminComponent implements OnInit {
     };
     reader.readAsDataURL(f);
   }
+
+  onMobileImageInput(event: Event) {
+    // wrapper used by template file input
+    try { this.onMobileSelected(event); } catch (e) { /* noop */ }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault(); event.stopPropagation(); (event.currentTarget as HTMLElement).classList.add('dragover');
+  }
+  onDragLeave(event: DragEvent) {
+    event.preventDefault(); event.stopPropagation(); (event.currentTarget as HTMLElement).classList.remove('dragover');
+  }
+  onDropDesktop(event: DragEvent) {
+    event.preventDefault(); event.stopPropagation(); (event.currentTarget as HTMLElement).classList.remove('dragover');
+    const files = event.dataTransfer?.files; if (files && files.length) { const fake = { target: { files } } as unknown as Event; this.onDesktopSelected(fake); }
+  }
+  onDropMobile(event: DragEvent) {
+    event.preventDefault(); event.stopPropagation(); (event.currentTarget as HTMLElement).classList.remove('dragover');
+    const files = event.dataTransfer?.files; if (files && files.length) { const fake = { target: { files } } as unknown as Event; this.onMobileSelected(fake); }
+  }
+
+  // Removido: duplicidade, agora métodos simples para preview/drag and drop
 
   private setupEditor(type: 'desktop'|'mobile', dataUrl: string) {
     const editor = type === 'desktop' ? this.desktopEditor : this.mobileEditor;
@@ -405,7 +503,8 @@ export class BannersAdminComponent implements OnInit {
     const rect = frameEl.getBoundingClientRect();
     const fw = rect.width; const fh = rect.height;
     const outW = type === 'desktop' ? 1600 : 800;
-    const outH = Math.round(outW / (type === 'desktop' ? (16/5) : (16/9)));
+    const ratio = type === 'desktop' ? this.desktopExpected : this.mobileExpected;
+    const outH = Math.round(outW / ratio);
     // visible area in image coords
     const visLeft = -editor.x;
     const visTop = -editor.y;
@@ -423,24 +522,13 @@ export class BannersAdminComponent implements OnInit {
   }
 
   clearDesktopImage() {
-    // If editing an existing banner that already has an image, warn user
-    const s = this.selected();
-    if (s && s.desktop_image_url) {
-      if (!confirm('A imagem atual está salva no servidor. Isso apenas limpará o preview local. Deseja continuar?')) return;
-    }
-    this.desktopPreview.set(null);
+    this.desktopPreviewUrl = null;
     this.desktopFile = null;
-    this.desktopWarn.set(null);
   }
 
   clearMobileImage() {
-    const s = this.selected();
-    if (s && s.mobile_image_url) {
-      if (!confirm('A imagem atual está salva no servidor. Isso apenas limpará o preview local. Deseja continuar?')) return;
-    }
-    this.mobilePreview.set(null);
+    this.mobilePreviewUrl = null;
     this.mobileFile = null;
-    this.mobileWarn.set(null);
   }
 
   private checkImageAspect(dataUrl: string, expectedRatio: number): Promise<string|null> {

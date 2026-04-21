@@ -125,7 +125,12 @@ export class AdminPromocoesComponent implements OnInit {
     if (!p.id) return;
     this.editingId.set(p.id);
     this.api.getPromocao(p.id).subscribe((det: PromocaoDto) => {
-      const ids = (det.produtos ?? []).map((x: any) => Number(x.id));
+      const produtosArr = (det.produtos ?? []).map((x: any) => ({
+        id: Number(x.id),
+        name: x.nome ?? x.name ?? '',
+        price: Number(x.preco ?? x.price ?? 0)
+      }));
+      const ids = produtosArr.map((it: any) => Number(it.id));
       this.produtosVinculados.set(ids);
       this.editingItem = {
         id: det.id,
@@ -136,7 +141,7 @@ export class AdminPromocoesComponent implements OnInit {
         inicio: det.inicio ?? '',
         fim: det.fim ?? '',
         ativo: !!(det.ativo ?? true),
-        produtos: ids
+        produtos: produtosArr
       };
       // Open the drawer with the loaded promotion data
       this.showCreateModal.set(true);
@@ -191,7 +196,7 @@ export class AdminPromocoesComponent implements OnInit {
   // New helper to provide a search function to the EntityLookup component
   searchProdutos(q: string) {
     return this.api.listProdutos({ q, page: 1, pageSize: 10, active: 1 }).pipe(
-      map((res: any) => (res.data || []).map((p: ProdutoDto) => ({ id: Number(p.id), name: p.name, price: p.price })))
+      map((res: any) => (res.data || []).map((p: any) => ({ id: Number(p.id), name: p.nome ?? p.name ?? '', price: Number(p.preco ?? p.price ?? 0) })))
     );
   }
   // addProduto/removeProduto removed: EntityLookup now manages selection

@@ -86,6 +86,11 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
 
   @ViewChild('allergyPortal', { read: ElementRef }) allergyPortal?: ElementRef;
   portalAppended = false;
+  // Auto-dismiss / fade handling for allergy toast
+  private allergyAutoDismissTimer?: any;
+  allergyClosing = false;
+  private allergyAutoDismissDelayMs = 6000; // visible time before starting fade
+  private allergyFadeDurationMs = 360; // fade animation duration (ms)
 
   constructor(public store: StoreService, private api: ApiService, public router: Router, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object) {}
 
@@ -112,6 +117,8 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
             if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
               this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
             }
+            // cancel any pending auto-dismiss
+            try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
           } catch {}
           this.portalAppended = false;
           this.petAllergyResponses.clear();
@@ -125,6 +132,8 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
     if (this.countdownTimer) clearInterval(this.countdownTimer); 
     try { if (this.cartSub) this.cartSub.unsubscribe(); } catch {}
     try {
+      // clear auto-dismiss timer if present
+      try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
       if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
         this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
         this.portalAppended = false;
@@ -369,6 +378,9 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
     this.store.clearCart(); 
     // limpa estado relacionado a alergias e seleção de pets quando o carrinho é esvaziado via UI
     try { this.petAllergyResponses.clear(); } catch {}
+    // cancel auto-dismiss and reset any closing state
+    try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
+    this.allergyClosing = false;
     this.selectedPetIds = [];
     this.showAllergyModal = false;
     this.scheduleRevalidate(); 
@@ -460,6 +472,10 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
           this.renderer.appendChild(document.body, this.allergyPortal.nativeElement);
           this.portalAppended = true;
         }
+        // restart auto-dismiss timer when modal opens / updates
+        try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
+        this.allergyClosing = false;
+        this.startAllergyAutoDismiss();
       } catch {}
     }, 0);
   }
@@ -481,7 +497,8 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
   closeAllergyForPet(petId: number) {
     this.petAllergyResponses.delete(petId);
     if (!this.petAllergyResponses.size) {
-      // remove portal from body when no entries remain
+      // cancel auto-dismiss and remove portal from body when no entries remain
+      try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
       try {
         if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
           this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
@@ -489,10 +506,17 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
         }
       } catch {}
       this.showAllergyModal = false;
+      this.allergyClosing = false;
+    } else {
+      // if entries remain, restart auto-dismiss
+      try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
+      this.startAllergyAutoDismiss();
     }
   }
 
   closeAllAllergies() {
+    // cancel auto-dismiss and remove portal immediately
+    try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
     try {
       if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
         this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
@@ -501,6 +525,30 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
     } catch {}
     this.petAllergyResponses.clear();
     this.showAllergyModal = false;
+    this.allergyClosing = false;
+  }
+
+  // Auto-dismiss helpers
+  private startAllergyAutoDismiss() {
+    try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
+    this.allergyAutoDismissTimer = setTimeout(() => this.startAllergyFadeOut(), this.allergyAutoDismissDelayMs);
+  }
+  private startAllergyFadeOut() {
+    try { if (this.allergyAutoDismissTimer) clearTimeout(this.allergyAutoDismissTimer); } catch {}
+    if (this.allergyClosing) return;
+    this.allergyClosing = true;
+    setTimeout(() => {
+      // perform final removal after fade completes
+      try {
+        if (this.portalAppended && this.allergyPortal && this.allergyPortal.nativeElement.parentNode === document.body) {
+          this.renderer.removeChild(document.body, this.allergyPortal.nativeElement);
+          this.portalAppended = false;
+        }
+      } catch {}
+      this.petAllergyResponses.clear();
+      this.showAllergyModal = false;
+      this.allergyClosing = false;
+    }, this.allergyFadeDurationMs);
   }
 
   // Returns a display name for a pet id (safe for template use)

@@ -3,13 +3,24 @@
     <input [formControl]="searchControl" type="text" (input)="onInput()" [placeholder]="placeholder" />
   </div>
   <ul class="sugestoes" *ngIf="suggestions?.length">
-    <li *ngFor="let s of suggestions" (click)="add(s.id)">
+    <li *ngFor="let s of suggestions" (click)="add(s)">
       <span class="name">{{ s.name }}</span>
       <small class="id">#{{ s.id }}</small>
+      <small class="price" *ngIf="s.price">— {{ formatCurrency(s.price) }}</small>
     </li>
   </ul>
 
-  <div class="selecionados" *ngIf="selectedIds?.length">
-    <span class="pill" *ngFor="let id of selectedIds">#{{ id }} <button type="button" (click)="remove(id)">x</button></span>
+  <div class="selecionados" *ngIf="(selectedItems && selectedItems.length) || (selectedIds && selectedIds.length)">
+    <ng-container *ngIf="selectedItems && selectedItems.length; else idPills">
+      <span class="pill" *ngFor="let it of selectedItems">
+        <span class="name">{{ it.name || ('#' + it.id) }}</span>
+        <small class="price" *ngIf="it.price">— {{ formatCurrency(it.price) }}</small>
+        <small class="discount" *ngIf="getDiscountedPrice(it) !== null"> → {{ formatCurrency(getDiscountedPrice(it)) }}</small>
+        <button type="button" (click)="remove(it.id)">x</button>
+      </span>
+    </ng-container>
+    <ng-template #idPills>
+      <span class="pill" *ngFor="let id of selectedIds">#{{ id }} <button type="button" (click)="remove(id)">x</button></span>
+    </ng-template>
   </div>
 </div>

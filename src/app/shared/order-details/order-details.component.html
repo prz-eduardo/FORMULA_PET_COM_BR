@@ -1,0 +1,215 @@
+<div class="order-details">
+  <ng-container *ngIf="isCompact()">
+    <header class="head">
+      <div class="actions">
+        <div class="order-details">
+          <div class="drawer-head" *ngIf="!hideHeader">
+            <section class="card cliente-card" *ngIf="hasCliente()">
+              <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('cliente')" (keydown.enter)="toggleCollapse('cliente')">
+                <div class="head">
+                  <div class="title">
+                    <h3>Pedido #{{ order?.id }}</h3>
+                    <small>{{ order?.created_at | date:'short' }}</small>
+                  </div>
+                  <div class="head-actions">
+                    <button class="btn danger" *ngIf="isFull() && (order?.status || '')?.toLowerCase() !== 'cancelado' && (order?.status || '')?.toLowerCase() !== 'concluido'" (click)="onCancel()">Cancelar pedido</button>
+                  </div>
+                </div>
+                <div class="card-actions">
+                  <svg class="chev" [class.open]="!isCollapsed('cliente')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+              </div>
+              <div class="card-body" *ngIf="!isCollapsed('cliente')">
+                <div class="segment-body cliente-body">
+                  <div class="cliente-header">
+                    <img *ngIf="cliente?.foto" [src]="cliente.foto" class="cliente-foto" alt="">
+                    <div class="cliente-info">
+                      <div class="cliente-name">{{ cliente?.nome || order?.cliente_nome }}</div>
+                      <div class="cliente-email" *ngIf="cliente?.email || order?.cliente_email">{{ cliente?.email || order?.cliente_email }}</div>
+                      <div class="cliente-cpf" *ngIf="cliente?.cpf || order?.cliente_cpf">CPF: {{ cliente?.cpf || order?.cliente_cpf }}</div>
+                      <div class="cliente-phone" *ngIf="cliente?.telefone">{{ cliente.telefone }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="meta-row">
+            <ng-container *ngIf="(order?.status || '')?.toLowerCase() === 'cancelado'">
+              <div class="cancelled-banner">Pedido cancelado</div>
+              <div class="meta-info">{{ items.length || 0 }} itens • {{ formatCurrency(totals.total) }}</div>
+            </ng-container>
+            <ng-container *ngIf="(order?.status || '')?.toLowerCase() !== 'cancelado'">
+              <div class="status-stepper">
+                <div class="step" *ngFor="let s of stepperOrder">
+                  <ng-container *ngIf="getStepInfo(s) as info">
+                    <div class="seg" [class.done]="info.done" [class.active]="info.active" [class.clickable]="info.clickable" (click)="info.clickable ? onSetStatus(s) : null" title="{{ statusLabel(s) }}">
+                      <div class="dot">{{ info.done ? '✓' : '' }}</div>
+                      <div class="lab">{{ statusLabel(s) }}</div>
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+              <div class="meta-info">{{ items.length || 0 }} itens • {{ formatCurrency(totals.total) }}</div>
+              <div class="meta-actions">
+                <app-smart-status-button [order]="order" (statusChange)="onSetStatus($event)" (cancel)="onCancel()"></app-smart-status-button>
+              </div>
+            </ng-container>
+          </div>
+
+          <ng-container>
+            <div class="content-grid">
+              <aside class="right">
+                <section class="card items-card">
+                  <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('items')" (keydown.enter)="toggleCollapse('items')">
+                    <h4 class="segment-title">Itens</h4>
+                    <div class="card-actions">
+                      <svg class="chev" [class.open]="!isCollapsed('items')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="card-body" *ngIf="!isCollapsed('items')">
+                    <div class="items-grid">
+                      <div *ngFor="let it of items" class="item-card card">
+                        <div class="thumb">
+                          <img *ngIf="itemImage(it)" [src]="itemImage(it)" class="it-img" alt="">
+                        </div>
+                        <div class="item-body">
+                          <div class="item-top">
+                            <div class="it-name">{{ it.nome || ('#' + (it.produto_id || it.id)) }}</div>
+                            <div class="it-sub">{{ formatCurrency(it.subtotal) }}</div>
+                          </div>
+                          <div class="item-bottom">
+                            <div class="it-meta">Qtd: <strong>{{ it.quantidade }}</strong> • Unit: <strong>{{ formatCurrency(it.preco_unit) }}</strong></div>
+                            <div class="it-desc" *ngIf="it.produto_snapshot?.descricao">{{ it.produto_snapshot.descricao }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="card obs-card" *ngIf="order?.obs">
+                  <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('obs')" (keydown.enter)="toggleCollapse('obs')">
+                    <h4 class="segment-title">Observações</h4>
+                    <div class="card-actions">
+                      <svg class="chev" [class.open]="!isCollapsed('obs')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="card-body" *ngIf="!isCollapsed('obs')">
+                    <div class="segment-body">{{ order.obs }}</div>
+                  </div>
+                </section>
+
+                <section class="card shipping-card" *ngIf="hasShippingAddress()">
+                  <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('shipping')" (keydown.enter)="toggleCollapse('shipping')">
+                    <h4 class="segment-title">Entrega</h4>
+                    <div class="card-actions">
+                      <svg class="chev" [class.open]="!isCollapsed('shipping')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="card-body" *ngIf="!isCollapsed('shipping')">
+                    <div class="segment-body">
+                      <div class="address">
+                        <ng-container *ngIf="order?.endereco_entrega">
+                          <ng-container *ngIf="order.endereco_entrega?.endereco_cliente; else lojaBlock">
+                            <div><strong>Endereço de entrega</strong></div>
+                            <div><b>{{ order.endereco_entrega.endereco_cliente?.nome || cliente?.nome || 'Endereço' }}</b></div>
+                            <div *ngIf="order.endereco_entrega.endereco_cliente?.logradouro">{{ order.endereco_entrega.endereco_cliente.logradouro }}, {{ order.endereco_entrega.endereco_cliente.numero || '' }}<span *ngIf="order.endereco_entrega.endereco_cliente.complemento"> — {{ order.endereco_entrega.endereco_cliente.complemento }}</span></div>
+                            <div *ngIf="order.endereco_entrega.endereco_cliente?.bairro">{{ order.endereco_entrega.endereco_cliente.bairro }}</div>
+                            <div *ngIf="order.endereco_entrega.endereco_cliente?.cidade">{{ order.endereco_entrega.endereco_cliente.cidade }} / {{ order.endereco_entrega.endereco_cliente.estado }}</div>
+                            <div *ngIf="order.endereco_entrega.endereco_cliente?.cep">CEP: <b>{{ order.endereco_entrega.endereco_cliente.cep }}</b></div>
+                            <div *ngIf="order.endereco_entrega.endereco_cliente?.telefone">Tel: <b>{{ order.endereco_entrega.endereco_cliente.telefone }}</b></div>
+                          </ng-container>
+                          <ng-template #lojaBlock>
+                            <div><strong>{{ order.endereco_entrega.descricao_tipo || 'Retirar na loja' }}</strong></div>
+                            <div><b>{{ order.endereco_entrega.endereco_loja?.nome || order.endereco_entrega.endereco_loja?.logradouro }}</b></div>
+                            <div *ngIf="order.endereco_entrega.endereco_loja?.logradouro">{{ order.endereco_entrega.endereco_loja.logradouro }}<span *ngIf="order.endereco_entrega.endereco_loja.numero">, {{ order.endereco_entrega.endereco_loja.numero }}</span></div>
+                            <div *ngIf="order.endereco_entrega.endereco_loja?.cidade">{{ order.endereco_entrega.endereco_loja.cidade }} / {{ order.endereco_entrega.endereco_loja.estado }}</div>
+                            <div *ngIf="order.endereco_entrega.endereco_loja?.cep">CEP: <b>{{ order.endereco_entrega.endereco_loja.cep }}</b></div>
+                            <div *ngIf="order.endereco_entrega.endereco_loja?.telefone">Tel: <b>{{ order.endereco_entrega.endereco_loja.telefone }}</b></div>
+                            <div *ngIf="order.endereco_entrega.endereco_loja?.observacao">Obs: {{ order.endereco_entrega.endereco_loja.observacao }}</div>
+                          </ng-template>
+
+                          <div class="shipping-method" *ngIf="shipping?.frete">
+                            <small>Método:</small> <b>{{ shipping.frete.nome }} — {{ formatCurrency(shipping.frete.valor) }}</b>
+                          </div>
+
+                          <div *ngIf="order.endereco_entrega?.valor_frete != null && !shipping?.frete">
+                            Frete: <b>{{ formatCurrency(order.endereco_entrega.valor_frete) }}</b>
+                          </div>
+
+                          <div *ngIf="order.endereco_entrega?.prazo_dias">Prazo: <b>{{ order.endereco_entrega.prazo_dias }} dias</b></div>
+                        </ng-container>
+
+                        <div *ngIf="!order?.endereco_entrega && order?.raw_snapshot?.input?.entrega?.endereco">Endereço: <b>{{ order.raw_snapshot.input.entrega.endereco.street || order.raw_snapshot.input.entrega.endereco.logradouro }}, {{ order.raw_snapshot.input.entrega.endereco.numero || order.raw_snapshot.input.entrega.endereco.number }} — {{ order.raw_snapshot.input.entrega.endereco.neighborhood || order.raw_snapshot.input.entrega.endereco.bairro }}</b></div>
+                      </div>
+
+                      <!-- Opções de frete ocultadas (removido botão 'Ver opções') -->
+                    </div>
+                  </div>
+                </section>
+
+                <section class="card totals-card">
+                  <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('totals')" (keydown.enter)="toggleCollapse('totals')">
+                    <h4 class="segment-title">Totais</h4>
+                    <div class="card-actions">
+                      <svg class="chev" [class.open]="!isCollapsed('totals')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="card-body" *ngIf="!isCollapsed('totals')">
+                    <div class="segment-body">
+                      <div class="tot-line">Itens: <b>{{ formatCurrency(totals.items) }}</b></div>
+                      <div class="tot-line">Frete: <b>{{ formatCurrency(totals.frete) }}</b></div>
+                      <div class="tot-line">Desconto: <b>{{ formatCurrency(totals.desconto) }}</b></div>
+                      <div class="grand">Total: <b>{{ formatCurrency(totals.total) }}</b></div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="card payments-card" *ngIf="payments && payments.length">
+                  <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('payments')" (keydown.enter)="toggleCollapse('payments')">
+                    <h4 class="segment-title">Pagamentos</h4>
+                    <div class="card-actions">
+                      <svg class="chev" [class.open]="!isCollapsed('payments')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="card-body" *ngIf="!isCollapsed('payments')">
+                    <div class="segment-body">
+                      <ul class="payments-list">
+                        <li *ngFor="let p of payments" class="payment-item">
+                          <div class="payment-left">
+                            <div class="payment-method">{{ p.gateway || p.pagamento_forma || p.gateway }}</div>
+                            <div class="payment-ref" *ngIf="p.referencia">{{ p.referencia }}</div>
+                          </div>
+                          <div class="payment-right">
+                            <div class="payment-status">{{ statusLabel(p.status) }}</div>
+                            <div class="payment-amount">{{ formatCurrency(p.valor || p.valor_pago || p.amount || p.value) }}</div>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+              </aside>
+            </div>
+          </ng-container>
+
+        </div>
+      </div>
+    </header>
+  </ng-container>
+</div>

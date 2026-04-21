@@ -1,126 +1,26 @@
-<!-- lista-produtos.component.html -->
-<div class="lista-produtos-wrapper animate-fade">
-  <h2>Produtos Cadastrados</h2>
+<!-- lista-produtos.component.html (wrapped with app-admin-crud) -->
+<app-admin-crud
+  [items]="produtos"
+  [loading]="loading"
+  [total]="total"
+  [page]="page"
+  [pageSize]="pageSize"
+  [columns]="columns"
+  [formSchema]="productFormSchema"
+  [formTitle]="'Produto'"
+  [formSubmitLabel]="'Salvar'"
+  [useDefaultActions]="true"
+  (pageChange)="page = $event; loadProdutos()"
+  (create)="addProduto()"
+  (edit)="openDrawer($event)"
+  (remove)="onRemove($event)"
+  (submit)="onFormSubmit($event)"
+  (cancel)="closeDrawer()"
+  (toggleActive)="toggleActive($event)"
+  [drawerOpen]="drawerOpen"
+  (drawerOpenChange)="drawerOpen = $event"
+  [editItem]="drawerEditItem"
+>
+</app-admin-crud>
 
-  <div class="lista-actions">
-    <button class="btn-add" (click)="addProduto()">+ Cadastrar Produto</button>
-    <button class="btn-toggle" (click)="toggleView()">
-      {{ isCardView ? 'Ver Lista Clássica' : 'Ver Cards Grandes' }}
-    </button>
-  </div>
-
-  <!-- Filtros -->
-  <div class="filters">
-    <input type="text" placeholder="Buscar..." [(ngModel)]="q" (ngModelChange)="page=1; loadProdutos()">
-    <input type="text" placeholder="Categoria" [(ngModel)]="category" (ngModelChange)="page=1; loadProdutos()">
-    <input type="text" placeholder="Tag" [(ngModel)]="tag" (ngModelChange)="page=1; loadProdutos()">
-    <select [(ngModel)]="active" (ngModelChange)="page=1; loadProdutos()">
-      <option [ngValue]="undefined">Todos</option>
-      <option [ngValue]="1">Ativos</option>
-      <option [ngValue]="0">Inativos</option>
-    </select>
-  </div>
-
-  <!-- GRID CARDS -->
-  <div class="produtos-grid" *ngIf="isCardView && produtos.length; else tableView">
-    <div class="produto-card" *ngFor="let p of produtos">
-      <div class="produto-img">
-        <img *ngIf="p.image" [src]="p.image" alt="{{p.name}}">
-        <div *ngIf="!p.image" class="placeholder-img">Sem imagem</div>
-      </div>
-      <div class="produto-info">
-        <h3>{{p.name}}</h3>
-  <p class="categoria">{{p.category}} <span *ngIf="p.active===0" class="badge-inativo">inativo</span></p>
-        <p class="preco">
-          <span *ngIf="p.discount">
-            <span class="preco-antigo">R$ {{p.price.toFixed(2)}}</span>
-            R$ {{ (p.price * (1 - p.discount / 100)).toFixed(2) }}
-          </span>
-          <span *ngIf="!p.discount">
-            R$ {{p.price.toFixed(2)}}
-          </span>
-        </p>
-
-        <p class="estoque">Estoque: {{p.stock ?? '-'}}</p>
-        <div class="tags">
-          <span *ngFor="let t of p.tags">{{t}}</span>
-        </div>
-      </div>
-      <div class="produto-actions">
-        <button class="switch" [class.on]="p.active===1" (click)="toggleActive(p)" [attr.aria-pressed]="p.active===1" title="Ativar / Desativar"></button>
-        <button class="btn-edit" (click)="editProduto(p)">Editar</button>
-        <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TABELA CLÁSSICA -->
-<ng-template #tableView>
-  <div *ngIf="produtos.length; else empty" class="table-wrapper">
-    <table class="produtos-table">
-      <thead>
-        <tr>
-          <th>Imagem</th>
-          <th>Nome</th>
-          <th>Categoria</th>
-          <th>Status</th>
-          <th>Preço</th>
-          <th>Estoque</th>
-          <th>Tags</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let p of produtos">
-          <td>
-            <img *ngIf="p.image" [src]="p.image" alt="{{p.name}}" class="thumb">
-            <span *ngIf="!p.image">-</span>
-          </td>
-          <td>{{p.name}}</td>
-          <td>{{p.category}}</td>
-          <td><span class="badge-inativo" *ngIf="p.active===0">inativo</span><span *ngIf="p.active!==0">ativo</span></td>
-          <td>
-            <span *ngIf="p.discount">
-              <span class="preco-antigo">R$ {{p.price.toFixed(2)}}</span>
-              R$ {{ (p.price * (1 - p.discount / 100)).toFixed(2) }}
-            </span>
-            <span *ngIf="!p.discount">
-              R$ {{p.price.toFixed(2)}}
-            </span>
-          </td>
-
-          <td>{{p.stock ?? '-'}}</td>
-          <td>
-            <span *ngFor="let t of p.tags" class="tag">{{t}}</span>
-          </td>
-          <td class="actions-cell">
-            <div class="actions">
-              <button class="switch" [class.on]="p.active===1" (click)="toggleActive(p)" [attr.aria-pressed]="p.active===1" title="Ativar / Desativar"></button>
-              <button class="btn-edit" (click)="editProduto(p)">Editar</button>
-              <button class="btn-delete" (click)="deleteProduto(p)">Excluir</button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <admin-pagination [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; loadProdutos()"></admin-pagination>
-  </div>
-</ng-template>
-
-
-  <ng-template #empty>
-    <p class="empty-msg">Nenhum produto cadastrado ainda.</p>
-  </ng-template>
-</div>
-
-<!-- Modal de confirmação de exclusão -->
-<div id="global-delete-modal" *ngIf="showConfirmDelete" (click)="cancelDelete()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <h3>Deseja realmente excluir "{{selectedProduto?.name}}"?</h3>
-    <p>Esta ação não pode ser desfeita.</p>
-    <div class="modal-footer">
-      <button class="btn secondary" (click)="cancelDelete()">Cancelar</button>
-      <button class="btn danger" (click)="confirmDelete()" [disabled]="deleting">{{ deleting ? 'Excluindo...' : 'Excluir' }}</button>
-    </div>
-  </div>
-</div>
+<!-- Remoção agora é tratada via (remove) do app-admin-crud ou via deleteProduto() direto (com confirm) -->

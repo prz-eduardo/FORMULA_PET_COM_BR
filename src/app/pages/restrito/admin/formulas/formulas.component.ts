@@ -10,7 +10,7 @@ import { AdminApiService, FormulaDto, FormulaItemDto, ProductFormDto, UnitDto } 
 @Component({
   selector: 'app-admin-formulas',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, AdminPaginationComponent, ButtonDirective, ButtonComponent, AdminListingComponent, AdminCrudComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AdminPaginationComponent, AdminCrudComponent],
   templateUrl: './formulas.component.html',
   styleUrls: ['./formulas.component.scss']
 })
@@ -128,14 +128,15 @@ export class FormulasAdminComponent implements OnInit {
       this.api.getFormula(id).subscribe({
         next: (det) => {
           this.itemsFA.clear();
-          const list = (det as any).items || [];
+          // API sometimes returns items under Portuguese key `itens` or English `items`.
+          const list = (det as any).items || (det as any).itens || [];
           list.forEach((it: any) => {
             const g = this.fb.group({
               tipo: [it.tipo, Validators.required],
-              ativo_id: [it.ativo_id ?? null],
-              insumo_nome: [it.insumo_nome ?? ''],
-              quantity: [it.quantity ?? null, Validators.required],
-              unit_code: [it.unit_code ?? '', Validators.required]
+              ativo_id: [it.ativo_id ?? it.ativoId ?? null],
+              insumo_nome: [it.insumo_nome ?? it.insumo_nome ?? ''],
+              quantity: [it.quantity ?? it.quantidade ?? null, Validators.required],
+              unit_code: [it.unit_code ?? it.unit ?? '' , Validators.required]
             });
             this.items.push(g);
           });

@@ -19,7 +19,14 @@
   transform: translateX(100%);
   transition: transform 240ms cubic-bezier(.22,.8,.36,1);
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: auto;
+  display: flex;
+  flex-direction: column;
   padding: 16px 18px;
+  box-sizing: border-box;
 }
 .sd-overlay.left .drawer, .create-drawer.sd-overlay.left .drawer { transform: translateX(-100%); box-shadow: 8px 0 24px rgba(0,0,0,0.32); }
 .sd-overlay.open .drawer, .create-drawer.sd-overlay.open .drawer { transform: translateX(0); }
@@ -45,11 +52,93 @@
 }
 
 .sd-overlay .drawer .drawer-head {
-  display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
 }
-.sd-overlay .drawer .drawer-actions { display:flex; gap:10px; margin-top:12px; }
+
+.sd-overlay .drawer .drawer-actions {
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+  justify-content: flex-end;
+}
+
+/* Standard form layout inside drawer */
+.sd-overlay .drawer .grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .sd-overlay .drawer .grid { grid-template-columns: 1fr; }
+}
+
+.sd-overlay .drawer .field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sd-overlay .drawer .field label {
+  font-size: 0.9rem;
+  color: var(--admin-muted, rgba(229,236,245,0.6));
+  font-weight: 600;
+  margin: 0;
+}
+
+.sd-overlay .drawer .control { min-width: 0; }
+
+.sd-overlay .drawer .control > input,
+.sd-overlay .drawer .control > textarea,
+.sd-overlay .drawer .control > select,
+.sd-overlay .drawer .control > app-cpf-input {
+  width: 100%;
+}
+
+.sd-overlay .drawer .error,
+.sd-overlay .drawer .field .error {
+  color: var(--admin-error, #ff6b6b);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.sd-overlay .drawer .tags { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 
 /* small responsive tweak */
 @media (max-width: 720px) {
   .sd-overlay .drawer, .create-drawer.sd-overlay .drawer { width: 100%; }
+}
+
+/* Full-screen variation triggered by class on overlay */
+.sd-overlay.full .drawer, .create-drawer.sd-overlay.full .drawer {
+  width: 100% !important;
+  max-width: none;
+  height: 100vh;
+}
+
+/* When order-details is projected into the drawer, make it a column flex container
+   and let the inner content area scroll. min-height:0 is required so flex children
+   can shrink and produce an internal scrollbar. */
+.sd-overlay .drawer > .order-details,
+.create-drawer.sd-overlay .drawer > .order-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* container holds layout; inner grid will scroll */
+}
+
+.sd-overlay .drawer > .order-details .content-grid,
+.create-drawer.sd-overlay .drawer > .order-details .content-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }

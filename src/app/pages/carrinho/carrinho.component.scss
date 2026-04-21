@@ -275,6 +275,16 @@
 	border-radius: 12px;
 	padding: 12px;
 	box-shadow: 0 18px 42px rgba(0,0,0,0.18);
+	transition: opacity .36s ease, transform .36s ease;
+	opacity: 1;
+}
+/* closing/fade state */
+.allergy-toast.closing {
+	opacity: 0;
+	transform: translateY(8px) scale(0.98);
+	pointer-events: none;
+	/* ensure scrollbars hide smoothly */
+	overflow: hidden;
 }
 .allergy-top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
 .allergy-top strong { color: #8a3b0a; font-weight: 900; }

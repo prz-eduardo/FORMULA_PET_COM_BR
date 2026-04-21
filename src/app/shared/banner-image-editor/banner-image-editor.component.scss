@@ -1,13 +1,16 @@
 .banner-image-editor {
-  display: block;
+  font-family: inherit;
+  .warn { color:#f8b4b4; font-size:13px; }
+
+  .frame { position:relative; overflow:hidden; border:1px dashed rgba(255,255,255,0.08); background:#0b1220; color:#ddd; }
+  .frame.dragover { outline:2px dashed #36b3ff; background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(8,12,20,0.98)); }
+  .frame.dragging { cursor:grabbing; }
+  .editor-img { cursor:grab }
+  .placeholder { padding:18px; text-align:center; color:#9aa6b2 }
+
+  .editor { position:relative; width:100%; height:100%; }
+  .editor-img { position:absolute; top:0; left:0; user-select:none; -webkit-user-drag:none; touch-action:none; cursor:grab }
+
+  .preview { margin-top:8px; }
+  .preview img { width:160px; height:auto; object-fit:cover; border:1px solid rgba(255,255,255,0.06); border-radius:4px }
 }
-.banner-image-editor .editor-controls-row {
-  display:flex; gap:8px; align-items:center; margin-bottom:8px;
-}
-.banner-image-editor .file-btn { background:#eee; padding:6px 10px; border-radius:4px; cursor:pointer; }
-.banner-image-editor .frame { background:#111; color:#fff; min-height:120px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-.banner-image-editor .placeholder { opacity:0.6; }
-.banner-image-editor .editor { position:relative; width:100%; height:100%; }
-.banner-image-editor .editor-img { position:absolute; top:0; left:0; user-select:none; -webkit-user-drag:none; }
-.banner-image-editor .editor-actions { position:absolute; right:8px; bottom:8px; display:flex; gap:6px; }
-.banner-image-editor .warn { color:#b22; font-size:13px; }

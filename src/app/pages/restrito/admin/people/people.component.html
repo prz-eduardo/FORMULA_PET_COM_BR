@@ -104,6 +104,20 @@
                 <div><label>UF</label><input formControlName="uf" maxlength="2" /></div>
                 <div *ngIf="tipo!=='vet'"><label>CPF</label><input formControlName="cpf" /></div>
                 <div *ngIf="tipo==='vet'"><label>CRMV</label><input formControlName="crmv" /></div>
+                <div *ngIf="tipo==='admin'">
+                  <label>Role</label>
+                  <select formControlName="role">
+                    <option *ngFor="let r of roleOptions" [value]="r.value">{{ r.label }}</option>
+                  </select>
+                </div>
+                <div *ngIf="tipo==='admin'">
+                  <label>Áreas de gerenciamento</label>
+                  <div class="areas">
+                    <label *ngFor="let a of areasList">
+                      <input type="checkbox" [checked]="(form.value.areas || []).includes(a.key)" (change)="toggleEditArea($event, a.key)" /> {{ a.label }}
+                    </label>
+                  </div>
+                </div>
               </form>
 
               <div class="address">
@@ -183,10 +197,12 @@
           <option [value]="100">100</option>
         </select>
       </label>
-      <span class="range">{{ ((page()-1)*pageSize())+1 }}–{{ pageEnd() }} de {{ total() }}</span>
+  <span class="range">{{ ((page()-1)*pageSize())+1 }}–{{ pageEnd() }} de {{ total() }}</span>
     </div>
     <div class="right">
-      <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
+      <button (click)="prevPage()" [disabled]="!canPrev()">Anterior</button>
+      <span>Página {{ page() }} de {{ totalPages() }}</span>
+      <button (click)="nextPage()" [disabled]="!canNext()">Próxima</button>
     </div>
   </div>
 
@@ -203,9 +219,14 @@
         <div>
           <label>Tipo</label>
           <select formControlName="tipo">
-            <option value="admin">Admin</option>
-            <option value="cliente">Cliente</option>
-            <option value="vet">Vet</option>
+            <ng-container *ngIf="tipo === 'admin'; else allTipos">
+              <option value="admin">Admin</option>
+            </ng-container>
+            <ng-template #allTipos>
+              <option value="admin">Admin</option>
+              <option value="cliente">Cliente</option>
+              <option value="vet">Vet</option>
+            </ng-template>
           </select>
         </div>
         <div><label>Nome</label><input formControlName="name" /></div>
@@ -216,6 +237,20 @@
         <div><label>Senha</label><input type="password" formControlName="senha" /></div>
         <div *ngIf="createForm.value.tipo!=='vet'"><label>Ativo</label>
           <select formControlName="ativo"><option [value]="1">Sim</option><option [value]="0">Não</option></select>
+        </div>
+        <div *ngIf="createForm.value.tipo==='admin'">
+          <label>Role</label>
+          <select formControlName="role">
+            <option *ngFor="let r of roleOptions" [value]="r.value">{{ r.label }}</option>
+          </select>
+        </div>
+        <div *ngIf="createForm.value.tipo==='admin'">
+          <label>Áreas de gerenciamento</label>
+          <div class="areas">
+            <label *ngFor="let a of areasList">
+              <input type="checkbox" [checked]="(createForm.value.areas || []).includes(a.key)" (change)="toggleCreateArea($event, a.key)" /> {{ a.label }}
+            </label>
+          </div>
         </div>
         <div *ngIf="createForm.value.tipo==='vet'"><label>Aprovação</label>
           <select formControlName="approved"><option [value]="1">Aprovado</option><option [value]="0">Pendente</option></select>

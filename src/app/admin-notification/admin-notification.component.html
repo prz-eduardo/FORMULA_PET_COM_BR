@@ -1,0 +1,15 @@
+<div class="admin-notification-container" [class.open]="notifications.length > 0">
+  <div class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</div>
+  <div class="notification-list" *ngIf="notifications.length > 0">
+    <div class="notification-header">
+      <span>Notificações de Pedidos</span>
+      <button (click)="markAllAsRead()">Marcar todas como lidas</button>
+    </div>
+    <ul>
+      <li *ngFor="let n of notifications">
+        <span [class.unread]="!n.read">{{ n.message }}</span>
+        <small>{{ n.time | date:'shortTime' }}</small>
+      </li>
+    </ul>
+  </div>
+</div>

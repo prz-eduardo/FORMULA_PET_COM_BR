@@ -31,9 +31,22 @@
           </thead>
           <tbody>
             <tr *ngFor="let item of items">
-              <td *ngFor="let col of columns" [ngClass]="col.class">{{ item[col.key] }}</td>
+              <td *ngFor="let col of columns" [ngClass]="col.class">
+                <ng-container *ngIf="isActiveColumn(col.key); else normalCell">
+                  <div class="active-cell">
+                    <button class="switch readonly" [class.on]="isActive(item)" disabled [attr.aria-pressed]="isActive(item)" [attr.aria-label]="isActive(item) ? 'Ativo' : 'Inativo'"></button>
+                  </div>
+                </ng-container>
+                <ng-template #normalCell>
+                  <span>{{ col.formatter ? col.formatter(item) : item[col.key] }}</span>
+                </ng-template>
+              </td>
               <td class="actions-cell">
-                <button class="btn small" (click)="emitEdit(item)">Editar</button>
+                <button class="btn small" (click)="emitEdit(item)">Detalhes</button>
+                <!-- Botão avançar status -->
+                <button class="btn small primary" *ngIf="item.status && ['criado','aguardando_pagamento','pago','em_preparo','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({action: 'advance', item: item})">Avançar</button>
+                <!-- Botão cancelar pedido -->
+                <button class="btn small danger" *ngIf="item.status && item.status.toLowerCase() !== 'cancelado' && item.status.toLowerCase() !== 'concluido'" (click)="$event.stopPropagation(); emitCustomAction({action: 'cancel', item: item})">Cancelar</button>
                 <button class="btn small danger" (click)="emitRemove(item)">Remover</button>
               </td>
             </tr>
@@ -59,45 +72,90 @@
 </app-admin-listing>
 
 <!-- Drawer area: project any content marked with slot="drawer" inside the shared side-drawer -->
-<app-side-drawer [open]="drawerOpen" (openChange)="onSideDrawerOpenChange($event)" (closeRequest)="onSideDrawerCloseRequest($event)" [width]="drawerWidth">
+<app-side-drawer [open]="drawerOpen" (openChange)="onSideDrawerOpenChange($event)" (closeRequest)="onSideDrawerCloseRequest($event)" [width]="drawerWidth" [full]="drawerFull">
+  <!-- Drawer projection (projected content is rendered below). Debug markers removed. -->
+  <!-- If page provided a projected drawer, show it. If it lacks a header, render a standard header above it. -->
+  <!-- Render projected drawer content always (fixes cases where detection fails). Only show the default header
+       when there's no auto-generated form schema and the projected content doesn't provide its own header. -->
   <ng-content select="[slot=drawer]"></ng-content>
 
   <!-- Auto-generated form: render only when page did not provide a projected drawer and a schema is available -->
-  <ng-container *ngIf="!hasProjectedDrawer && formSchema?.fields?.length">
+  <ng-container *ngIf="!hasProjectedDrawer && (formSchema?.fields?.length || formSchema?.sections?.length)">
     <form [formGroup]="autoForm" (ngSubmit)="onSubmitAutoForm()">
-      <div class="drawer-head">
-        <h3>{{ editItem?.id ? ('Editar ' + (formTitle || 'registro')) : ('Novo ' + (formTitle || 'registro')) }}</h3>
-        <div class="head-actions"><button class="btn secondary" type="button" (click)="onCancelAutoForm()">Fechar</button></div>
-      </div>
 
-      <div class="grid">
-        <ng-container *ngFor="let f of formSchema!.fields">
-          <div class="field" [style.width]="f.width || 'auto'">
-            <label *ngIf="f.type !== 'hidden'">{{ f.label || f.key }}
-              <ng-container [ngSwitch]="f.type">
-                <input *ngSwitchCase="'text'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
-                <input *ngSwitchCase="'cpf'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
-                <input *ngSwitchCase="'email'" type="email" [formControlName]="f.key" [placeholder]="f.placeholder" />
-                <input *ngSwitchCase="'number'" type="number" [formControlName]="f.key" [placeholder]="f.placeholder" />
-                <input *ngSwitchCase="'date'" type="date" [formControlName]="f.key" />
-                <input *ngSwitchCase="'datetime'" type="datetime-local" [formControlName]="f.key" />
-                <textarea *ngSwitchCase="'textarea'" [formControlName]="f.key" [placeholder]="f.placeholder"></textarea>
-                <select *ngSwitchCase="'select'" [formControlName]="f.key">
-                  <option *ngFor="let o of f.options" [ngValue]="o.value">{{ o.label }}</option>
-                </select>
-                <app-entity-lookup *ngSwitchCase="'multi-suggest'"
-                  [selectedIds]="autoForm.get(f.key)?.value || []"
-                  (selectedIdsChange)="autoForm.get(f.key)?.setValue($event)"
-                  [searchFn]="f.searchFn"
-                  [placeholder]="f.placeholder || 'Buscar...'"></app-entity-lookup>
-                <input *ngSwitchCase="'checkbox'" type="checkbox" [formControlName]="f.key" />
-                <input *ngSwitchCase="'hidden'" type="hidden" [formControlName]="f.key" />
-                <input *ngSwitchDefault type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+      <ng-container *ngIf="formSchema?.sections?.length; else defaultFields">
+        <ng-container *ngFor="let s of formSchema?.sections || []">
+          <div class="form-section">
+            <h4 *ngIf="s.title">{{ s.title }}</h4>
+            <div class="form-grid" [ngClass]="{ 'two-up': s.twoUp }">
+              <ng-container *ngFor="let f of s.fields">
+                <div class="field" [style.width]="f.width || 'auto'">
+                  <label *ngIf="f.type !== 'hidden'">{{ f.label || f.key }}</label>
+                  <div class="control">
+                    <ng-container [ngSwitch]="f.type">
+                      <input *ngSwitchCase="'text'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                      <app-cpf-input *ngSwitchCase="'cpf'" [formControlName]="f.key" [placeholder]="f.placeholder || ''"></app-cpf-input>
+                      <input *ngSwitchCase="'email'" type="email" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                      <input *ngSwitchCase="'number'" type="number" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                      <input *ngSwitchCase="'date'" type="date" [formControlName]="f.key" />
+                      <input *ngSwitchCase="'datetime'" type="datetime-local" [formControlName]="f.key" />
+                      <textarea *ngSwitchCase="'textarea'" [formControlName]="f.key" [placeholder]="f.placeholder"></textarea>
+                      <select *ngSwitchCase="'select'" [formControlName]="f.key">
+                        <option *ngFor="let o of f.options" [ngValue]="o.value">{{ o.label }}</option>
+                      </select>
+                      <app-entity-lookup *ngSwitchCase="'multi-suggest'"
+                        [selectedIds]="autoForm.get(f.key)?.value || []"
+                        (selectedIdsChange)="autoForm.get(f.key)?.setValue($event)"
+                        [selectedItems]="getSelectedItems(f.key)"
+                        (selectedItemsChange)="onSelectedItemsChange($event, f.key)"
+                        [form]="autoForm"
+                        [searchFn]="f.searchFn"
+                        [placeholder]="f.placeholder || 'Buscar...'"></app-entity-lookup>
+                      <input *ngSwitchCase="'checkbox'" type="checkbox" [formControlName]="f.key" />
+                      <input *ngSwitchCase="'hidden'" type="hidden" [formControlName]="f.key" />
+                      <input *ngSwitchDefault type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                    </ng-container>
+                  </div>
+                </div>
               </ng-container>
-            </label>
+            </div>
           </div>
         </ng-container>
-      </div>
+      </ng-container>
+      <ng-template #defaultFields>
+        <div class="form-grid">
+          <ng-container *ngFor="let f of formSchema?.fields || []">
+            <div class="field" [style.width]="f.width || 'auto'">
+              <label *ngIf="f.type !== 'hidden'">{{ f.label || f.key }}</label>
+              <div class="control">
+                <ng-container [ngSwitch]="f.type">
+                  <input *ngSwitchCase="'text'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                  <app-cpf-input *ngSwitchCase="'cpf'" [formControlName]="f.key" [placeholder]="f.placeholder || ''"></app-cpf-input>
+                  <input *ngSwitchCase="'email'" type="email" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                  <input *ngSwitchCase="'number'" type="number" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                  <input *ngSwitchCase="'date'" type="date" [formControlName]="f.key" />
+                  <input *ngSwitchCase="'datetime'" type="datetime-local" [formControlName]="f.key" />
+                  <textarea *ngSwitchCase="'textarea'" [formControlName]="f.key" [placeholder]="f.placeholder"></textarea>
+                  <select *ngSwitchCase="'select'" [formControlName]="f.key">
+                    <option *ngFor="let o of f.options" [ngValue]="o.value">{{ o.label }}</option>
+                  </select>
+                  <app-entity-lookup *ngSwitchCase="'multi-suggest'"
+                    [selectedIds]="autoForm.get(f.key)?.value || []"
+                    (selectedIdsChange)="autoForm.get(f.key)?.setValue($event)"
+                    [selectedItems]="getSelectedItems(f.key)"
+                    (selectedItemsChange)="onSelectedItemsChange($event, f.key)"
+                    [form]="autoForm"
+                    [searchFn]="f.searchFn"
+                    [placeholder]="f.placeholder || 'Buscar...'"></app-entity-lookup>
+                  <input *ngSwitchCase="'checkbox'" type="checkbox" [formControlName]="f.key" />
+                  <input *ngSwitchCase="'hidden'" type="hidden" [formControlName]="f.key" />
+                  <input *ngSwitchDefault type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+                </ng-container>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </ng-template>
 
       <div class="drawer-actions actions">
         <button class="btn secondary" type="button" (click)="onCancelAutoForm()">Cancelar</button>

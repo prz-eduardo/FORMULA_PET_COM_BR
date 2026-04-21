@@ -9,6 +9,7 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { isPlatformBrowser } from '@angular/common';
+import { STATUS_ORDER, statusLabel as statusLabelConst } from '../../constants/order-status.constants';
 
 @Component({
   selector: 'app-meus-pedidos',
@@ -135,12 +136,12 @@ export class MeusPedidosComponent {
 
   statusSteps(p: any){
     const status = (p?.status || '').toLowerCase();
-    // Ordem oficial:
-    const flow = ['criado','aguardando_pagamento','pago','em_preparo','enviado','concluido'];
+    // Use canonical STATUS_ORDER from constants
+    const flow = STATUS_ORDER;
     const idx = Math.max(0, flow.indexOf(status));
     const steps = flow.map((k, i) => ({
       key: k,
-      label: this.statusLabel(k),
+      label: statusLabelConst(k),
       done: idx >= i,
       active: idx === i
     }));
@@ -152,17 +153,7 @@ export class MeusPedidosComponent {
   }
 
   statusLabel(s: string){
-    const k = (s || '').toLowerCase();
-    switch(k){
-      case 'criado': return 'Criado';
-      case 'aguardando_pagamento': return 'Aguardando pgto';
-      case 'pago': return 'Pago';
-      case 'em_preparo': return 'Em preparo';
-      case 'enviado': return 'Enviado';
-      case 'concluido': return 'Concluído';
-      case 'cancelado': return 'Cancelado';
-      default: return s || '—';
-    }
+    return statusLabelConst(s);
   }
 
   private scrollTimelineIntoView(orderId: number){

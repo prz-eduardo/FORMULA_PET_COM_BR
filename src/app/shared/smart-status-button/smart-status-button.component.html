@@ -1,0 +1,4 @@
+<div class="smart-status">
+  <button class="btn small" *ngIf="nextStatus && canChange" (click)="onAdvance()">Avançar: {{ statusLabel(nextStatus) }}</button>
+  <button class="btn danger small" *ngIf="order && (order.status || '')?.toLowerCase() !== 'cancelado' && (order.status || '')?.toLowerCase() !== 'concluido'" (click)="onCancelClick()">Cancelar pedido</button>
+</div>

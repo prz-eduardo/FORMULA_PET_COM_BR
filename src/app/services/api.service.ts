@@ -367,6 +367,18 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoCodigo))}/pagamentos`, body, { headers: { Authorization: `Bearer ${token}` } });
   }
 
+  // Admin: set order status (admin namespace)
+  adminSetOrderStatus(token: string | null | undefined, orderId: string | number, status: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post<any>(`${this.baseUrl}/admin/orders/${encodeURIComponent(String(orderId))}/status`, { status }, { headers });
+  }
+
+  // Admin: cancel an order with optional reason
+  adminCancelOrder(token: string | null | undefined, orderId: string | number, motivo?: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post<any>(`${this.baseUrl}/admin/orders/${encodeURIComponent(String(orderId))}/cancelar`, { motivo: motivo || '' }, { headers });
+  }
+
   // Validação de carrinho (preços/estoque) — ajuste a rota conforme seu backend
   validarCarrinho(token: string | undefined, body: { itens: Array<{ id: number; quantidade: number }> }) {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;

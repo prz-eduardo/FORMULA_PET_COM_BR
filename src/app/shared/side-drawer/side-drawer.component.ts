@@ -6,7 +6,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, Rend
   standalone: true,
   imports: [CommonModule],
   template: `
-<div *ngIf="rendered" class="create-drawer sd-overlay" [class.open]="isOpen" [class.left]="position==='left'" (click)="onBackdropClick($event)" role="presentation">
+<div *ngIf="rendered" class="create-drawer sd-overlay" [class.open]="isOpen" [class.left]="position==='left'" [class.full]="full" (click)="onBackdropClick($event)" role="presentation">
   <div class="drawer" #drawer [style.width]="width" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" (transitionend)="onTransitionEnd($event)">
     <ng-content></ng-content>
   </div>
@@ -16,6 +16,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, Rend
 })
 export class SideDrawerComponent implements AfterViewInit, OnDestroy {
   @Input() width = '520px';
+  @Input() full = false;
   @Input() position: 'right' | 'left' = 'right';
   @Input() backdropClose = true;
   @Input() animationDurationMs = 240;
@@ -42,15 +43,27 @@ export class SideDrawerComponent implements AfterViewInit, OnDestroy {
 
   private prevFocused: HTMLElement | null = null;
   private keyHandler?: (e: KeyboardEvent) => void;
+  private lockedScrollY: number | null = null;
 
   constructor(private host: ElementRef, private renderer: Renderer2) {}
 
   ngAfterViewInit(): void {
+    try {
+      if (this.host && this.host.nativeElement && this.host.nativeElement.parentNode !== document.body) {
+        this.renderer.appendChild(document.body, this.host.nativeElement);
+      }
+    } catch (e) {}
     if (this._open) this.show();
   }
 
   ngOnDestroy(): void {
     this.removeKeyListener();
+    this.enableScroll();
+    try {
+      if (this.host && this.host.nativeElement && this.host.nativeElement.parentNode === document.body) {
+        this.renderer.removeChild(document.body, this.host.nativeElement);
+      }
+    } catch (e) {}
   }
 
   private show() {
@@ -60,6 +73,7 @@ export class SideDrawerComponent implements AfterViewInit, OnDestroy {
     requestAnimationFrame(() => {
       this.isOpen = true;
       this.addKeyListener();
+      this.resetInternalScroll();
       // focus the drawer (basic focus management)
       setTimeout(() => this.focusDrawer(), 50);
     });
@@ -122,10 +136,53 @@ export class SideDrawerComponent implements AfterViewInit, OnDestroy {
   }
 
   private disableScroll() {
-    try { document.body.style.overflow = 'hidden'; } catch (e) {}
+    try {
+      // Use fixed positioning to lock background scroll while keeping
+      // the drawer scrollable on iOS/Android. Store current scroll position
+      // so we can restore it when the drawer closes.
+      this.lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${this.lockedScrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    } catch (e) {}
   }
 
   private enableScroll() {
-    try { document.body.style.overflow = ''; } catch (e) {}
+    try {
+      // Restore previous body positioning and scroll position.
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      if (this.lockedScrollY !== null) {
+        window.scrollTo(0, this.lockedScrollY);
+        this.lockedScrollY = null;
+      }
+    } catch (e) {}
+  }
+
+  private resetInternalScroll() {
+    try {
+      const drawerEl: HTMLElement | null = this.drawerRef?.nativeElement || (this.host && this.host.nativeElement.querySelector('.drawer'));
+      if (!drawerEl) return;
+      // reset main drawer scroll
+      try { drawerEl.scrollTop = 0; } catch (e) {}
+      // reset common internal scrollable areas
+      const selectors = ['.content-grid', '.right', '.card-body', '.segment-body', '.items-grid'];
+      selectors.forEach(sel => {
+        try {
+          const el = drawerEl.querySelector(sel) as HTMLElement | null;
+          if (el) el.scrollTop = 0;
+        } catch (e) {}
+      });
+      // reset any other scrollable nodes
+      try {
+        const nodes = Array.from(drawerEl.querySelectorAll<HTMLElement>('[data-scroll], .sd-scroll, .scrollable')) as HTMLElement[];
+        nodes.forEach(n => { try { n.scrollTop = 0; } catch (e) {} });
+      } catch (e) {}
+    } catch (e) {}
   }
 }

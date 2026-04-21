@@ -1,0 +1,33 @@
+/* Shared form layout utilities for admin forms */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Optional two-up layout inside a section (use by adding class `two-up` on `.form-grid`) */
+@media (min-width: 900px) {
+  .form-grid.two-up {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.form-section {
+  padding: 12px;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: block;
+  gap: 8px;
+}
+
+.form-section > h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.form-section .form-grid { margin-top: 6px; }
+
+.form-actions-lite { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }

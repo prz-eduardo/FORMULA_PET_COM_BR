@@ -1,0 +1,23 @@
+<div class="meu-perfil-admin card">
+  <header class="card-header">
+    <h2>Meu Perfil (Admin)</h2>
+    <div class="actions">
+      <button class="btn btn-sec" (click)="voltar()">Voltar</button>
+    </div>
+  </header>
+
+  <div class="card-body" *ngIf="user; else noUser">
+    <dl class="perfil-list">
+      <div class="row"><dt>Nome</dt><dd>{{ user.nome || user.name || user.displayName || '-' }}</dd></div>
+      <div class="row"><dt>Email</dt><dd>{{ user.email || user.mail || '-' }}</dd></div>
+      <div class="row" *ngIf="user.telefone"><dt>Telefone</dt><dd>{{ user.telefone }}</dd></div>
+      <div class="row" *ngIf="user.cpf"><dt>CPF</dt><dd>{{ user.cpf }}</dd></div>
+      <div class="row" *ngIf="user.tipo"><dt>Tipo</dt><dd>{{ user.tipo }}</dd></div>
+      <div class="row" *ngIf="user.is_super !== undefined"><dt>Super</dt><dd>{{ user.is_super ? 'Sim' : 'Não' }}</dd></div>
+    </dl>
+  </div>
+
+  <ng-template #noUser>
+    <div class="card-body">Nenhum usuário autenticado.</div>
+  </ng-template>
+</div>

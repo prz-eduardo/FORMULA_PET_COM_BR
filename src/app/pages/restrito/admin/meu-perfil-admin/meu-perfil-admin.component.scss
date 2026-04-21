@@ -1,0 +1,14 @@
+.meu-perfil-admin {
+  max-width: 900px;
+  margin: 18px auto;
+}
+.meu-perfil-admin .card-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+.meu-perfil-admin .perfil-list { display:block; }
+.meu-perfil-admin .perfil-list .row { display:flex; gap:12px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04); }
+.meu-perfil-admin dt { width:160px; font-weight:600; color:#333; }
+.meu-perfil-admin dd { margin:0; color:#222; }

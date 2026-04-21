@@ -1,20 +1,18 @@
 <div class="banner-image-editor">
-  <div class="editor-controls-row">
-    <label class="file-btn" *ngIf="!imageSrc" (click)="fileInput.click()">Escolher imagem</label>
-    <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" style="display:none" />
-    <div class="warn" *ngIf="warning">{{ warning }}</div>
-  </div>
+  <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" style="display:none" />
+  <div class="warn" *ngIf="warning">{{ warning }}</div>
 
-  <div class="frame" #frame (mousedown)="onDragStart($event)" (touchstart)="onTouchStart($event)" (wheel)="onZoom($event)">
-    <div class="placeholder" *ngIf="!imageSrc">Preview — aspecto esperado {{ expectedRatio | number:'1.2-2' }}</div>
+  <div class="frame" #frame [style.height.px]="frameHeight" (pointerdown)="onPointerDown($event)" (wheel)="onWheel($event)" (dragover)="onFrameDragOver($event)" (dragleave)="onFrameDragLeave($event)" (drop)="onFrameDrop($event)" (click)="onFrameClick($event)">
+    <div class="placeholder" *ngIf="!imageSrc">Arraste a imagem aqui ou clique (Ctrl+Scroll para zoom)</div>
 
     <div class="editor" *ngIf="imageSrc">
-      <img #imgEl class="editor-img" [src]="imageSrc" draggable="false" [style.width.px]="naturalW * scale" [style.height.px]="naturalH * scale" [style.transform]="'translate('+posX+'px,'+posY+'px)'" />
-      <div class="editor-actions">
-        <button type="button" class="small" (click)="onZoomIn(); $event.stopPropagation()">+</button>
-        <button type="button" class="small" (click)="onZoomOut(); $event.stopPropagation()">−</button>
-        <button type="button" class="small" (click)="clearImage(); $event.stopPropagation()">Remover</button>
-      </div>
+      <img #imgEl class="editor-img" [src]="imageSrc" draggable="false"
+           [style.width.px]="naturalW * scale" [style.height.px]="naturalH * scale"
+           [style.transform]="'translate('+posX+'px,'+posY+'px)'" />
     </div>
+  </div>
+
+  <div class="preview" *ngIf="previewData">
+    <img [src]="previewData" alt="Preview" />
   </div>
 </div>

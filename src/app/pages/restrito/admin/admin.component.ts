@@ -6,14 +6,18 @@ import { Subscription } from 'rxjs';
 import { SessionService } from '../../../services/session.service';
 import { ButtonDirective, ButtonComponent } from '../../../shared/button';
 
+import { AdminNotificationComponent } from '../../../admin-notification/admin-notification.component';
+import { AdminHeaderComponent } from '../../../shared/admin-header/admin-header.component';
+
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ButtonDirective, ButtonComponent],
+  imports: [CommonModule, RouterOutlet, ButtonDirective, ButtonComponent, AdminNotificationComponent, AdminHeaderComponent],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
 export class AdminComponent implements OnInit {
+  headerTitle = 'ADMIN PANEL';
   hasProducts = true; // ajuste conforme sua lógica
   isAdmin = false;
   isSuper = false;
@@ -45,15 +49,28 @@ export class AdminComponent implements OnInit {
     try {
       const u = this.router.url || '';
       this.isRootView = u === '/restrito/admin' || u === '/restrito/admin/';
+      this.updateHeaderTitle();
       this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
         const nu = ev.urlAfterRedirects || ev.url || '';
         this.isRootView = nu === '/restrito/admin' || nu === '/restrito/admin/';
+        this.updateHeaderTitle();
       });
     } catch {}
   }
 
   ngOnDestroy() {
     try { if (this.routerSub) this.routerSub.unsubscribe(); } catch (e) {}
+  }
+
+  private updateHeaderTitle() {
+    try {
+      let route: any = this.router.routerState.root;
+      while (route.firstChild) route = route.firstChild;
+      const title = route && route.snapshot && route.snapshot.data && route.snapshot.data['title'];
+      this.headerTitle = title ? title : 'ADMIN PANEL';
+    } catch (e) {
+      this.headerTitle = 'ADMIN PANEL';
+    }
   }
 
   logout() {
@@ -71,7 +88,7 @@ export class AdminComponent implements OnInit {
   goToPacientes() { this.router.navigate(['/pacientes']); }
   goToAreaVet() { this.router.navigate(['/area-vet']); }
   goToLoja() { this.router.navigate(['/loja']); }
-  goToPerfil() { this.router.navigate(['/editar-perfil']); }
+  goToPerfil() { this.router.navigate(['/restrito/admin/meu-perfil-admin']); }
 
   // Novos atalhos do painel admin (rotas placeholders para implementar)
   goToDashboard() { this.router.navigate(['/restrito/admin/dashboard']); }

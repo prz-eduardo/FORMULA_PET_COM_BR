@@ -1,0 +1,11 @@
+<div class="ccm-backdrop">
+  <div class="ccm-modal" role="dialog" aria-modal="true" aria-labelledby="ccm-title">
+    <h3 id="ccm-title">{{ title }}</h3>
+    <p>Informe o motivo do cancelamento (opcional):</p>
+    <textarea [(ngModel)]="reason" placeholder="Motivo do cancelamento..." rows="4"></textarea>
+    <div class="ccm-actions">
+      <button class="btn" (click)="doCancel()">Cancelar</button>
+      <button class="btn primary" (click)="doConfirm()">Confirmar</button>
+    </div>
+  </div>
+</div>

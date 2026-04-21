@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal, NgZone, ChangeDetectorRef, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,7 +7,6 @@ import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
 import { EMBALAGENS } from '../../../../constants/embalagens';
 import { ProductCardV2Component } from '../../../../product-card-v2/product-card-v2.component';
-import { TaxonomyModalComponent } from '../../../../shared/taxonomy-modal/taxonomy-modal.component';
 import { ShopProduct } from '../../../../services/store.service';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../../../constants/card.constants';
 
@@ -16,11 +15,16 @@ interface AtivoBasic { id: number | string; nome: string; descricao?: string }
 @Component({
   selector: 'app-produto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardV2Component, TaxonomyModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardV2Component],
   templateUrl: './produto.component.html',
   styleUrls: ['./produto.component.scss']
 })
 export class ProdutoComponent implements OnInit {
+  @Input() editItem: ProdutoDto | null = null;
+  @Input() embedded = false;
+  @Output() closed = new EventEmitter<void>();
+  @Output() saved = new EventEmitter<any>();
+  private _pendingEditItem: any | null = null;
       public readonly defaultCardWidth = DEFAULT_PRODUCT_CARD_WIDTH;
     destaqueHome = false;
     imagemPrincipal: string | null = null;
@@ -93,8 +97,6 @@ export class ProdutoComponent implements OnInit {
   private promoOverlay: HTMLDivElement | null = null;
   private promoListContainer: HTMLDivElement | null = null;
   private loadingPromos = false;
-  private tagOverlay: HTMLDivElement | null = null;
-  private categoryOverlay: HTMLDivElement | null = null;
   private _docDragOverHandler: any = null;
   private _docDropHandler: any = null;
   
@@ -209,11 +211,58 @@ export class ProdutoComponent implements OnInit {
       error: () => { this.formulasSelect = []; }
     });
 
-    // editar produto se tiver id na rota
+    // editar produto se tiver id na rota (aplicar somente quando não estamos em modo embedded)
     const produtoId = this.route.snapshot.queryParamMap.get('produto_id');
-    if (produtoId) this.loadProduto(produtoId);
+    if (!this.editItem && produtoId) this.loadProduto(produtoId);
+    // se editItem foi fornecido via @Input, aplica-o
+    if (this.editItem) this.applyEditItem(this.editItem);
+    if (this._pendingEditItem) { this.applyEditItem(this._pendingEditItem); this._pendingEditItem = null; }
 
     // ativo search removido
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['editItem']) {
+      const val = changes['editItem'].currentValue;
+      if (!val) {
+        // se entramos em modo embedded com null -> reset form
+        if (this.form) this.resetForm();
+        return;
+      }
+      if (this.form) this.applyEditItem(val);
+      else this._pendingEditItem = val;
+    }
+  }
+
+  private applyEditItem(p: any) {
+    try {
+      const catId = (p as any).categoryId ?? this.categoriasList.find(c => c.name === (p as any).category)?.id ?? null;
+      this.form.patchValue({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        image: p.image ?? null,
+        categoryId: catId,
+        discount: p.discount ?? null,
+        rating: p.rating ?? null,
+        stock: p.stock ?? null,
+        weightValue: p.weightValue ?? null,
+        weightUnit: p.weightUnit ?? 'g',
+        formulaId: (p as any).formId ?? null,
+        manipulado: !!((p as any).formId || (p as any).tipo === 'manipulado')
+      });
+
+      this.tagsFA.clear(); (p.tags || []).forEach((t: any) => this.tagsFA.push(this.fb.control<string>(t)));
+      this.dosageFA.clear(); (p.customizations?.dosage || []).forEach((d: any) => this.dosageFA.push(this.fb.control<string>(d)));
+      this.packagingFA.clear(); (p.customizations?.packaging || []).forEach((e: any) => this.packagingFA.push(this.fb.control<string>(e)));
+
+      this.imagesFA.clear();
+      const imgs = (p as any).images ?? [];
+      imgs.forEach((u: string) => this.imagesFA.push(this.fb.control<string>(u)));
+      this.imagemPrincipal = p.image ?? (imgs.length ? imgs[0] : null);
+      try { this.syncPrecoDigitsFromForm(); } catch(e) {}
+    } catch (e) { console.error('applyEditItem error', e); }
   }
 
   private precoDigits = '';
@@ -571,8 +620,6 @@ export class ProdutoComponent implements OnInit {
 
     // remove any dynamic overlays appended to body
     try {
-      if (this.tagOverlay) { this.tagOverlay.remove(); this.tagOverlay = null; }
-      if (this.categoryOverlay) { this.categoryOverlay.remove(); this.categoryOverlay = null; }
       if (this.promoOverlay) { this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; }
     } catch (e) { /* noop */ }
   }
@@ -671,25 +718,7 @@ export class ProdutoComponent implements OnInit {
   addPackaging(val: string) { if (!val) return; this.packagingFA.push(this.fb.control<string>(val)); this.showPackagingModal = false; }
   removePackagingAt(i: number) { this.packagingFA.removeAt(i); }
 
-  // handlers for inline '+' buttons to either add typed value or open modal
-  onTagAddButton(event?: Event) {
-    try {
-      // '+' should always open the modal; insertion via modal or search
-      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
-      console.log('onTagAddButton called - opening tag modal');
-      event?.stopPropagation();
-      this.openTagModal(event);
-    } catch (e) { console.error('onTagAddButton error', e); }
-  }
-
-  onPackagingAddButton(event?: Event) {
-    try {
-      try { this.removeStrayOverlays(); } catch(e) { /* noop */ }
-      console.log('onPackagingAddButton called - opening packaging modal');
-      event?.stopPropagation();
-      this.openPackagingModal(event);
-    } catch (e) { console.error('onPackagingAddButton error', e); }
-  }
+  // removed inline '+' handlers that opened taxonomy modals
 
   // toggles for selection chips
   toggleTagVal(name: string) {
@@ -761,7 +790,6 @@ export class ProdutoComponent implements OnInit {
     this.categoryQuery.set('');
     this.categoriesFiltered = [];
     this.selectedCategoryIndex = -1;
-    this.showCategoryModal = false;
   }
 
   // Autocomplete helpers for Tags (multi)
@@ -1091,8 +1119,6 @@ export class ProdutoComponent implements OnInit {
       const els = Array.from(document.querySelectorAll('.modal.dynamic-overlay'));
       els.forEach(e => { try { e.remove(); } catch(_) { /* noop */ } });
     } catch (e) { /* noop */ }
-    this.tagOverlay = null;
-    this.categoryOverlay = null;
     this.promoOverlay = null;
     this.promoListContainer = null;
   }
@@ -1103,10 +1129,17 @@ export class ProdutoComponent implements OnInit {
       // use existing pickPackaging logic to toggle and clear filters
       this.pickPackaging(name);
       this.zone.run(() => {
-        this.showPackagingModal = false;
         try { this.cdr.detectChanges(); } catch(e) { /* noop */ }
       });
     } catch (e) { console.error('selectPackagingModal error', e); }
+  }
+
+  selectTagModal(item: any) {
+    try {
+      const name = item?.name || item;
+      this.pickTag(name);
+      this.zone.run(() => { try { this.cdr.detectChanges(); } catch(e) { /* noop */ } });
+    } catch (e) { console.error('selectTagModal error', e); }
   }
 
   // Create a simple DOM overlay attached to document.body (browser-only)
@@ -1173,105 +1206,9 @@ export class ProdutoComponent implements OnInit {
     this.updatePromoList();
   }
 
-  private showCategoryOverlay() {
-    if (typeof document === 'undefined') return;
-    const overlay = this.createOverlay(); if (!overlay) return;
-    // keep a reference so it can be removed programmatically
-    this.categoryOverlay = overlay;
-    const modal = document.createElement('div'); Object.assign(modal.style as any, { maxWidth: '720px', width: '100%', background: '#0d1419', borderRadius: '12px', padding: '18px', color: '#fff' });
-    const title = document.createElement('h2'); title.textContent = 'Selecionar ou Adicionar Categoria'; title.style.marginTop = '0'; modal.appendChild(title);
-    const list = document.createElement('div'); list.style.display = 'flex'; list.style.flexWrap = 'wrap'; list.style.gap = '8px'; list.style.marginBottom = '12px';
-    (this.categoriasList || []).forEach(c => {
-      const b = document.createElement('button'); b.textContent = c.name; Object.assign(b.style as any, { padding: '6px 10px', borderRadius: '8px' }); b.addEventListener('click', () => { this.zone.run(() => { this.selectCategoryModal(c.id); }); overlay.remove(); this.categoryOverlay = null; });
-      list.appendChild(b);
-    });
-    modal.appendChild(list);
-    const input = document.createElement('input'); input.placeholder = 'Ex: Vitaminas'; input.style.width = '100%'; input.style.padding = '10px'; input.style.marginBottom = '8px'; modal.appendChild(input);
-    const addBtn = document.createElement('button'); addBtn.textContent = 'Adicionar'; addBtn.style.marginRight = '8px'; addBtn.addEventListener('click', () => { const val = input.value?.trim(); if (val) { this.zone.run(() => { this.createTaxonomia('categorias', val); }); overlay.remove(); this.categoryOverlay = null; } });
-    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Fechar'; closeBtn.addEventListener('click', () => { overlay.remove(); this.categoryOverlay = null; try { this.zone.run(() => { this.showCategoryModal = false; }); } catch(e) {} });
-    const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.justifyContent = 'flex-end'; actions.style.marginTop = '12px'; actions.appendChild(addBtn); actions.appendChild(closeBtn); modal.appendChild(actions);
-    overlay.appendChild(modal); document.body.appendChild(overlay);
-    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) { overlay.remove(); this.categoryOverlay = null; try { this.zone.run(() => { this.showCategoryModal = false; }); } catch(e) {} } });
-  }
+  // category overlay removed
 
-  private showTagOverlay() {
-    if (typeof document === 'undefined') return;
-    const overlay = this.createOverlay(); if (!overlay) return;
-    const modal = document.createElement('div');
-    Object.assign(modal.style as any, { maxWidth: '840px', width: '100%', background: '#0d1419', borderRadius: '12px', padding: '18px', color: '#fff' });
-    const title = document.createElement('h2'); title.textContent = 'Selecionar ou Adicionar Tag'; title.style.marginTop = '0'; modal.appendChild(title);
-
-    // tag chips container
-    const list = document.createElement('div');
-    Object.assign(list.style as any, { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', alignItems: 'center' });
-
-    const selected = new Set(this.tagsFA.value || []);
-    const applyActive = (el: HTMLElement) => {
-      el.style.background = 'linear-gradient(180deg,#27EF9F,#1fd08a)';
-      el.style.color = '#07121a';
-      el.style.border = '1px solid rgba(39,239,159,0.12)';
-      (el as HTMLElement).style.boxShadow = '0 10px 28px rgba(39,239,159,0.08)';
-    };
-    const applyIdle = (el: HTMLElement) => {
-      el.style.background = '#0b1114';
-      el.style.color = '#e6eef8';
-      el.style.border = '1px solid rgba(255,255,255,0.06)';
-      (el as HTMLElement).style.boxShadow = 'none';
-    };
-
-    const makeChip = (name: string) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = name;
-      Object.assign(b.style as any, { padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', outline: 'none', transition: 'all .12s ease' });
-      const isSel = selected.has(name);
-      if (isSel) applyActive(b); else applyIdle(b);
-      b.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        // toggle visually
-        const nowSel = !selected.has(name);
-        if (nowSel) { selected.add(name); applyActive(b); } else { selected.delete(name); applyIdle(b); }
-        // update Angular form model
-        this.zone.run(() => { this.toggleTagVal(name); });
-      });
-      return b;
-    };
-
-    (this.tagsList || []).forEach(t => list.appendChild(makeChip(t.name)));
-    modal.appendChild(list);
-
-    // input to add new tag (Enter to add)
-    const input = document.createElement('input');
-    input.placeholder = 'Ex: vitamina';
-    Object.assign(input.style as any, { width: '100%', padding: '10px', marginBottom: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: '#071217', color: '#e6eef8' });
-    input.addEventListener('keydown', (ev: KeyboardEvent) => {
-      if (ev.key === 'Enter') {
-        const val = (input.value || '').trim();
-        if (!val) return;
-        // add to model and add chip if missing
-        this.zone.run(() => { this.addTag(val); });
-        const exists = Array.from(list.children).some(ch => (ch as HTMLElement).textContent === val);
-        if (!exists) {
-          const chip = makeChip(val);
-          // ensure newly added is shown as selected
-          selected.add(val); applyActive(chip);
-          list.appendChild(chip);
-        }
-        input.value = '';
-      }
-    });
-    modal.appendChild(input);
-
-    // single Close button (avoid redundant actions)
-    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Fechar';
-    Object.assign(closeBtn.style as any, { padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' });
-    closeBtn.addEventListener('click', () => { overlay.remove(); this.tagOverlay = null; try { this.zone.run(() => { this.showTagModal = false; }); } catch(e) {} });
-    const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.justifyContent = 'flex-end'; actions.style.marginTop = '12px'; actions.appendChild(closeBtn); modal.appendChild(actions);
-    // keep reference so it can be removed programmatically
-    this.tagOverlay = overlay;
-    overlay.appendChild(modal); document.body.appendChild(overlay);
-    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) { overlay.remove(); this.tagOverlay = null; try { this.zone.run(() => { this.showTagModal = false; }); } catch(e) {} } });
-  }
+  // tag overlay removed
 
   private updatePromoList(filter: string = '') {
     if (!this.promoListContainer) return;
@@ -1458,12 +1395,29 @@ export class ProdutoComponent implements OnInit {
         const promoId = this.promocaoSelecionada?.id;
         if (!legacyId && newId && promoId) {
           this.api.setPromocaoProdutos(promoId, [Number(newId)]).subscribe({
-            next: () => { this.saving.set(false); this.success.set('Produto salvo e campanha aplicada.'); this.form.patchValue({ id: newId }); },
-            error: () => { this.saving.set(false); this.success.set('Produto salvo. Falha ao aplicar campanha.'); this.form.patchValue({ id: newId }); }
+            next: () => {
+              this.saving.set(false);
+              this.success.set('Produto salvo e campanha aplicada.');
+              this.form.patchValue({ id: newId });
+              if (this.embedded) {
+                try { this.saved.emit({ id: newId, ...this.form.value }); } catch(e) {}
+              }
+            },
+            error: () => {
+              this.saving.set(false);
+              this.success.set('Produto salvo. Falha ao aplicar campanha.');
+              this.form.patchValue({ id: newId });
+              if (this.embedded) {
+                try { this.saved.emit({ id: newId, ...this.form.value }); } catch(e) {}
+              }
+            }
           });
           return;
         }
         this.saving.set(false); this.success.set('Produto salvo com sucesso.'); this.form.patchValue({ id: res.id });
+        if (this.embedded) {
+          try { this.saved.emit(res); } catch(e) { /* noop */ }
+        }
       },
       error: (err: any) => {
         console.error(err);
@@ -1488,6 +1442,14 @@ export class ProdutoComponent implements OnInit {
         this.error.set('Erro ao salvar produto.');
       }
     });
+  }
+
+  onCloseClick() {
+    if (this.embedded) {
+      try { this.closed.emit(); } catch(e) {}
+    } else {
+      try { this.router.navigate(['/restrito/lista-produtos']); } catch(e) {}
+    }
   }
 
 }

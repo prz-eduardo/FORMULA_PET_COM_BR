@@ -1,0 +1,14 @@
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.admin-header h1 { margin: 0; }
+.badge-super {
+  font-size: 0.6em;
+  margin-left: 0.5rem;
+  color: #fff;
+  background: #333;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}

@@ -16,7 +16,12 @@ export interface FormField {
 }
 
 export interface FormSchema {
-  fields: FormField[];
+  fields?: FormField[];
+  /**
+   * Optional grouped sections for forms. When present, the admin-crud
+   * renderer will render `sections` instead of the flat `fields` list.
+   */
+  sections?: Array<{ title?: string; twoUp?: boolean; fields: FormField[] }>;
   submitLabel?: string;
   allowDelete?: boolean;
   title?: string;

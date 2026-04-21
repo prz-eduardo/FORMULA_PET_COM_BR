@@ -1,1 +1,29 @@
 :host { display:block; }
+
+/* Ensure modal visuals are present even when this component is used as a child component
+	 - parent component styles are scoped and may not reach into this component's template
+	 - provide local `.modal` and `.modal-content` rules so the overlay is visible */
+.modal {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0,0,0,0.45);
+	z-index: 2147483646;
+	padding: 20px;
+}
+.modal .modal-content {
+	background: #0f1724;
+	padding: 18px;
+	border-radius: 12px;
+	width: min(720px, 96%);
+	max-height: 90vh;
+	overflow: auto;
+	border: 1px solid rgba(255,255,255,0.04);
+	color: #e6eef8;
+	box-sizing: border-box;
+}
+
+.modal input, .modal textarea, .modal select { width:100%; box-sizing:border-box; background:#071217; color:#e6eef8; border:1px solid rgba(255,255,255,0.04); padding:10px; border-radius:8px; }
+.modal .existing-items .badge { margin:6px; }

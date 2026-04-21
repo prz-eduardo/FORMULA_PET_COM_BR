@@ -43,21 +43,41 @@ export class CuponsAdminComponent implements OnInit {
   ];
 
   cuponsFormSchema: FormSchema = {
-    fields: [
-      { key: 'codigo', label: 'Código', type: 'text', required: true },
-      { key: 'descricao', label: 'Descrição', type: 'text' },
-      { key: 'tipo', label: 'Tipo', type: 'select', options: [{ value: 'percentual', label: 'Percentual' }, { value: 'valor', label: 'Valor' }], default: 'percentual' },
-      { key: 'valor', label: 'Valor', type: 'number' },
-      { key: 'valor_minimo', label: 'Valor mínimo', type: 'number' },
-      { key: 'desconto_maximo', label: 'Desconto máximo', type: 'number' },
-      { key: 'validade', label: 'Validade', type: 'date' },
-      { key: 'primeira_compra', label: 'Primeira compra', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
-      { key: 'frete_gratis', label: 'Frete grátis', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
-      { key: 'ativo', label: 'Ativo', type: 'select', options: [{ value: 1, label: 'Ativo' }, { value: 0, label: 'Inativo' }], default: 1 },
-      { key: 'usado', label: 'Usado', type: 'number' },
-      { key: 'restricoes_json', label: 'Restrições (JSON)', type: 'textarea' },
-      { key: 'max_uso', label: 'Max uso', type: 'number' },
-      { key: 'limite_por_cliente', label: 'Limite por cliente', type: 'number' }
+    sections: [
+      {
+        title: 'Informações básicas',
+        fields: [
+          { key: 'codigo', label: 'Código', type: 'text', required: true },
+          { key: 'descricao', label: 'Descrição', type: 'text' },
+          { key: 'tipo', label: 'Tipo', type: 'select', options: [{ value: 'percentual', label: 'Percentual' }, { value: 'valor', label: 'Valor' }], default: 'percentual' }
+        ]
+      },
+      {
+        title: 'Valores',
+        fields: [
+          { key: 'valor', label: 'Valor', type: 'number' },
+          { key: 'valor_minimo', label: 'Valor mínimo', type: 'number' },
+          { key: 'desconto_maximo', label: 'Desconto máximo', type: 'number' }
+        ]
+      },
+      {
+        title: 'Regras',
+        fields: [
+          { key: 'validade', label: 'Validade', type: 'date' },
+          { key: 'primeira_compra', label: 'Primeira compra', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
+          { key: 'frete_gratis', label: 'Frete grátis', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
+          { key: 'ativo', label: 'Ativo', type: 'select', options: [{ value: 1, label: 'Ativo' }, { value: 0, label: 'Inativo' }], default: 1 },
+          { key: 'usado', label: 'Usado', type: 'number' },
+          { key: 'max_uso', label: 'Max uso', type: 'number' }
+        ]
+      },
+      {
+        title: 'Avançado',
+        fields: [
+          { key: 'restricoes_json', label: 'Restrições (JSON)', type: 'textarea' },
+          { key: 'limite_por_cliente', label: 'Limite por cliente', type: 'number' }
+        ]
+      }
     ],
     submitLabel: 'Salvar',
     title: 'Cupom'

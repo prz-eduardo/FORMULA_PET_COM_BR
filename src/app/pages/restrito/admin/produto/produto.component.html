@@ -1,11 +1,14 @@
 <div class="produto-container" [formGroup]="form">
   <div class="header">
     <h2>{{ form.value.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
-    <div class="stepper">
-      <button type="button" *ngFor="let s of steps; let i = index"
-              [class.active]="step() === i" [class.done]="i < step()"
-              [attr.data-step]="i+1"
-              (click)="goToStep(i)">{{ s.label }}</button>
+    <div class="header-actions">
+      <div class="stepper">
+        <button type="button" *ngFor="let s of steps; let i = index"
+                [class.active]="step() === i" [class.done]="i < step()"
+                [attr.data-step]="i+1"
+                (click)="goToStep(i)">{{ s.label }}</button>
+      </div>
+      <button *ngIf="embedded" type="button" class="btn-close" (click)="onCloseClick()">Fechar</button>
     </div>
   </div>
   <!-- STEP 0: Imagem (obrigatória) -->
@@ -194,8 +197,8 @@
               <div class="search-box">
                 <input type="text" autocomplete="off" placeholder="Buscar embalagem" [value]="packagingQuery()" (input)="onPackagingQueryInput($any($event.target).value)" (keydown)="onPackagingKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(packagingFiltered.length || 0) > 0" aria-controls="pack-list" id="packInput" />
                 <button *ngIf="packagingQuery()" type="button" class="clear-btn" (click)="onPackagingQueryInput('')">✕</button>
-                <button type="button" class="inline-add-btn" (click)="openPackagingModal($event)">+</button>
               </div>
+              <button type="button" class="open-modal-btn" title="Abrir modal de embalagens" (click)="$event.stopPropagation(); openPackagingModal($event)">+</button>
               <div class="sugestao-list" *ngIf="(packagingFiltered.length || 0) > 0">
                 <div id="pack-list" role="listbox">
                   <div class="sugestao-item" *ngFor="let p of packagingFiltered; let i=index" role="option" [class.focused]="selectedPackagingIndex===i" (click)="pickPackaging(p.name)" (mouseenter)="setPackagingIndex(i)">
@@ -216,8 +219,8 @@
               <div class="search-box">
                 <input type="text" autocomplete="off" placeholder="Buscar categoria" [value]="categoryQuery()" (input)="onCategoryQueryInput($any($event.target).value)" (keydown)="onCategoryKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(categoriesFiltered.length || 0) > 0" aria-controls="category-list" id="categoryInput" />
                 <button *ngIf="categoryQuery()" type="button" class="clear-btn" (click)="onCategoryQueryInput('')">✕</button>
-                <button type="button" class="inline-add-btn" (click)="openCategoryModal($event)" aria-label="Selecionar categoria">+</button>
               </div>
+              <button type="button" class="open-modal-btn" title="Abrir modal de categorias" (click)="$event.stopPropagation(); openCategoryModal($event)">+</button>
               <div class="sugestao-list" *ngIf="(categoriesFiltered.length || 0) > 0">
                 <div id="category-list" role="listbox">
                   <div class="sugestao none" role="option" (click)="selectCategoryById(null)" [class.focused]="selectedCategoryIndex===-1" (mouseenter)="setCategoryIndex(-1)">
@@ -242,8 +245,8 @@
               <div class="search-box">
                 <input type="text" autocomplete="off" placeholder="Buscar ou adicionar tag" [value]="tagQuery()" (input)="onTagQueryInput($any($event.target).value)" (keydown)="onTagKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(tagsFiltered.length || 0) > 0" aria-controls="tag-list" id="tagInput" />
                 <button *ngIf="tagQuery()" type="button" class="clear-btn" (click)="onTagQueryInput('')">✕</button>
-                <button type="button" class="inline-add-btn" (click)="openTagModal($event)">+</button>
               </div>
+              <button type="button" class="open-modal-btn" title="Abrir modal de tags" (click)="$event.stopPropagation(); openTagModal($event)">+</button>
               <div class="sugestao-list" *ngIf="(tagsFiltered.length || 0) > 0">
                 <div id="tag-list" role="listbox">
                   <div class="sugestao-item" *ngFor="let t of tagsFiltered; let i=index" role="option" [class.focused]="selectedTagIndex===i" (click)="pickTag(t.name)" (mouseenter)="setTagIndex(i)">
@@ -327,10 +330,6 @@
           <aside class="review-right">
             <!-- Preview do card da loja (simulação) - mostrar os dois tipos usados na loja -->
             <div class="preview-wrapper">
-              <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-                <button type="button" class="btn-sec" (click)="openPreviewPage()">Abrir pré-visualização (nova aba)</button>
-                <small class="muted">(não altera o formulário atual)</small>
-              </div>
 
               <!-- D-card (banner style) - versão não clicável com botão de adicionar visual -->
               <div class="d-card banner mobile-feature admin-preview-card" [attr.aria-label]="form.value.name || 'Preview'" style="width:100%" [style.max-width]="defaultCardWidth">
@@ -392,16 +391,6 @@
 
 
   <!-- Modais Taxonomias -->
-  <app-taxonomy-modal *ngIf="showCategoryModal"
-    [title]="'Selecionar ou Adicionar Categoria'"
-    [items]="categoriasList"
-    [selected]="form.value.categoryId"
-    (select)="selectCategoryModal($event.id || $event)"
-    (add)="createTaxonomia('categorias', $event)"
-    (delete)="deleteTaxonomia('categorias', $event)"
-    (close)="showCategoryModal=false">
-  </app-taxonomy-modal>
-
   <div class="modal" *ngIf="showDosageModal">
     <div class="modal-content">
       <h4>Adicionar Dosagem</h4>
@@ -417,32 +406,73 @@
       <button (click)="showDosageModal=false">Cancelar</button>
     </div>
   </div>
-  <app-taxonomy-modal *ngIf="showPackagingModal"
-    [title]="'Selecionar ou Adicionar Embalagem'"
-    [items]="embalagensList"
-    [selected]="packagingFA.value"
-    [multiple]="true"
-    (select)="selectPackagingModal($event)"
-    (add)="addPackaging($event); onPackagingQueryInput('')"
-    (delete)="deleteTaxonomia('embalagens', $event)"
-    (close)="showPackagingModal=false">
-  </app-taxonomy-modal>
-
-  <app-taxonomy-modal *ngIf="showTagModal"
-    [title]="'Selecionar ou Adicionar Tag'"
-    [items]="tagsList"
-    [selected]="tagsFA.value"
-    [multiple]="true"
-    (select)="toggleTagVal($event.name || $event)"
-    (add)="addTag($event); onTagQueryInput('')"
-    (delete)="deleteTaxonomia('tags', $event)"
-    (close)="showTagModal=false">
-  </app-taxonomy-modal>
+  
 
   <div class="modal" *ngIf="success()">
     <div class="modal-content">
       <h4>{{ success() }}</h4>
       <button (click)="success.set(null); router.navigate(['/restrito/admin'])">OK</button>
+    </div>
+  </div>
+
+  <!-- Simples modais inline para taxonomias (implementação reduzida) -->
+  <div class="modal" *ngIf="showPackagingModal" (click)="showPackagingModal=false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h4>Embalagens</h4>
+      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+        <span *ngFor="let p of embalagensList" class="badge" [class.selected]="hasPackaging(p.name)" (click)="pickPackaging(p.name)">
+          {{ p.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('embalagens', p); $event.stopPropagation()">-</span>
+        </span>
+      </div>
+      <hr>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input #packInput type="text" placeholder="Ex: Frasco" />
+        <button type="button" (click)="addPackaging(packInput.value); packInput.value=''">Adicionar</button>
+      </div>
+      <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+        <button type="button" (click)="showPackagingModal=false">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" *ngIf="showTagModal" (click)="showTagModal=false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h4>Tags</h4>
+      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+        <span *ngFor="let t of tagsList" class="badge" [class.selected]="hasTag(t.name)" (click)="pickTag(t.name)">
+          {{ t.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('tags', t); $event.stopPropagation()">-</span>
+        </span>
+      </div>
+      <hr>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input #tagInput type="text" placeholder="Ex: dermatológico" />
+        <button type="button" (click)="addTag(tagInput.value); tagInput.value=''">Adicionar</button>
+      </div>
+      <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+        <button type="button" (click)="showTagModal=false">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" *ngIf="showCategoryModal" (click)="showCategoryModal=false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h4>Categorias</h4>
+      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+        <span *ngFor="let c of categoriasList" class="badge" [class.selected]="form.value.categoryId === c.id" (click)="selectCategoryModal(c.id)">
+          {{ c.name }}
+          <span class="badge-remove" (click)="deleteTaxonomia('categorias', c); $event.stopPropagation()">-</span>
+        </span>
+      </div>
+      <hr>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input #catInput type="text" placeholder="Ex: Suplementos" />
+        <button type="button" (click)="createTaxonomia('categorias', catInput.value); catInput.value=''">Adicionar</button>
+      </div>
+      <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+        <button type="button" (click)="showCategoryModal=false">Fechar</button>
+      </div>
     </div>
   </div>
 
@@ -488,7 +518,9 @@
         <div>
           <strong>Tipo:</strong> {{ promoDetalhe?.tipo }} ({{ promoDetalhe?.ui?.tipo_simbolo }})
         </div>
-        <div>
+        <!-- taxonomy modals moved to top-level to render independently -->
+
+        <div class="modal" *ngIf="success()">
           <strong>Início:</strong> {{ promoDetalhe?.ui?.start?.human || '—' }}
         </div>
         <div>

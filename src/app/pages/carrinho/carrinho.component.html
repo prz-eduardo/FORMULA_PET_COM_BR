@@ -60,7 +60,7 @@
         </div>
         <button class="remove" (click)="onRequestRemove(it.product.id)" aria-label="Remover item" title="Remover">&times;</button>
         </div>
-      <div class="allergy-toast" *ngIf="showAllergyModal" #allergyPortal (click)="$event.stopPropagation()" role="status" aria-live="polite">
+      <div class="allergy-toast" *ngIf="showAllergyModal" [class.closing]="allergyClosing" #allergyPortal (click)="$event.stopPropagation()" role="status" aria-live="polite">
         <div class="allergy-top">
           <strong>Atenção: possível alergia</strong>
           <button class="btn small light" (click)="closeAllAllergies()" title="Fechar tudo">✕</button>

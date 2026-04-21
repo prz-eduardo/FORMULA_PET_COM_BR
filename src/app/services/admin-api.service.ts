@@ -109,7 +109,12 @@ export interface PessoaDto {
   city?: string | null;
   uf?: string | null;
   cpf?: string | null;
-  role?: 'cliente' | 'vet' | 'admin';
+  // Role is flexible (admin, funcionario, super, etc.)
+  role?: string;
+  // Areas/permissions the admin user can manage (e.g. ['pedidos','produtos'])
+  areas?: string[];
+  // flag for super user
+  is_super?: 0 | 1;
   tipo?: 'cliente' | 'vet' | 'admin';
   active?: 0 | 1;
   ativo?: 0 | 1;
@@ -879,12 +884,14 @@ export class AdminApiService {
     return this.http.get<BannerDto>(`${this.baseUrl}/banners/${id}`, { headers: this.headers() });
   }
 
-  createBanner(body: Partial<BannerDto>): Observable<BannerDto> {
-    return this.http.post<BannerDto>(`${this.baseUrl}/banners`, body, { headers: this.headers() });
+  createBanner(body: Partial<BannerDto> | FormData): Observable<BannerDto> {
+    // Accept either a JSON payload or a FormData (multipart) with image files
+    return this.http.post<BannerDto>(`${this.baseUrl}/banners`, body as any, { headers: this.headers() });
   }
 
-  updateBanner(id: string | number, body: Partial<BannerDto>): Observable<BannerDto> {
-    return this.http.put<BannerDto>(`${this.baseUrl}/banners/${id}`, body, { headers: this.headers() });
+  updateBanner(id: string | number, body: Partial<BannerDto> | FormData): Observable<BannerDto> {
+    // Accept either a JSON payload or a FormData (multipart) with image files
+    return this.http.put<BannerDto>(`${this.baseUrl}/banners/${id}`, body as any, { headers: this.headers() });
   }
 
   deleteBanner(id: string | number): Observable<{ ok: boolean }> {

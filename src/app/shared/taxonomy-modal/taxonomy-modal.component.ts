@@ -14,6 +14,7 @@ export class TaxonomyModalComponent {
   @Input() items: Array<{ id: any; name: string }> = [];
   @Input() selected: any = null; // for multiple selection this can be array of names/ids
   @Input() multiple = false;
+  @Input() allowAdd = true;
 
   @Output() select = new EventEmitter<any>();
   @Output() add = new EventEmitter<string>();
