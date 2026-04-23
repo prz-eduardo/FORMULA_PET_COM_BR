@@ -1,4 +1,5 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { StoreService } from './store.service';
 import { auth, db } from '../firebase-config';
 import { 
   GoogleAuthProvider, 
@@ -26,7 +27,10 @@ export class AuthService {
 
   public user$ = new BehaviorSubject<User | null>(null);
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private store: StoreService
+  ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
 
     // inicializa o loggedInSubject de forma segura (evita acessar localStorage no server)
@@ -85,10 +89,12 @@ export class AuthService {
       }
       this.loggedIn.next(true);
       this.loggedInSubject.next(true);
+      try { this.store.invalidateClienteSession(); } catch { /* evita ciclo em testes */ }
     } else {
       // invalid token -> ensure logged out state
       this.loggedIn.next(false);
       this.loggedInSubject.next(false);
+      try { this.store.invalidateClienteSession(); } catch {}
     }
   }
 
@@ -141,10 +147,12 @@ export class AuthService {
         (window as any).localStorage.setItem(this.tokenKey, token);
         this.loggedIn.next(true);
         this.loggedInSubject.next(true);
+        try { this.store.invalidateClienteSession(); } catch {}
       } else {
         (window as any).localStorage.removeItem(this.tokenKey);
         this.loggedIn.next(false);
         this.loggedInSubject.next(false);
+        try { this.store.invalidateClienteSession(); } catch {}
       }
     } catch {}
   }
@@ -157,6 +165,7 @@ export class AuthService {
       (window as any).sessionStorage.removeItem(this.tokenKey);
       this.loggedIn.next(false);
       this.loggedInSubject.next(false);
+      try { this.store.invalidateClienteSession(); } catch {}
     } catch {}
   }
 }

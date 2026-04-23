@@ -8,7 +8,7 @@ import { SessionService } from '../../services/session.service';
 
 @Injectable({ providedIn: 'root' })
 export class SupportChatIdentityService {
-  private inFlight: Promise<string> | null = null;
+  private signInFlight: Promise<string> | null = null;
 
   constructor(
     private http: HttpClient,
@@ -23,10 +23,14 @@ export class SupportChatIdentityService {
     if (!isPlatformBrowser(this.platformId)) {
       return '';
     }
-    if (this.inFlight) {
-      return this.inFlight;
+    const existing = supportAuth.currentUser?.uid;
+    if (existing) {
+      return existing;
     }
-    this.inFlight = (async () => {
+    if (this.signInFlight) {
+      return this.signInFlight;
+    }
+    this.signInFlight = (async () => {
       const headers = this.session.getAuthHeaders();
       if (!headers) {
         throw new Error('Sessão necessária para o chat');
@@ -38,14 +42,14 @@ export class SupportChatIdentityService {
       if (!res?.token) {
         throw new Error('Resposta de token de chat inválida');
       }
-      await signInWithCustomToken(supportAuth, res.token);
-      this.inFlight = null;
-      return res.uid;
-    })().catch((e) => {
-      this.inFlight = null;
-      throw e;
-    });
-    return this.inFlight;
+      const cred = await signInWithCustomToken(supportAuth, res.token);
+      return cred.user.uid;
+    })();
+    try {
+      return await this.signInFlight;
+    } finally {
+      this.signInFlight = null;
+    }
   }
 
   getSupportUidOrThrow(): string {

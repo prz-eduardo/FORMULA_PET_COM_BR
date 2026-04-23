@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SmartStatusButtonComponent } from '../smart-status-button/smart-status-button.component';
 import { extractItems, extractCliente, extractShipping, extractTotals, formatCurrency } from '../order-utils';
@@ -15,6 +15,8 @@ export class OrderDetailsComponent implements OnChanges {
   @Input() order: any;
   @Input() mode: 'compact' | 'full' = 'compact';
   @Input() hideHeader: boolean = false;
+  /** Conteúdo dentro do drawer admin (fx-section + sem ações duplicadas no corpo). */
+  readonly adminEmbedded = input(false);
   @Output() expand = new EventEmitter<void>();
   @Output() collapse = new EventEmitter<void>();
   @Output() statusChange = new EventEmitter<string>();
@@ -54,6 +56,11 @@ export class OrderDetailsComponent implements OnChanges {
     return !!(this.order?.endereco_entrega || this.order?.raw_snapshot?.input?.entrega?.endereco || this.shipping?.frete);
   }
 
+  canShowAdminCancel(): boolean {
+    const s = String(this.order?.status || '').toLowerCase();
+    return !!this.adminEmbedded() && !!s && s !== 'cancelado' && s !== 'concluido';
+  }
+
   isCompact() { return this.mode === 'compact'; }
   isFull() { return this.mode === 'full'; }
 
@@ -62,6 +69,7 @@ export class OrderDetailsComponent implements OnChanges {
     if (st === 'cancelado') return 'status--cancelado';
     if (st === 'concluido') return 'status--concluido';
     if (st === 'pago' || st === 'pago') return 'status--paid';
+    if (st === 'pronto_para_envio') return 'status--pronto-envio';
     if (st === 'enviado') return 'status--enviado';
     return 'status--default';
   }

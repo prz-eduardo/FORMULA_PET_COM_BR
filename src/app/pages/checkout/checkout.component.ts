@@ -208,7 +208,7 @@ export class CheckoutComponent implements OnInit {
     if (!this.pedidoCodigo || !this.cupomCodigo?.trim()) return;
     try {
       this.carregando = true;
-      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? (localStorage.getItem('token') || '') : '';
+      const token = this.auth.getToken() || '';
       const up = await this.api.atualizarPedido(token, String(this.pedidoCodigo), { cupom: this.cupomCodigo.trim() }).toPromise();
       // Alguns backends retornam o pedido atualizado; se vier, substitui
       if (up && (up.id || up.codigo || up.numero)) {
@@ -265,7 +265,7 @@ export class CheckoutComponent implements OnInit {
     }
     try {
       this.carregando = true;
-      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? (localStorage.getItem('token') || '') : '';
+      const token = this.auth.getToken() || '';
       // Exemplo de pagamento simples à vista; adapte conforme o gateway.
       const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
         metodo: this.pagamentoMetodo || 'pix',
@@ -384,7 +384,7 @@ export class CheckoutComponent implements OnInit {
     if (!this.pedidoCodigo) return;
     try {
       this.carregando = true;
-      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? (localStorage.getItem('token') || '') : '';
+      const token = this.auth.getToken() || '';
       const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
         metodo: 'cartao',
         valor: this.resumo.total,
@@ -413,7 +413,7 @@ export class CheckoutComponent implements OnInit {
     if (!this.pedidoCodigo) return;
     try {
       this.carregando = true;
-      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? (localStorage.getItem('token') || '') : '';
+      const token = this.auth.getToken() || '';
       const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
         metodo,
         valor: this.resumo.total,

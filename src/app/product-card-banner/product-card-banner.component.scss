@@ -1,10 +1,11 @@
 .pcb-root {
+  --fp-card-radius: 12px;
   display: block;
   text-decoration: none;
   color: inherit;
-  border-radius: 14px;
+  border-radius: var(--fp-card-radius);
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   position: relative;
 }
 .pcb-media {
@@ -73,6 +74,14 @@
   -webkit-line-clamp: 3;
   line-clamp: 3;
 }
+.pcb-cat {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 .pcb-marca {
   margin: 0 0 8px;
   font-size: 13px;
@@ -117,9 +126,59 @@
   height: 48px;
   border-radius: 10px;
   border: none;
-  background: var(--fp-store-accent, #2d6a4f);
+  background: var(--fp-store-accent, var(--brand-yellow, #f5a700));
+  color: var(--brand-ink, #111827);
   cursor: pointer;
   display: grid;
   place-items: center;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* gradientBottom: estilo base; classe explícita sem regras extra */
+.pcb-root--center {
+  .pcb-content {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    padding: 20px 18px 52px;
+    text-align: center;
+  }
+  .pcb-top {
+    justify-content: center;
+  }
+  .pcb-title {
+    text-align: center;
+  }
+  .pcb-price {
+    width: 100%;
+    justify-content: center;
+  }
+  .pcb-overlay {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.65) 100%);
+  }
+}
+
+.pcb-root--minimal {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  .pcb-overlay {
+    /* overlay do tema ainda aplica, mas puxamos o visual para mais claro */
+    background: linear-gradient(120deg, rgba(30, 30, 30, 0.2) 0%, rgba(20, 20, 20, 0.45) 100%) !important;
+  }
+  .pcb-content {
+    padding: 14px 16px 50px;
+  }
+  .pcb-badge {
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .pcb-top {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .pcb-fav,
+  .pcb-add {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
 }

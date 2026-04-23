@@ -6,6 +6,7 @@ import { ProdutoComponent } from './pages/restrito/admin/produto/produto.compone
 import { ListaProdutosComponent } from './pages/restrito/admin/lista-produtos/lista-produtos.component';
 import { AdminPedidosComponent } from './pages/restrito/admin/pedidos/pedidos.component';
 import { authGuard } from './guards/auth.guard';
+import { vetGuard } from './guards/vet.guard';
 
 export const routes: Routes = [
   { path: '', loadChildren: () => import('./pages/loja/loja.module').then(m => m.LojaModule) }, // Página pública (loja)
@@ -46,6 +47,13 @@ export const routes: Routes = [
       { path: 'lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard] },
       { path: 'parceiros', loadComponent: async () => (await import('./pages/restrito/admin/parceiros/parceiros.component')).ParceirosAdminComponent, canActivate: [authGuard] },
       { path: 'pedidos', component: AdminPedidosComponent, canActivate: [authGuard] },
+      {
+        path: 'atendimento',
+        loadComponent: () =>
+          import('./pages/restrito/admin/atendimento/atendimento.component').then((m) => m.AtendimentoAdminComponent),
+        canActivate: [authGuard],
+        data: { title: 'Atendimento' }
+      },
       { path: 'ativos', loadComponent: async () => (await import('./pages/restrito/admin/ativos/ativos.component')).AtivosAdminComponent, canActivate: [authGuard], data: { title: 'Ativos' } },
       { path: 'usuarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'admin' }, canActivate: [authGuard] },
       { path: 'clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente' }, canActivate: [authGuard] },
@@ -69,11 +77,11 @@ export const routes: Routes = [
   { path: 'novo-pet', loadComponent: () => import('./pages/novo-pet/novo-pet.component').then(m => m.NovoPetComponent) },
   { path: 'editar-pet/:id', loadComponent: () => import('./pages/novo-pet/novo-pet.component').then(m => m.NovoPetComponent) },
   { path: 'area-vet', loadComponent: () => import('./pages/restrito/area-vet/area-vet.component').then(m => m.AreaVetComponent)},
-  { path: 'gerar-receita', loadComponent: () => import('./pages/restrito/area-vet/gerar-receita/gerar-receita.component').then(m => m.GerarReceitaComponent)},
-  { path: 'historico-receitas', loadComponent: () => import('./pages/restrito/area-vet/historico-receitas/historico-receitas.component').then(m => m.HistoricoReceitasComponent)},
-  { path: 'historico-receitas/:id', loadComponent: () => import('./pages/restrito/area-vet/receita-detalhe/receita-detalhe.component').then(m => m.ReceitaDetalheComponent)},
-  { path: 'pacientes', loadComponent: () => import('./pages/restrito/area-vet/pacientes/pacientes.component').then(m => m.PacientesComponent)},
-  { path: 'pacientes/:petId', loadComponent: () => import('./pages/restrito/area-vet/paciente-detalhe/paciente-detalhe.component').then(m => m.PacienteDetalheComponent)},
+  { path: 'gerar-receita', loadComponent: () => import('./pages/restrito/area-vet/gerar-receita/gerar-receita.component').then(m => m.GerarReceitaComponent), canActivate: [vetGuard] },
+  { path: 'historico-receitas', loadComponent: () => import('./pages/restrito/area-vet/historico-receitas/historico-receitas.component').then(m => m.HistoricoReceitasComponent), canActivate: [vetGuard] },
+  { path: 'historico-receitas/:id', loadComponent: () => import('./pages/restrito/area-vet/receita-detalhe/receita-detalhe.component').then(m => m.ReceitaDetalheComponent), canActivate: [vetGuard] },
+  { path: 'pacientes', loadComponent: () => import('./pages/restrito/area-vet/pacientes/pacientes.component').then(m => m.PacientesComponent), canActivate: [vetGuard] },
+  { path: 'pacientes/:petId', loadComponent: () => import('./pages/restrito/area-vet/paciente-detalhe/paciente-detalhe.component').then(m => m.PacienteDetalheComponent), canActivate: [vetGuard] },
   { path: 'meus-pets', loadComponent: () => import('./pages/meus-pets/meus-pets.component').then(m => m.MeusPetsComponent)},
   { path: 'galeria', loadComponent: () => import('./pages/galeria-publica/galeria-publica.component').then(m => m.GaleriaPublicaComponent) },
   { path: 'meus-enderecos', loadComponent: () => import('./pages/meus-enderecos/meus-enderecos.component').then(m => m.MeusEnderecosComponent)},

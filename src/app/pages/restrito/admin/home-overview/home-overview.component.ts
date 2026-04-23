@@ -19,6 +19,7 @@ import {
   statusLabel,
   getNextStatus,
   STATUS_LABELS,
+  ADMIN_QUEUE_STATUSES,
 } from '../../../../constants/order-status.constants';
 
 @Component({
@@ -31,6 +32,15 @@ import {
 export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewInit {
   loading = true;
   data: any = null;
+  /** Acordeão do painel (mesmo padrão das seções na home admin). */
+  overviewExpanded = true;
+
+  toggleOverview() {
+    this.overviewExpanded = !this.overviewExpanded;
+    if (this.overviewExpanded && this.data) {
+      setTimeout(() => this.drawChart(), 120);
+    }
+  }
 
   @ViewChild('salesChart', { static: false }) salesChartRef?: ElementRef<HTMLCanvasElement>;
   private chart: any = null;
@@ -125,10 +135,31 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' } },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#94a3b8', boxWidth: 12 },
+          },
+        },
         scales: {
-          y: { beginAtZero: true, position: 'left', title: { display: true, text: 'R$' } },
-          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Pedidos' } },
+          x: {
+            ticks: { color: '#94a3b8' },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+          },
+          y: {
+            beginAtZero: true,
+            position: 'left',
+            title: { display: true, text: 'R$', color: '#94a3b8' },
+            ticks: { color: '#94a3b8' },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+          },
+          y1: {
+            beginAtZero: true,
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: 'Pedidos', color: '#94a3b8' },
+            ticks: { color: '#94a3b8' },
+          },
         },
       },
     });
@@ -137,7 +168,8 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
   // ---------- Helpers usados pelo template ----------
 
   get kpis() { return this.data?.kpis || { receita_hoje: 0, pedidos_hoje: 0, ticket_medio_hoje: 0, aguardando_pagamento: 0 }; }
-  get statuses(): string[] { return this.data?.queue?.statuses || []; }
+  /** Sempre 7 colunas, com «Pronto para envio» entre preparo e enviado (não depender de API desatualizada). */
+  get statuses(): string[] { return [...ADMIN_QUEUE_STATUSES]; }
   ordersOf(status: string): any[] { return this.data?.queue?.orders?.[status] || []; }
   get alerts() { return this.data?.alerts || []; }
 

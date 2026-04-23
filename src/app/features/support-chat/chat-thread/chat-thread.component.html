@@ -1,0 +1,25 @@
+<div class="thread" *ngIf="ticketId">
+  <p class="err" *ngIf="err">{{ err }}</p>
+  <div class="log" *ngIf="!err || messages.length">
+    <div
+      *ngFor="let m of messages; trackBy: trackById"
+      class="bubble"
+      [class.bubble--me]="(mode === 'cliente' && m.senderRole === 'cliente') || (mode === 'admin' && m.senderRole === 'admin')"
+    >
+      <span class="meta">{{ m.senderRole === 'admin' ? 'Equipe' : 'Você' }} · {{ m.ts | date : 'short' }}</span>
+      <div class="text">{{ m.text }}</div>
+    </div>
+  </div>
+  <form class="input-row" (ngSubmit)="$event.preventDefault(); send()" *ngIf="!err">
+    <input
+      type="text"
+      class="text-input"
+      name="body"
+      [(ngModel)]="draft"
+      placeholder="Escreva uma mensagem…"
+      maxlength="4000"
+      [disabled]="sending"
+    />
+    <button type="submit" class="send" [disabled]="sending || !draft.trim()">Enviar</button>
+  </form>
+</div>

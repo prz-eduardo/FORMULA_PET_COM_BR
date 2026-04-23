@@ -1,131 +1,276 @@
 <app-navmenu></app-navmenu>
 
-<ng-template #loadingTpl>
-	<div class="pd-loading">Carregando produto...</div>
-	<header class="pd-header">
-		<div class="header-center">
-			<h1 class="page-title">Produto</h1>
-			<p class="page-subtitle">Aguarde — carregando detalhes</p>
-			<div class="page-title-line"></div>
-		</div>
-		<div class="header-actions">
-			<button #cartBtn type="button" class="btn cart" routerLink="/carrinho" title="Carrinho" aria-label="Carrinho">
-				<img src="/icones/carrinho.png" class="icones-menu" width="28" height="28" alt="Carrinho" loading="lazy">
-			</button>
-		</div>
-	</header>
-</ng-template>
-
-<div class="pd-wrap" *ngIf="!loading && product; else loadingTpl">
-	<div class="pd-inner">
-		<header class="pd-header">
-			<div class="header-center">
-				<h1 id="product-title" class="page-title" [title]="product!.name">{{ product!.name }}</h1>
-				<p class="page-subtitle" *ngIf="product!.category">{{ product!.category }}</p>
-				<div class="page-title-line" aria-hidden="true"></div>
-			</div>
-			<div class="header-actions">
-				<button #cartBtn type="button" class="btn cart" (click)="goToCart()" title="Carrinho" aria-label="Carrinho">
-					<img src="/icones/carrinho.png" class="icones-menu" width="28" height="28" alt="Carrinho" />
-				</button>
+<main class="pd-page">
+	<!-- Carregando -->
+	<ng-container *ngIf="loading">
+		<app-banner-slot posicao="produto" mode="carousel" class="pd-banner-slot"></app-banner-slot>
+		<header class="pd-hero" role="banner">
+			<div class="hero-top">
+				<img src="/icones/paw.png" alt="" aria-hidden="true" class="hero-icon" />
+				<div class="hero-titles">
+					<h1 class="hero-title">Carregando <span class="hero-accent">produto</span>…</h1>
+					<p class="hero-subtitle">Buscando ficha completa, preços e disponibilidade.</p>
+				</div>
 			</div>
 		</header>
+		<p class="pd-loading-msg">Aguarde um instante…</p>
+	</ng-container>
 
-		<div class="pd-main">
-			<div class="media">
-				<div class="thumb main">
-					<img [src]="displayImageUrl" [alt]="product!.name" />
-					<div class="badge promo percent" *ngIf="discountPercent">-{{ discountPercent }}%</div>
+	<!-- Não encontrado -->
+	<section *ngIf="!loading && !product" class="pd-not-found card">
+		<h1 class="pd-not-found__title">Produto não encontrado</h1>
+		<p class="pd-not-found__text">Não foi possível carregar este item. Ele pode ter sido removido ou o link está incorreto.</p>
+		<a routerLink="/loja" class="btn primary">Ir para a loja</a>
+	</section>
+
+	<!-- Conteúdo -->
+	<ng-container *ngIf="!loading && product as p">
+		<app-banner-slot posicao="produto" mode="carousel" class="pd-banner-slot"></app-banner-slot>
+
+		<header class="pd-hero" role="banner">
+			<div class="hero-top">
+				<img src="/icones/paw.png" alt="" aria-hidden="true" class="hero-icon" />
+				<div class="hero-titles">
+					<h1 id="product-title" class="hero-title" [title]="p.name">
+						{{ p.name }}
+					</h1>
+					<p class="hero-subtitle">
+						<ng-container *ngIf="p.category">{{ p.category }}</ng-container>
+						<ng-container *ngIf="p.tipo"> · {{ p.tipo | titlecase }}</ng-container>
+						<ng-container *ngIf="p.marca"> · {{ p.marca }}</ng-container>
+						— Informações completas, condições de compra e ficha técnica.
+					</p>
 				</div>
-				<div class="thumbs mobile" *ngIf="product?.images?.length">
-					<img *ngFor="let t of product!.images; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" />
+				<div class="pd-hero-toolbar">
+					<button type="button" class="btn-tb light" (click)="back()" title="Voltar" aria-label="Voltar">← Voltar</button>
+					<button #cartBtn type="button" class="btn-tb cart" (click)="goToCart()" title="Carrinho" aria-label="Carrinho">
+						<img src="/icones/carrinho.png" class="icones-menu" width="24" height="24" alt="" />
+					</button>
 				</div>
 			</div>
-			<aside class="info">
-				<div class="price-row">
-					<div>
-						<div class="price-meta">
-							<span class="badge tipo" *ngIf="product?.tipo">{{ product.tipo | titlecase }}</span>
+
+			<div class="hero-stats" aria-label="Resumo do produto">
+				<span class="hero-stat" *ngIf="hasRating()">
+					<span class="stat-dot" aria-hidden="true"></span>
+					<strong>{{ p.rating | number:'1.1-1' }}</strong> · {{ p.ratingsCount || 0 }} avaliações
+				</span>
+				<span class="hero-stat" *ngIf="!hasRating()">
+					<span class="stat-dot" aria-hidden="true"></span>Sem avaliações ainda
+				</span>
+				<span class="hero-stat">
+					<span class="stat-dot" aria-hidden="true"></span>
+					<strong>{{ p.favoritesCount ?? 0 }}</strong> favoritos
+				</span>
+				<span class="hero-stat">
+					<span class="stat-dot" aria-hidden="true"></span>
+					<strong>{{ imageCount || 1 }}</strong> imagens
+				</span>
+				<span class="hero-stat" *ngIf="p.sku"><span class="stat-dot" aria-hidden="true"></span>SKU {{ p.sku }}</span>
+			</div>
+
+			<section class="pd-cta-card" role="region" aria-label="Ações rápidas">
+				<img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="pd-cta-icon" />
+				<div class="pd-cta-body">
+					<h2 class="pd-cta-name">Compre com a <span class="pd-cta-tag">Fórmula Pet</span></h2>
+					<p class="pd-cta-text">Continue navegando na loja ou finalize seu pedido no carrinho com segurança.</p>
+				</div>
+				<div class="pd-cta-btns">
+					<a routerLink="/loja" class="pd-cta-btn secondary">Loja</a>
+					<button type="button" class="pd-cta-btn" (click)="goToCart()">Carrinho</button>
+				</div>
+			</section>
+		</header>
+
+		<div class="pd-layout">
+			<div class="pd-main">
+				<div class="pd-gallery">
+					<div class="thumbs thumbs-vertical" *ngIf="p.images?.length">
+						<img *ngFor="let t of p.images; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" [alt]="'Miniatura ' + (i + 1)" />
+					</div>
+					<div class="media">
+						<div class="thumb main">
+							<img [src]="displayImageUrl" [alt]="p.name" />
+							<div class="badge promo percent" *ngIf="discountPercent">-{{ discountPercent }}%</div>
 						</div>
-						<div class="price-now">R$ {{ priceNow() | number:'1.2-2' }}</div>
-						<div class="price-old" *ngIf="product?.promoPrice">R$ {{ product!.price | number:'1.2-2' }}</div>
-					</div>
-					<div class="badge promo" *ngIf="product?.promoPrice || product?.discount">PROMO</div>
-				</div>
-				<div class="meta">
-					<div class="rating" *ngIf="hasRating()">
-						<span class="icon icon-star">★</span>
-						<span>{{ product!.rating }}</span>
-						<span class="r-total">({{ product!.ratingsCount || 0 }})</span>
-					</div>
-					<button class="btn fav" (click)="toggleFav()"><span [class.on]="isFavLocal || product!.isFavorited">♥</span></button>
-				</div>
-				<div class="desc">{{ product!.description }}</div>
-
-				<!-- Badges regulatórios e de cupom -->
-				<div class="pd-badges">
-					<span class="badge warning" *ngIf="product?.exige_receita">Exige receita veterinária</span>
-					<span class="badge cupom" *ngFor="let c of product?.cupons_aplicaveis">
-						Cupom {{ c.codigo }}{{ c.valor != null ? (c.tipo === 'valor' ? ' • R$ ' + (c.valor | number:'1.2-2') : ' • ' + c.valor + '%') : '' }}
-					</span>
-				</div>
-
-				<!-- Seletor de variantes -->
-				<div class="pd-variantes" *ngIf="product?.variantes && product!.variantes!.length">
-					<label class="pd-section-label">Escolha uma opção</label>
-					<div class="variantes-list">
-						<button *ngFor="let v of product!.variantes" type="button" class="variante-chip"
-								[class.selected]="selectedVariant?.id === v.id"
-								(click)="selectVariant(v)">
-							{{ v.nome }}<span *ngIf="v.preco != null"> — R$ {{ v.preco | number:'1.2-2' }}</span>
-						</button>
+						<div class="thumbs thumbs-mobile" *ngIf="p?.images?.length">
+							<img *ngFor="let t of p.images; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" [alt]="'Miniatura ' + (i + 1)" />
+						</div>
 					</div>
 				</div>
 
-				<div class="chips">
-					<span class="chip" *ngFor="let tag of product?.tags">{{ tag }}</span>
-				</div>
+				<aside class="info">
+					<p class="pd-lead" *ngIf="p.shortDescription?.trim()">{{ p.shortDescription!.trim() }}</p>
 
-				<div class="actions">
-					<div class="qty">
-						<button type="button" (click)="decrease()">-</button>
-						<input type="number" [value]="qty" readonly />
-						<button type="button" (click)="increase()">+</button>
+					<div class="pd-identity" *ngIf="p.marca || p.category || p.sku || p.codigo_barras || weightLabel">
+						<div class="pd-identity__marca" *ngIf="p.marca">{{ p.marca }}</div>
+						<ul class="pd-identity__kv">
+							<li *ngIf="p.category"><span>Categoria</span> {{ p.category }}</li>
+							<li *ngIf="p.sku"><span>SKU</span> {{ p.sku }}</li>
+							<li *ngIf="p.codigo_barras"><span>Código de barras</span> {{ p.codigo_barras }}</li>
+							<li *ngIf="weightLabel"><span>Peso líquido</span> {{ weightLabel }}</li>
+						</ul>
 					</div>
-					<div class="cta">
-						<button class="btn primary large" (click)="addToCart($event)">Adicionar ao Carrinho 🛒</button>
-						<button class="btn outline" (click)="buyNow($event)">Comprar Agora</button>
+
+					<div class="price-row">
+						<div>
+							<div class="price-meta">
+								<span class="badge tipo" *ngIf="p.tipo">{{ p.tipo | titlecase }}</span>
+							</div>
+							<div class="price-now">R$ {{ priceNow() | number:'1.2-2' }}</div>
+							<div class="price-old" *ngIf="referenceListPrice() != null">R$ {{ referenceListPrice()! | number:'1.2-2' }}</div>
+						</div>
+						<div class="badge promo" *ngIf="p?.promoPrice || p?.discount">PROMO</div>
 					</div>
-				</div>
-			</aside>
+					<p class="pd-parcelas" *ngIf="p.parcelas_max && (p.parcelas_max! > 0)">Em até {{ p.parcelas_max }}x no cartão (consulte condições na finalização)</p>
+					<p class="pd-price-api" *ngIf="p.priceFinal != null && p.priceOriginal != null && p.priceFinal < p.priceOriginal">
+						Preço de tabela: R$ {{ p.priceOriginal | number:'1.2-2' }} → <strong>com promoção: R$ {{ p.priceFinal | number:'1.2-2' }}</strong>
+					</p>
+
+					<div class="meta">
+						<div class="rating" *ngIf="hasRating()">
+							<span class="icon icon-star" aria-hidden="true">★</span>
+							<span>{{ p.rating }}</span>
+							<span class="r-total">({{ p.ratingsCount || 0 }})</span>
+						</div>
+						<button type="button" class="btn fav" (click)="toggleFav()"><span [class.on]="isFavLocal || p.isFavorited">♥</span> Favoritar</button>
+					</div>
+					<div class="pd-availability">
+						<span [class.in-stock]="availabilityLabel.indexOf('Em estoque') === 0" [class.out-stock]="availabilityLabel === 'Indisponível'">{{ availabilityLabel }}</span>
+					</div>
+					<div class="desc" *ngIf="p.description?.trim() && p.description !== p.shortDescription">{{ p.description }}</div>
+					<div class="pd-reg" *ngIf="p.registro_mapa"><span>Registro</span> {{ p.registro_mapa }}</div>
+					<div class="pd-cuidados" *ngIf="p.validade_meses != null || p.armazenamento">
+						<p *ngIf="p.validade_meses != null"><strong>Validade (meses):</strong> {{ p.validade_meses }}</p>
+						<p *ngIf="p.armazenamento"><strong>Armazenamento:</strong> {{ p.armazenamento }}</p>
+					</div>
+					<div class="pd-badges">
+						<span class="badge warning" *ngIf="exigeReceitaSim()">Exige receita veterinária</span>
+						<span class="badge info" *ngIf="p.slug">Slug: {{ p.slug }}</span>
+						<span class="badge layout" *ngIf="p.cardLayout">Vitrine: {{ p.cardLayout === 'banner' ? 'Faixa' : 'Card' }}</span>
+					</div>
+					<div class="pd-badges" *ngIf="p.cupons_aplicaveis?.length">
+						<span class="badge cupom" *ngFor="let c of p.cupons_aplicaveis">
+							Cupom {{ c.codigo }}{{ c.valor != null ? (c.tipo === 'valor' ? ' · R$ ' + (c.valor | number:'1.2-2') : ' · ' + c.valor + '%') : '' }}
+							<ng-container *ngIf="c.descricao"> — {{ c.descricao }}</ng-container>
+						</span>
+					</div>
+
+					<section class="pd-promo-block" *ngIf="hasApiPromotionBlock" aria-label="Promoção ativa">
+						<h3 class="pd-section-label">Promoção vigente</h3>
+						<div *ngIf="p.apiDiscount as d" class="pd-promo-row">
+							<span>Desconto agregado: <strong>{{ d.percent | number:'1.1-1' }}%</strong></span>
+							<span *ngIf="d.value > 0">(R$ {{ d.value | number:'1.2-2' }})</span>
+						</div>
+						<div *ngIf="p.activePromotion as pr" class="pd-promo-detail">
+							<p><strong>{{ pr.nome }}</strong></p>
+							<p *ngIf="pr.descricao" class="pd-muted">{{ pr.descricao }}</p>
+							<p *ngIf="pr.tipo" class="pd-muted">Tipo: {{ pr.tipo }}<ng-container *ngIf="pr.valor != null"> · valor {{ pr.valor }}</ng-container></p>
+							<p *ngIf="pr.inicio || pr.fim" class="pd-muted">Período: {{ pr.inicio || '—' }} → {{ pr.fim || '—' }}</p>
+						</div>
+					</section>
+
+					<div class="pd-variantes" *ngIf="p.variantes && p.variantes.length">
+						<label class="pd-section-label" id="var-label">Opções (variantes)</label>
+						<div class="variantes-list" role="group" aria-labelledby="var-label">
+							<button *ngFor="let v of p.variantes" type="button" class="variante-chip"
+									[class.selected]="selectedVariant?.id === v.id" [class.inactive]="v.ativo === false"
+									(click)="selectVariant(v)">
+								{{ v.nome }}<span *ngIf="v.preco != null"> — R$ {{ v.preco | number:'1.2-2' }}</span>
+							</button>
+						</div>
+						<table class="pd-table" *ngIf="p.variantes.length" aria-label="Detalhe das variantes">
+							<thead>
+								<tr>
+									<th>Opção</th>
+									<th>SKU</th>
+									<th>Preço</th>
+									<th>De</th>
+									<th>Estoque</th>
+									<th>Peso (g)</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr *ngFor="let v of p.variantes" [class.is-inactive]="v.ativo === false">
+									<td>{{ v.nome }} <span *ngIf="v.ativo === false" class="pd-muted">(inativa)</span></td>
+									<td>{{ v.sku || '—' }}</td>
+									<td>{{ v.preco != null ? (v.preco | currency:'BRL') : '—' }}</td>
+									<td>{{ v.preco_de != null ? (v.preco_de | currency:'BRL') : '—' }}</td>
+									<td>{{ v.estoque != null ? v.estoque : '—' }}</td>
+									<td>{{ v.peso_g != null ? v.peso_g : '—' }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="chips" *ngIf="p.tags?.length">
+						<span class="chip" *ngFor="let tag of p.tags">{{ tag }}</span>
+					</div>
+
+					<div class="actions">
+						<div class="qty" aria-label="Quantidade">
+							<button type="button" (click)="decrease()">-</button>
+							<input type="number" [value]="qty" readonly aria-readonly="true" />
+							<button type="button" (click)="increase()">+</button>
+						</div>
+						<div class="cta">
+							<button type="button" class="btn primary large" (click)="addToCart($event)">Adicionar ao carrinho</button>
+							<button type="button" class="btn outline" (click)="buyNow($event)">Comprar agora</button>
+						</div>
+					</div>
+				</aside>
+			</div>
 		</div>
 
-		<!-- Abas com conteúdo técnico (Composição, Modo de uso, Indicações, Documentos) -->
+		<div class="pd-video" *ngIf="videoEmbedUrl">
+			<h2 class="pd-section-h">Vídeo do produto</h2>
+			<iframe class="pd-video-iframe" [src]="videoEmbedUrl" title="Vídeo do produto" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+			<a *ngIf="p.video_url" [href]="p.video_url" class="pd-video-link" target="_blank" rel="noopener">Abrir vídeo no YouTube</a>
+		</div>
+
+		<section class="pd-panels" *ngIf="p.categoriasList?.length || p.meta_title || p.meta_description || p.productCreatedAt || p.slug">
+			<div class="pd-panel" *ngIf="p.categoriasList?.length">
+				<h2 class="pd-panel__title">Categorias</h2>
+				<ul class="pd-linklist">
+					<li *ngFor="let c of p.categoriasList">
+						<a [routerLink]="['/loja']" [queryParams]="lojaQueryForCategory(c)">{{ c.nome }}</a>
+					</li>
+				</ul>
+			</div>
+			<div class="pd-panel" *ngIf="p.productCreatedAt || p.productUpdatedAt">
+				<h2 class="pd-panel__title">Cadastro e atualizações</h2>
+				<ul class="pd-kv">
+					<li *ngIf="p.productCreatedAt"><span>Publicado / criado</span> {{ formatDate(p.productCreatedAt) }}</li>
+					<li *ngIf="p.productUpdatedAt"><span>Última alteração</span> {{ formatDate(p.productUpdatedAt) }}</li>
+				</ul>
+			</div>
+			<div class="pd-panel" *ngIf="p.meta_title || p.meta_description">
+				<h2 class="pd-panel__title">Busca (SEO)</h2>
+				<p *ngIf="p.meta_title" class="pd-muted"><strong>Título:</strong> {{ p.meta_title }}</p>
+				<p *ngIf="p.meta_description" class="pd-muted"><strong>Descrição:</strong> {{ p.meta_description }}</p>
+			</div>
+		</section>
+
 		<section class="pd-extra" *ngIf="hasTechnicalInfo()">
-			<nav class="pd-tabs" role="tablist">
-				<button type="button" role="tab" [class.active]="activeTab === 'composicao'"
-						*ngIf="product?.composicao" (click)="activeTab = 'composicao'">Composição</button>
-				<button type="button" role="tab" [class.active]="activeTab === 'modo_uso'"
-						*ngIf="product?.modo_uso" (click)="activeTab = 'modo_uso'">Modo de uso</button>
-				<button type="button" role="tab" [class.active]="activeTab === 'indicacoes'"
-						*ngIf="product?.indicacoes" (click)="activeTab = 'indicacoes'">Indicações</button>
-				<button type="button" role="tab" [class.active]="activeTab === 'contraindicacoes'"
-						*ngIf="product?.contraindicacoes" (click)="activeTab = 'contraindicacoes'">Contraindicações</button>
-				<button type="button" role="tab" [class.active]="activeTab === 'documentos'"
-						*ngIf="product?.documentos?.length" (click)="activeTab = 'documentos'">Documentos</button>
+			<h2 class="pd-extra__head">Ficha técnica e documentos</h2>
+			<nav class="pd-tabs" role="tablist" aria-label="Conteúdo complementar">
+				<button type="button" role="tab" [class.active]="activeTab === 'composicao'" *ngIf="p.composicao" (click)="activeTab = 'composicao'">Composição</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'modo_uso'" *ngIf="p.modo_uso" (click)="activeTab = 'modo_uso'">Modo de uso</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'indicacoes'" *ngIf="p.indicacoes" (click)="activeTab = 'indicacoes'">Indicações</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'contraindicacoes'" *ngIf="p.contraindicacoes" (click)="activeTab = 'contraindicacoes'">Contraindicações</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'documentos'" *ngIf="p.documentos?.length" (click)="activeTab = 'documentos'">Documentos</button>
 			</nav>
 			<div class="pd-tab-content">
-				<div *ngIf="activeTab === 'composicao'" class="pd-tab-pane">{{ product?.composicao }}</div>
-				<div *ngIf="activeTab === 'modo_uso'" class="pd-tab-pane">{{ product?.modo_uso }}</div>
-				<div *ngIf="activeTab === 'indicacoes'" class="pd-tab-pane">{{ product?.indicacoes }}</div>
-				<div *ngIf="activeTab === 'contraindicacoes'" class="pd-tab-pane">{{ product?.contraindicacoes }}</div>
+				<div *ngIf="activeTab === 'composicao'" class="pd-tab-pane pd-tab-pane--pre">{{ p.composicao }}</div>
+				<div *ngIf="activeTab === 'modo_uso'" class="pd-tab-pane pd-tab-pane--pre">{{ p.modo_uso }}</div>
+				<div *ngIf="activeTab === 'indicacoes'" class="pd-tab-pane pd-tab-pane--pre">{{ p.indicacoes }}</div>
+				<div *ngIf="activeTab === 'contraindicacoes'" class="pd-tab-pane pd-tab-pane--pre">{{ p.contraindicacoes }}</div>
 				<div *ngIf="activeTab === 'documentos'" class="pd-tab-pane pd-docs">
-					<a *ngFor="let d of product?.documentos" [href]="d.url" target="_blank" rel="noopener" class="pd-doc">
+					<a *ngFor="let d of p.documentos" [href]="d.url" target="_blank" rel="noopener" class="pd-doc">
 						<span class="pd-doc-type" *ngIf="d.tipo">{{ d.tipo }}</span>
 						<span class="pd-doc-name">{{ d.nome }}</span>
 					</a>
 				</div>
 			</div>
 		</section>
-	</div>
-</div>
+	</ng-container>
+</main>

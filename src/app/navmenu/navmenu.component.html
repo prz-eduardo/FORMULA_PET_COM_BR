@@ -88,11 +88,11 @@
             </a>
           </div>
         </div>
-  <i class="icon-menu" *ngIf="showFullMenu && !isMenuHiddenOnRoute()" [class.icon-closed]="menuOpen" (click)="toggleMenu()"><span></span></i>
-  <span class="navmenu-bell" *ngIf="isCliente && !showFullMenu">
+  <i class="icon-menu" *ngIf="showFullMenu" [class.icon-closed]="menuOpen" (click)="toggleMenu()"><span></span></i>
+  <span class="navmenu-bell" *ngIf="isCliente && !isAreaVetRoute">
     <app-notifications-bell audience="cliente"></app-notifications-bell>
   </span>
-  <button *ngIf="!showFullMenu" #userBtn class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
+  <button *ngIf="!isAreaVetRoute" #userBtn class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
     <ng-container *ngIf="userFoto; else defaultUserIcon">
       <img [src]="userFoto" alt="Foto do usuário" />
     </ng-container>

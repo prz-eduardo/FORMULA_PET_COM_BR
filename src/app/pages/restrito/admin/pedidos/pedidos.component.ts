@@ -11,7 +11,7 @@ import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../../../../services/session.service';
 import { OrderService } from '../../../../services/order.service';
 import { normalizeOrder, extractCliente, extractShipping } from '../../../../shared/order-utils';
-import { getNextStatus } from '../../../../constants/order-status.constants';
+import { getNextStatus, isTerminal, statusLabel } from '../../../../constants/order-status.constants';
 import { AdminSummaryPanelComponent, SummaryData } from '../../../../shared/admin-summary-panel';
 
 @Component({
@@ -65,8 +65,6 @@ export class AdminPedidosComponent implements OnInit {
   view: 'list' | 'details' | 'payments' | 'shipping' | 'invoices' | 'edit' = 'list';
   selected: any | null = null;
   selectedId: number | null = null;
-  // drawer full-screen state
-  drawerFull = false;
   // derived details
   selectedCliente: { nome?: string|null; email?: string|null; cpf?: string|null; id?: string|number|null } | null = null;
   selectedFrete: any = null;
@@ -141,19 +139,46 @@ export class AdminPedidosComponent implements OnInit {
       this.selected = await this.http.get(url, { headers }).toPromise() as any;
       this.view = 'details';
       this.resolveDerived();
-      // ensure drawer starts in compact mode
-      this.drawerFull = false;
     } catch {
       this.selected = o || null;
       // drawer will open via binding
       this.resolveDerived();
-      this.drawerFull = false;
     }
   }
   openPayments(o: any) { this.selected = o; this.view = 'payments'; }
   openShipping(o: any) { this.selected = o; this.view = 'shipping'; }
   openInvoices(o: any) { this.selected = o; this.view = 'invoices'; }
-  backToList() { this.view = 'list'; this.selected = null; this.load(); }
+  backToList() {
+    this.view = 'list';
+    this.selected = null;
+    this.selectedId = null;
+    this.load();
+  }
+
+  get drawerNextStatus(): string | null {
+    return getNextStatus(this.selected?.status ?? null);
+  }
+
+  get drawerPrimaryLabel(): string {
+    if (!this.selected) return 'Avançar';
+    if (isTerminal(this.selected?.status)) return 'Sem próxima etapa';
+    const next = this.drawerNextStatus;
+    if (!next) return 'Sem próxima etapa';
+    return `Avançar: ${statusLabel(next)}`;
+  }
+
+  get drawerPrimaryDisabled(): boolean {
+    if (!this.selected) return true;
+    if (isTerminal(this.selected?.status)) return true;
+    return !this.drawerNextStatus;
+  }
+
+  async onDrawerAdvance() {
+    const next = this.drawerNextStatus;
+    if (!next || !this.selectedId) return;
+    await this.setStatus(next);
+    await this.load();
+  }
 
   // Pagination
   nextPage() { if (this.page < this.totalPages) { this.page++; this.load(); } }
@@ -165,6 +190,7 @@ export class AdminPedidosComponent implements OnInit {
     if (s === 'pago') return 'success';
     if (s === 'concluido') return 'success';
     if (s === 'enviado') return 'info';
+    if (s === 'pronto_para_envio') return 'info';
     if (s === 'em_preparo') return 'warning';
     if (s === 'aguardando_pagamento') return 'warning';
     if (s === 'cancelado') return 'danger';
@@ -230,10 +256,6 @@ export class AdminPedidosComponent implements OnInit {
     if (!open) {
       this.selected = null;
       this.selectedId = null;
-      this.drawerFull = false;
     }
   }
-
-  onExpandDetails() { this.drawerFull = true; }
-  onCollapseDetails() { this.drawerFull = false; }
 }

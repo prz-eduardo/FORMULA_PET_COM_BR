@@ -1,4 +1,4 @@
-// Centralized order status definitions and helpers
+// Centralized order status definitions and helpers (alinhado ao backend: admin não avança pré-pagamento)
 export const ORDER_STATUSES = [
   'criado',
   'aguardando_pagamento',
@@ -6,13 +6,24 @@ export const ORDER_STATUSES = [
   'aceito',
   'recusado',
   'em_preparo',
+  'pronto_para_envio',
   'enviado',
   'concluido',
   'cancelado'
 ];
 
-// Canonical order used for timeline/stepper (primary flow)
-export const STATUS_ORDER = ['criado','aguardando_pagamento','pago','aceito','em_preparo','enviado','concluido'];
+export const STATUS_ORDER = ['criado','aguardando_pagamento','pago','aceito','em_preparo','pronto_para_envio','enviado','concluido'];
+
+/** Colunas do Kanban «Fila de pedidos» no painel admin (em andamento, sem concluído/cancelado). */
+export const ADMIN_QUEUE_STATUSES = [
+  'criado',
+  'aguardando_pagamento',
+  'pago',
+  'aceito',
+  'em_preparo',
+  'pronto_para_envio',
+  'enviado',
+] as const;
 
 export const STATUS_LABELS: Record<string,string> = {
   criado: 'Criado',
@@ -21,20 +32,22 @@ export const STATUS_LABELS: Record<string,string> = {
   recusado: 'Recusado',
   pago: 'Pago',
   em_preparo: 'Em preparo',
+  pronto_para_envio: 'Pronto para envio',
   enviado: 'Enviado',
   concluido: 'Concluído',
   cancelado: 'Cancelado'
 };
 
-// Allowed transitions from each status (backed by business rules)
+/** Transições que o admin pode pedir (pago só via gateway — não listado aqui). */
 export const STATUS_TRANSITIONS: Record<string,string[]> = {
-  criado: ['aguardando_pagamento','aceito','cancelado'],
-  aguardando_pagamento: ['pago','cancelado'],
-  aceito: ['em_preparo','recusado','cancelado'],
+  criado: [],
+  aguardando_pagamento: [],
+  pago: ['aceito', 'em_preparo', 'cancelado'],
+  aceito: ['em_preparo', 'recusado', 'cancelado'],
   recusado: [],
-  pago: ['em_preparo','cancelado'],
-  em_preparo: ['enviado','cancelado'],
-  enviado: ['concluido'],
+  em_preparo: ['pronto_para_envio', 'cancelado'],
+  pronto_para_envio: ['enviado', 'cancelado'],
+  enviado: ['concluido', 'cancelado'],
   concluido: [],
   cancelado: []
 };
@@ -55,13 +68,11 @@ export function isTerminal(status?: string | null): boolean {
   return k === 'concluido' || k === 'cancelado' || k === 'recusado';
 }
 
-// Heuristic to pick the "next" recommended status following STATUS_ORDER and allowed transitions.
 export function getNextStatus(status?: string | null): string | null {
   const s = String(status || '').toLowerCase();
   if (!s) return null;
   const allowed = getAllowedTransitions(s);
   if (!allowed || !allowed.length) return null;
-  // Prefer transitions that appear later in the canonical STATUS_ORDER
   const idx = STATUS_ORDER.indexOf(s);
   if (idx >= 0) {
     for (let i = idx + 1; i < STATUS_ORDER.length; i++) {
@@ -69,6 +80,5 @@ export function getNextStatus(status?: string | null): string | null {
       if (allowed.includes(candidate)) return candidate;
     }
   }
-  // Fallback to first allowed
   return allowed[0] || null;
 }

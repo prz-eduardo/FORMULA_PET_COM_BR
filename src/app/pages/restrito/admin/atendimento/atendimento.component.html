@@ -1,0 +1,36 @@
+<div class="page">
+  <h1 class="title">Atendimento (chat)</h1>
+  <p class="lead">Fila em tempo real. Selecione um atendimento à esquerda e converse com o cliente.</p>
+
+  <p class="err" *ngIf="err">{{ err }}</p>
+  <p class="err" *ngIf="initErr">{{ initErr }}</p>
+
+  <div class="grid" *ngIf="!loading && !initErr">
+    <aside class="queue">
+      <h2>Fila</h2>
+      <p *ngIf="!queue.length" class="empty">Ninguém aguardando.</p>
+      <ol *ngIf="queue.length" class="list">
+        <li *ngFor="let row of queue">
+          <button type="button" class="qbtn" [class.qbtn--on]="selectedId === row.ticketId" (click)="select(row.ticketId)">
+            <span class="label">{{ row.ticketId.slice(0, 8) }}…</span>
+            <span class="t">{{ row.enqueuedAt | date : 'short' }}</span>
+          </button>
+        </li>
+      </ol>
+    </aside>
+    <section class="panel" *ngIf="selectedId">
+      <div class="head" *ngIf="meta">
+        <p><strong>{{ meta.clienteLabel }}</strong> · <span class="st">{{ meta.status }}</span></p>
+        <div class="actions" *ngIf="meta?.status === 'queued'">
+          <button type="button" (click)="accept()" [disabled]="busy">Atender</button>
+        </div>
+        <div class="actions" *ngIf="meta?.status === 'active' || meta?.status === 'queued'">
+          <button type="button" class="end" (click)="finalizar()" [disabled]="busy">Encerrar atendimento</button>
+        </div>
+      </div>
+      <app-chat-thread [ticketId]="selectedId" mode="admin" />
+    </section>
+    <div class="panel placeholder" *ngIf="!selectedId && queue.length">Selecione um item da fila.</div>
+  </div>
+  <p *ngIf="loading">A carregar…</p>
+</div>

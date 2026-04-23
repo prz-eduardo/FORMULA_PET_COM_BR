@@ -148,7 +148,7 @@
 
   <ng-container *ngIf="modalCadastroAberto">
     <div class="modal-overlay" (click)="fecharModalCadastro()"></div>
-    <div class="modal-content"><app-crie-sua-conta (close)="fecharModalCadastro()"></app-crie-sua-conta></div>
+    <div class="modal-content"><app-crie-sua-conta (close)="fecharModalCadastro()" (loggedIn)="onLogin()"></app-crie-sua-conta></div>
   </ng-container>
 
   <ng-container *ngIf="modalReferenciasAberto">

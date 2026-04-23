@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
@@ -16,6 +16,9 @@ import { firstValueFrom } from 'rxjs';
   styleUrls: ['./crie-sua-conta.component.scss']
 })
 export class CrieSuaContaComponent {
+  @Output() close = new EventEmitter<void>();
+  @Output() loggedIn = new EventEmitter<void>();
+
   aberto = false;
   carregando = false;
   iniciadoGoogle = false;
@@ -29,8 +32,8 @@ export class CrieSuaContaComponent {
 
   constructor(
     private authService: AuthService,
-    private apiService: ApiService
-    , private toastService: ToastService
+    private apiService: ApiService,
+    private toastService: ToastService
   ) {}
 
   abrir() { this.aberto = true; }
@@ -41,6 +44,27 @@ export class CrieSuaContaComponent {
     this.mostrarSenha = false;
     this.mostrarSenha2 = false;
     this.mostrarCRMV = false;
+  }
+
+  private extrairErro(err: unknown): string {
+    const e = err as { error?: { message?: string }; message?: string };
+    if (e?.error && typeof e.error === 'object' && e.error !== null && 'message' in e.error) {
+      const m = (e.error as { message?: string }).message;
+      if (typeof m === 'string' && m.length) return m;
+    }
+    if (typeof e?.message === 'string' && e.message.length) return e.message;
+    return 'Erro ao cadastrar';
+  }
+
+  private aplicarSessaoVet(data: { tipo?: string; token?: string }) {
+    if (data.tipo) localStorage.setItem('userType', data.tipo);
+    if (data.token) this.authService.login(data.token);
+  }
+
+  private emitirSucessoCadastro() {
+    this.loggedIn.emit();
+    this.close.emit();
+    this.fechar();
   }
 
   validarCPF(cpf: string): boolean {
@@ -75,7 +99,7 @@ export class CrieSuaContaComponent {
     this.carregando = true;
     this.mensagemErro = '';
     try {
-      const userCred = await this.authService.registerEmail(email, senha);
+      await this.authService.registerEmail(email, senha);
       const idToken = await this.authService.getIdToken();
 
       const data = await firstValueFrom(
@@ -91,67 +115,63 @@ export class CrieSuaContaComponent {
         })
       );
 
-  localStorage.setItem('userType', data.tipo);
-  if (data.token) localStorage.setItem('token', data.token);
-  this.toastService.success('Conta criada com sucesso!', 'Sucesso');
-      this.fechar();
-    } catch (err: any) {
-      this.mensagemErro = err.message || 'Erro ao cadastrar';
+      this.aplicarSessaoVet(data);
+      this.toastService.success('Conta criada com sucesso!', 'Sucesso');
+      this.emitirSucessoCadastro();
+    } catch (err: unknown) {
+      this.mensagemErro = this.extrairErro(err);
     } finally {
       this.carregando = false;
     }
   }
 
-async iniciarGoogle(form: any) {
-  if (!form.valid) return;
-  const { nome, cpf, crmvUf, crmvNum, telefone } = form.value;
+  async iniciarGoogle(form: any) {
+    if (!form.valid) return;
+    const { nome, cpf, crmvUf, crmvNum, telefone } = form.value;
 
-  this.carregando = true;
-  this.mensagemErro = '';
-  try {
-    const userCred = await this.authService.loginGoogle();
-    const idToken = await this.authService.getIdToken();
-    const email = userCred.user.email || '';
-
-    // Tenta login primeiro
+    this.carregando = true;
+    this.mensagemErro = '';
     try {
-  const data = await firstValueFrom(
-    this.apiService.cadastrarVet({
-      nome: nome || userCred.user.displayName || 'Sem Nome',
-      email,
-      cpf,
-      crmv: `${crmvUf}-${crmvNum}`,
-      telefone,
-      tipo: 'vet',
-      idToken
-    })
-  );
-  localStorage.setItem('userType', data.tipo);
-  if (data.token) localStorage.setItem('token', data.token);
-  this.toastService.success('Conta criada com sucesso via Google!', 'Sucesso');
-} catch (err: any) {
-  if (err.message === 'Vet já cadastrado!') {
-    // Tenta login automaticamente
-    const loginData = await firstValueFrom(
-      this.apiService.loginVet({ email, idToken })
-    );
-  localStorage.setItem('userType', loginData.tipo);
-  if (loginData.token) localStorage.setItem('token', loginData.token);
-  this.toastService.success('Login via Google realizado com sucesso!', 'Sucesso');
-  } else {
-    this.mensagemErro = err.message || 'Erro no cadastro/login com Google';
-  }
-}
+      const userCred = await this.authService.loginGoogle();
+      const idToken = await this.authService.getIdToken();
+      const email = userCred.user.email || '';
 
-    this.fechar();
-  } catch (err: any) {
-    this.mensagemErro = err.message || 'Erro no cadastro/login com Google';
-  } finally {
-    this.carregando = false;
+      try {
+        const data = await firstValueFrom(
+          this.apiService.cadastrarVet({
+            nome: nome || userCred.user.displayName || 'Sem Nome',
+            email,
+            cpf,
+            crmv: `${crmvUf}-${crmvNum}`,
+            telefone,
+            tipo: 'vet',
+            idToken
+          })
+        );
+        this.aplicarSessaoVet(data);
+        this.toastService.success('Conta criada com sucesso via Google!', 'Sucesso');
+        this.emitirSucessoCadastro();
+      } catch (err: unknown) {
+        const msg = this.extrairErro(err);
+        if (msg === 'Vet já cadastrado!') {
+          const loginData = await firstValueFrom(
+            this.apiService.loginVet({ email, idToken })
+          );
+          this.aplicarSessaoVet(loginData);
+          this.toastService.success('Login via Google realizado com sucesso!', 'Sucesso');
+          this.emitirSucessoCadastro();
+        } else {
+          this.mensagemErro = msg;
+        }
+      }
+    } catch (err: unknown) {
+      this.mensagemErro = this.extrairErro(err);
+    } finally {
+      this.carregando = false;
+    }
   }
-}
 
-    toggleIniciarGoogle() {
+  toggleIniciarGoogle() {
     this.iniciadoGoogle = !this.iniciadoGoogle;
     this.mensagemErro = '';
   }

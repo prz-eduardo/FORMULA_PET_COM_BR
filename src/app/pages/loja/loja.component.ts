@@ -269,14 +269,6 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.rebuildInterleavedAndFeatured();
   }
 
-  onToggleFavFromCard(p: ShopProduct, ev: Event) {
-    ev.preventDefault(); ev.stopPropagation();
-    this.toggleFav(p);
-  }
-  onAddToCartFromCard(p: ShopProduct, ev: Event) {
-    ev.preventDefault(); ev.stopPropagation();
-    this.onAddToCart(p, ev);
-  }
   totalPages(): number { return this.totalPagesSrv; }
   pageStart(): number { return (this.page - 1) * this.pageSize + 1; }
   pageEnd(): number { const totalLocal = this.total; return Math.min(this.page * this.pageSize, totalLocal); }
@@ -628,7 +620,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   // Inline auth
   async fetchMe() {
     try {
-      const token = (typeof window !== 'undefined' && typeof localStorage !== 'undefined') ? localStorage.getItem('token') : null;
+      const token = this.auth.getToken();
       if (!token) { this.me = null; return; }
       const resp = await this.api.getClienteMe(token).toPromise();
       this.me = resp?.user || null;

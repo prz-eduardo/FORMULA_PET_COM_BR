@@ -54,7 +54,7 @@
               </td>
               <td class="actions-cell">
                 <button class="btn small" (click)="emitEdit(item)">Detalhes</button>
-                <button class="btn small primary" *ngIf="item.status && ['criado','aguardando_pagamento','pago','em_preparo','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'advance', item: item })">Avançar</button>
+                <button class="btn small primary" *ngIf="item.status && ['criado','aguardando_pagamento','pago','aceito','em_preparo','pronto_para_envio','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'advance', item: item })">Avançar</button>
                 <button class="btn small danger" *ngIf="item.status && item.status.toLowerCase() !== 'cancelado' && item.status.toLowerCase() !== 'concluido'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'cancel', item: item })">Cancelar</button>
                 <button class="btn small danger" (click)="emitRemove(item)">Remover</button>
               </td>

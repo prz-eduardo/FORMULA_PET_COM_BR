@@ -1,4 +1,19 @@
 .order-details { padding: 18px; font-size: 14px; color: #d6e2ea; box-sizing: border-box; max-width: 100%; }
+
+.order-details--admin-embedded {
+  padding: 4px 2px 8px;
+  color: var(--admin-text, #e5ecf5);
+}
+
+.od-admin-cliente .cliente-body {
+  padding: 0;
+}
+
+.od-admin-muted {
+  color: var(--admin-muted, rgba(229, 236, 245, 0.55));
+  font-size: 12px;
+  margin-right: 6px;
+}
 .order-details .head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
 .order-details .head .title h3 { margin:0; font-size:20px; }
 .order-details .actions button { margin-left:8px; }

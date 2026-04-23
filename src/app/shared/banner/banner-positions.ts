@@ -6,7 +6,8 @@ export type BannerPosition =
   | 'checkout'
   | 'carrinho'
   | 'galeria'
-  | 'mapa';
+  | 'mapa'
+  | 'produto';
 
 export interface BannerPositionOption {
   value: BannerPosition;
@@ -31,6 +32,7 @@ export const BANNER_POSITIONS: BannerPositionOption[] = [
   { value: 'carrinho',    label: 'Carrinho',               description: 'Dentro da página do carrinho',      desktopRatio: 16 / 3, mobileRatio: 3 / 2 },
   { value: 'galeria',     label: 'Galeria pública',        description: 'Área da galeria de fotos de pets',  desktopRatio: 16 / 5, mobileRatio: 4 / 5 },
   { value: 'mapa',        label: 'Mapa',                   description: 'Página de parceiros/mapa',          desktopRatio: 16 / 5, mobileRatio: 4 / 5 },
+  { value: 'produto',     label: 'Página do produto',     description: 'Topo da ficha pública do produto',  desktopRatio: 16 / 5, mobileRatio: 4 / 5 },
 ];
 
 export function getBannerPosition(value: string | null | undefined): BannerPositionOption | null {

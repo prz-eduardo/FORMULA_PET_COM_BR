@@ -17,15 +17,17 @@ import { gsap } from 'gsap';
 })
 export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
-   * Retorna true se a rota atual for uma das que devem ocultar o ícone do menu
+   * Menu lateral (hambúrguer + lista): apenas institucional e área vet.
+   * Loja (incl. raiz /), mapa, galeria e demais rotas públicas usam só o ícone de perfil.
    */
-  isMenuHiddenOnRoute(): boolean {
-    return (
-      this.currentRoute.includes('/mapa') ||
-      this.currentRoute.includes('/galeria') ||
-      this.currentRoute.includes('/loja') ||
-      this.currentRoute.includes('/carrinho')
-    );
+  get showSlideMenu(): boolean {
+    const url = this.currentRoute || '';
+    return url.includes('/institucional') || url.includes('/area-vet');
+  }
+
+  /** Sino de notificações só para cliente (não na área vet). */
+  get isAreaVetRoute(): boolean {
+    return (this.currentRoute || '').includes('/area-vet');
   }
   toggleMenu(): void {
     const menu: HTMLElement | null = document.querySelector('.menu');
@@ -197,13 +199,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private updateMenuMode() {
-    // Menu completo na home (ancora #0) e na área vet; nas demais páginas, ícone que abre modal
-    // Considera URLs com hash (#0) e rotas /area-vet
-    const url = this.currentRoute || '';
-    const isHomeHash = isPlatformBrowser(this.platformId) && (window.location.hash === '#0' || window.location.hash === '#');
-    const isAreaVet = url.includes('/area-vet');
-    const isHomeRoute = url === '/' || url.startsWith('/#') || url.includes('index.html');
-    this.showFullMenu = isAreaVet || isHomeHash || isHomeRoute;
+    // Compat: showFullMenu = menu hambúrguer institucional/vet (a raiz '' é a loja, não o institucional)
+    this.showFullMenu = this.showSlideMenu;
   }
 
   async abrirClienteModal() {

@@ -3,6 +3,10 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShopProduct } from '../services/store.service';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../constants/card.constants';
+import {
+  cardBannerClassMap,
+  normalizeCardBannerStructure,
+} from '../constants/loja-tema-card.config';
 
 @Component({
   selector: 'app-product-card-banner',
@@ -63,5 +67,13 @@ export class ProductCardBannerComponent {
   get titleLines(): number {
     const n = (this.themeConfig as any)?.cardBanner?.titleLines;
     return n === 3 ? 3 : 2;
+  }
+
+  get bannerStructure() {
+    return normalizeCardBannerStructure((this.themeConfig as any)?.cardBanner?.structure);
+  }
+
+  get bannerRootClass(): string {
+    return cardBannerClassMap(this.bannerStructure);
   }
 }

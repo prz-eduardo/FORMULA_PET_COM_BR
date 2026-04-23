@@ -2,6 +2,35 @@
   <div *ngIf="loading && !data" class="loader">Carregando painel…</div>
 
   <ng-container *ngIf="data">
+    <section
+      class="overview-accordion section--green"
+      [class.collapsed]="!overviewExpanded"
+    >
+      <header
+        class="section-header"
+        role="button"
+        tabindex="0"
+        (click)="toggleOverview()"
+        (keydown.enter)="toggleOverview()"
+        (keydown.space)="$event.preventDefault(); toggleOverview()"
+        [attr.aria-expanded]="overviewExpanded"
+      >
+        <div class="sec-title-wrap">
+          <span class="sec-dot"></span>
+          <h3 class="sec-title">Painel do dia</h3>
+          <span class="sec-count">{{ data?.queue?.total || 0 }}</span>
+        </div>
+        <div class="header-summary" *ngIf="!overviewExpanded" aria-hidden="true">
+          <span>{{ formatCurrency(kpis.receita_hoje) }}</span>
+          <span class="sep">·</span>
+          <span>{{ kpis.pedidos_hoje }} ped.</span>
+          <span class="sep" *ngIf="kpis.aguardando_pagamento">·</span>
+          <span *ngIf="kpis.aguardando_pagamento">{{ kpis.aguardando_pagamento }} aguard. pag.</span>
+        </div>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+
+      <div class="overview-body" *ngIf="overviewExpanded">
     <!-- KPIs -->
     <div class="kpis">
       <div class="kpi">
@@ -120,5 +149,7 @@
         </div>
       </div>
     </div>
+      </div>
+    </section>
   </ng-container>
 </section>

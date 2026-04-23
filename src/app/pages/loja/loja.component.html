@@ -57,27 +57,17 @@
   <!-- Seção Destaques (PC only; até 5 por página) -->
   <section class="destaques desktop-only" *ngIf="featuredTopList.length > 0">
     <h2 class="sec-title">Destaques</h2>
-    <!-- faixa horizontal com alguns cards em destaque -->
     <div class="destaque-row">
-  <a class="d-card" *ngFor="let p of featuredRowList; trackBy: trackProduct" [routerLink]="'/produto/' + p.id" [queryParams]="{ src: 'loja' }" [title]="p.name" style="width:100%" [style.max-width]="defaultCardWidth">
-  <img class="d-img" [src]="p.image || p.imageUrl" loading="lazy" decoding="async" [alt]="p.name" title="{{ p.name }}" />
-        <div class="d-overlay">
-          <div class="d-topline">
-            <span class="d-badge" *ngIf="(p.discount || 0) > 0">-{{ (p.discount || 0) | number:'1.0-0' }}%</span>
-            <span class="d-type" *ngIf="p.tipo === 'manipulado'">Manipulado</span>
-          </div>
-          <h3 class="d-title">{{ p.name }}</h3>
-          <div class="d-price">
-            <span class="new">{{ price(p) | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
-            <span class="old" *ngIf="p.promoPrice != null || (p.discount || 0) > 0">{{ p.price | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
-          </div>
-          <button type="button" class="fav" (click)="onToggleFavFromCard(p, $event)" [attr.aria-pressed]="isFav(p)">
-            <span class="heart">{{ isFav(p) ? '❤️' : '🤍' }}</span>
-            <span class="count" *ngIf="p.favoritesCount != null">{{ p.favoritesCount }}</span>
-          </button>
-          <button type="button" class="btn add" (click)="onAddToCartFromCard(p, $event)" [attr.aria-label]="'Adicionar ' + p.name + ' ao carrinho'" title="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
-        </div>
-      </a>
+      <app-product-card-banner
+        *ngFor="let p of featuredRowList; trackBy: trackProduct"
+        [product]="p"
+        [themeConfig]="storeMeta?.activeTheme?.config ?? null"
+        [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+        [favoriteActive]="isFav(p)"
+        (toggleFav)="toggleFav(p)"
+        (add)="onAddToCart(p, $event)"
+        [cardWidth]="defaultCardWidth"
+      ></app-product-card-banner>
     </div>
   </section>
 
@@ -104,41 +94,31 @@
       </div>
       <!-- Mobile: destaque do primeiro produto (only on mobileView) -->
       <ng-container *ngIf="interleavedList.length > 0 && interleavedList[0].type === 'product' && mobileView">
-        <a class="d-card banner mobile-feature" [routerLink]="'/produto/' + interleavedList[0].product.id" [queryParams]="{ src: 'loja' }" [title]="interleavedList[0].product.name" style="width:100%" [style.max-width]="defaultCardWidth">
-          <img class="d-img" [src]="interleavedList[0].product.image || interleavedList[0].product.imageUrl" loading="lazy" decoding="async" [alt]="interleavedList[0].product.name" title="{{ interleavedList[0].product.name }}" />
-          <div class="d-overlay">
-            <div class="d-topline">
-              <span class="d-badge" *ngIf="(interleavedList[0].product.discount || 0) > 0">-{{ (interleavedList[0].product.discount || 0) | number:'1.0-0' }}%</span>
-              <span class="d-type" *ngIf="interleavedList[0].product.tipo === 'manipulado'">Manipulado</span>
-            </div>
-            <h3 class="d-title">{{ interleavedList[0].product.name }}</h3>
-            <div class="d-price">
-              <span class="new">{{ price(interleavedList[0].product) | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
-              <span class="old" *ngIf="interleavedList[0].product.promoPrice != null || (interleavedList[0].product.discount || 0) > 0">{{ interleavedList[0].product.price | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
-            </div>
-          </div>
-        </a>
+        <div class="loja-mobile-hero">
+          <app-product-card-banner
+            [product]="interleavedList[0].product"
+            [themeConfig]="storeMeta?.activeTheme?.config ?? null"
+            [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+            [favoriteActive]="isFav(interleavedList[0].product)"
+            (toggleFav)="toggleFav(interleavedList[0].product)"
+            (add)="onAddToCart(interleavedList[0].product, $event)"
+            [cardWidth]="defaultCardWidth"
+          ></app-product-card-banner>
+        </div>
       </ng-container>
       <ng-container *ngFor="let it of interleavedList; let i = index; trackBy: trackInterleaved">
         <ng-container *ngIf="!(i === 0 && it.type === 'product' && mobileView)" [ngSwitch]="it.type">
-          <a *ngSwitchCase="'banner'" class="d-card banner" [routerLink]="'/produto/' + it.product.id" [queryParams]="{ src: 'loja' }" [title]="it.product.name" style="width:100%" [style.max-width]="defaultCardWidth">
-            <img class="d-img" [src]="it.product.image || it.product.imageUrl" loading="lazy" decoding="async" [alt]="it.product.name" title="{{ it.product.name }}" />
-            <div class="d-overlay">
-              <div class="d-topline">
-                <span class="d-badge" *ngIf="(it.product.discount || 0) > 0">-{{ (it.product.discount || 0) | number:'1.0-0' }}%</span>
-                <span class="d-type" *ngIf="it.product.tipo === 'manipulado'">Manipulado</span>
-              </div>
-              <h3 class="d-title">{{ it.product.name }}</h3>
-              <div class="d-price">
-                <span class="new">{{ price(it.product) | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
-                <span class="old" *ngIf="it.product.promoPrice != null || (it.product.discount || 0) > 0">{{ it.product.price | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
-              </div>
-              <div class="d-actions">
-                <button type="button" class="btn fav" [class.active]="isFav(it.product)" (click)="onToggleFavFromCard(it.product, $event)" aria-label="Favoritar">❤</button>
-                <button type="button" class="btn add" (click)="onAddToCartFromCard(it.product, $event)" [attr.aria-label]="'Adicionar ' + it.product.name + ' ao carrinho'" title="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
-              </div>
-            </div>
-          </a>
+          <div *ngSwitchCase="'banner'" class="pcb-span-2 loja-banner-cell">
+            <app-product-card-banner
+              [product]="it.product"
+              [themeConfig]="storeMeta?.activeTheme?.config ?? null"
+              [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+              [favoriteActive]="isFav(it.product)"
+              (toggleFav)="toggleFav(it.product)"
+              (add)="onAddToCart(it.product, $event)"
+              [cardWidth]="defaultCardWidth"
+            ></app-product-card-banner>
+          </div>
           <ng-container *ngSwitchCase="'product'">
             <div class="pcb-span-2" *ngIf="it.product.cardLayout === 'banner'">
               <app-product-card-banner

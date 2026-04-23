@@ -76,18 +76,39 @@ app-admin-notification {
   z-index: 90;
 }
 
+/* Botão Conta: em telas muito estreitas só ícone (texto acessível via aria) */
+@media (max-width: 360px) {
+  .admin-header-actions-slot {
+    .btn-command {
+      padding: 8px 10px;
+      gap: 6px;
+    }
+    .btn-command .label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  }
+}
+
 /* =========================
    Header (scoped overrides)
    ========================= */
-.admin-header {
+:host ::ng-deep app-admin-header .admin-header {
   position: sticky;
   top: 0;
   z-index: 50;
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  padding: 14px clamp(18px, 3vw, 28px) 14px clamp(18px, 2.5vw, 24px);
   border-radius: 16px;
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(12, 18, 28, 0.75), rgba(12, 18, 28, 0.55));
@@ -95,38 +116,71 @@ app-admin-notification {
   -webkit-backdrop-filter: saturate(140%) blur(14px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 
-  h1 {
-    font-weight: 800;
-    font-size: 24px;
-    letter-spacing: 1.6px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(90deg, #fff, #cbd5e1);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .badge-super {
-    display: inline-block;
-    padding: 3px 10px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #10b981, #22d3ee);
-    color: #06121f;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 0 18px rgba(16, 185, 129, 0.45);
-  }
-
-  .header-actions { position: relative; display: flex; align-items: center; gap: 8px; }
-
+  /* Em coluna, align-items: center (acima) centralizava título e ações — fica tudo "flutuando" e desalinhado */
   @media (max-width: 640px) {
-    padding: 10px 12px;
-    h1 { font-size: 18px; letter-spacing: 1px; }
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 18px 16px 16px;
+
+    h1 {
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      justify-content: flex-start;
+    }
   }
+  @media (max-width: 400px) {
+    h1 {
+      font-size: 14px;
+      letter-spacing: 0.08em;
+    }
+  }
+}
+
+:host ::ng-deep app-admin-header {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:host ::ng-deep app-admin-header .admin-header h1 {
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: 1.6px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  line-height: 1.15;
+  min-width: 0;
+  background: linear-gradient(90deg, #fff, #cbd5e1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  gap: 10px;
+}
+
+:host ::ng-deep app-admin-header .admin-header .badge-super {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #10b981, #22d3ee);
+  color: #06121f;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.45);
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  margin-left: 0;
+  align-self: center;
+}
+
+:host ::ng-deep app-admin-header .admin-header .header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* =========================================================================
@@ -258,6 +312,10 @@ app-admin-notification {
   }
 }
 
+.hero-content {
+  min-width: 0;
+}
+
 .hero-greeting { margin-bottom: 20px; }
 
 .hero-eyebrow {
@@ -352,6 +410,30 @@ app-admin-notification {
     border-color: rgba(34, 211, 238, 0.45);
     background: rgba(0, 0, 0, 0.35);
     box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.10);
+  }
+
+  @media (max-width: 640px) {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    gap: 8px;
+
+    input {
+      min-width: 0;
+      flex: 1 1 0;
+      font-size: 14px;
+    }
+
+    .hero-kbd {
+      flex-shrink: 0;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .hero-kbd {
+      display: none;
+    }
   }
 }
 

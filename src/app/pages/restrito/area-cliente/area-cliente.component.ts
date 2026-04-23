@@ -6,6 +6,7 @@ import { NavmenuComponent } from '../../../navmenu/navmenu.component';
 import { LoginClienteComponent } from './login-cliente/login-cliente.component';
 import { CrieSuaContaClienteComponent } from './crie-sua-conta-cliente/crie-sua-conta-cliente.component';
 import { NotificationsBellComponent } from '../../../shared/notifications-bell/notifications-bell.component';
+import { ClienteSuportePanelComponent } from '../../../features/support-chat/cliente-suporte-panel/cliente-suporte-panel.component';
 import { ToastService } from '../../../services/toast.service';
 import { AuthService } from '../../../services/auth.service';
 import { ApiService } from '../../../services/api.service';
@@ -22,7 +23,7 @@ interface Pet {
 @Component({
   selector: 'app-area-cliente',
   standalone: true, // <-- importante
-  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, LoginClienteComponent, CrieSuaContaClienteComponent, NotificationsBellComponent], // <-- importa o que usa no template
+  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, LoginClienteComponent, CrieSuaContaClienteComponent, NotificationsBellComponent, ClienteSuportePanelComponent], // <-- importa o que usa no template
   templateUrl: './area-cliente.component.html',
   styleUrls: ['./area-cliente.component.scss']
 })
@@ -45,7 +46,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private lastProfileToken?: string | null = null;
 
   // Internal navigation state when in modal
-  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | null = null;
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | null = null;
   // track which internal view originated the last navigation (used to return)
   private lastInternalOrigin: string | null = null;
 
@@ -297,7 +298,24 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
 
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte') {
+    if (view === 'suporte') {
+      if (!this.hasAuth) {
+        this.toast.error('Faça login para usar o atendimento por chat.', 'Atendimento');
+        return;
+      }
+      const ut = this.getStoredUserType();
+      if (ut && ut !== 'cliente') {
+        this.toast.error('O chat está disponível apenas para clientes.', 'Atendimento');
+        return;
+      }
+      if (this.internalView === 'suporte') {
+        return;
+      }
+      this.internalView = 'suporte';
+      this.titulo = 'Atendimento';
+      return;
+    }
     if (!this.modal) {
       // Navigate normally when not in modal
       if (view === 'meus-pedidos') return this.router.navigateByUrl('/meus-pedidos');

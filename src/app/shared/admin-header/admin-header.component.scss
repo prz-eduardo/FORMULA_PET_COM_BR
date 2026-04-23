@@ -1,8 +1,18 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  gap: 10px;
   /* Espaço extra à direita para sino / Conta e dropdowns não colarem na borda */
   padding: 14px clamp(16px, 3vw, 28px) 14px clamp(16px, 2.5vw, 24px);
 }
@@ -14,7 +24,13 @@
   color: #e9f2fb;
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  column-gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.15;
+  word-break: break-word;
 }
 .badge-super {
   font-size: 0.6em;
@@ -32,6 +48,45 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Telas estreitas: título e ações em coluna — evita overflow horizontal */
+@media (max-width: 640px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 18px 16px 16px;
+  }
+  .admin-header h1 {
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  .badge-super {
+    font-size: 0.55em;
+    margin-left: 0.35rem;
+    padding: 0.1rem 0.38rem;
+  }
+  .header-actions {
+    width: 100%;
+    /* Mesma borda de leitura que o título; evita 2.ª linha “vazia” à esquerda */
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 400px) {
+  .admin-header h1 {
+    font-size: 14px;
+    letter-spacing: 0.08em;
+  }
 }
 
 /* Primary command button used by admin header (Conta) */

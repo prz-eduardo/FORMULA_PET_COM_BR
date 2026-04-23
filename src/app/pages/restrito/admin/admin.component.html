@@ -205,6 +205,11 @@
             <span>Pedidos</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
+          <button class="item" *ngIf="matches('atendimento chat suporte fila')" (click)="goToAtendimento()" tabindex="0">
+            <i class="fa fa-comments"></i>
+            <span>Atendimento (chat)</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
           <button class="item" *ngIf="matches('cupons desconto')" (click)="goToCupons()" tabindex="0">
             <i class="fa fa-ticket"></i>
             <span>Cupons</span>

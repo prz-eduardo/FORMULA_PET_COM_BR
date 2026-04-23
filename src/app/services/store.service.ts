@@ -61,6 +61,34 @@ export interface ShopProduct {
   strikePrice?: number | null;
   precoDe?: number | null;
   slug?: string | null;
+  codigo_barras?: string | null;
+  registro_mapa?: string | null;
+  parcelas_max?: number | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  peso_valor?: number | null;
+  peso_unidade?: string | null;
+  /** Categorias como no API (id + nome) quando o detalhe as envia. */
+  categoriasList?: Array<{ id: number; nome: string; slug?: string }>;
+  /** Resumo curto (API pública). */
+  shortDescription?: string | null;
+  priceOriginal?: number | null;
+  priceFinal?: number | null;
+  /** Objeto de desconto agregado da API (GET /products/:id). */
+  apiDiscount?: { value: number; percent: number; promotionId: number | null } | null;
+  /** Melhor promoção ativa retornada pela API. */
+  activePromotion?: {
+    id: number;
+    nome?: string;
+    descricao?: string;
+    tipo?: string;
+    valor?: number;
+    inicio?: string | null;
+    fim?: string | null;
+    ativo?: boolean;
+  } | null;
+  productCreatedAt?: string | Date | null;
+  productUpdatedAt?: string | Date | null;
 }
 export interface StoreCategory { id: number; nome: string; produtos: number; }
 export interface StoreTag { id: number; nome: string; produtos: number; }
@@ -131,7 +159,10 @@ export class StoreService {
         if (!this.isBrowser()) {
           return this.clienteMeCache || null;
         }
-        const token = this.isBrowser() && typeof window !== 'undefined' ? (localStorage.getItem('token') || undefined) : undefined;
+        const token = this.getStoredJwt();
+        if (!token) {
+          return null;
+        }
       // Return cached value when available and not forcing refresh
       if (!forceRefresh && this.clienteMeCache) {
         return this.clienteMeCache;
@@ -158,7 +189,9 @@ export class StoreService {
           return res;
         } catch (err: any) {
           const inAdminRoute = !!(this.router && typeof this.router.url === 'string' && this.router.url.includes('/restrito'));
-          if (this.toast?.error && !inAdminRoute) {
+          const status = err?.status;
+          const silentAuth = status === 401;
+          if (this.toast?.error && !inAdminRoute && !silentAuth) {
             this.toast.error('Não foi possível carregar os dados do cliente.', 'Erro');
           }
           return null;
@@ -179,10 +212,31 @@ export class StoreService {
     try { return typeof window !== 'undefined' && typeof localStorage !== 'undefined'; } catch { return false; }
   }
 
+  /** Mesma regra que AuthService.getToken: localStorage ou sessionStorage. */
+  private getStoredJwt(): string | undefined {
+    if (!this.isBrowser() || typeof sessionStorage === 'undefined') return undefined;
+    try {
+      const fromLocal = localStorage.getItem('token');
+      const fromSession = sessionStorage.getItem('token');
+      const pick = fromLocal || fromSession || '';
+      if (!pick || pick === 'undefined' || pick === 'null') return undefined;
+      return pick;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Após login/logout: libera cache e permite isClienteLoggedSilent / navbar revalidarem. */
+  invalidateClienteSession(): void {
+    this.resetClienteGate();
+    this.clienteMeCache = null;
+    this.clienteMePromise = null;
+  }
+
   // Home highlights
   async loadHomeHighlights(): Promise<ShopProduct[]> {
     try {
-      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const token = this.getStoredJwt();
       const res = await this.api.getHomeHighlights(token).toPromise();
       const arr = Array.isArray(res) ? res : (res?.data || res?.items || []);
       const items = (arr || []).map((it: any) => ({
@@ -209,14 +263,19 @@ export class StoreService {
   async loadProducts(params?: { page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto'; category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[]; minPrice?: number; maxPrice?: number; myFavorites?: boolean; promoOnly?: boolean; sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites' }): Promise<{ total: number; totalPages: number; page: number; pageSize: number; meta?: StoreMeta }> {
     // Try server endpoint if available
     try {
-      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const token = this.getStoredJwt();
   const res = await this.api.listStoreProducts(params, token).toPromise();
       const raw = Array.isArray(res) ? res : ((res as any)?.data || (res as any)?.items || []);
       const list: ShopProduct[] = (raw || []).map((it: any) => {
         const price = Number(it.priceOriginal ?? it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0));
-        const promoPrice = (it.priceFinal != null ? Number(it.priceFinal)
-                          : (it.promo_price != null ? Number(it.promo_price)
-                          : (it.promoPrice != null ? Number(it.promoPrice) : null)));
+        // Preço promocional efetivo: só preenche quando há promoção real (API: promo_price ou final < base).
+        const rawPromo = it.promo_price != null ? Number(it.promo_price) : (it.promoPrice != null ? Number(it.promoPrice) : null);
+        const finalFromApi = it.priceFinal != null ? Number(it.priceFinal) : null;
+        const promoCandidate =
+          rawPromo != null && Number.isFinite(rawPromo) && rawPromo < price - 0.009
+            ? rawPromo
+            : (finalFromApi != null && Number.isFinite(finalFromApi) && finalFromApi < price - 0.009 ? finalFromApi : null);
+        const promoPrice = promoCandidate;
         const discountFromPromo = (promoPrice != null && price > 0) ? Math.max(0, (1 - promoPrice / price) * 100) : 0;
         const discountPercent = (it.discount && typeof it.discount.percent === 'number') ? Number(it.discount.percent)
                               : (typeof it.desconto === 'number' ? Number(it.desconto) : 0);
@@ -230,14 +289,18 @@ export class StoreService {
         const layoutRaw = (it.card_layout || 'sales').toString().toLowerCase();
         const cardLayout: 'sales' | 'banner' = layoutRaw === 'banner' ? 'banner' : 'sales';
         const strikePrice = it.strikePrice != null ? Number(it.strikePrice) : null;
+        const shortD = it.shortDescription != null && String(it.shortDescription).trim() !== '' ? String(it.shortDescription) : null;
+        const longD = (it.descricao != null && String(it.descricao) !== '') ? String(it.descricao) : (it.description != null ? String(it.description) : '');
+        const lineDesc = shortD != null ? shortD : longD;
         return {
           id: Number(it.id),
           name: it.nome || it.name,
-          description: it.descricao || it.description || '',
+          description: lineDesc,
           price,
           promoPrice,
           image: it.imagem_url || it.image || it.imageUrl || '',
-          category: it.categoria || it.category || '',
+          imageUrl: it.imageUrl ?? it.imagem_url ?? null,
+          category: it.categoria_nome || it.categoria || it.category || '',
           tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
           discount: Math.max(0, Math.round(desconto * 100) / 100),
           rating: (typeof it.rating_media === 'number') ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : (it.rating?.media ?? undefined)),
@@ -335,7 +398,7 @@ export class StoreService {
     const ok = await this.ensureClienteSession();
     if (!ok) return false;
     try {
-      const token = this.isBrowser() ? (localStorage.getItem('token') || '') : '';
+      const token = this.getStoredJwt() || '';
       // Call backend toggle
       const resp = await this.api.toggleFavorite(productId, token).toPromise();
       const serverFavorited = typeof resp?.is_favorited === 'boolean'
@@ -392,7 +455,7 @@ export class StoreService {
    */
   async refreshFavorites(): Promise<void> {
     try {
-      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const token = this.getStoredJwt();
       if (!token) return;
       const res: any = await this.api.listStoreProducts({ myFavorites: true, page: 1, pageSize: 9999 }, token).toPromise();
       const list = (res?.data || []) as any[];
@@ -463,26 +526,48 @@ export class StoreService {
   // Load full product details by ID
   async loadProductDetails(id: number | string): Promise<ShopProduct | null> {
     try {
-      const token = this.isBrowser() ? (localStorage.getItem('token') || undefined) : undefined;
+      const token = this.getStoredJwt();
       const it = await this.api.getProductById(id, token).toPromise();
       if (!it) return null;
+      const basePrice = Number(it.preco ?? it.price ?? 0);
+      const promoP = it.promoPrice != null ? Number(it.promoPrice) : (it.promo_price != null ? Number(it.promo_price) : null);
+      const imRaw = Array.isArray(it.images) ? it.images : (Array.isArray(it.imagens) ? it.imagens : []);
+      const descFull = it.descricao != null && String(it.descricao) !== '' ? String(it.descricao) : (it.description || it.shortDescription || '');
+      const catRow0: { nome?: string } | undefined = Array.isArray(it.categorias) && it.categorias.length
+        ? (it.categorias[0] as { nome?: string })
+        : undefined;
+      const catFirst = it.categoria != null && String(it.categoria) !== '' ? String(it.categoria) : (catRow0?.nome ? String(catRow0.nome) : '');
+      const discPct = typeof it.discount === 'object' && it.discount != null && (it.discount as any).percent != null
+        ? Number((it.discount as any).percent)
+        : (it.desconto != null
+          ? Number(it.desconto)
+          : (promoP != null && basePrice > 0 ? Math.max(0, ((basePrice - promoP) / basePrice) * 100) : 0));
+      const strk = it.strikePrice != null && Number.isFinite(Number(it.strikePrice)) ? Number(it.strikePrice) : null;
+      const pDe = it.precoDe != null ? Number(it.precoDe) : (it.preco_de != null ? Number(it.preco_de) : null);
+      const cLayout = (it.card_layout || it.cardLayout || 'sales') as string;
       const p: ShopProduct = {
         id: Number(it.id),
         name: it.nome || it.name,
-        description: it.descricao || it.description || it.shortDescription || '',
-        price: Number(it.preco ?? it.price ?? 0),
-  promoPrice: (it.promoPrice != null ? Number(it.promoPrice) : (it.promo_price != null ? Number(it.promo_price) : null)),
+        description: descFull,
+        price: basePrice,
+        promoPrice: promoP,
         image: it.imagem_url || it.image || it.imageUrl || '',
         imageUrl: it.imageUrl ?? (it.imagem_url || it.image || null),
-        images: Array.isArray(it.images) ? it.images.map((im: any) => ({ id: Number(im.id), url: im.url, posicao: im.posicao ?? null })) : [],
-        category: it.categoria || it.category || '',
+        images: imRaw.map((im: any) => ({ id: Number(im.id), url: im.url, posicao: im.posicao ?? null })),
+        category: it.categoria || it.category || catFirst,
         tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
-        discount: it.desconto || (it.promoPrice != null ? Math.max(0, ((Number(it.price ?? it.preco) - Number(it.promoPrice)) / Number(it.price ?? it.preco)) * 100) : 0),
+        discount: discPct,
         rating: it.rating?.media ?? it.rating_media ?? undefined,
         ratingsCount: it.rating?.total ?? it.rating_total ?? undefined,
         isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : undefined,
         favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
-        stock: typeof it.inStock === 'number' ? it.inStock : (typeof it.in_stock === 'number' ? it.in_stock : undefined),
+        stock: (() => {
+          const v = it.inStock !== undefined && it.inStock !== null ? it.inStock : it.in_stock;
+          if (typeof v === 'boolean') return v ? 1 : 0;
+          if (v === null || v === undefined) return undefined;
+          return Number(v);
+        })(),
+        inStock: it.inStock !== undefined ? it.inStock : it.in_stock,
         tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
         requiresPrescription: it.requiresPrescription ?? (it.exige_receita ? !!it.exige_receita : undefined),
         sku: it.sku ?? null,
@@ -492,7 +577,7 @@ export class StoreService {
         indicacoes: it.indicacoes ?? null,
         contraindicacoes: it.contraindicacoes ?? null,
         exige_receita: it.exige_receita ?? null,
-        validade_meses: it.validade_meses ?? null,
+        validade_meses: it.validade_meses != null ? Number(it.validade_meses) : null,
         armazenamento: it.armazenamento ?? null,
         video_url: it.video_url ?? null,
         variantes: Array.isArray(it.variantes) ? it.variantes.map((v: any) => ({
@@ -512,6 +597,48 @@ export class StoreService {
           tipo: d.tipo ?? null,
         })) : [],
         cupons_aplicaveis: Array.isArray(it.cupons_aplicaveis) ? it.cupons_aplicaveis : [],
+        strikePrice: strk,
+        precoDe: pDe,
+        slug: it.slug ?? null,
+        cardLayout: cLayout.toLowerCase() === 'banner' ? 'banner' : 'sales',
+        codigo_barras: it.codigo_barras ?? null,
+        registro_mapa: it.registro_mapa ?? null,
+        parcelas_max: it.parcelas_max != null ? Number(it.parcelas_max) : null,
+        meta_title: it.meta_title ?? null,
+        meta_description: it.meta_description ?? null,
+        peso_valor: it.peso_valor != null ? Number(it.peso_valor) : null,
+        peso_unidade: it.peso_unidade ?? null,
+        categoriasList: Array.isArray(it.categorias)
+          ? (it.categorias as Array<{ id?: number; nome?: string; slug?: string }>)
+            .map((c) => ({ id: Number(c.id), nome: String(c.nome), slug: c.slug }))
+            .filter((c) => c.nome)
+          : undefined,
+        shortDescription: it.shortDescription != null ? String(it.shortDescription) : null,
+        priceOriginal: it.priceOriginal != null ? Number(it.priceOriginal) : null,
+        priceFinal: it.priceFinal != null ? Number(it.priceFinal) : null,
+        apiDiscount: typeof it.discount === 'object' && it.discount != null && 'percent' in (it.discount as object)
+          ? {
+              value: Number((it.discount as { value?: number }).value ?? 0),
+              percent: Number((it.discount as { percent?: number }).percent ?? 0),
+              promotionId: (it.discount as { promotionId?: number | null }).promotionId != null
+                ? Number((it.discount as { promotionId?: number | null }).promotionId)
+                : null
+            }
+          : null,
+        activePromotion: it.promotion && (it.promotion as { id?: number }).id != null
+          ? {
+              id: Number((it.promotion as { id: number }).id),
+              nome: (it.promotion as { nome?: string }).nome,
+              descricao: (it.promotion as { descricao?: string }).descricao,
+              tipo: (it.promotion as { tipo?: string }).tipo,
+              valor: (it.promotion as { valor?: number }).valor != null ? Number((it.promotion as { valor: number }).valor) : undefined,
+              inicio: (it.promotion as { inicio?: string | null }).inicio ?? null,
+              fim: (it.promotion as { fim?: string | null }).fim ?? null,
+              ativo: !!(it.promotion as { ativo?: boolean }).ativo
+            }
+          : null,
+        productCreatedAt: it.created_at ?? it.createdAt ?? null,
+        productUpdatedAt: it.updated_at ?? it.updatedAt ?? null,
       };
       return p;
     } catch {

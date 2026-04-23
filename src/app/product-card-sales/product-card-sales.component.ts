@@ -3,6 +3,11 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShopProduct } from '../services/store.service';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../constants/card.constants';
+import {
+  cardSalesClassMap,
+  normalizeCardSalesStructure,
+  normalizeImageRatio,
+} from '../constants/loja-tema-card.config';
 
 @Component({
   selector: 'app-product-card-sales',
@@ -37,6 +42,11 @@ export class ProductCardSalesComponent {
     this.add.emit(ev);
   }
 
+  get displayImage(): string {
+    const u = (this.product.image || this.product.imageUrl || '').toString().trim();
+    return u || '/imagens/image.png';
+  }
+
   get priceNow(): number {
     if (this.product.promoPrice != null) return this.product.promoPrice;
     const price = this.product.price || 0;
@@ -60,6 +70,18 @@ export class ProductCardSalesComponent {
 
   get showSku(): boolean {
     return !!(this.themeConfig as any)?.cardSales?.showSku && !!this.product.sku?.trim?.();
+  }
+
+  get cardStructure() {
+    return normalizeCardSalesStructure((this.themeConfig as any)?.cardSales?.structure);
+  }
+
+  get imageAspect() {
+    return normalizeImageRatio((this.themeConfig as any)?.cardSales?.imageRatio, '4/5');
+  }
+
+  get cardClass(): string {
+    return cardSalesClassMap(this.cardStructure);
   }
 
   get ratingValue(): number {

@@ -10,8 +10,19 @@ import { AdminToolbarComponent } from '../../../../shared/admin-page';
 const DEFAULT_CONFIG: Record<string, unknown> = {
   version: 1,
   colors: { primary: '#b45309', accent: '#f5a700', surface: '#ffffff' },
-  cardSales: { imageRatio: '4/5', showMarca: true, showSku: true, density: 'comfortable' },
-  cardBanner: { overlayOpacity: 0.45, minHeightPx: 220, titleLines: 2 },
+  cardSales: {
+    structure: 'stacked',
+    imageRatio: '4/5',
+    showMarca: true,
+    showSku: true,
+    density: 'comfortable',
+  },
+  cardBanner: {
+    structure: 'gradientBottom',
+    overlayOpacity: 0.45,
+    minHeightPx: 220,
+    titleLines: 2,
+  },
   store: { showCouponBadgesOnListing: false },
 };
 

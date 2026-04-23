@@ -483,8 +483,8 @@ export class ProdutoComponent implements OnInit {
   get previewThemeConfig(): Record<string, unknown> {
     return {
       version: 1,
-      cardSales: { showMarca: true, showSku: true },
-      cardBanner: { overlayOpacity: 0.45, minHeightPx: 220, titleLines: 2 },
+      cardSales: { structure: 'stacked', imageRatio: '4/5', showMarca: true, showSku: true },
+      cardBanner: { structure: 'gradientBottom', overlayOpacity: 0.45, minHeightPx: 220, titleLines: 2 },
     };
   }
 

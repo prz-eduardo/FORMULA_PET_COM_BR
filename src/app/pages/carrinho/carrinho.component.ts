@@ -141,8 +141,20 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
       }
     } catch {}
   }
-  private getToken(): string | undefined { return isPlatformBrowser(this.platformId) ? (localStorage.getItem('token') || undefined) : undefined; }
-  private getUserType(): string | undefined { return isPlatformBrowser(this.platformId) ? (localStorage.getItem('userType') || undefined) : undefined; }
+  private getToken(): string | undefined {
+    if (!isPlatformBrowser(this.platformId)) return undefined;
+    try {
+      const t = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!t || t === 'undefined' || t === 'null') return undefined;
+      return t;
+    } catch { return undefined; }
+  }
+  private getUserType(): string | undefined {
+    if (!isPlatformBrowser(this.platformId)) return undefined;
+    try {
+      return localStorage.getItem('userType') || sessionStorage.getItem('userType') || undefined;
+    } catch { return undefined; }
+  }
 
   // Conversa com o backend para validar preços/estoque do carrinho
   async validarCarrinhoComBackend() {

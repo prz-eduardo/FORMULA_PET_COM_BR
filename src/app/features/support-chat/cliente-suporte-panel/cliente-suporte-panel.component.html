@@ -1,0 +1,10 @@
+<div class="wrap">
+  <h2 class="h">Fale conosco</h2>
+  <p *ngIf="loading">A abrir o chat…</p>
+  <p class="err" *ngIf="initErr">{{ initErr }}</p>
+  <ng-container *ngIf="!loading && !initErr && ticketId">
+    <p class="status">{{ statusLine() }}</p>
+    <app-chat-thread *ngIf="meta?.status !== 'closed'" [ticketId]="ticketId" mode="cliente" />
+    <p *ngIf="meta?.status === 'closed'" class="closed-hint">Abra de novo a área do cliente para iniciar um novo atendimento.</p>
+  </ng-container>
+</div>

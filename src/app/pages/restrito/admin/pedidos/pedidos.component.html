@@ -7,10 +7,15 @@
   [total]="total"
   [drawerOpen]="selected != null"
   (drawerOpenChange)="onDrawerOpenChange($event)"
-  [drawerFull]="drawerFull"
+  [drawerWidth]="'640px'"
+  [drawerShowFooter]="true"
+  [drawerPrimaryLabel]="drawerPrimaryLabel"
+  [drawerPrimaryDisabled]="drawerPrimaryDisabled"
+  [drawerSecondaryLabel]="'Fechar'"
+  (drawerPrimaryAction)="onDrawerAdvance()"
+  (drawerSecondaryAction)="backToList()"
   [drawerTitle]="selected ? ('Pedido #' + (selected.id || selected.codigo || '')) : 'Pedido'"
   [drawerSubtitle]="selected?.cliente_nome || selected?.customer_name || null"
-  [drawerHideFooter]="true"
   (pageChange)="page = $event; load()"
   (edit)="openDetails($event)"
   (quickSearch)="onQuickSearch($event)"
@@ -26,12 +31,10 @@
   <admin-pagination slot="pagination" [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; load()"></admin-pagination>
 
   <div slot="drawer">
-    <div *ngIf="selected">
-      <app-order-details *ngIf="selected"
+    <div class="fx-drawer" *ngIf="selected">
+      <app-order-details
         [order]="selected"
-        [mode]="drawerFull ? 'full' : 'compact'"
-        (expand)="onExpandDetails()"
-        (collapse)="onCollapseDetails()"
+        [adminEmbedded]="true"
         (statusChange)="setStatus($event)"
         (cancel)="cancelarPedido()"
         (close)="backToList()"

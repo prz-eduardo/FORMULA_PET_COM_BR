@@ -8,6 +8,7 @@
         <span class="pcb-type" *ngIf="product.tipo === 'manipulado'">Manipulado</span>
       </div>
       <h3 class="pcb-title" [class.lines-3]="titleLines === 3" [title]="product.name">{{ product.name }}</h3>
+      <p class="pcb-cat" *ngIf="product.category">{{ product.category }}</p>
       <p class="pcb-marca" *ngIf="product.marca">{{ product.marca }}</p>
       <div class="pcb-price">
         <span class="pcb-new">{{ priceNow | currency:'BRL':'symbol-narrow':'1.2-2':'pt-BR' }}</span>
@@ -23,9 +24,9 @@
   </div>
 </ng-template>
 
-<a *ngIf="!disableLink" class="pcb-root" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" [title]="product.name" style="width:100%" [style.max-width]="cardWidth">
+<a *ngIf="!disableLink" class="pcb-root" [ngClass]="bannerRootClass" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" [title]="product.name" style="width:100%" [style.max-width]="cardWidth">
   <ng-container *ngTemplateOutlet="bannerInner"></ng-container>
 </a>
-<div *ngIf="disableLink" class="pcb-root" style="width:100%" [style.max-width]="cardWidth">
+<div *ngIf="disableLink" class="pcb-root" [ngClass]="bannerRootClass" style="width:100%" [style.max-width]="cardWidth">
   <ng-container *ngTemplateOutlet="bannerInner"></ng-container>
 </div>

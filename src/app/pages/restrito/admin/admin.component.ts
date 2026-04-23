@@ -60,7 +60,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       'veterinarios vet',
       'parceiros gestao',
     ],
-    operacao: ['banners', 'pedidos compras', 'cupons desconto', 'promocoes ofertas'],
+    operacao: ['banners', 'pedidos compras', 'cupons desconto', 'promocoes ofertas', 'atendimento chat suporte fila'],
   };
 
   constructor(private router: Router, private session: SessionService) {}
@@ -191,6 +191,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   goToAtivos() { this.router.navigate(['/restrito/admin/ativos']); }
   goToInsumos() { this.router.navigate(['/restrito/admin/insumos']); }
   goToParceiros() { this.router.navigate(['/restrito/admin/parceiros']); }
+  goToAtendimento() { this.router.navigate(['/restrito/admin/atendimento']); }
 
   // -------- Header user menu --------
   toggleUserMenu(force?: boolean) {
