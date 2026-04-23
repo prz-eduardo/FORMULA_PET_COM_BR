@@ -467,6 +467,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           if ((ref.instance as any).editPet) {
             (ref.instance as any).editPet.subscribe(async (petId: string | number) => {
               try {
+                this.internalView = 'novo-pet';
+                this.titulo = 'Editar pet';
                 this.internalHost?.clear();
                 const mod2 = await import('../../../pages/novo-pet/novo-pet.component');
                 const Cmp2 = (mod2 as any).NovoPetComponent;
@@ -474,9 +476,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
                 if (ref2?.instance) {
                   (ref2.instance as any).modal = true;
                   try { (ref2.instance as any).editId = petId; } catch {}
-                  if ((ref2.instance as any).close) {
-                    (ref2.instance as any).close.subscribe(() => this.goBack());
-                  }
+                  try { (ref2.instance as any).clienteDataInjected = this.clienteData; } catch {}
+                  this.wireNovoPetModalListeners(ref2.instance);
                 }
               } catch (e) {
                 console.error('Falha ao abrir editor de pet', e);
@@ -491,9 +492,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
         const ref = this.internalHost.createComponent(Cmp);
         if (ref?.instance) {
           (ref.instance as any).modal = true;
-          if ((ref.instance as any).close) {
-            (ref.instance as any).close.subscribe(() => this.goBack());
-          }
+          try { (ref.instance as any).clienteDataInjected = this.clienteData; } catch {}
+          this.wireNovoPetModalListeners(ref.instance);
         }
       } else if (view === 'perfil') {
         const mod = await import('../../../pages/perfil/perfil.component');
@@ -514,6 +514,12 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
               this.lastInternalOrigin = 'perfil';
               // open will route appropriately; since we're in modal, it will create the internal view
               this.open(viewName as any);
+            });
+          }
+          if ((ref.instance as any).profileSaved) {
+            (ref.instance as any).profileSaved.subscribe(() => {
+              const t = this.auth.getToken();
+              if (t) this.loadProfile(t);
             });
           }
         }
@@ -583,5 +589,20 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     }
     this.internalView = null;
     this.titulo = 'Bem-vindo!';
+  }
+
+  /** close + petSaved do cadastro/edição de pet no modal */
+  private wireNovoPetModalListeners(instance: any) {
+    if (!instance) return;
+    if (instance.close) {
+      instance.close.subscribe(() => this.goBack());
+    }
+    if (instance.petSaved) {
+      instance.petSaved.subscribe(() => {
+        const t = this.auth.getToken();
+        if (t) this.loadProfile(t);
+        this.open('meus-pets');
+      });
+    }
   }
 }

@@ -16,11 +16,7 @@ export class MeusEnderecosComponent {
   @Input() returnToPerfil: boolean = false;
   @Output() close = new EventEmitter<string|void>();
 
-  // Addresses will be loaded from the API. Keep a small fallback so UI renders if API fails.
-  enderecos: any[] = [
-    { id: 1, label: 'Casa', rua: 'Rua das Flores, 123', cidade: 'Curitiba', uf: 'PR', cep: '80000-000' },
-    { id: 2, label: 'Trabalho', rua: 'Av. Central, 456', cidade: 'Curitiba', uf: 'PR', cep: '80010-000' }
-  ];
+  enderecos: any[] = [];
 
   loading = false;
   cepCarregando = false;
@@ -90,23 +86,39 @@ export class MeusEnderecosComponent {
   confirmOpen = false;
   toDelete: any = null;
 
+  /** Garante `label` a partir de `nome` se a API retornar só `nome` */
+  private labelFromNome(row: any) {
+    if (!row) return;
+    if (row.nome && !row.label) row.label = row.nome;
+  }
+
+  private withDisplayRua(e: any) {
+    const log = (e.logradouro || e.rua || '').toString();
+    const num = e.numero;
+    const line = [log, num != null && String(num) !== '' ? String(num) : ''].filter(Boolean).join(', ');
+    return { ...e, rua: line || log };
+  }
+
   openDetails(e: any, edit: boolean = false) {
-    this.selected = { ...e };
+    this.selected = this.withDisplayRua(e);
     this.detailOpen = true;
     this.editing = !!edit;
-    // build editModel with API field names where possible
-    this.editModel = {
-      id: this.selected.id,
-      cliente_id: this.selected.cliente_id,
-      label: this.selected.label,
-      tipo: this.selected.tipo || 'outros',
-      cep: this.selected.cep,
-      logradouro: this.selected.logradouro,
-      numero: this.selected.numero,
-      complemento: this.selected.complemento,
-      bairro: this.selected.bairro,
-      cidade: this.selected.cidade,
-      estado: this.selected.estado
+    this.editModel = this.editing ? this.buildEditModel(this.selected) : null;
+  }
+
+  private buildEditModel(src: any) {
+    return {
+      id: src?.id,
+      cliente_id: src?.cliente_id,
+      label: src?.label,
+      tipo: src?.tipo || 'outros',
+      cep: src?.cep,
+      logradouro: src?.logradouro,
+      numero: src?.numero,
+      complemento: src?.complemento,
+      bairro: src?.bairro,
+      cidade: src?.cidade,
+      estado: src?.estado
     };
   }
 
@@ -117,11 +129,26 @@ export class MeusEnderecosComponent {
     this.selected = null;
   }
 
-  enableEdit() { this.editing = true; this.editModel = { ...this.selected }; }
-  cancelEdit() { this.editing = false; this.editModel = null; }
+  enableEdit() {
+    this.editing = true;
+    if (this.selected) {
+      this.editModel = this.buildEditModel(this.selected);
+    }
+  }
+
+  cancelEdit() {
+    if (!this.selected?.id) {
+      this.closeDetails();
+      return;
+    }
+    this.editing = false;
+    this.editModel = null;
+  }
 
   saveEdit() {
-    // If editing an existing address
+    if (!this.editModel) {
+      return;
+    }
     (async () => {
       try {
         const token = this.auth.getToken();
@@ -139,28 +166,36 @@ export class MeusEnderecosComponent {
         };
         if (this.selected && this.selected.id) {
           if (token) {
-            const updated = await this.api.updateEnderecoCliente(token, this.selected.id, payload).toPromise();
+            const updated = await this.api.updateEnderecoCliente(token, this.selected.id, payload).toPromise() as any;
             // merge back
             const idx = this.enderecos.findIndex((x:any) => x.id === this.selected.id);
-            if (idx >= 0) this.enderecos[idx] = { ...this.enderecos[idx], ...updated };
-            this.selected = { ...this.enderecos[idx] };
+            if (idx >= 0) {
+              this.enderecos[idx] = { ...this.enderecos[idx], ...updated };
+              this.labelFromNome(this.enderecos[idx]);
+              this.enderecos[idx].label = this.enderecos[idx].label || this.enderecos[idx].nome || this.editModel.label;
+              this.selected = this.withDisplayRua(this.enderecos[idx]);
+            }
           } else {
             // local-only
             const idx = this.enderecos.findIndex((x:any) => x.id === this.selected.id);
-            if (idx >= 0) this.enderecos[idx] = { ...this.enderecos[idx], ...this.editModel };
-            this.selected = { ...this.enderecos[idx] };
+            if (idx >= 0) {
+              this.enderecos[idx] = { ...this.enderecos[idx], ...this.editModel };
+              this.labelFromNome(this.enderecos[idx]);
+              this.selected = this.withDisplayRua(this.enderecos[idx]);
+            }
           }
         } else {
           // create new
           if (token) {
-            const created = await this.api.createEnderecoCliente(token, payload).toPromise();
+            const created = await this.api.createEnderecoCliente(token, payload).toPromise() as any;
+            this.labelFromNome(created);
             this.enderecos = [created, ...this.enderecos];
-            this.selected = created;
+            this.selected = this.withDisplayRua(created);
           } else {
             const newId = Math.floor(Math.random() * 1000000);
             const created = { id: newId, ...this.editModel };
             this.enderecos = [created, ...this.enderecos];
-            this.selected = created;
+            this.selected = this.withDisplayRua(created);
           }
         }
       } catch (err) {
@@ -237,5 +272,17 @@ export class MeusEnderecosComponent {
       case 'cobranca': return '🧾';
       default: return '📍';
     }
+  }
+
+  tipoLabel(tipo?: string): string {
+    const t = (tipo || 'outros').toLowerCase().trim();
+    const m: Record<string, string> = {
+      casa: 'Casa',
+      trabalho: 'Trabalho',
+      entrega: 'Entrega',
+      cobranca: 'Cobrança',
+      outros: 'Outros'
+    };
+    return m[t] || (tipo || 'Outros');
   }
 }

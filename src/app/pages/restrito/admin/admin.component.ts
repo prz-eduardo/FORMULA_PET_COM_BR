@@ -59,6 +59,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       'gerenciar clientes',
       'veterinarios vet',
       'parceiros gestao',
+      'pets galeria moderação tutor fotos',
     ],
     operacao: ['banners', 'pedidos compras', 'cupons desconto', 'promocoes ofertas', 'atendimento chat suporte fila'],
   };
@@ -191,6 +192,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   goToAtivos() { this.router.navigate(['/restrito/admin/ativos']); }
   goToInsumos() { this.router.navigate(['/restrito/admin/insumos']); }
   goToParceiros() { this.router.navigate(['/restrito/admin/parceiros']); }
+  goToPetsGaleria() { this.router.navigate(['/restrito/admin/pets-galeria']); }
   goToAtendimento() { this.router.navigate(['/restrito/admin/atendimento']); }
 
   // -------- Header user menu --------

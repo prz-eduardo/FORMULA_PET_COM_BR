@@ -48,6 +48,23 @@
   font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif;
 }
 
+/* Scroll do conteúdo incrustado (perfil / pets / pedidos) dentro do modal */
+.area-cliente-wrapper.is-modal .ac-internal-view {
+  width: 100%;
+  min-width: 0;
+  max-height: min(72vh, calc(100dvh - 192px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 4px;
+  padding-bottom: 6px;
+}
+
+.area-cliente-wrapper.is-modal .titulo {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
 /* ============================================================
    HERO DO USUÁRIO LOGADO
    ============================================================ */

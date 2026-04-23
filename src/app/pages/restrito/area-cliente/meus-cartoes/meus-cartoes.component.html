@@ -1,10 +1,10 @@
-<div class="meus-cartoes">
-  <h2>Meus Cartões</h2>
+<div class="meus-cartoes" [class.is-modal]="modal">
+  <h2 *ngIf="!modal" class="page-title">Meus cartões</h2>
 
-  <div *ngIf="loading">Carregando cartões...</div>
-  <div *ngIf="!loading && cards.length === 0">Nenhum cartão salvo.</div>
+  <div *ngIf="loading" class="state-msg">Carregando cartões…</div>
+  <div *ngIf="!loading && cards.length === 0" class="state-msg state-msg--empty">Nenhum cartão salvo.</div>
 
-  <ul *ngIf="!loading && cards.length">
+  <ul *ngIf="!loading && cards.length" class="card-list">
     <li *ngFor="let c of cards" class="card-item">
       <div class="card-main">
         <div class="card-label">{{ c.brand || 'Cartão' }} •••• {{ c.last4 }} <span *ngIf="c.is_default" class="badge">Padrão</span></div>
@@ -17,9 +17,9 @@
     </li>
   </ul>
 
-  <hr />
+  <div class="section-divider" *ngIf="!loading" aria-hidden="true"></div>
 
-  <h3>Adicionar cartão</h3>
+  <h3 class="section-title">Adicionar cartão</h3>
   <form (submit)="onAdd($event)" class="add-form">
     <div class="row">
       <label>Nome no cartão

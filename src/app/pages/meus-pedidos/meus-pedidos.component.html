@@ -1,6 +1,6 @@
 <app-navmenu *ngIf="!modal"></app-navmenu>
 
-<div class="area-like-wrapper">
+<div class="meus-pedidos-page area-like-wrapper" [class.is-modal]="modal">
   <main class="container">
     <div class="top-actions" *ngIf="!modal">
       <button class="btn-back" (click)="voltar()">← Voltar</button>

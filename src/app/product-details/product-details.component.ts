@@ -160,6 +160,12 @@ export class ProductDetailsComponent implements OnInit {
     return Array.isArray(e) && e.length ? e.map(String) : [];
   }
 
+  get compostosLabels(): string[] {
+    const p = this.product;
+    if (!p?.compostosAtivos?.length) return [];
+    return p.compostosAtivos.map((c) => (c.label != null ? String(c.label).trim() : '')).filter(Boolean);
+  }
+
   hasTechnicalInfo(): boolean {
     const p = this.product;
     if (!p) return false;
@@ -240,6 +246,59 @@ export class ProductDetailsComponent implements OnInit {
     const p = this.product;
     if (!p) return false;
     return !!(p.activePromotion && p.activePromotion.id) || !!(p.apiDiscount && (p.apiDiscount.percent > 0 || p.apiDiscount.value > 0));
+  }
+
+  /**
+   * Texto “preço tabela / promo” só quando a linha de preço principal não
+   * já exibe a mesma informação (evita três blocos com os mesmos números).
+   */
+  get showPriceTableExplainer(): boolean {
+    const p = this.product;
+    if (!p || p.priceFinal == null || p.priceOriginal == null) return false;
+    if (p.priceFinal >= p.priceOriginal) return false;
+    const n = (a: number, b: number) => Math.abs(a - b) < 0.02;
+    const now = this.priceNow();
+    const ref = this.referenceListPrice();
+    if (ref != null && n(now, p.priceFinal) && n(ref, p.priceOriginal)) {
+      return false;
+    }
+    return true;
+  }
+
+  formatPromoDate(iso: string | null | undefined): string {
+    if (iso == null || String(iso).trim() === '') return '';
+    const s = String(iso).trim();
+    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T'));
+    if (isNaN(d.getTime())) return s;
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  get promotionCardDiscountText(): string | null {
+    const p = this.product;
+    if (!p?.activePromotion?.id) {
+      if (p?.apiDiscount && p.apiDiscount.percent > 0) {
+        return `${p.apiDiscount.percent % 1 === 0 ? p.apiDiscount.percent : p.apiDiscount.percent.toFixed(1)}% de desconto`;
+      }
+      return null;
+    }
+    const pr = p.activePromotion;
+    const t = (pr.tipo || '').toString().toLowerCase();
+    const v = pr.valor != null && Number.isFinite(Number(pr.valor)) ? Number(pr.valor) : 0;
+    if (t === 'percentual' || t === 'porcentagem' || t === 'percentage' || t.includes('percent')) {
+      if (v > 0) {
+        return v % 1 === 0 ? `${v}% de desconto` : `${v.toFixed(1).replace(/\.0$/, '')}% de desconto`;
+      }
+    }
+    if (t.includes('valor') || t === 'fixed' || t === 'valor') {
+      if (v > 0) return `R$ ${v.toFixed(2).replace('.', ',')} de desconto`;
+    }
+    if (p.apiDiscount && p.apiDiscount.percent > 0) {
+      return `${p.apiDiscount.percent % 1 === 0 ? p.apiDiscount.percent : p.apiDiscount.percent.toFixed(1)}% de desconto`;
+    }
+    if (p.apiDiscount && p.apiDiscount.value > 0) {
+      return `R$ ${p.apiDiscount.value.toFixed(2).replace('.', ',')} a menos no total`;
+    }
+    return v > 0 ? `Desconto de ${v}` : null;
   }
 
   priceNow(): number {

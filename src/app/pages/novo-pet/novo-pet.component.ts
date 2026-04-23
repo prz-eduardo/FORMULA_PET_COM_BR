@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -14,11 +14,14 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
   templateUrl: './novo-pet.component.html',
   styleUrls: ['./novo-pet.component.scss']
 })
-export class NovoPetComponent {
+export class NovoPetComponent implements OnInit {
   @Input() modal: boolean = false;
   // When embedded in the area-cliente modal, parent can set editId to open edit mode
   @Input() editId?: string | number | null;
+  /** Dados do cliente já carregados na área (evita janela de salvar com clienteMe nulo) */
+  @Input() clienteDataInjected: any = null;
   @Output() close = new EventEmitter<void>();
+  @Output() petSaved = new EventEmitter<void>();
   // form fields
   nome = '';
   especie = '';
@@ -27,6 +30,8 @@ export class NovoPetComponent {
   pesoKg: number | null = null;
   idadeAnos: number | null = null;
   observacoes = '';
+  /** Opt-in para aparecer na galeria pública (requer aprovação do admin). */
+  exibirGaleriaPublica = false;
   // alergias livres removidas em favor do search-select
   // Predefinidas (get_lista_alergias)
   listaAlergias: { nome: string; alergia_id: string | number; ativo_id?: string | number }[] = [];
@@ -62,19 +67,31 @@ export class NovoPetComponent {
     return isPlatformBrowser(this.platformId) ? this.auth.getToken() : null;
   }
 
+  /** `ClienteMeResponse.user.id` ou user injetado pela área do cliente (`clienteDataInjected`) */
+  getClienteIdNum(): number | null {
+    const c: any = this.clienteMe;
+    if (!c) return null;
+    const id = c.user?.id ?? c.id;
+    const n = Number(id);
+    return isNaN(n) || n <= 0 ? null : n;
+  }
+
   ngOnInit(){
     const t = this.token;
     if (!t) return;
+    if (this.clienteDataInjected?.id) {
+      this.clienteMe = { user: this.clienteDataInjected };
+    } else {
     this.api.getClienteMe(t).subscribe({
       next: (res) => this.clienteMe = res,
       error: () => {}
     });
+    }
 
-  // Edit mode: prefer programmatic editId (when embedded), otherwise use route param
+  // Edit mode: prefer programmatic editId (when embedded), otherwise use route param (editar-pet/:id)
   const routeId = this.route.snapshot.paramMap.get('id');
-  const id = this.editId != null ? String(this.editId) : routeId;
+  const id = this.editId != null && String(this.editId) !== '' ? String(this.editId) : routeId;
   if (id && t) {
-      const numId = Number(this.clienteMe?.user?.id);
       // If clienteMe not loaded yet, we'll attempt a delayed fetch after it loads
       const loadPet = (clienteId: number) => {
         this.api.getPetsByCliente(clienteId, t).subscribe({
@@ -90,6 +107,8 @@ export class NovoPetComponent {
               const rawIdade = (pet.idadeAnos ?? pet.idade);
               this.idadeAnos = rawIdade != null && rawIdade !== '' ? Number(rawIdade) : null;
               this.observacoes = pet.observacoes || '';
+              const eg = pet.exibir_galeria_publica;
+              this.exibirGaleriaPublica = !!(eg === 1 || eg === true || eg === '1' || String(eg).toLowerCase() === 'true');
               // Mostrar foto atual do pet (vários nomes possíveis retornados pelo backend)
               this.fotoPreview = pet.photoURL || pet.photoUrl || pet.foto || pet.photo || pet.photo_url || null;
               this.fotoFile = null;
@@ -110,11 +129,11 @@ export class NovoPetComponent {
           }
         });
       };
-      if (this.clienteMe?.user?.id) loadPet(Number(this.clienteMe.user.id));
+      if (this.getClienteIdNum()) loadPet(this.getClienteIdNum()!);
       else {
-        // wait for clienteMe
         const int = setInterval(() => {
-          if (this.clienteMe?.user?.id) { clearInterval(int); loadPet(Number(this.clienteMe.user.id)); }
+          const cid = this.getClienteIdNum();
+          if (cid) { clearInterval(int); loadPet(cid); }
         }, 50);
         setTimeout(() => clearInterval(int), 4000);
       }
@@ -248,7 +267,7 @@ export class NovoPetComponent {
       this.toast.info('Preencha os campos obrigatórios', 'Atenção');
       return;
     }
-    if (!this.token || !this.clienteMe?.user?.id) {
+    if (!this.token || !this.getClienteIdNum()) {
       this.toast.error('Sessão inválida. Faça login novamente.', 'Erro');
       return;
     }
@@ -260,6 +279,7 @@ export class NovoPetComponent {
     if (this.pesoKg != null) fd.append('pesoKg', String(this.pesoKg));
     if (this.idadeAnos != null) fd.append('idadeAnos', String(this.idadeAnos));
     if (this.observacoes) fd.append('observacoes', this.observacoes.trim());
+    fd.append('exibir_galeria_publica', this.exibirGaleriaPublica ? '1' : '0');
     // Enviar alergias predefinidas completas (nome, alergia_id, ativo_id)
     if (this.alergiasSelecionadas.length) {
       fd.append('alergias_predefinidas', JSON.stringify(this.alergiasSelecionadas));
@@ -267,20 +287,29 @@ export class NovoPetComponent {
     if (this.fotoFile) fd.append('foto', this.fotoFile);
 
     this.carregando = true;
-    const editId = this.route.snapshot.paramMap.get('id');
-    const req$ = editId
-      ? this.api.updatePet(this.clienteMe.user.id, editId, fd, this.token!)
-      : this.api.createPet(this.clienteMe.user.id, fd, this.token!);
+    const routeParamId = this.route.snapshot.paramMap.get('id');
+    const effectiveEditId =
+      this.editId != null && String(this.editId) !== '' ? String(this.editId) : routeParamId;
+    const cid = this.getClienteIdNum()!;
+    const req$ = effectiveEditId
+      ? this.api.updatePet(cid, effectiveEditId, fd, this.token!)
+      : this.api.createPet(cid, fd, this.token!);
     req$.subscribe({
       next: () => {
-        this.toast.success(editId ? 'Pet atualizado com sucesso!' : 'Pet cadastrado com sucesso!');
+        this.toast.success(effectiveEditId ? 'Pet atualizado com sucesso!' : 'Pet cadastrado com sucesso!');
+        this.carregando = false;
+        this.petSaved.emit();
+        if (this.modal) {
+          // O host (ex.: area-cliente) reabre "Meus pets" após petSaved; não chamar close aqui
+          return;
+        }
         this.router.navigateByUrl('/area-cliente');
       },
       error: (err: any) => {
-        const msg = err?.error?.message || err?.message || 'Erro ao cadastrar pet';
+        const msg = err?.error?.message || err?.error?.error || err?.message || 'Erro ao cadastrar pet';
         this.toast.error(msg, 'Erro');
-      },
-      complete: () => this.carregando = false
+        this.carregando = false;
+      }
     });
   }
 }

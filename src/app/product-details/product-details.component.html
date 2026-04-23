@@ -122,11 +122,11 @@
 				<aside class="info">
 					<p class="pd-lead" *ngIf="p.shortDescription?.trim()">{{ p.shortDescription!.trim() }}</p>
 
-					<div class="pd-identity" *ngIf="p.marca || p.category || p.sku || p.codigo_barras || weightLabel">
+					<div class="pd-identity" *ngIf="p.marca || p.category || displaySku() || p.codigo_barras || weightLabel">
 						<div class="pd-identity__marca" *ngIf="p.marca">{{ p.marca }}</div>
 						<ul class="pd-identity__kv">
 							<li *ngIf="p.category"><span>Categoria</span> {{ p.category }}</li>
-							<li *ngIf="p.sku"><span>SKU</span> {{ p.sku }}</li>
+							<li *ngIf="displaySku()"><span>SKU</span> {{ displaySku() }}</li>
 							<li *ngIf="p.codigo_barras"><span>Código de barras</span> {{ p.codigo_barras }}</li>
 							<li *ngIf="weightLabel"><span>Peso líquido</span> {{ weightLabel }}</li>
 						</ul>
@@ -160,6 +160,12 @@
 								<span class="pd-ficha-resumo__k">Embalagem</span>
 								<span class="pd-ficha-resumo__v">{{ embalagemLabels.join(' · ') }}</span>
 							</li>
+							<li *ngIf="compostosLabels.length" class="pd-ficha-resumo__compostos">
+								<span class="pd-ficha-resumo__k">Compostos da fórmula</span>
+								<ul class="pd-ficha-resumo__compostos-list">
+									<li *ngFor="let c of compostosLabels">{{ c }}</li>
+								</ul>
+							</li>
 							<li *ngIf="composicaoExcerpt" class="pd-ficha-resumo__composicao">
 								<span class="pd-ficha-resumo__k">Composição</span>
 								<p class="pd-ficha-resumo__text">{{ composicaoExcerpt }}</p>
@@ -185,7 +191,7 @@
 						<div class="badge promo" *ngIf="p?.promoPrice || p?.discount">PROMO</div>
 					</div>
 					<p class="pd-parcelas" *ngIf="p.parcelas_max && (p.parcelas_max! > 0)">Em até {{ p.parcelas_max }}x no cartão (consulte condições na finalização)</p>
-					<p class="pd-price-api" *ngIf="p.priceFinal != null && p.priceOriginal != null && p.priceFinal < p.priceOriginal">
+					<p class="pd-price-api" *ngIf="showPriceTableExplainer">
 						Preço de tabela: R$ {{ p.priceOriginal | number:'1.2-2' }} → <strong>com promoção: R$ {{ p.priceFinal | number:'1.2-2' }}</strong>
 					</p>
 
@@ -223,13 +229,6 @@
 					<div class="pd-badges">
 						<span class="badge warning" *ngIf="exigeReceitaSim()">Exige receita veterinária</span>
 					</div>
-					<details class="pd-admin-meta" *ngIf="p.slug || p.cardLayout">
-						<summary>Detalhes do anúncio</summary>
-						<div class="pd-admin-meta__body">
-							<p *ngIf="p.slug" class="pd-muted"><span class="pd-admin-meta__k">Slug</span> {{ p.slug }}</p>
-							<p *ngIf="p.cardLayout" class="pd-muted"><span class="pd-admin-meta__k">Vitrine</span> {{ p.cardLayout === 'banner' ? 'Faixa' : 'Card de vendas' }}</p>
-						</div>
-					</details>
 					<div class="pd-badges" *ngIf="p.cupons_aplicaveis?.length">
 						<span class="badge cupom" *ngFor="let c of p.cupons_aplicaveis">
 							Cupom {{ c.codigo }}{{ c.valor != null ? (c.tipo === 'valor' ? ' · R$ ' + (c.valor | number:'1.2-2') : ' · ' + c.valor + '%') : '' }}
@@ -239,15 +238,21 @@
 
 					<section class="pd-promo-block" *ngIf="hasApiPromotionBlock" aria-label="Promoção ativa">
 						<h3 class="pd-section-label">Promoção vigente</h3>
-						<div *ngIf="p.apiDiscount as d" class="pd-promo-row">
-							<span>Desconto agregado: <strong>{{ d.percent | number:'1.1-1' }}%</strong></span>
-							<span *ngIf="d.value > 0">(R$ {{ d.value | number:'1.2-2' }})</span>
-						</div>
-						<div *ngIf="p.activePromotion as pr" class="pd-promo-detail">
-							<p><strong>{{ pr.nome }}</strong></p>
-							<p *ngIf="pr.descricao" class="pd-muted">{{ pr.descricao }}</p>
-							<p *ngIf="pr.tipo" class="pd-muted">Tipo: {{ pr.tipo }}<ng-container *ngIf="pr.valor != null"> · valor {{ pr.valor }}</ng-container></p>
-							<p *ngIf="pr.inicio || pr.fim" class="pd-muted">Período: {{ pr.inicio || '—' }} → {{ pr.fim || '—' }}</p>
+						<ng-container *ngIf="p.activePromotion as pr">
+							<div class="pd-promo-card" *ngIf="pr.nome || pr.id">
+								<p class="pd-promo-name" *ngIf="pr.nome">{{ pr.nome }}</p>
+								<p class="pd-promo-desc" *ngIf="pr.descricao">{{ pr.descricao }}</p>
+								<p class="pd-promo-pill" *ngIf="promotionCardDiscountText">{{ promotionCardDiscountText }}</p>
+								<p class="pd-promo-dates" *ngIf="pr.inicio || pr.fim">
+									<ng-container *ngIf="pr.inicio && pr.fim">Válida de {{ formatPromoDate(pr.inicio) }} até {{ formatPromoDate(pr.fim) }}</ng-container>
+									<ng-container *ngIf="pr.inicio && !pr.fim">A partir de {{ formatPromoDate(pr.inicio) }}</ng-container>
+									<ng-container *ngIf="!pr.inicio && pr.fim">Até {{ formatPromoDate(pr.fim) }}</ng-container>
+								</p>
+							</div>
+						</ng-container>
+						<div *ngIf="!p.activePromotion && p.apiDiscount as d" class="pd-promo-fallback">
+							<p *ngIf="d.percent > 0" class="pd-promo-pill">{{ d.percent | number:'1.0-1' }}% de desconto</p>
+							<p *ngIf="d.value > 0 && d.percent <= 0" class="pd-promo-pill">R$ {{ d.value | number:'1.2-2' }} a menos</p>
 						</div>
 					</section>
 

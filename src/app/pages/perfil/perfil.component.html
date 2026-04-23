@@ -1,6 +1,6 @@
 <app-navmenu *ngIf="!modal"></app-navmenu>
 
-<div class="perfil-wrapper">
+<div class="perfil-wrapper" [class.is-modal]="modal">
   <main class="container">
     <div class="top-actions" *ngIf="!modal">
       <a class="btn btn-sec" routerLink="/area-cliente">← Voltar</a>
@@ -221,7 +221,7 @@
           <div class="info-row">
             <span class="label">Método de contato</span>
             <div>
-              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ contatoPreferido || '-' }}</span>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ displayContatoPreferido(contatoPreferido) }}</span>
               <select class="inline-input" *ngIf="editingSection === 'preferencias'" [(ngModel)]="contatoPreferido">
                 <option value="">Selecione</option>
                 <option value="email">Email</option>
@@ -233,7 +233,7 @@
           <div class="info-row">
             <span class="label">Horário preferido</span>
             <div>
-              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ horarioPreferido || '-' }}</span>
+              <span class="value" *ngIf="editingSection !== 'preferencias'">{{ displayHorarioPreferido(horarioPreferido) }}</span>
               <select class="inline-input" *ngIf="editingSection === 'preferencias'" [(ngModel)]="horarioPreferido">
                 <option value="">Selecione</option>
                 <option value="manhã">Manhã</option>
@@ -335,8 +335,8 @@
       </section>
     </div>
 
-  <!-- Editable form view (global edit). Hidden when editing a specific section inline) -->
-  <div class="grid" *ngIf="!carregando && !readOnly && editingSection === null">
+  <!-- Formulário “global” (página /editar-perfil). No modal da área do cliente usamos só edição por seção. -->
+  <div class="grid perfil-form-global" *ngIf="!carregando && !readOnly && editingSection === null && !modal">
       <!-- Dados do usuário: show when editingSection is null (global edit) or 'informacoes' -->
       <section class="card" *ngIf="editingSection === null || editingSection === 'informacoes'">
         <h2>Dados do usuário</h2>
@@ -492,8 +492,8 @@
       </section>
     </div>
     
-    <!-- Account actions: logout and delete account -->
-    <div class="acoes" *ngIf="!carregando">
+    <!-- Ações de conta: na página cheia; no modal o logout fica no menu da área do cliente -->
+    <div class="acoes" *ngIf="!carregando && !modal">
       <button class="btn btn-sec" (click)="logout()">Logout</button>
       <button class="btn danger" (click)="openDeleteAccountModal()" [disabled]="deletingAccount">{{ deletingAccount ? 'Excluindo...' : 'Excluir conta' }}</button>
     </div>

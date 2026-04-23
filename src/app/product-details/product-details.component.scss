@@ -201,10 +201,6 @@
 .pd-presentation__chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip.chip--soft { background: #fff; border: 1px solid #e2e8f0; color: #334155; font-size: 13px; }
 
-.pd-admin-meta { margin: 12px 0; font-size: 13px; color: #64748b; }
-.pd-admin-meta summary { cursor: pointer; font-weight: 600; color: #475569; }
-.pd-admin-meta__body { margin-top: 8px; padding: 8px 0 0; border-top: 1px dashed #e2e8f0; }
-.pd-admin-meta__k { display: inline-block; min-width: 5rem; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
 
 .pd-layout { width: 100%; }
 
@@ -389,6 +385,24 @@
 }
 .pd-ficha-resumo__link:hover { color: #1d4ed8; }
 .pd-ficha-resumo__composicao .pd-ficha-resumo__k { margin-bottom: 4px; }
+.pd-ficha-resumo__compostos .pd-ficha-resumo__k { margin-bottom: 6px; }
+.pd-ficha-resumo__compostos-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #1e293b;
+	line-height: 1.4;
+}
+.pd-ficha-resumo__compostos-list li {
+	margin: 0;
+	padding-left: 10px;
+	border-left: 3px solid rgba(16, 185, 129, 0.35);
+}
 
 .pd-identity__marca { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #0f172a; }
 .pd-identity__kv { list-style: none; margin: 0; padding: 0; font-size: 13px; color: #4b5563; }
@@ -405,9 +419,33 @@
 .badge.cupom { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-size: 12px; padding: 6px 10px; border-radius: 8px; }
 .badge.warning { background: #fef3c7; color: #92400e; }
 
-.pd-promo-block { background: #f8fafc; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; }
-.pd-promo-row { font-size: 14px; }
-.pd-promo-detail p { margin: 4px 0; }
+.pd-promo-block {
+	background: #f0fdf4;
+	border-radius: 14px;
+	padding: 14px 16px;
+	border: 1px solid #bbf7d0;
+}
+.pd-promo-card {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.pd-promo-name { font-size: 16px; font-weight: 800; margin: 0; color: #0f172a; }
+.pd-promo-desc { font-size: 14px; color: #64748b; margin: 0; line-height: 1.5; }
+.pd-promo-pill {
+	display: inline-block;
+	align-self: flex-start;
+	margin: 0;
+	padding: 6px 12px;
+	border-radius: 999px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #047857;
+	background: #ecfdf5;
+	border: 1px solid #6ee7b7;
+}
+.pd-promo-dates { font-size: 13px; color: #64748b; margin: 0; line-height: 1.45; }
+.pd-promo-fallback { margin-top: 2px; }
 .pd-muted { color: #64748b; font-size: 14px; }
 .pd-section-label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin: 0 0 8px; }
 

@@ -57,7 +57,14 @@ export const routes: Routes = [
       { path: 'ativos', loadComponent: async () => (await import('./pages/restrito/admin/ativos/ativos.component')).AtivosAdminComponent, canActivate: [authGuard], data: { title: 'Ativos' } },
       { path: 'usuarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'admin', title: 'Gerenciar Usuários' }, canActivate: [authGuard] },
       { path: 'clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente', title: 'Gerenciar Clientes' }, canActivate: [authGuard] },
-      { path: 'veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet', title: 'Gerenciar Veterinários' }, canActivate: [authGuard] }
+      { path: 'veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet', title: 'Gerenciar Veterinários' }, canActivate: [authGuard] },
+      {
+        path: 'pets-galeria',
+        loadComponent: () =>
+          import('./pages/restrito/admin/pets-galeria/pets-galeria.component').then((m) => m.PetsGaleriaAdminComponent),
+        canActivate: [authGuard],
+        data: { title: 'Pets / Galeria' },
+      },
     ]
   },
   { path: 'restrito/produto', component: ProdutoComponent, canActivate: [authGuard] },

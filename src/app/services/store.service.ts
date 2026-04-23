@@ -105,6 +105,8 @@ export interface ShopProduct {
   /** Linhas de dosagem/embalagem (paridade com admin). */
   dosagens?: Array<{ id: number; nome: string }>;
   embalagens?: Array<{ id: number; nome: string }>;
+  /** Itens da fórmula associada (só rótulos; API: compostos_ativos). */
+  compostosAtivos?: Array<{ label: string }>;
   og_image_url?: string | null;
 }
 
@@ -655,6 +657,11 @@ export class StoreService {
           ? (customFromApi.packaging as string[]).map(String)
           : embalagensArr.map((e) => e.nome),
       };
+      const compostosAtivos: Array<{ label: string }> = Array.isArray((it as { compostos_ativos?: unknown }).compostos_ativos)
+        ? ((it as { compostos_ativos: Array<{ label?: string }> }).compostos_ativos || [])
+          .map((c) => (c && c.label != null && String(c.label).trim() !== '' ? { label: String(c.label).trim() } : null))
+          .filter((c): c is { label: string } => c != null)
+        : [];
       const p: ShopProduct = {
         id: Number(it.id),
         name: it.nome || it.name,
@@ -669,6 +676,7 @@ export class StoreService {
         customizations: customizationsMerged,
         dosagens: dosagensArr.length ? dosagensArr : undefined,
         embalagens: embalagensArr.length ? embalagensArr : undefined,
+        compostosAtivos: compostosAtivos.length ? compostosAtivos : undefined,
         og_image_url: it.og_image_url != null && String(it.og_image_url).trim() !== '' ? String(it.og_image_url) : null,
         discount: discPct,
         rating: it.rating?.media ?? it.rating_media ?? undefined,

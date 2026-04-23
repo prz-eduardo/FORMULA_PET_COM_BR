@@ -197,6 +197,23 @@ export interface PessoaDocDto {
   uploaded_at?: string;
 }
 
+/** Pet na lista admin (moderação galeria). */
+export interface AdminPetRow {
+  id: number;
+  nome: string;
+  photoURL?: string | null;
+  cliente_id: number;
+  exibir_galeria_publica?: number | boolean | null;
+  aprovado_por_admin?: number | boolean | null;
+  created_at?: string;
+  sexo?: string | null;
+  idade?: number | null;
+  especie?: string | null;
+  raca?: string | null;
+  tutor_nome?: string | null;
+  tutor_email?: string | null;
+}
+
 export interface FornecedorDto { id: number; nome: string }
 export interface InsumoDto {
   id: number;
@@ -1125,5 +1142,31 @@ export class AdminApiService {
     form.append('file', file);
     form.append('type', tipo);
     return this.http.post<{ imageUrl: string }>(`${this.baseUrl}/banners/${id}/imagem`, form, { headers: this.headers() });
+  }
+
+  /** Lista pets para moderação da galeria pública. */
+  listAdminPets(params?: {
+    page?: number;
+    pageSize?: number;
+    q?: string;
+    aprovado?: 'all' | 'pending' | 'approved';
+    galeria?: 'all' | 'yes' | 'no';
+  }): Observable<Paged<AdminPetRow>> {
+    let httpParams = new HttpParams();
+    if (params?.page != null) httpParams = httpParams.set('page', String(params.page));
+    if (params?.pageSize != null) httpParams = httpParams.set('pageSize', String(params.pageSize));
+    if (params?.q) httpParams = httpParams.set('q', params.q);
+    if (params?.aprovado && params.aprovado !== 'all') httpParams = httpParams.set('aprovado', params.aprovado);
+    if (params?.galeria && params.galeria !== 'all') httpParams = httpParams.set('galeria', params.galeria);
+    return this.http.get<Paged<AdminPetRow>>(`${this.baseUrl}/pets`, { headers: this.headers(), params: httpParams });
+  }
+
+  patchAdminPet(
+    id: string | number,
+    body: { aprovado_por_admin?: boolean | number; exibir_galeria_publica?: boolean | number }
+  ): Observable<AdminPetRow> {
+    return this.http.patch<AdminPetRow>(`${this.baseUrl}/pets/${encodeURIComponent(String(id))}`, body, {
+      headers: this.headers(),
+    });
   }
 }

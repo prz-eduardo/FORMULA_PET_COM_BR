@@ -1,8 +1,11 @@
 <app-navmenu *ngIf="!modal"></app-navmenu>
 
-<div class="novo-pet-wrapper">
+<div class="novo-pet-wrapper" [class.novo-pet--modal]="modal">
   <main class="container">
   <h1 class="titulo" *ngIf="!modal">Cadastrar novo Pet</h1>
+  <p class="novo-pet-lead" *ngIf="modal">
+    {{ editId ? 'Atualize os dados do seu pet.' : 'Preencha os dados para cadastrar um novo pet.' }}
+  </p>
     <div class="form-card">
       <div class="form-grid">
         <aside class="pet-card">
@@ -78,6 +81,14 @@
             <textarea [(ngModel)]="observacoes" rows="3" placeholder="Alergias, comportamento, preferências..."></textarea>
           </div>
 
+          <div class="field field--checkbox">
+            <label class="checkbox-row">
+              <input type="checkbox" [(ngModel)]="exibirGaleriaPublica" name="exibirGaleriaPublica" />
+              <span>Exibir na galeria pública do site</span>
+            </label>
+            <p class="field-hint">Só será visível para todos após aprovação da equipe. Você pode alterar isso a qualquer momento ao editar o pet.</p>
+          </div>
+
           <div class="field">
             <label>Alergias (pré-definidas)</label>
             <div class="alergias-row">
@@ -95,8 +106,9 @@
           </div>
 
           <div class="acoes">
-            <button class="btn btn-sec" *ngIf="!modal" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
-            <button class="btn" (click)="salvar()" [disabled]="carregando">{{ carregando ? 'Salvando...' : 'Salvar' }}</button>
+            <button type="button" class="btn btn-sec" *ngIf="!modal" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
+            <button type="button" class="btn btn-sec" *ngIf="modal" (click)="cancelar()" [disabled]="carregando">Fechar</button>
+            <button type="button" class="btn btn-primary" (click)="salvar()" [disabled]="carregando">{{ carregando ? 'Salvando...' : 'Salvar' }}</button>
           </div>
         </section>
       </div>

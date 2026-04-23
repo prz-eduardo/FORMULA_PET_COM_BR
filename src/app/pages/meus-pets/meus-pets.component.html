@@ -1,78 +1,100 @@
 <app-navmenu *ngIf="!modal"></app-navmenu>
 
-<div class="area-like-wrapper pets-area">
+<div class="pets-page area-like-wrapper" [class.is-modal]="modal">
   <main class="container">
     <div class="top-actions" *ngIf="!modal">
-      <button class="btn-back" (click)="voltar()">← Voltar</button>
+      <button type="button" class="btn-back" (click)="voltar()">← Voltar</button>
     </div>
-    <h1 class="titulo" *ngIf="!modal">Meus Pets</h1>
+    <h1 class="page-title" *ngIf="!modal">Meus pets</h1>
+    <p class="page-lead" *ngIf="!modal && !carregando && pets.length > 0">Toque no card para editar. Use o + para cadastrar outro pet.</p>
 
-    <div *ngIf="carregando" class="card">Carregando...</div>
+    <div *ngIf="carregando" class="state state--loading" aria-live="polite">Carregando seus pets…</div>
 
-    <div *ngIf="!carregando && !pets.length" class="card vazio">
+    <div *ngIf="!carregando && !pets.length" class="state state--empty">
       <p>Você ainda não cadastrou nenhum pet.</p>
-      <a class="btn" href="/novo-pet" (click)="onNewPetClick($event)">Cadastrar Pet</a>
+      <a class="btn-cta" href="/novo-pet" (click)="onNewPetClick($event)">Cadastrar pet</a>
     </div>
 
-    <section *ngIf="!carregando && pets.length" class="pet-list">
-      <article class="pet-card card photo-card" *ngFor="let p of pets; let i = index" role="button" tabindex="0"
-               (click)="onEditClick(p)" (keydown.enter)="onEditClick(p)">
-        <div class="photo-bg">
-          <img class="photo-img" [src]="p.photoURL || '/imagens/image.png'" (error)="onImgError($event)" (load)="onImgLoad(p, i)" [attr.alt]="p.nome || 'Pet'" />
-            <div class="top-overlay">
-              <h2 class="pet-title pf-poppins" [class.long]="p.nome && p.nome.length > 18">{{ p.nome }}</h2>
-              <div class="species-rows">
-                <div class="species">{{ p.especie }}</div>
-                <div class="raca" *ngIf="p.raca">{{ p.raca }}</div>
+    <ul *ngIf="!carregando && pets.length" class="pet-grid" role="list">
+      <li *ngFor="let p of pets; let i = index" class="pet-grid__item" role="listitem">
+        <button
+          type="button"
+          class="pet-card"
+          (click)="onEditClick(p)"
+          (keydown.enter)="onEditClick(p)"
+        >
+          <div class="pet-card__image-wrap">
+            <img
+              class="pet-card__image"
+              [src]="getPetImageSrc(p)"
+              (error)="onPetImgError($event)"
+              (load)="onImgLoad(p, i)"
+              [alt]="'Foto de ' + (p.nome || 'pet')"
+              loading="lazy"
+            />
+            <div class="pet-card__veil pet-card__veil--top" aria-hidden="true"></div>
+            <div class="pet-card__veil pet-card__veil--bottom" aria-hidden="true"></div>
+            <div class="pet-card__header">
+              <h2 class="pet-card__name" [class.pet-card__name--long]="(p.nome || '').length > 20">{{ p.nome || 'Sem nome' }}</h2>
+              <p class="pet-card__species">
+                <span class="pet-card__especie">{{ p.especie || '—' }}</span>
+                <span *ngIf="p.raca" class="pet-card__sep">·</span>
+                <span *ngIf="p.raca" class="pet-card__raca">{{ p.raca }}</span>
+              </p>
+            </div>
+            <ul
+              *ngIf="p.sexo || p.pesoKg != null || p.idade != null || p.idadeAnos != null"
+              class="pet-card__stat-bar"
+              aria-label="Dados resumidos"
+            >
+              <li *ngIf="p.sexo" class="pet-stat">
+                <span class="pet-stat__v">{{ p.sexo === 'F' || p.sexo === 'Fêmea' ? '♀' : (p.sexo === 'M' || p.sexo === 'Macho' ? '♂' : p.sexo) }}</span>
+                <span class="pet-stat__k">sexo</span>
+              </li>
+              <li *ngIf="p.pesoKg != null" class="pet-stat">
+                <span class="pet-stat__v">{{ p.pesoKg | number: '1.1-1' }} kg</span>
+                <span class="pet-stat__k">peso</span>
+              </li>
+              <li *ngIf="p.idade != null || p.idadeAnos != null" class="pet-stat">
+                <span class="pet-stat__v">{{ p.idade ?? p.idadeAnos }}</span>
+                <span class="pet-stat__k">anos</span>
+              </li>
+            </ul>
+            <div class="pet-card__ribbons">
+              <span *ngIf="p.aprovado_por_admin" class="pet-card__pill pet-card__pill--ok" title="Perfil aprovado">Aprovado</span>
+              <span *ngIf="!p.aprovado_por_admin" class="pet-card__pill pet-card__pill--pend">Pendente</span>
+              <span *ngIf="p.exibir_galeria_publica" class="pet-card__pill pet-card__pill--gal">Galeria pública</span>
+            </div>
+          </div>
+
+          <div class="pet-card__body">
+            <p *ngIf="p.observacoes" class="pet-card__obs">
+              <span class="pet-card__obs-label">Observações</span>
+              <span class="pet-card__obs-txt">{{ p.observacoes }}</span>
+            </p>
+            <div *ngIf="p._alergiasNormalized?.length" class="pet-card__allergies">
+              <span class="pet-card__obs-label">Alergias</span>
+              <div class="pet-card__chips">
+                <span class="pet-chip" *ngFor="let a of p._alergiasNormalized">{{ a }}</span>
               </div>
             </div>
-            <div class="overlay">
-              <div class="meta-right">
-                <div class="badges">
-                  <span class="badge sexo" *ngIf="p.sexo">{{ p.sexo === 'F' || p.sexo === 'Fêmea' ? '♀' : (p.sexo === 'M' || p.sexo === 'Macho' ? '♂' : p.sexo) }}</span>
-                  <span class="badge peso" *ngIf="p.pesoKg">{{ p.pesoKg | number:'1.2-2' }} kg</span>
-                  <span class="badge" *ngIf="p.idade || p.idadeAnos">{{ p.idade || p.idadeAnos }} anos</span>
-                </div>
+            <div *ngIf="p.alergias_predefinidas?.length" class="pet-card__allergies">
+              <span class="pet-card__obs-label">Alergias (lista)</span>
+              <div class="pet-card__chips">
+                <span class="pet-chip" *ngFor="let a of p.alergias_predefinidas">{{ a.nome }}</span>
               </div>
             </div>
-        </div>
-
-        <div class="pet-body compact">
-          <div class="meta">
-            <div><strong>Idade:</strong> {{ p.idade || p.idadeAnos || '-' }} anos</div>
-            <div><strong>Peso:</strong> {{ p.pesoKg ? (p.pesoKg | number:'1.2-2') + ' kg' : '-' }}</div>
-            <div><strong>Sexo:</strong> {{ p.sexo || '-' }}</div>
           </div>
+        </button>
+      </li>
+    </ul>
 
-          <div class="observacoes" *ngIf="p.observacoes">
-            <label class="muted">Observações:</label>
-            <p class="obs-text">{{ p.observacoes }}</p>
-          </div>
-
-          <div class="alergias" *ngIf="p._alergiasNormalized?.length">
-            <label class="muted">Alergias:</label>
-            <div class="alergia-list">
-              <span class="chip" *ngFor="let a of p._alergiasNormalized">{{ a }}</span>
-            </div>
-          </div>
-
-          <div class="predefined" *ngIf="p.alergias_predefinidas?.length">
-            <label class="muted">Alergias pré-definidas:</label>
-            <div class="alergia-list">
-              <span class="chip" *ngFor="let a of p.alergias_predefinidas">{{ a.nome }}</span>
-            </div>
-          </div>
-
-          <div class="status-row">
-            <span class="badge aprovado" *ngIf="p.aprovado_por_admin">Aprovado</span>
-            <span class="badge not-aprovado" *ngIf="!p.aprovado_por_admin">Pendente</span>
-            <span class="badge publico" *ngIf="p.exibir_galeria_publica">Galeria</span>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <!-- Floating Novo Pet FAB -->
-    <a class="fab-new-pet" href="/novo-pet" (click)="onNewPetClick($event)" title="Novo Pet" aria-label="Novo Pet">＋</a>
+    <a
+      class="fab-pet"
+      href="/novo-pet"
+      (click)="onNewPetClick($event)"
+      title="Novo pet"
+      aria-label="Cadastrar novo pet"
+    >＋</a>
   </main>
 </div>

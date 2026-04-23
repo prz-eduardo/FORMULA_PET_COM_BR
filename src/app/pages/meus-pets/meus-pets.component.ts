@@ -152,10 +152,33 @@ export class MeusPetsComponent implements OnChanges {
     this.router.navigateByUrl('/galeria');
   }
 
-  // Fallback for broken or missing pet images
-  onImgError(event: Event){
+  /** Só URL do animal — nunca misturar com foto de tutor/cliente. */
+  getPetImageSrc(p: any): string {
+    if (!p) {
+      return this.petImagePlaceholder;
+    }
+    const raw = (p.photoURL || p.foto || p.photo || p.photo_url || p.imagem || '').toString().trim();
+    if (!raw) {
+      return this.petImagePlaceholder;
+    }
+    if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+      return raw;
+    }
+    if (raw.startsWith('/')) {
+      return raw;
+    }
+    return '/' + raw.replace(/^\/+/, '');
+  }
+
+  get petImagePlaceholder(): string {
+    return '/icones/pin-pata.svg';
+  }
+
+  onPetImgError(event: Event) {
     const img = event?.target as HTMLImageElement | null;
-    if (img) img.src = '/imagens/image.png';
+    if (img) {
+      img.src = this.petImagePlaceholder;
+    }
   }
 
   // Called when an image finishes loading
@@ -202,9 +225,8 @@ export class MeusPetsComponent implements OnChanges {
     this.petImageLoaded = {};
     (this.pets || []).forEach((p, idx) => {
       const key = this.imageKey(p, idx);
-      // If there's no photo URL, mark as loaded to avoid stuck loader
-      if (!p || !p.photoURL) this.petImageLoaded[key] = true;
-      else this.petImageLoaded[key] = false;
+      const src = p ? this.getPetImageSrc(p) : this.petImagePlaceholder;
+      this.petImageLoaded[key] = !p || src === this.petImagePlaceholder;
       // normalize and attach allergy list to pet for easier template binding
       try { p._alergiasNormalized = this.alergiasFor(p); } catch { p._alergiasNormalized = []; }
     });

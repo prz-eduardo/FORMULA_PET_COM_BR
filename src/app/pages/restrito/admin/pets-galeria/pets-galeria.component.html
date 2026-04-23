@@ -1,0 +1,134 @@
+<div class="pets-gal">
+  <header class="pets-gal__head">
+    <div>
+      <h1>Pets — Galeria pública</h1>
+      <p class="muted">Aprovar perfis e moderar opt-in dos tutores. Só aparecem no site pets com galeria ligada e aprovados.</p>
+    </div>
+    <a routerLink="/restrito/admin" class="link-back">Painel</a>
+  </header>
+
+  <div class="toolbar">
+    <input
+      type="search"
+      class="search"
+      placeholder="Buscar por pet, tutor, e-mail ou id…"
+      [value]="q()"
+      (input)="onSearchInput($event)"
+      aria-label="Buscar pets"
+    />
+    <label class="fld">
+      <span>Aprovação</span>
+      <select [(ngModel)]="aprovado" (ngModelChange)="onFilterChange()">
+        <option value="all">Todas</option>
+        <option value="pending">Pendentes</option>
+        <option value="approved">Aprovados</option>
+      </select>
+    </label>
+    <label class="fld">
+      <span>Galeria (opt-in)</span>
+      <select [(ngModel)]="galeria" (ngModelChange)="onFilterChange()">
+        <option value="all">Todos</option>
+        <option value="yes">Querem exibir</option>
+        <option value="no">Não exibir</option>
+      </select>
+    </label>
+    <label class="fld">
+      <span>Por página</span>
+      <select [value]="pageSize()" (change)="onPageSizeChange($event)">
+        <option [value]="10">10</option>
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="table-wrap" *ngIf="!loading(); else loadingTpl">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Pet</th>
+          <th>Tutor</th>
+          <th>Espécie / raça</th>
+          <th>Opt-in galeria</th>
+          <th>Aprovação</th>
+          <th>No site</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of items()">
+          <td>
+            <div class="pet-cell">
+              <img *ngIf="row.photoURL" [src]="row.photoURL" alt="" class="thumb" />
+              <div>
+                <strong>{{ row.nome }}</strong>
+                <div class="muted small">#{{ row.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div>{{ row.tutor_nome || '—' }}</div>
+            <div class="muted small">{{ row.tutor_email || '' }}</div>
+          </td>
+          <td>
+            <div>{{ row.especie || '—' }}</div>
+            <div class="muted small">{{ row.raca || '' }}</div>
+          </td>
+          <td>
+            <span class="pill" [class.pill--on]="wantsGallery(row)" [class.pill--off]="!wantsGallery(row)">
+              {{ wantsGallery(row) ? 'Sim' : 'Não' }}
+            </span>
+          </td>
+          <td>
+            <span class="pill" [class.pill--on]="isApproved(row)" [class.pill--off]="!isApproved(row)">
+              {{ isApproved(row) ? 'Aprovado' : 'Pendente' }}
+            </span>
+          </td>
+          <td>
+            <span class="pill pill--site" *ngIf="visibleInPublicGallery(row)">Visível</span>
+            <span class="muted small" *ngIf="!visibleInPublicGallery(row)">—</span>
+          </td>
+          <td class="actions">
+            <button
+              type="button"
+              class="act-btn"
+              [disabled]="savingId() === row.id || isApproved(row)"
+              (click)="setApproved(row, true)"
+            >
+              Aprovar
+            </button>
+            <button
+              type="button"
+              class="act-btn"
+              [disabled]="savingId() === row.id || !isApproved(row)"
+              (click)="setApproved(row, false)"
+            >
+              Revogar
+            </button>
+            <button
+              type="button"
+              class="act-btn"
+              [disabled]="savingId() === row.id || !wantsGallery(row)"
+              (click)="setGaleria(row, false)"
+            >
+              Desligar galeria
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p *ngIf="!items().length" class="empty">Nenhum pet encontrado com estes filtros.</p>
+  </div>
+
+  <ng-template #loadingTpl>
+    <p class="muted">Carregando…</p>
+  </ng-template>
+
+  <admin-pagination
+    *ngIf="total() > 0"
+    [page]="page()"
+    [total]="total()"
+    [pageSize]="pageSize()"
+    (pageChange)="onPageChange($event)"
+  ></admin-pagination>
+</div>

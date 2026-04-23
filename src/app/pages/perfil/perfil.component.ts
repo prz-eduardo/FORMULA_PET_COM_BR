@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -17,7 +17,7 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./perfil.component.scss'],
   providers: [provideNgxMask()]
 })
-export class PerfilComponent {
+export class PerfilComponent implements OnInit {
   constructor(
     private api: ApiService,
     private auth: AuthService,
@@ -43,6 +43,8 @@ export class PerfilComponent {
   @Input() readOnly: boolean = true;
   @Output() close = new EventEmitter<void>();
   @Output() navigate = new EventEmitter<string>();
+  /** Avisa o host (ex.: área do cliente) para recarregar dados do cliente após salvar */
+  @Output() profileSaved = new EventEmitter<void>();
   me: ClienteMeResponse | null = null;
   carregando = true;
   salvando = false;
@@ -454,15 +456,17 @@ export class PerfilComponent {
       // If your API supports multipart upload for photo, call it here. We'll assume updateCliente accepts multipart.
       this.api.updateCliente(this.me.user.id, fd as any, this.token as string).subscribe({
         next: (res: any) => {
-          this.toast.show('Foto atualizada');
-          // clear pending state and refresh local user photo
-          (this.me!.user as any).photoURL = res?.photoURL || this.avatarPreview || (this.me!.user as any).photoURL;
+          this.toast.success('Foto atualizada');
+          const url = res?.user?.foto || res?.foto;
+          if (url)           (this.me!.user as any).foto = url;
+          (this.me!.user as any).photoURL = url || (this.me!.user as any).photoURL;
           this.avatarPendingFile = null;
           this.avatarChanged = false;
           this.avatarOriginalUrl = undefined;
+          this.profileSaved.emit();
         },
         error: (err: any) => {
-          this.toast.show('Erro ao enviar foto');
+          this.toast.error(err?.error?.message || 'Erro ao enviar foto', 'Erro');
         }
       });
     } else if (this.avatarChanged && !this.avatarPendingFile) {
@@ -470,12 +474,14 @@ export class PerfilComponent {
       const payload = { photoURL: null } as any;
       this.api.updateCliente(this.me.user.id, payload, this.token as string).subscribe({
         next: (res: any) => {
-          this.toast.show('Foto removida');
+          this.toast.success('Foto removida');
+          (this.me!.user as any).foto = res?.user?.foto ?? null;
           (this.me!.user as any).photoURL = null;
           this.avatarChanged = false;
           this.avatarOriginalUrl = undefined;
+          this.profileSaved.emit();
         },
-        error: (err: any) => this.toast.show('Erro ao remover foto')
+        error: (err: any) => this.toast.error(err?.error?.message || 'Erro ao remover foto', 'Erro')
       });
     }
   }
@@ -583,6 +589,7 @@ export class PerfilComponent {
         // update local cached user name if present
         try { if (this.me && this.me.user) (this.me.user as any).nome = payload.nome; } catch {}
         delete this.sectionBackup.nomeOnly;
+        this.profileSaved.emit();
       },
       error: (err: any) => {
         const msg = err?.error?.message || err?.message || 'Erro ao salvar nome';
@@ -674,8 +681,8 @@ export class PerfilComponent {
     this.api.updateCliente(this.me.user.id, payload, this.token).subscribe({
       next: () => {
         this.toast.success('Perfil atualizado!');
-        // clear backup for this section
         if (this.editingSection) delete this.sectionBackup[this.editingSection];
+        this.profileSaved.emit();
       },
       error: (err: any) => {
         const msg = err?.error?.message || err?.message || 'Erro ao salvar perfil';
@@ -744,7 +751,10 @@ export class PerfilComponent {
       observacoes: this.observacoes || undefined
     };
     this.api.updateCliente(this.me.user.id, payload, this.token).subscribe({
-      next: () => this.toast.success('Perfil atualizado!'),
+      next: () => {
+        this.toast.success('Perfil atualizado!');
+        this.profileSaved.emit();
+      },
       error: (err: any) => {
         const msg = err?.error?.message || err?.message || 'Erro ao salvar perfil';
         this.toast.error(msg, 'Erro');
@@ -785,4 +795,19 @@ export class PerfilComponent {
   }
 
   fechar(){ if (this.modal) this.close.emit(); }
+
+  /** Labels amigáveis na leitura (evita exibir chaves cruas tipo "whatsapp") */
+  displayContatoPreferido(v: string | null | undefined): string {
+    const s = (v || '').trim();
+    if (!s) return '—';
+    const m: Record<string, string> = { email: 'E-mail', whatsapp: 'WhatsApp', telefone: 'Telefone' };
+    return m[s.toLowerCase()] || s;
+  }
+
+  displayHorarioPreferido(v: string | null | undefined): string {
+    const s = (v || '').trim();
+    if (!s) return '—';
+    const m: Record<string, string> = { manhã: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
+    return m[s.toLowerCase()] || s;
+  }
 }

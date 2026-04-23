@@ -18,8 +18,22 @@
     </div>
   </header>
 
+  <!-- Barra voltar (modal): antes do título e do conteúdo incrustado -->
+  <div *ngIf="modal && internalView" class="internal-back">
+    <button type="button" class="btn btn-sec" (click)="goBack()" aria-label="Voltar">Voltar</button>
+  </div>
+
+  <div *ngIf="!modal && internalView === 'suporte'" class="internal-back">
+    <button type="button" class="btn btn-sec" (click)="goBack()" aria-label="Voltar">Voltar</button>
+  </div>
+
   <!-- Título interno quando estamos navegando em subviews (mantém contexto) -->
   <h1 class="titulo" *ngIf="internalView || !hasAuth">{{ titulo }}</h1>
+
+  <!-- Subviews (perfil, novo pet, pedidos): DEVE vir logo após o título — host no fim do arquivo quebrava a ordem no DOM -->
+  <div class="ac-internal-view" *ngIf="hasAuth" aria-live="polite">
+    <ng-template #internalHost></ng-template>
+  </div>
 
   <!-- Login / Criar Conta -->
   <section *ngIf="!hasAuth" class="login-hero">
@@ -45,15 +59,6 @@
       </button>
     </div>
   </section>
-
-  <!-- Navegação interna quando em modal: barra de voltar -->
-  <div *ngIf="modal && internalView" class="internal-back">
-    <button class="btn btn-sec" (click)="goBack()" aria-label="Voltar">Voltar</button>
-  </div>
-
-  <div *ngIf="!modal && internalView === 'suporte'" class="internal-back">
-    <button class="btn btn-sec" (click)="goBack()" aria-label="Voltar">Voltar</button>
-  </div>
 
   <section class="menu-wrapper" *ngIf="hasAuth && internalView === 'suporte'">
     <app-cliente-suporte-panel [clienteLabel]="clienteData?.nome || 'Cliente'" />
@@ -208,8 +213,6 @@
     </div>
   </ng-container>
 
-  <!-- Host interno para subviews quando em modal -->
-  <ng-template #internalHost></ng-template>
   <!-- Host sobreposto para modais internos (ex: consultar pedidos) -->
   <ng-template #overlayHost></ng-template>
 </div>

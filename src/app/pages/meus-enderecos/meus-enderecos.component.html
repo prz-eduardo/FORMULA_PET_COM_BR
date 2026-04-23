@@ -1,101 +1,190 @@
-<div class="area-like-wrapper">
+<div class="meus-enderecos-page area-like-wrapper" [class.is-modal]="modal">
   <div class="container">
     <div class="top-actions">
-      <h1 class="titulo">Meus Endereços</h1>
+      <h1 *ngIf="!modal" class="titulo">Meus endereços</h1>
       <div class="spacer"></div>
-  <button class="btn" (click)="addEndereco()">Adicionar endereço</button>
-  <div class="loader" *ngIf="loading">Carregando...</div>
+      <button type="button" class="btn btn-add" (click)="addEndereco()">+ Adicionar endereço</button>
+      <div class="loader" *ngIf="loading" aria-live="polite">Carregando…</div>
     </div>
 
-    <div class="address-list">
-  <div class="address-card" *ngFor="let e of enderecos">
-        <div class="card-head">
-          <div class="card-left">
-            <span class="emoji">{{ tipoEmoji(e.tipo) }}</span>
-          </div>
-          <div class="card-main">
-            <div class="label">{{ e.label }}</div>
-            <div class="rua">{{ e.logradouro }}{{ e.numero ? ', ' + e.numero : '' }}</div>
-            <div class="meta">{{ e.cidade }} - {{ e.estado }} • {{ e.cep }}</div>
-          </div>
-          <div class="card-actions">
-            <button class="icon edit" (click)="$event.stopPropagation(); openDetails(e, true)" title="Editar">✏️</button>
-            <button class="icon del" (click)="$event.stopPropagation(); confirmDelete(e)">🗑️</button>
-          </div>
+    <p *ngIf="!loading && enderecos.length === 0" class="empty-hint">
+      Você ainda não cadastrou endereços. Adicione um para agilizar suas entregas.
+    </p>
+
+    <div class="address-list" *ngIf="!loading && enderecos.length">
+      <button
+        type="button"
+        class="address-card"
+        *ngFor="let e of enderecos"
+        (click)="openDetails(e, false)"
+      >
+        <div class="address-card__icon" aria-hidden="true">{{ tipoEmoji(e.tipo) }}</div>
+        <div class="address-card__body">
+          <div class="address-card__label">{{ e.label }}</div>
+          <div class="address-card__line">{{ e.logradouro }}{{ e.numero ? ', ' + e.numero : '' }}</div>
+          <div class="address-card__meta">{{ e.cidade }} · {{ e.estado }} · CEP {{ e.cep }}</div>
+          <span class="address-card__chip">{{ tipoLabel(e.tipo) }}</span>
         </div>
-      </div>
+        <div class="address-card__actions" (click)="$event.stopPropagation()">
+          <button type="button" class="icon-btn" (click)="openDetails(e, true)" title="Editar" aria-label="Editar endereço">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn icon-btn--danger" (click)="confirmDelete(e)" title="Excluir" aria-label="Excluir endereço">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </button>
     </div>
   </div>
 
-  <!-- Details modal (replicated style from Area Cliente) -->
+  <!-- Modal cadastro / edição (z-index acima da barra Voltar da área do cliente) -->
   <ng-container *ngIf="detailOpen">
-    <div class="modal-overlay" (click)="closeDetails()"></div>
-    <div class="modal-content">
-      <button class="close-floating" (click)="closeDetails()" aria-label="Fechar">✕</button>
-      <div class="modal-body" (click)="$event.stopPropagation()">
-        <header>
-          <h3>
-            {{ editing ? (editModel.label || 'Novo Endereço') : (selected?.label || 'Endereço') }}
-            <span *ngIf="editing && editModel.label?.length > 0 && editModel.label?.length < 3" class="label-invalid"> — nome muito curto</span>
-          </h3>
-          <div class="header-actions">
-            <button *ngIf="!editing" class="btn small" (click)="enableEdit()">Editar</button>
-            <!-- close moved to floating corner for cleaner layout -->
+    <div class="addr-modal-backdrop" (click)="closeDetails()"></div>
+    <div
+      class="addr-modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="'addr-modal-title'"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="addr-modal__panel">
+        <header class="addr-modal__head">
+          <div class="addr-modal__head-text">
+            <h2 class="addr-modal__title" id="addrDialogTitle">
+              <ng-container *ngIf="editing">
+                {{ selected?.id ? 'Editar endereço' : 'Novo endereço' }}
+              </ng-container>
+              <ng-container *ngIf="!editing">{{ selected?.label || 'Endereço' }}</ng-container>
+            </h2>
+            <p class="addr-modal__subtitle" *ngIf="editing">Os campos com CEP preenchido podem buscar a rua automaticamente.</p>
+            <p class="addr-modal__subtitle" *ngIf="!editing">Toque em «Editar» para alterar ou use o lápis na lista.</p>
+            <span
+              *ngIf="editing && editModel?.label?.length > 0 && editModel?.label?.length < 3"
+              class="addr-modal__warn"
+            >Dê um nome com pelo menos 3 letras (ex.: «Casa», «Trabalho»).</span>
           </div>
+          <button type="button" class="addr-modal__close" (click)="closeDetails()" aria-label="Fechar">×</button>
         </header>
-        <div class="body">
-        <div *ngIf="!editing">
-          <div class="kv"><div class="k">Rua</div><div class="v">{{ selected?.rua }}</div></div>
-          <div class="kv"><div class="k">Cidade</div><div class="v">{{ selected?.cidade }}</div></div>
-          <div class="kv"><div class="k">UF</div><div class="v">{{ selected?.uf }}</div></div>
-          <div class="kv"><div class="k">CEP</div><div class="v">{{ selected?.cep }}</div></div>
-        </div>
-        <div *ngIf="editing">
-          <!-- Floating label field for the address name -->
-          <div class="floating">
-            <input id="labelInput" placeholder=" " [(ngModel)]="editModel.label" />
-            <label for="labelInput">Nome do endereço</label>
-          </div>
-          <label>CEP<input [(ngModel)]="editModel.cep" (input)="onCepInputMask($event)" (blur)="onCepBlurLookup()" /></label>
-          <div class="cep-loader" *ngIf="cepCarregando" aria-live="polite" aria-label="Consultando CEP">
-            <div class="dots">
-              <span></span>
-              <span></span>
-              <span></span>
+
+        <div class="addr-modal__body">
+          <ng-container *ngIf="!editing">
+            <div class="addr-view">
+              <div class="addr-view__row">
+                <span class="addr-view__k">Endereço</span>
+                <span class="addr-view__v">{{ selected?.rua }}</span>
+              </div>
+              <div class="addr-view__row" *ngIf="selected?.bairro">
+                <span class="addr-view__k">Bairro</span>
+                <span class="addr-view__v">{{ selected?.bairro }}</span>
+              </div>
+              <div class="addr-view__row">
+                <span class="addr-view__k">Cidade / UF</span>
+                <span class="addr-view__v">{{ selected?.cidade }} — {{ selected?.estado || selected?.uf }}</span>
+              </div>
+              <div class="addr-view__row">
+                <span class="addr-view__k">CEP</span>
+                <span class="addr-view__v">{{ selected?.cep }}</span>
+              </div>
             </div>
-          </div>
-          <label>Rua<input [(ngModel)]="editModel.logradouro" /></label>
-          <label>Número<input [(ngModel)]="editModel.numero" /></label>
-          <label>Complemento<input [(ngModel)]="editModel.complemento" /></label>
-          <label>Bairro<input [(ngModel)]="editModel.bairro" /></label>
-          <label>Cidade<input [(ngModel)]="editModel.cidade" /></label>
-          <label>UF<input maxlength="2" [(ngModel)]="editModel.estado" /></label>
-          <div class="tipo-row">
-            <button type="button" class="pill" [class.on]="editModel.tipo === 'casa'" (click)="editModel.tipo='casa'" aria-label="Casa" data-tip="Casa"><span class="emoji">🏠</span><span class="tip">Casa</span></button>
-            <button type="button" class="pill" [class.on]="editModel.tipo === 'trabalho'" (click)="editModel.tipo='trabalho'" aria-label="Trabalho" data-tip="Trabalho"><span class="emoji">💼</span><span class="tip">Trabalho</span></button>
-            <button type="button" class="pill" [class.on]="editModel.tipo === 'entrega'" (click)="editModel.tipo='entrega'" aria-label="Entrega" data-tip="Entrega"><span class="emoji">📦</span><span class="tip">Entrega</span></button>
-            <button type="button" class="pill" [class.on]="editModel.tipo === 'cobranca'" (click)="editModel.tipo='cobranca'" aria-label="Cobrança" data-tip="Cobrança"><span class="emoji">🧾</span><span class="tip">Cobrança</span></button>
-            <button type="button" class="pill" [class.on]="editModel.tipo === 'outros'" (click)="editModel.tipo='outros'" aria-label="Outros" data-tip="Outros"><span class="emoji">📍</span><span class="tip">Outros</span></button>
-          </div>
+          </ng-container>
+
+          <form class="addr-form" *ngIf="editing && editModel" (submit)="$event.preventDefault()">
+            <div class="addr-form__field">
+              <label for="addrLabel">Como chamar este endereço</label>
+              <input
+                id="addrLabel"
+                name="label"
+                type="text"
+                [(ngModel)]="editModel.label"
+                placeholder="Ex.: Casa, Trabalho"
+                autocomplete="off"
+                maxlength="60"
+              />
+            </div>
+
+            <div class="addr-form__grid">
+              <div class="addr-form__field">
+                <label for="addrCep">CEP</label>
+                <input
+                  id="addrCep"
+                  name="cep"
+                  inputmode="numeric"
+                  [(ngModel)]="editModel.cep"
+                  (input)="onCepInputMask($event)"
+                  (blur)="onCepBlurLookup()"
+                  placeholder="00000-000"
+                  autocomplete="postal-code"
+                />
+              </div>
+              <div class="addr-form__field">
+                <label for="addrNum">Número</label>
+                <input id="addrNum" name="numero" [(ngModel)]="editModel.numero" placeholder="Nº" />
+              </div>
+            </div>
+            <div class="cep-loader" *ngIf="cepCarregando" aria-live="polite">
+              <div class="dots"><span></span><span></span><span></span></div>
+              <span class="cep-loader__txt">Buscando CEP…</span>
+            </div>
+
+            <div class="addr-form__field">
+              <label for="addrRua">Rua / logradouro</label>
+              <input id="addrRua" name="logradouro" [(ngModel)]="editModel.logradouro" />
+            </div>
+            <div class="addr-form__field">
+              <label for="addrComp">Complemento</label>
+              <input id="addrComp" name="complemento" [(ngModel)]="editModel.complemento" placeholder="Apto, bloco, referência" />
+            </div>
+            <div class="addr-form__field">
+              <label for="addrBairro">Bairro</label>
+              <input id="addrBairro" name="bairro" [(ngModel)]="editModel.bairro" />
+            </div>
+            <div class="addr-form__grid">
+              <div class="addr-form__field">
+                <label for="addrCidade">Cidade</label>
+                <input id="addrCidade" name="cidade" [(ngModel)]="editModel.cidade" />
+              </div>
+              <div class="addr-form__field addr-form__field--uf">
+                <label for="addrUf">UF</label>
+                <input id="addrUf" name="estado" maxlength="2" [(ngModel)]="editModel.estado" placeholder="PR" class="input-uf" />
+              </div>
+            </div>
+
+            <p class="addr-form__section-label">Tipo de endereço</p>
+            <div class="addr-tipo" role="group" aria-label="Tipo de endereço">
+              <button type="button" class="addr-tipo__btn" [class.is-on]="editModel.tipo === 'casa'" (click)="editModel.tipo = 'casa'">🏠 Casa</button>
+              <button type="button" class="addr-tipo__btn" [class.is-on]="editModel.tipo === 'trabalho'" (click)="editModel.tipo = 'trabalho'">💼 Trabalho</button>
+              <button type="button" class="addr-tipo__btn" [class.is-on]="editModel.tipo === 'entrega'" (click)="editModel.tipo = 'entrega'">📦 Entrega</button>
+              <button type="button" class="addr-tipo__btn" [class.is-on]="editModel.tipo === 'cobranca'" (click)="editModel.tipo = 'cobranca'">🧾 Cobrança</button>
+              <button type="button" class="addr-tipo__btn" [class.is-on]="editModel.tipo === 'outros' || !editModel.tipo" (click)="editModel.tipo = 'outros'">📍 Outros</button>
+            </div>
+          </form>
         </div>
-      </div>
-        <div class="modal-actions">
-          <button class="btn btn-sec btn-cancel" *ngIf="editing" (click)="cancelEdit()">Cancelar</button>
-          <button class="btn btn-confirm" *ngIf="editing" (click)="saveEdit()">Salvar</button>
-          <button class="btn btn-confirm" *ngIf="!editing" (click)="enableEdit()">Editar</button>
-        </div>
+
+        <footer class="addr-modal__foot">
+          <ng-container *ngIf="editing">
+            <button type="button" class="addr-btn addr-btn--ghost" (click)="cancelEdit()">Cancelar</button>
+            <button type="button" class="addr-btn addr-btn--primary" (click)="saveEdit()">Salvar</button>
+          </ng-container>
+          <ng-container *ngIf="!editing">
+            <button type="button" class="addr-btn addr-btn--primary addr-btn--block" (click)="enableEdit()">Editar endereço</button>
+          </ng-container>
+        </footer>
       </div>
     </div>
   </ng-container>
 
-  <!-- Delete confirm modal -->
-  <div class="overlay" *ngIf="confirmOpen">
-    <div class="confirm-modal">
-      <div class="body">Realmente deseja apagar esse endereço?</div>
-      <div class="actions">
-        <button class="btn btn-sec" (click)="confirmOpen=false">Cancelar</button>
-        <button class="btn" (click)="doDeleteConfirmed()">Apagar</button>
-      </div>
+  <div class="addr-confirm-backdrop" *ngIf="confirmOpen" (click)="confirmOpen = false"></div>
+  <div class="addr-confirm" *ngIf="confirmOpen" role="alertdialog" aria-modal="true" aria-labelledby="addrConfirmTitle">
+    <h3 id="addrConfirmTitle" class="addr-confirm__title">Excluir endereço?</h3>
+    <p class="addr-confirm__text">Esta ação não pode ser desfeita. Você pode cadastrar o endereço de novo depois.</p>
+    <div class="addr-confirm__actions">
+      <button type="button" class="addr-btn addr-btn--ghost" (click)="confirmOpen = false">Manter</button>
+      <button type="button" class="addr-btn addr-btn--danger" (click)="doDeleteConfirmed()">Excluir</button>
     </div>
   </div>
 </div>

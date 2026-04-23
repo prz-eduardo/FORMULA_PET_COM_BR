@@ -864,7 +864,7 @@ export class ProdutoComponent implements OnInit {
   removeTagAt(i: number) { this.tagsFA.removeAt(i); }
   addDosage(val: string) { if (!val) return; this.dosageFA.push(this.fb.control<string>(val)); this.showDosageModal = false; }
   removeDosageAt(i: number) { this.dosageFA.removeAt(i); }
-  addPackaging(val: string) { if (!val) return; this.packagingFA.push(this.fb.control<string>(val)); this.showPackagingModal = false; }
+  addPackaging(val: string) { if (!val) return; this.packagingFA.push(this.fb.control<string>(val)); }
   removePackagingAt(i: number) { this.packagingFA.removeAt(i); }
 
   // removed inline '+' handlers that opened taxonomy modals
@@ -1401,9 +1401,7 @@ export class ProdutoComponent implements OnInit {
       stock: fv.stock ?? null,
       weightValue: parsedWeight,
       weightUnit: fv.weightUnit ?? null,
-      discount: fv.discount ?? null,
-      rating: fv.rating ?? null,
-      estoque_id: fv.estoqueId ?? null,
+      // discount / rating / estoque_id: não persistidos pelo marketplace full (promoções, avaliacoes_produto, lote).
       // Identificação expandida
       sku: fv.sku ?? null,
       marca: fv.marca ?? null,

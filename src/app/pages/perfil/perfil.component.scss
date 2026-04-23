@@ -1,3 +1,76 @@
+/* Tokens alinhados à área do cliente (area-cliente.component.scss) */
+.perfil-wrapper {
+  --ac-text: #e6eef8;
+  --ac-text-dim: #94a3b8;
+  --ac-surface: rgba(255, 255, 255, 0.035);
+  --ac-surface-h: rgba(255, 255, 255, 0.07);
+  --ac-border: rgba(255, 255, 255, 0.09);
+  --ac-border-h: rgba(196, 214, 0, 0.45);
+  --ac-accent: #c4d600;
+  --ac-accent-ink: #1a1f00;
+  --ac-danger: #ff4f6a;
+  --ac-radius-lg: 18px;
+  --ac-radius-md: 14px;
+  --ac-shadow: 0 12px 32px rgba(2, 6, 23, 0.32);
+
+  min-height: 100vh;
+  padding: 72px 0 40px;
+  color: var(--ac-text);
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(2, 6, 11, 0.6), transparent),
+    linear-gradient(180deg, #07080a 0%, #0b0e12 100%);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  &.is-modal {
+    min-height: 0;
+    padding: 0 2px 8px;
+    background: transparent;
+
+    .container {
+      max-width: 100%;
+      padding: 0 4px;
+    }
+
+    /* Título vem do header da área do cliente */
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .profile-head {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .profile-actions {
+      padding: 14px;
+    }
+
+    .profile-actions h2 {
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .section-head h3 {
+      font-size: 16px;
+    }
+
+    .info-row {
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .info-row .value {
+      text-align: left;
+    }
+
+    .card {
+      padding: 14px;
+    }
+  }
+}
+
 /* Botão '+' para meus endereços no mobile */
 .fab-enderecos-mobile {
   display: none;
@@ -13,20 +86,34 @@
     display: none !important;
   }
 }
-.perfil-wrapper{ min-height:100vh; background: linear-gradient(135deg, #0d151f, #1a2230); color:#ecf0f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; padding: 72px 0 40px }
-.container{ max-width:1080px; margin:0 auto; padding:0 16px }
-.top-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px }
-.titulo{ font-size:36px; font-weight:800; color:var(--primary); margin: 8px 0 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5); font-family: "Pacifico", cursive, "Montserrat", Arial, sans-serif }
-.card{
-  /* Glassmorphism similar to modal surfaces */
-  background: linear-gradient(180deg, rgba(10,16,24,0.42), rgba(6,10,14,0.36));
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius:12px;
-  padding:16px;
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.top-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.titulo {
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ac-text, #e6eef8);
+  margin: 8px 0 16px;
+  font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif;
+}
+.card {
+  background: var(--ac-surface, rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--ac-border, rgba(255, 255, 255, 0.09));
+  border-radius: var(--ac-radius-md, 14px);
+  padding: 16px;
   -webkit-backdrop-filter: blur(10px) saturate(120%);
   backdrop-filter: blur(10px) saturate(120%);
-  box-shadow: 0 14px 36px rgba(2,6,23,0.44);
-  color: #e6eef8;
+  box-shadow: var(--ac-shadow, 0 12px 32px rgba(2, 6, 23, 0.32));
+  color: var(--ac-text, #e6eef8);
   position: relative;
 }
 .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px }
@@ -39,9 +126,39 @@
 .field textarea{ resize: vertical; min-height: 96px }
 .error{ color:#ffb3b3; font-size:12px; margin-top:4px }
 .prefs{ display:flex; flex-direction:column; gap:8px }
-.acoes{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px }
-.btn{ padding:10px 16px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block }
-.btn-sec{ background:#2a364a; border:1px solid rgba(255,255,255,.08) }
+.acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.btn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #c4d600, #a9bb00);
+  color: var(--ac-accent-ink, #1a1f00);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow: 0 10px 24px rgba(196, 214, 0, 0.22);
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(196, 214, 0, 0.3);
+  }
+}
+.btn-sec {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ac-text, #e6eef8);
+  border: 1px solid var(--ac-border, rgba(255, 255, 255, 0.09));
+  box-shadow: none;
+  &:hover {
+    border-color: var(--ac-border-h, rgba(196, 214, 0, 0.45));
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+.btn.danger {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.25);
+}
 
 /* Profile header & avatar styles */
 .profile-head{ display:grid; grid-template-columns: 220px 1fr; gap:12px; margin-bottom:12px }
@@ -67,8 +184,24 @@
 }
 .avatar-pencil{ font-size:14px; color:#fff; transform:translateY(1px) }
 .avatar-name{ margin-top:10px; font-weight:800; color:#e6eef8 }
-.profile-actions{ display:flex; align-items:center; justify-content:space-between; padding:18px }
-.profile-actions h2{ margin:0 }
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px;
+  border-radius: var(--ac-radius-md, 14px);
+  background: var(--ac-surface, rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--ac-border, rgba(255, 255, 255, 0.09));
+  box-shadow: var(--ac-shadow, 0 12px 32px rgba(2, 6, 23, 0.32));
+}
+.profile-actions h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--ac-text, #e6eef8);
+  word-break: break-word;
+}
 .quick-actions{ display:flex; gap:8px }
 
 /* Inline header name input styling while editing */
@@ -99,18 +232,52 @@
 
 .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px }
 .section-head .left{ display:flex; flex-direction:column }
-.section-head h3{ margin:0; font-size:18px }
-.section-head .muted{ color:rgba(230,238,248,0.65); font-size:13px }
+.section-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ac-text, #e6eef8);
+}
+.section-head .muted {
+  color: var(--ac-text-dim, #94a3b8);
+  font-size: 13px;
+  margin-top: 2px;
+}
 .section-head .right{ display:flex; align-items:center }
 .section-head .right .btn{ padding:8px 12px }
-.icon-pencil{ background:transparent; border:1px solid rgba(255,255,255,0.06); padding:6px 8px; border-radius:8px; margin-left:8px }
-.icon-pencil:hover{ background:rgba(255,255,255,0.02) }
+.icon-pencil {
+  background: rgba(196, 214, 0, 0.1);
+  border: 1px solid rgba(196, 214, 0, 0.35);
+  padding: 6px 10px;
+  border-radius: 10px;
+  margin-left: 8px;
+  color: var(--ac-accent, #c4d600);
+  line-height: 1;
+  &:hover {
+    background: rgba(196, 214, 0, 0.18);
+    border-color: var(--ac-border-h, rgba(196, 214, 0, 0.45));
+  }
+}
 
 /* Info grid: make read-only rows match form field layout and spacing */
 .info-grid{ display: grid; gap:12px }
 .info-row{ display: grid; grid-template-columns: 220px 1fr; align-items: center; gap:14px }
-.info-row .label{ display:block; font-weight:700; color:rgba(230,238,248,0.9); font-size:14px }
-.info-row .value{ display:block; color:#e6eef8; font-weight:600; }
+.info-row .label {
+  display: block;
+  font-weight: 600;
+  color: var(--ac-text-dim, #94a3b8);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.info-row .value {
+  display: block;
+  color: var(--ac-text, #e6eef8);
+  font-weight: 600;
+  text-align: right;
+}
+@media (max-width: 900px) {
+  .info-row .value { text-align: left; }
+}
 
 /* Make values feel less like system inputs: softer rounded background, subtle inset */
 .inline-input{ padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:#e6eef8; box-sizing:border-box; box-shadow: none }
@@ -161,16 +328,16 @@ select::-ms-expand{ display:none }
 .avatar-pending .btn{ padding:8px 12px }
 
 /* Small FAB inside the card (bottom-right) for quick actions like Meus Endereços */
-.fab-enderecos{
+.fab-enderecos {
   position: absolute;
   right: 12px;
   bottom: 12px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #16a34a; /* green-600 */
-  color: #fff;
-  border: none;
+  background: linear-gradient(135deg, #c4d600, #a9bb00);
+  color: var(--ac-accent-ink, #1a1f00);
+  border: 1px solid rgba(196, 214, 0, 0.4);
   display: inline-flex;
   align-items: center;
   justify-content: center;

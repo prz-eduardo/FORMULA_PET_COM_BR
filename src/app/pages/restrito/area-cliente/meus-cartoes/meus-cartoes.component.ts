@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardsService, PaymentMethod } from '../../../../services/cards.service';
@@ -16,6 +16,8 @@ import { environment } from '../../../../../enviroments/environment';
   styleUrls: ['./meus-cartoes.component.scss']
 })
 export class MeusCartoesComponent implements OnInit {
+  @Input() modal = false;
+  @Output() close = new EventEmitter<void>();
   cards: PaymentMethod[] = [];
   loading = false;
   tokenizing = false;

@@ -194,6 +194,11 @@
             <span>Gestão de Parceiros</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
+          <button class="item" *ngIf="matches('pets galeria moderação tutor fotos')" (click)="goToPetsGaleria()" tabindex="0">
+            <i class="fa fa-paw"></i>
+            <span>Pets / Galeria pública</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
         </div>
       </section>
 
