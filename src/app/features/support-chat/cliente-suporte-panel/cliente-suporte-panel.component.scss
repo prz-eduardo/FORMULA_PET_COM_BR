@@ -1,24 +1,110 @@
 .wrap {
-  padding: 0.5rem 0 1rem;
+  padding: 0.25rem 0 1rem;
+}
+
+.card {
+  border-radius: var(--ac-radius-lg, 18px);
+  border: 1px solid var(--ac-border, rgba(255, 255, 255, 0.09));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  box-shadow: var(--ac-shadow, 0 12px 32px rgba(2, 6, 23, 0.32));
+  padding: 1.1rem 1.15rem 1.25rem;
+}
+
+.card-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ac-radius-sm, 10px);
+  display: grid;
+  place-items: center;
+  background: rgba(196, 214, 0, 0.15);
+  border: 1px solid rgba(196, 214, 0, 0.35);
+  color: var(--ac-accent, #c4d600);
+  font-size: 1.1rem;
+}
+
+.card-head-text {
+  min-width: 0;
 }
 
 .h {
-  margin: 0 0 0.75rem;
-  font-size: 1.25rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--ac-text, #e6eef8);
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ac-text-dim, #94a3b8);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ac-text-dim, #94a3b8);
 }
 
 .err {
-  color: #b91c1c;
+  color: #fca5a5;
   font-size: 0.9rem;
+  margin: 0.5rem 0 0;
 }
 
-.status {
-  font-size: 0.9rem;
-  color: #444;
-  margin: 0 0 0.75rem;
+.thread-wrap {
+  margin-top: 0.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--ac-border, rgba(255, 255, 255, 0.09));
+}
+
+.closed-box {
+  margin-top: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ac-border, rgba(255, 255, 255, 0.09));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
 }
 
 .closed-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ac-text-dim, #94a3b8);
+}
+
+.btn-new {
+  font: inherit;
+  font-weight: 700;
   font-size: 0.9rem;
-  color: #666;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--ac-radius-sm, 10px);
+  border: 1px solid rgba(196, 214, 0, 0.5);
+  background: var(--ac-accent, #c4d600);
+  color: var(--ac-accent-ink, #1a1f00);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 }

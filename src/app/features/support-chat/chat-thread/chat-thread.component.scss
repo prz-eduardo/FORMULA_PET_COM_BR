@@ -1,3 +1,7 @@
+:host {
+  display: block;
+}
+
 .thread {
   display: flex;
   flex-direction: column;
@@ -77,5 +81,50 @@
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+/* Área do cliente (fundo escuro) */
+:host.theme-embed {
+  .err {
+    color: #fca5a5;
+  }
+
+  .log {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .bubble {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #e6eef8;
+
+    &--me {
+      background: rgba(196, 214, 0, 0.18);
+      border-color: rgba(196, 214, 0, 0.45);
+      color: #f4f8e8;
+    }
+  }
+
+  .meta {
+    color: #94a3b8;
+    opacity: 1;
+  }
+
+  .text-input {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #e6eef8;
+
+    &::placeholder {
+      color: #64748b;
+    }
+  }
+
+  .send {
+    background: var(--ac-accent, #c4d600);
+    color: var(--ac-accent-ink, #1a1f00);
+    font-weight: 700;
   }
 }

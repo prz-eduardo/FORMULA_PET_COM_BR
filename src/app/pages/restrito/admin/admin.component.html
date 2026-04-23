@@ -20,59 +20,72 @@
 
   <ng-container *ngIf="isRootView">
     <!-- Welcome / Hero -->
-    <section class="hero-card">
-      <div class="hero-content">
-        <div class="hero-greeting">
-          <span class="hero-eyebrow">{{ greeting }}</span>
+    <section class="hero-card" [class.collapsed]="isCollapsed('welcome')">
+      <header class="hero-card-head">
+        <div class="hero-greeting-titles">
+          <span *ngIf="!isCollapsed('welcome')" class="hero-eyebrow">{{ greeting }}</span>
           <h2 class="hero-title">Bem-vindo ao <span class="gradient-text">Painel Administrativo</span></h2>
-          <p class="hero-subtitle">Gerencie todo o ecossistema Fórmula Pet em um só lugar — catálogo, pessoas, operação e inteligência.</p>
+        </div>
+        <button
+          type="button"
+          class="hero-toggle"
+          (click)="toggleSection('welcome')"
+          [attr.aria-expanded]="!isCollapsed('welcome')"
+          [attr.aria-label]="isCollapsed('welcome') ? 'Expandir seção Bem-vindo' : 'Recolher seção Bem-vindo'"
+        >
+          <i class="fa fa-chevron-down hero-toggle-chevron"></i>
+        </button>
+      </header>
+
+      <div class="hero-main">
+        <div class="hero-main-left">
+          <p *ngIf="!isCollapsed('welcome')" class="hero-subtitle">Gerencie todo o ecossistema Fórmula Pet em um só lugar — catálogo, pessoas, operação e inteligência.</p>
+          <div class="hero-search">
+            <i class="fa fa-search"></i>
+            <input
+              type="text"
+              placeholder="Buscar atalho... (ex: pedidos, clientes, fórmulas)"
+              [(ngModel)]="searchTerm"
+              (keydown.escape)="searchTerm = ''"
+              aria-label="Buscar atalhos do painel"
+            />
+            <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''" aria-label="Limpar busca">
+              <i class="fa fa-times"></i>
+            </button>
+            <kbd class="hero-kbd">/</kbd>
+          </div>
         </div>
 
-        <div class="hero-search">
-          <i class="fa fa-search"></i>
-          <input
-            type="text"
-            placeholder="Buscar atalho... (ex: pedidos, clientes, fórmulas)"
-            [(ngModel)]="searchTerm"
-            (keydown.escape)="searchTerm = ''"
-            aria-label="Buscar atalhos do painel"
-          />
-          <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''" aria-label="Limpar busca">
-            <i class="fa fa-times"></i>
+        <div class="hero-stats" *ngIf="!isCollapsed('welcome')">
+          <button class="stat" (click)="goToDashboard()">
+            <span class="stat-icon stat-icon--blue"><i class="fa fa-line-chart"></i></span>
+            <span class="stat-info">
+              <span class="stat-label">Inteligência</span>
+              <span class="stat-value">Dashboard</span>
+            </span>
           </button>
-          <kbd class="hero-kbd">/</kbd>
+          <button class="stat" (click)="goToPedidos()">
+            <span class="stat-icon stat-icon--green"><i class="fa fa-shopping-cart"></i></span>
+            <span class="stat-info">
+              <span class="stat-label">Operação</span>
+              <span class="stat-value">Pedidos</span>
+            </span>
+          </button>
+          <button class="stat" (click)="goToClientes()">
+            <span class="stat-icon stat-icon--purple"><i class="fa fa-users"></i></span>
+            <span class="stat-info">
+              <span class="stat-label">Pessoas</span>
+              <span class="stat-value">Clientes</span>
+            </span>
+          </button>
+          <button class="stat" (click)="goToLista()">
+            <span class="stat-icon stat-icon--amber"><i class="fa fa-cube"></i></span>
+            <span class="stat-info">
+              <span class="stat-label">Catálogo</span>
+              <span class="stat-value">Produtos</span>
+            </span>
+          </button>
         </div>
-      </div>
-
-      <div class="hero-stats">
-        <button class="stat" (click)="goToDashboard()">
-          <span class="stat-icon stat-icon--blue"><i class="fa fa-line-chart"></i></span>
-          <span class="stat-info">
-            <span class="stat-label">Inteligência</span>
-            <span class="stat-value">Dashboard</span>
-          </span>
-        </button>
-        <button class="stat" (click)="goToPedidos()">
-          <span class="stat-icon stat-icon--green"><i class="fa fa-shopping-cart"></i></span>
-          <span class="stat-info">
-            <span class="stat-label">Operação</span>
-            <span class="stat-value">Pedidos</span>
-          </span>
-        </button>
-        <button class="stat" (click)="goToClientes()">
-          <span class="stat-icon stat-icon--purple"><i class="fa fa-users"></i></span>
-          <span class="stat-info">
-            <span class="stat-label">Pessoas</span>
-            <span class="stat-value">Clientes</span>
-          </span>
-        </button>
-        <button class="stat" (click)="goToLista()">
-          <span class="stat-icon stat-icon--amber"><i class="fa fa-cube"></i></span>
-          <span class="stat-info">
-            <span class="stat-label">Catálogo</span>
-            <span class="stat-value">Produtos</span>
-          </span>
-        </button>
       </div>
     </section>
 

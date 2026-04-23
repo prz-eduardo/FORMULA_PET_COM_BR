@@ -22,6 +22,8 @@ import {
   ADMIN_QUEUE_STATUSES,
 } from '../../../../constants/order-status.constants';
 
+const ADMIN_HOME_OVERVIEW_EXPANDED_KEY = 'admin_home_overview_expanded';
+
 @Component({
   selector: 'app-admin-home-overview',
   standalone: true,
@@ -37,6 +39,11 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
 
   toggleOverview() {
     this.overviewExpanded = !this.overviewExpanded;
+    if (this.isBrowser) {
+      try {
+        localStorage.setItem(ADMIN_HOME_OVERVIEW_EXPANDED_KEY, JSON.stringify(this.overviewExpanded));
+      } catch {}
+    }
     if (this.overviewExpanded && this.data) {
       setTimeout(() => this.drawChart(), 120);
     }
@@ -61,6 +68,12 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   ngOnInit() {
+    if (this.isBrowser) {
+      try {
+        const raw = localStorage.getItem(ADMIN_HOME_OVERVIEW_EXPANDED_KEY);
+        if (raw !== null) this.overviewExpanded = !!JSON.parse(raw);
+      } catch {}
+    }
     this.load();
     if (this.isBrowser) {
       this.refreshHandle = setInterval(() => this.load(true), 30_000);

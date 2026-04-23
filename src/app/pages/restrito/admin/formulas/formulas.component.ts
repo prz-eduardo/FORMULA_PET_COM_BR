@@ -79,7 +79,13 @@ export class FormulasAdminComponent implements OnInit {
   );
 
   ngOnInit() {
-    this.api.getConfigNewProduct().subscribe({
+    this.loadConfigMeta();
+    this.loadRows();
+  }
+
+  /** Formas/unidades/ativos: config com fallback GET /admin/formas se `forms` vier vazio. */
+  private loadConfigMeta() {
+    this.api.getConfigNewProductWithForms().subscribe({
       next: (res) => {
         this.forms = res.forms || [];
         this.units = res.units || [];
@@ -87,7 +93,6 @@ export class FormulasAdminComponent implements OnInit {
       },
       error: () => { this.forms = []; this.units = []; this.ativosAll = []; }
     });
-    this.loadRows();
   }
 
   // ---------- Helpers de UI ----------
@@ -171,6 +176,7 @@ export class FormulasAdminComponent implements OnInit {
 
   // ---------- CRUD ----------
   newFormula() {
+    if (!this.forms.length) this.loadConfigMeta();
     this.form.reset({ active: 1, form_id: null, output_unit_code: '' });
     this.itemsFA.clear();
     this.itemAtivoQueries = [];
@@ -180,6 +186,7 @@ export class FormulasAdminComponent implements OnInit {
   }
 
   editFormula(f: FormulaDto) {
+    if (!this.forms.length) this.loadConfigMeta();
     const id = f.id as any;
     this.form.patchValue({
       id: id ?? null,

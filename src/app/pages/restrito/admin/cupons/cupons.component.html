@@ -26,9 +26,7 @@
 
   <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
 
-  <!-- Drawer Cupom ----------------------------------------------------- -->
   <form slot="drawer" *ngIf="drawerOpen()" [formGroup]="cupomForm" class="fx-drawer" (ngSubmit)="submitCupom()" novalidate>
-    <!-- Informações básicas -->
     <section class="fx-section">
       <header class="fx-section__head fx-section__head--actions">
         <div>
@@ -59,7 +57,6 @@
       </div>
     </section>
 
-    <!-- Valores -->
     <section class="fx-section">
       <header class="fx-section__head">
         <h3>Valores</h3>
@@ -83,7 +80,6 @@
       </div>
     </section>
 
-    <!-- Regras -->
     <section class="fx-section">
       <header class="fx-section__head">
         <h3>Regras</h3>
@@ -140,42 +136,74 @@
       </div>
     </section>
 
-    <!-- Vínculos -->
     <section class="fx-section">
       <header class="fx-section__head">
         <h3>Vínculos</h3>
-        <p>Restringe o cupom a produtos, categorias ou tags específicas.</p>
+        <p>Restringe o desconto do cupom a itens de produtos, categorias ou tags. Busque e adicione por nome; os IDs são salvos automaticamente.</p>
       </header>
 
       <div class="fx-grid">
         <div class="fx-field fx-col-2">
-          <label>IDs de produtos</label>
-          <input type="text" formControlName="produto_ids_csv" placeholder="Ex.: 10, 15, 23" />
-          <small class="fx-hint">Separe os IDs por vírgula.</small>
+          <label>Produtos</label>
+          <app-entity-lookup
+            [selectedIds]="cupomForm.get('produto_ids')?.value || []"
+            (selectedIdsChange)="cupomForm.patchValue({ produto_ids: $event })"
+            [selectedItems]="selectedProdutoItems"
+            (selectedItemsChange)="onProdutoItemsChange($event)"
+            [searchFn]="searchProdutosFn"
+            [placeholder]="'Buscar produto por nome…'">
+          </app-entity-lookup>
         </div>
-        <div class="fx-field fx-col-2">
-          <label>IDs de categorias</label>
-          <input type="text" formControlName="categoria_ids_csv" placeholder="Ex.: 3, 7" />
+        <div class="fx-field">
+          <label>Categorias</label>
+          <app-entity-lookup
+            [selectedIds]="cupomForm.get('categoria_ids')?.value || []"
+            (selectedIdsChange)="cupomForm.patchValue({ categoria_ids: $event })"
+            [selectedItems]="selectedCategoriaItems"
+            (selectedItemsChange)="onCategoriaItemsChange($event)"
+            [searchFn]="searchCategoriasFn"
+            [placeholder]="'Buscar categoria…'">
+          </app-entity-lookup>
         </div>
-        <div class="fx-field fx-col-2">
-          <label>IDs de tags</label>
-          <input type="text" formControlName="tag_ids_csv" placeholder="Ex.: 4, 9" />
+        <div class="fx-field">
+          <label>Tags</label>
+          <app-entity-lookup
+            [selectedIds]="cupomForm.get('tag_ids')?.value || []"
+            (selectedIdsChange)="cupomForm.patchValue({ tag_ids: $event })"
+            [selectedItems]="selectedTagItems"
+            (selectedItemsChange)="onTagItemsChange($event)"
+            [searchFn]="searchTagsFn"
+            [placeholder]="'Buscar tag…'">
+          </app-entity-lookup>
         </div>
       </div>
     </section>
 
-    <!-- Avançado -->
     <section class="fx-section">
       <header class="fx-section__head">
-        <h3>Avançado</h3>
-        <p>Regras especializadas em formato JSON (opcional).</p>
+        <h3>Pessoas e campanha</h3>
+        <p>Vincula o cupom a pessoas (influencers, parceiros) para relatório e comissionamento. Não restringe quem pode digitar o código no checkout.</p>
       </header>
-
-      <div class="fx-grid">
-        <div class="fx-field fx-col-2">
-          <label>Restrições (JSON)</label>
-          <textarea rows="4" formControlName="restricoes_json" placeholder='{"categorias_excluidas":[12,15]}'></textarea>
-          <small class="fx-hint">JSON livre interpretado no backend para regras customizadas.</small>
+      <div class="entity-lookup pessoa-vinculos-cupom">
+        <div class="lookup-input">
+          <input
+            type="text"
+            [value]="pessoaQ"
+            (input)="onPessoaInput($event)"
+            placeholder="Buscar pessoa por nome ou e-mail…" />
+        </div>
+        <ul class="sugestoes" *ngIf="pessoaSugestoes.length">
+          <li *ngFor="let s of pessoaSugestoes" (click)="addPessoaVinculo(s)">
+            <span class="name">{{ s.nome || s.name || '—' }}</span>
+            <small class="id" *ngIf="s.email">{{ s.email }}</small>
+            <small class="id">{{ s.tipo || 'cliente' }} #{{ s.id }}</small>
+          </li>
+        </ul>
+        <div class="selecionados" *ngIf="pessoaVinculos.length">
+          <span class="pill" *ngFor="let p of pessoaVinculos">
+            <span class="name">{{ labelPessoaVinc(p) }}</span>
+            <button type="button" (click)="removePessoaVinculo(p)">x</button>
+          </span>
         </div>
       </div>
     </section>

@@ -1,10 +1,30 @@
 <div class="wrap">
-  <h2 class="h">Fale conosco</h2>
-  <p *ngIf="loading">A abrir o chat…</p>
-  <p class="err" *ngIf="initErr">{{ initErr }}</p>
-  <ng-container *ngIf="!loading && !initErr && ticketId">
-    <p class="status">{{ statusLine() }}</p>
-    <app-chat-thread *ngIf="meta?.status !== 'closed'" [ticketId]="ticketId" mode="cliente" />
-    <p *ngIf="meta?.status === 'closed'" class="closed-hint">Abra de novo a área do cliente para iniciar um novo atendimento.</p>
-  </ng-container>
+  <div class="card">
+    <div class="card-head">
+      <span class="icon" aria-hidden="true"><i [class]="statusIconClass()"></i></span>
+      <div class="card-head-text">
+        <h2 class="h">{{ statusTitle() }}</h2>
+        <p class="sub" *ngIf="!loading && !initErr">{{ statusLine() }}</p>
+      </div>
+    </div>
+
+    <p class="loading" *ngIf="loading || restarting">
+      <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+      {{ restarting ? 'A reiniciar o atendimento…' : 'A abrir o chat…' }}
+    </p>
+    <p class="err" *ngIf="initErr" role="alert">{{ initErr }}</p>
+
+    <ng-container *ngIf="!loading && !restarting && !initErr && ticketId">
+      <div class="thread-wrap" *ngIf="meta?.status !== 'closed'">
+        <app-chat-thread [ticketId]="ticketId" mode="cliente" />
+      </div>
+
+      <div class="closed-box" *ngIf="meta?.status === 'closed'">
+        <p class="closed-hint">Quando quiser falar de novo com a equipe, use o botão abaixo.</p>
+        <button type="button" class="btn-new" (click)="iniciarNovoAtendimento()" [disabled]="restarting">
+          Iniciar novo atendimento
+        </button>
+      </div>
+    </ng-container>
+  </div>
 </div>

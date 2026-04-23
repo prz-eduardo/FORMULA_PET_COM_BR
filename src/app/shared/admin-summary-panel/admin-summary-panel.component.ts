@@ -1,5 +1,7 @@
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, Input, OnInit, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+
+const ADMIN_SUMMARY_PANEL_COLLAPSED_KEY = 'admin_summary_panel_collapsed';
 
 export interface SummaryTotals {
   total_pedidos: number;
@@ -62,13 +64,27 @@ export interface SummaryData {
   templateUrl: './admin-summary-panel.component.html',
   styleUrls: ['./admin-summary-panel.component.scss']
 })
-export class AdminSummaryPanelComponent {
+export class AdminSummaryPanelComponent implements OnInit {
   @Input() summary?: SummaryData;
 
   collapsed: { [key: string]: boolean } = {};
 
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
+
+  ngOnInit() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      const raw = localStorage.getItem(ADMIN_SUMMARY_PANEL_COLLAPSED_KEY);
+      if (raw) this.collapsed = { ...this.collapsed, ...JSON.parse(raw) };
+    } catch {}
+  }
+
   toggle(section: string) {
     this.collapsed[section] = !this.collapsed[section];
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      localStorage.setItem(ADMIN_SUMMARY_PANEL_COLLAPSED_KEY, JSON.stringify(this.collapsed));
+    } catch {}
   }
 
   isCollapsed(section: string): boolean {

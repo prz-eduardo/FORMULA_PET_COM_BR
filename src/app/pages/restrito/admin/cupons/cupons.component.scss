@@ -11,3 +11,52 @@
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .colspan2{grid-column:1 / -1}
 .empty{padding:32px;text-align:center;color:#6b7280}
+
+/* Alinhado a entity-lookup (pessoas) */
+.pessoa-vinculos-cupom {
+  .lookup-input input {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: inherit;
+  }
+  .sugestoes {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    max-height: 200px;
+    overflow: auto;
+  }
+  .sugestoes li {
+    padding: 6px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+  .sugestoes li:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .sugestoes .id {
+    display: block;
+    opacity: 0.75;
+    font-size: 0.85em;
+  }
+  .selecionados {
+    margin-top: 8px;
+  }
+  .pill {
+    display: inline-block;
+    margin: 0 6px 6px 0;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 4px 8px;
+    border-radius: 12px;
+  }
+  .pill button {
+    margin-left: 6px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+  }
+}

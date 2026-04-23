@@ -80,7 +80,7 @@ export class EstoqueAdminComponent implements OnInit {
     // carregar fornecedores
     this.api.listFornecedores().subscribe({ next: f => this.fornecedores = f || [], error: () => this.fornecedores = [] });
     // carregar config consolidada (units + ativos básicos + insumos)
-    this.api.getConfigNewProduct().subscribe({
+    this.api.getConfigNewProductWithForms().subscribe({
       next: (res) => {
         this.units = res.units || [];
         this.ativosAll = Array.isArray(res.ativos) ? res.ativos.map(a => ({ id: a.id, nome: a.nome })) : [];

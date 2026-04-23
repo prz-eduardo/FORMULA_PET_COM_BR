@@ -1,9 +1,14 @@
 import {
   ChangeDetectorRef,
   Component,
+  ElementRef,
+  HostBinding,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
+  SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,9 +23,17 @@ import { SupportChatIdentityService } from '../support-chat-identity.service';
   templateUrl: './chat-thread.component.html',
   styleUrls: ['./chat-thread.component.scss'],
 })
-export class ChatThreadComponent implements OnInit, OnDestroy {
+export class ChatThreadComponent implements OnInit, OnChanges, OnDestroy {
   @Input({ required: true }) ticketId!: string;
   @Input({ required: true }) mode!: SupportChatMode;
+
+  /** Tema escuro alinhado à área do cliente. */
+  @HostBinding('class.theme-embed')
+  get themeEmbed(): boolean {
+    return this.mode === 'cliente';
+  }
+
+  @ViewChild('logContainer') logContainer?: ElementRef<HTMLElement>;
 
   messages: SupportMessage[] = [];
   draft = '';
@@ -36,6 +49,33 @@ export class ChatThreadComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
+    await this.attachMessages();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['ticketId'] && !changes['ticketId'].firstChange) {
+      void this.attachMessages();
+    }
+  }
+
+  ngOnDestroy() {
+    this.detachMessages();
+  }
+
+  private detachMessages() {
+    try {
+      this.offMessages?.();
+    } catch {
+      // ignore
+    }
+    this.offMessages = null;
+  }
+
+  private async attachMessages() {
+    this.detachMessages();
+    this.messages = [];
+    this.err = '';
+    this.cdr.markForCheck();
     try {
       await this.identity.ensureFirebaseForChat();
     } catch (e: any) {
@@ -43,18 +83,22 @@ export class ChatThreadComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
+    if (!this.ticketId) {
+      return;
+    }
     this.offMessages = this.facade.subscribeMessages(this.ticketId, (list) => {
       this.messages = list;
       this.cdr.markForCheck();
+      queueMicrotask(() => this.scrollLogToBottom());
     });
   }
 
-  ngOnDestroy() {
-    try {
-      this.offMessages?.();
-    } catch {
-      // ignore
+  private scrollLogToBottom() {
+    const el = this.logContainer?.nativeElement;
+    if (!el) {
+      return;
     }
+    el.scrollTop = el.scrollHeight;
   }
 
   trackById(_: number, m: SupportMessage) {
@@ -73,6 +117,7 @@ export class ChatThreadComponent implements OnInit, OnDestroy {
     } finally {
       this.sending = false;
       this.cdr.markForCheck();
+      queueMicrotask(() => this.scrollLogToBottom());
     }
   }
 }

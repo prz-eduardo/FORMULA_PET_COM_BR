@@ -3,7 +3,13 @@ import { get, onValue, orderByValue, push, query, ref, update } from 'firebase/d
 import { supportRtdb } from '../../firebase-config';
 import { SupportChatIdentityService } from './support-chat-identity.service';
 import { SupportChatApiService } from './support-chat-api.service';
-import { SupportMessage, SupportMeta, SupportChatMode, SupportTicketStatus } from './support.models';
+import {
+  AdminQueueRow,
+  SupportMessage,
+  SupportMeta,
+  SupportChatMode,
+  SupportTicketStatus,
+} from './support.models';
 import * as P from './support-paths';
 
 @Injectable({ providedIn: 'root' })
@@ -78,6 +84,95 @@ export class SupportTicketFacadeService {
     });
   }
 
+  /**
+   * Lista para o admin: pedidos na fila global + conversas já assumidas por este usuário
+   * (permanecem visíveis após «Atender», quando saem de `queue`).
+   */
+  subscribeAdminWorkload(onNext: (rows: AdminQueueRow[]) => void): () => void {
+    const adminUid = this.identity.getSupportUidOrThrow();
+    let queueMap: Record<string, number> = {};
+    let activeMap: Record<string, number> = {};
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let seq = 0;
+
+    const flush = () => {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(async () => {
+        debounceTimer = null;
+        const mySeq = ++seq;
+        const queuedRows = Object.keys(queueMap)
+          .map((ticketId) => ({
+            ticketId,
+            enqueuedAt: queueMap[ticketId] || 0,
+            lane: 'queued' as const,
+          }))
+          .sort((a, b) => a.enqueuedAt - b.enqueuedAt);
+        const activeRows = Object.keys(activeMap)
+          .map((ticketId) => ({
+            ticketId,
+            enqueuedAt: activeMap[ticketId] || 0,
+            lane: 'active' as const,
+          }))
+          .sort((a, b) => a.enqueuedAt - b.enqueuedAt);
+        const seen = new Set<string>();
+        const merged: { ticketId: string; enqueuedAt: number; lane: 'queued' | 'active' }[] = [];
+        for (const r of queuedRows) {
+          if (!seen.has(r.ticketId)) {
+            seen.add(r.ticketId);
+            merged.push(r);
+          }
+        }
+        for (const r of activeRows) {
+          if (!seen.has(r.ticketId)) {
+            seen.add(r.ticketId);
+            merged.push(r);
+          }
+        }
+        const metas = await Promise.all(merged.map((row) => this.getMeta(row.ticketId)));
+        if (mySeq !== seq) {
+          return;
+        }
+        onNext(
+          merged.map((row, i) => ({
+            ...row,
+            clienteLabel: metas[i]?.clienteLabel || 'Cliente',
+          }))
+        );
+      }, 60);
+    };
+
+    const offQueue = this.subscribeQueueOrdered((rows) => {
+      queueMap = {};
+      for (const r of rows) {
+        queueMap[r.ticketId] = r.enqueuedAt;
+      }
+      flush();
+    });
+
+    const offActive = onValue(ref(supportRtdb, P.pathAdminActive(adminUid)), (snap) => {
+      activeMap = (snap.val() as Record<string, number>) || {};
+      flush();
+    });
+
+    return () => {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+      }
+      try {
+        offQueue();
+      } catch {
+        // ignore
+      }
+      try {
+        offActive();
+      } catch {
+        // ignore
+      }
+    };
+  }
+
   /** Posição 1 = próximo a ser atendido (fila 1-based). 0 = não está na fila. */
   subscribeQueuePosition(
     ticketId: string,
@@ -109,7 +204,8 @@ export class SupportTicketFacadeService {
     }
     const updates: Record<string, unknown> = {
       [`${P.SUPPORT_ROOT}/tickets/${ticketId}/meta/status`]: 'active' as SupportTicketStatus,
-      [`${P.SUPPORT_ROOT}/tickets/${ticketId}/meta/adminUid`]: adminUid
+      [`${P.SUPPORT_ROOT}/tickets/${ticketId}/meta/adminUid`]: adminUid,
+      [`${P.pathAdminActive(adminUid)}/${ticketId}`]: Date.now(),
     };
     const qref = ref(supportRtdb, P.pathTicketQueue(ticketId));
     const qsnap = await get(qref);
@@ -122,11 +218,15 @@ export class SupportTicketFacadeService {
 
   async closeTicket(ticketId: string, clienteChatUid: string): Promise<void> {
     await this.identity.ensureFirebaseForChat();
+    const meta = await this.getMeta(ticketId);
     const updates: Record<string, unknown> = {
       [`${P.SUPPORT_ROOT}/tickets/${ticketId}/meta/status`]: 'closed' as SupportTicketStatus,
       [`${P.SUPPORT_ROOT}/queue/${ticketId}`]: null,
-      [`${P.SUPPORT_ROOT}/cliente_active/${clienteChatUid}`]: null
+      [`${P.SUPPORT_ROOT}/cliente_active/${clienteChatUid}`]: null,
     };
+    if (meta?.adminUid) {
+      updates[`${P.pathAdminActive(meta.adminUid)}/${ticketId}`] = null;
+    }
     await update(ref(supportRtdb), updates);
     void this.supportApi.patchSalaFireAndForget(ticketId, { status: 'closed' });
   }

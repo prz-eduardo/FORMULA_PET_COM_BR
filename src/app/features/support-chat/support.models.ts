@@ -18,3 +18,11 @@ export interface SupportMessage {
 }
 
 export type SupportChatMode = 'cliente' | 'admin';
+
+/** Item da lista do painel admin: fila global + atendimentos assumidos por este admin. */
+export interface AdminQueueRow {
+  ticketId: string;
+  enqueuedAt: number;
+  lane: 'queued' | 'active';
+  clienteLabel: string;
+}

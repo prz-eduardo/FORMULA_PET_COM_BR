@@ -1,6 +1,12 @@
 <div class="thread" *ngIf="ticketId">
   <p class="err" *ngIf="err">{{ err }}</p>
-  <div class="log" *ngIf="!err || messages.length">
+  <div
+    class="log"
+    #logContainer
+    *ngIf="!err || messages.length"
+    aria-live="polite"
+    aria-relevant="additions"
+  >
     <div
       *ngFor="let m of messages; trackBy: trackById"
       class="bubble"

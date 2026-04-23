@@ -180,6 +180,24 @@
           </div>
         </section>
 
+
+        <section class="card campanha-card" *ngIf="adminEmbedded() && cupomPessoasList.length">
+          <div class="card-head">
+            <h4 class="segment-title">Campanha (cupom)</h4>
+          </div>
+          <div class="card-body">
+            <div class="segment-body campanha-pessoas">
+              <p class="od-admin-muted">Pessoas vinculadas ao cupom no momento da aplicação.</p>
+              <ul class="campanha-list">
+                <li *ngFor="let x of cupomPessoasList">
+                  <strong>{{ x.nome || '—' }}</strong>
+                  <span class="od-admin-muted"> {{ x.pessoa_tipo }} #{{ x.pessoa_id }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section class="card payments-card" *ngIf="payments && payments.length">
           <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggleCollapse('payments')" (keydown.enter)="toggleCollapse('payments')">
             <h4 class="segment-title">Pagamentos</h4>

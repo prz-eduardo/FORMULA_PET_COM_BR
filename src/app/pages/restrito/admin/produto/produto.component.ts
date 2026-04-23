@@ -226,7 +226,7 @@ export class ProdutoComponent implements OnInit {
     });
 
     // carregar config (formas/unidades/ativos consolidado) - ativos ficam apenas para derivação via fórmula
-    this.api.getConfigNewProduct().subscribe({
+    this.api.getConfigNewProductWithForms().subscribe({
       next: (res) => {
         this.forms = res.forms || [];
         this.units = res.units || [];

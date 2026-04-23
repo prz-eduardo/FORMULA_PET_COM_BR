@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, forkJoin } from 'rxjs';
+import { map, switchMap, catchError } from 'rxjs/operators';
 import { environment } from '../../enviroments/environment';
 import { SessionService } from './session.service';
 import { BannerPosition } from '../shared/banner/banner-positions';
@@ -355,6 +355,7 @@ export interface CupomDto {
   produto_ids?: Array<number | string>;
   categoria_ids?: Array<number | string>;
   tag_ids?: Array<number | string>;
+  pessoa_vinculos?: Array<{ pessoa_tipo: 'cliente' | 'vet' | 'admin'; pessoa_id: number; nome?: string | null }>;
   created_at?: string;
   updated_at?: string;
 }
@@ -493,6 +494,43 @@ export class AdminApiService {
     return this.http.get<{ forms: ProductFormDto[]; units: UnitDto[]; ativos: Array<{ id: number; nome: string }>; insumos?: Array<{ id: number; nome: string }> }>(
       `${this.baseUrl}/config-new-product`,
       { headers: this.headers(), params: httpParams }
+    );
+  }
+
+  /** Lista formas farmacêuticas (`product_forms`). Usar se `getConfigNewProduct` vier sem `forms`. */
+  listProductForms(): Observable<{ data: ProductFormDto[] }> {
+    return this.http.get<{ data: ProductFormDto[] }>(`${this.baseUrl}/formas`, { headers: this.headers() });
+  }
+
+  /**
+   * Config de novo produto. As formas vêm de GET /formas (roda `ensure` no backend + SELECT),
+   * para não depender de um `/config` antigo com lista incompleta (ex.: falta "Outros").
+   * `config-new-product` ainda fornece units/ativos/insumos.
+   */
+  getConfigNewProductWithForms(params?: { q?: string }): Observable<{
+    forms: ProductFormDto[];
+    units: UnitDto[];
+    ativos: Array<{ id: number; nome: string }>;
+    insumos?: Array<{ id: number; nome: string }>;
+  }> {
+    const cfg$ = this.getConfigNewProduct(params).pipe(
+      catchError(() =>
+        of({
+          forms: [] as ProductFormDto[],
+          units: [] as UnitDto[],
+          ativos: [] as Array<{ id: number; nome: string }>
+        } as { forms: ProductFormDto[]; units: UnitDto[]; ativos: Array<{ id: number; nome: string }>; insumos?: Array<{ id: number; nome: string }> })
+      )
+    );
+    const formas$ = this.listProductForms().pipe(
+      catchError(() => of({ data: [] as ProductFormDto[] }))
+    );
+    return forkJoin({ res: cfg$, lf: formas$ }).pipe(
+      map(({ res, lf }) => {
+        const fromFormas = Array.isArray(lf.data) ? lf.data : [];
+        const forms = fromFormas.length > 0 ? fromFormas : (res.forms || []);
+        return { ...res, forms };
+      })
     );
   }
 
@@ -907,6 +945,9 @@ export class AdminApiService {
   }
   setCupomTags(id: number | string, tag_ids: number[]): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/cupons/${id}/tags`, { tag_ids }, { headers: this.headers() });
+  }
+  setCupomPessoas(id: number | string, pessoa_vinculos: Array<{ pessoa_tipo: string; pessoa_id: number }>): Observable<CupomDto> {
+    return this.http.put<CupomDto>(`${this.baseUrl}/cupons/${id}/pessoas`, { pessoa_vinculos }, { headers: this.headers() });
   }
   previewCupom(payload: { id?: number | string; codigo?: string; itens: Array<{ produto_id: number; preco_unit: number; quantidade: number; promo_aplicada?: boolean }> }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/cupons/preview`, payload, { headers: this.headers() });

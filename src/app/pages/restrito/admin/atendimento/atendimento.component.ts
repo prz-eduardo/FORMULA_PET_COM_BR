@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { SupportTicketFacadeService } from '../../../../features/support-chat/support-ticket-facade.service';
 import { SupportChatIdentityService } from '../../../../features/support-chat/support-chat-identity.service';
-import { SupportMeta } from '../../../../features/support-chat/support.models';
+import { AdminQueueRow, SupportMeta } from '../../../../features/support-chat/support.models';
 import { ChatThreadComponent } from '../../../../features/support-chat/chat-thread/chat-thread.component';
 
 @Component({
@@ -13,7 +13,7 @@ import { ChatThreadComponent } from '../../../../features/support-chat/chat-thre
   styleUrls: ['./atendimento.component.scss'],
 })
 export class AtendimentoAdminComponent implements OnInit, OnDestroy {
-  queue: { ticketId: string; enqueuedAt: number }[] = [];
+  workload: AdminQueueRow[] = [];
   selectedId: string | null = null;
   meta: SupportMeta | null = null;
   loading = true;
@@ -34,8 +34,8 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
     this.initErr = '';
     try {
       await this.identity.ensureFirebaseForChat();
-      this.offQueue = this.facade.subscribeQueueOrdered((rows) => {
-        this.queue = rows;
+      this.offQueue = this.facade.subscribeAdminWorkload((rows) => {
+        this.workload = rows;
         this.cdr.markForCheck();
       });
     } catch (e: any) {
@@ -87,6 +87,23 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
       this.busy = false;
       this.cdr.markForCheck();
     }
+  }
+
+  statusLabel(status: string | undefined): string {
+    switch (status) {
+      case 'queued':
+        return 'Na fila';
+      case 'active':
+        return 'Em atendimento';
+      case 'closed':
+        return 'Encerrado';
+      default:
+        return status || '—';
+    }
+  }
+
+  laneLabel(lane: AdminQueueRow['lane']): string {
+    return lane === 'queued' ? 'Aguardando' : 'Com você';
   }
 
   async finalizar() {

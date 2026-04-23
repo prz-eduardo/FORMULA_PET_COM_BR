@@ -113,6 +113,22 @@ export class OrderDetailsComponent implements OnChanges {
     return !!this.collapsedState[key];
   }
 
+  get cupomPessoasList(): any[] {
+    const o: any = this.order;
+    const j = o?.cupom_pessoas_json;
+    if (!j) return [];
+    if (Array.isArray(j)) return j;
+    if (typeof j === 'string') {
+      try {
+        const parsed = JSON.parse(j);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+
   getStepInfo(key: string) {
     const flow = this.stepperOrder || [];
     const cur = String(this.order?.status || '').toLowerCase();

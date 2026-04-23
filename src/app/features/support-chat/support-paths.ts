@@ -9,6 +9,9 @@ export function pathQueue() {
 export function pathTicketQueue(tid: string) {
   return `${SUPPORT_ROOT}/queue/${tid}`;
 }
+export function pathAdminActive(adminUid: string) {
+  return `${SUPPORT_ROOT}/admin_active/${adminUid}`;
+}
 export function pathTicketMeta(tid: string) {
   return `${SUPPORT_ROOT}/tickets/${tid}/meta`;
 }
