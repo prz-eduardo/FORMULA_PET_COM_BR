@@ -197,7 +197,9 @@ export class ProdutoComponent implements OnInit {
       if (Array.isArray(vals) && vals.length > 0) {
         if (!this.imagemPrincipal || !vals.includes(this.imagemPrincipal)) this.imagemPrincipal = vals[0];
       } else {
-        this.imagemPrincipal = null;
+        const fromImageCtrl = this.form?.get('image')?.value;
+        this.imagemPrincipal =
+          typeof fromImageCtrl === 'string' && fromImageCtrl.trim() ? fromImageCtrl.trim() : null;
       }
     });
 
@@ -284,18 +286,26 @@ export class ProdutoComponent implements OnInit {
         stock: p.stock ?? null,
         weightValue: p.weightValue ?? null,
         weightUnit: p.weightUnit ?? 'g',
-        formulaId: (p as any).formId ?? null,
-        manipulado: !!((p as any).formId || (p as any).tipo === 'manipulado')
+        formulaId: (p as any).formId ?? (p as any).formula_id ?? null,
+        manipulado: !!((p as any).formId || (p as any).formula_id || (p as any).tipo === 'manipulado'),
+        active: p.active === 0 || p.active === 1 ? p.active : ((p as any).ativo === 0 || (p as any).ativo === 1 ? (p as any).ativo : 1)
       });
+      this.destaqueHome = p.destaque_home === 1 || (p as any).destaque_home === true;
+      this.formulaEnabled = !!(this.form?.get('formulaId')?.value);
 
       this.tagsFA.clear(); (p.tags || []).forEach((t: any) => this.tagsFA.push(this.fb.control<string>(t)));
       this.dosageFA.clear(); (p.customizations?.dosage || []).forEach((d: any) => this.dosageFA.push(this.fb.control<string>(d)));
       this.packagingFA.clear(); (p.customizations?.packaging || []).forEach((e: any) => this.packagingFA.push(this.fb.control<string>(e)));
 
       this.imagesFA.clear();
-      const imgs = (p as any).images ?? [];
-      imgs.forEach((u: string) => this.imagesFA.push(this.fb.control<string>(u)));
-      this.imagemPrincipal = p.image ?? (imgs.length ? imgs[0] : null);
+      const imgs: string[] = (p as any).images ?? [];
+      const capa = (p.image as string | null) ?? ((p as any).imagem_principal as string | null) ?? (imgs[0] ?? null);
+      if (imgs.length) {
+        imgs.forEach((u: string) => this.imagesFA.push(this.fb.control<string>(u)));
+      } else if (capa) {
+        this.imagesFA.push(this.fb.control<string>(capa));
+      }
+      this.imagemPrincipal = capa;
       try { this.syncPrecoDigitsFromForm(); } catch(e) {}
     } catch (e) { console.error('applyEditItem error', e); }
   }
@@ -585,6 +595,12 @@ export class ProdutoComponent implements OnInit {
       next: (p) => {
         // categoriaId: preferir id retornado pelo backend quando disponível, senão tentar mapear por nome
         const catId = (p as any).categoryId ?? this.categoriasList.find(c => c.name === (p as any).category)?.id ?? null;
+        const atv =
+          p.active === 0 || p.active === 1
+            ? p.active
+            : (p as any).ativo === 0 || (p as any).ativo === 1
+              ? (p as any).ativo
+              : 1;
         this.form.patchValue({
           id: p.id,
           name: p.name,
@@ -592,13 +608,14 @@ export class ProdutoComponent implements OnInit {
           price: p.price,
           image: p.image ?? null,
           categoryId: catId,
+          active: atv,
           discount: p.discount ?? null,
           rating: p.rating ?? null,
           stock: p.stock ?? null,
           weightValue: p.weightValue ?? null,
           weightUnit: p.weightUnit ?? 'g',
-          formulaId: (p as any).formId ?? null,
-          manipulado: !!((p as any).formId || (p as any).tipo === 'manipulado'),
+          formulaId: (p as any).formId ?? (p as any).formula_id ?? null,
+          manipulado: !!((p as any).formId || (p as any).formula_id || (p as any).tipo === 'manipulado'),
           // Identificação expandida
           sku: (p as any).sku ?? null,
           marca: (p as any).marca ?? null,
@@ -626,6 +643,8 @@ export class ProdutoComponent implements OnInit {
           videoUrl: (p as any).video_url ?? null,
           cardLayout: ((p as any).card_layout === 'banner' ? 'banner' : 'sales') as 'sales' | 'banner',
         });
+        this.destaqueHome = p.destaque_home === 1 || (p as any).destaque_home === true;
+        this.formulaEnabled = !!(this.form.get('formulaId')?.value);
 
         // Populate variantes e documentos (se presentes no GET)
         try {
@@ -656,13 +675,17 @@ export class ProdutoComponent implements OnInit {
         this.dosageFA.clear(); (p.customizations?.dosage || []).forEach((d: any) => this.dosageFA.push(this.fb.control<string>(d)));
         this.packagingFA.clear(); (p.customizations?.packaging || []).forEach((e: any) => this.packagingFA.push(this.fb.control<string>(e)));
 
-        // imagens: popular FormArray e imagem principal
+        // imagens: popular FormArray e imagem principal (capa sozinha conta como mídia válida)
         try {
           this.imagesFA.clear();
           const imgs = (p as any).images ?? [];
-          imgs.forEach((u: string) => this.imagesFA.push(this.fb.control<string>(u)));
-          // preferir imagem_principal / image
-          this.imagemPrincipal = p.image ?? (imgs.length ? imgs[0] : null);
+          const capa = (p.image as string | null) ?? ((p as any).imagem_principal as string | null) ?? (imgs.length ? imgs[0] : null);
+          if (imgs.length) {
+            imgs.forEach((u: string) => this.imagesFA.push(this.fb.control<string>(u)));
+          } else if (capa) {
+            this.imagesFA.push(this.fb.control<string>(capa));
+          }
+          this.imagemPrincipal = capa ?? (imgs.length ? imgs[0] : null);
         } catch(e) { console.error('Erro ao popular imagens do produto', e); }
 
         // Pré-selecionar promoção ativa já vinculada ao produto (quando o
@@ -714,7 +737,9 @@ export class ProdutoComponent implements OnInit {
     switch (i) {
       case 0: { // Mídia
         const imgs = this.form.get('images') as FormArray;
-        return !!imgs && imgs.length > 0;
+        if (imgs && imgs.length > 0) return true;
+        const capa = this.imagemPrincipal || (this.form.get('image')?.value as string | null);
+        return typeof capa === 'string' && !!capa.trim();
       }
       case 1: { // Identificação
         const name = this.form.get('name');
@@ -1332,7 +1357,7 @@ export class ProdutoComponent implements OnInit {
 
   // Mantém apenas a versão correta do resetForm
   // Atualizar resetForm para novo campo manipulado
-  resetForm() { this.form.reset({ manipulado: false, active: 1, price: 0, weightValue: null, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; }
+  resetForm() { this.form.reset({ manipulado: false, active: 1, price: 0, weightValue: null, weightUnit: 'g' }); this.tagsFA.clear(); this.dosageFA.clear(); this.packagingFA.clear(); this.imagesFA.clear(); this.estoqueSelecionado = null; this.destaqueHome = false; this.imagemPrincipal = null; this.formulaEnabled = false; }
 
   fixRating(event: any) {
     const v = parseFloat(event.target.value);

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 // import { HomeComponent } from './pages/home/home.component';
+import { GaleriaPublicaComponent } from './pages/galeria-publica/galeria-publica.component';
 import { LoginComponent } from './pages/restrito/login/login.component';
 import { AdminComponent } from './pages/restrito/admin/admin.component';
 import { ProdutoComponent } from './pages/restrito/admin/produto/produto.component';
@@ -41,7 +42,9 @@ export const routes: Routes = [
       { path: 'promocoes', loadComponent: () => import('./pages/restrito/admin/promocoes/promocoes.component').then(m => m.AdminPromocoesComponent), canActivate: [authGuard], data: { title: 'Promoções' } },
       { path: 'banners', loadComponent: async () => (await import('./pages/restrito/admin/banners/banners.component')).BannersAdminComponent, canActivate: [authGuard], data: { title: 'Banners' } },
       { path: 'produto-preview', loadComponent: () => import('./pages/restrito/admin/produto-preview/produto-preview.component').then(m => m.ProdutoPreviewComponent), canActivate: [authGuard], data: { title: 'Pré-visualização (Admin)' } },
-      { path: 'marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard], data: { title: 'Categorias & Tags' } },
+      { path: 'marketplace/customizacoes', redirectTo: 'marketplace/categorias', pathMatch: 'full' },
+      { path: 'marketplace/categorias', loadComponent: () => import('./pages/restrito/admin/marketplace-categorias/marketplace-categorias.component').then(m => m.MarketplaceCategoriasAdminComponent), canActivate: [authGuard], data: { title: 'Categorias da vitrine' } },
+      { path: 'marketplace/tags', loadComponent: () => import('./pages/restrito/admin/marketplace-tags/marketplace-tags.component').then(m => m.MarketplaceTagsAdminComponent), canActivate: [authGuard], data: { title: 'Tags da vitrine' } },
       { path: 'loja/temas', loadComponent: () => import('./pages/restrito/admin/loja-temas/loja-temas.component').then(m => m.LojaTemasAdminComponent), canActivate: [authGuard], data: { title: 'Temas da loja' } },
       { path: 'fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard], data: { title: 'Gerenciar Fornecedores' } },
       { path: 'lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard], data: { title: 'Lista de produtos' } },
@@ -90,7 +93,7 @@ export const routes: Routes = [
   { path: 'pacientes', loadComponent: () => import('./pages/restrito/area-vet/pacientes/pacientes.component').then(m => m.PacientesComponent), canActivate: [vetGuard] },
   { path: 'pacientes/:petId', loadComponent: () => import('./pages/restrito/area-vet/paciente-detalhe/paciente-detalhe.component').then(m => m.PacienteDetalheComponent), canActivate: [vetGuard] },
   { path: 'meus-pets', loadComponent: () => import('./pages/meus-pets/meus-pets.component').then(m => m.MeusPetsComponent)},
-  { path: 'galeria', loadComponent: () => import('./pages/galeria-publica/galeria-publica.component').then(m => m.GaleriaPublicaComponent) },
+  { path: 'galeria', component: GaleriaPublicaComponent },
   { path: 'meus-enderecos', loadComponent: () => import('./pages/meus-enderecos/meus-enderecos.component').then(m => m.MeusEnderecosComponent)},
   { path: 'meus-cartoes', loadComponent: () => import('./pages/restrito/area-cliente/meus-cartoes/meus-cartoes.component').then(m => m.MeusCartoesComponent)},
   { path: 'editar-perfil', loadComponent: () => import('./pages/perfil/perfil.component').then(m => m.PerfilComponent)},

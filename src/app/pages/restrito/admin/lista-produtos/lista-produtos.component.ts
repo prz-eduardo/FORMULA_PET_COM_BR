@@ -213,13 +213,17 @@ export class ListaProdutosComponent implements OnInit {
     const tags = typeof values.tags === 'string'
       ? values.tags.split(',').map((s: string) => s.trim()).filter((s: string) => !!s)
       : (Array.isArray(values.tags) ? values.tags : []);
-    const payload: any = {
-      name: values.name,
-      price: typeof values.price === 'string' ? parseFloat(String(values.price).replace(',', '.')) || 0 : Number(values.price || 0),
-      description: values.description || '',
-      category: values.category || '',
+    const preco = typeof values.price === 'string' ? parseFloat(String(values.price).replace(',', '.')) || 0 : Number(values.price || 0);
+    const cat = (values.category || '').toString().trim();
+    // Mesmo contrato de POST/PUT /marketplace/produtos/full — sem imagens/variantes/documentos para não apagar o que o assistente gravou
+    const payload: Record<string, unknown> = {
+      nome: values.name,
+      descricao: values.description || '',
+      preco,
+      ativo: values.active ? 1 : 0,
+      tipo: 'pronto',
       tags,
-      active: values.active ? 1 : 0
+      categorias: cat ? [cat] : [],
     };
     const id = this.drawerEditItem?.id;
     this.submitting.set(true);
@@ -231,12 +235,12 @@ export class ListaProdutosComponent implements OnInit {
     };
 
     if (id) {
-      this.api.updateProduto(id, payload).subscribe({
+      this.api.updateMarketplaceProdutoFull(id, payload).subscribe({
         next: after,
         error: (err) => { this.submitting.set(false); console.error(err); alert('Erro ao atualizar produto. Veja console.'); }
       });
     } else {
-      this.api.createProduto(payload).subscribe({
+      this.api.createMarketplaceProdutoFull(payload).subscribe({
         next: after,
         error: (err) => { this.submitting.set(false); console.error(err); alert('Erro ao criar produto. Veja console.'); }
       });

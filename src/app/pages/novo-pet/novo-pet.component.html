@@ -10,17 +10,25 @@
       <div class="form-grid">
         <aside class="pet-card">
           <div class="pet-photo">
-            <div class="preview" *ngIf="fotoPreview; else noFoto">
-              <img [src]="fotoPreview" alt="Foto do pet" />
+            <p class="photo-hint muted small">Pode enviar várias fotos (até 12 novas por vez, 3MB cada).</p>
+            <div class="gallery-preview-grid" *ngIf="existingGalleryUrls.length || fotoPreviews.length; else noFoto">
+              <div class="g-thumb" *ngFor="let u of existingGalleryUrls">
+                <img [src]="u" alt="Foto já guardada" />
+                <span class="g-badge">Guardada</span>
+              </div>
+              <div class="g-thumb g-thumb--new" *ngFor="let p of fotoPreviews; let i = index">
+                <img [src]="p" alt="Nova foto" />
+                <button type="button" class="g-remove" (click)="removerNovaFoto(i)" aria-label="Remover nova foto">×</button>
+              </div>
             </div>
             <ng-template #noFoto>
-              <div class="placeholder">Sem foto</div>
+              <div class="placeholder">Sem fotos</div>
             </ng-template>
             <label class="btn file-btn">
-              <input type="file" accept="image/*" (change)="onFileChange($event)" hidden />
-              Enviar foto
+              <input type="file" accept="image/*" multiple (change)="onFileChange($event)" hidden />
+              Adicionar fotos
             </label>
-            <button *ngIf="fotoPreview" type="button" class="btn-sec small" (click)="removerFoto()">Remover</button>
+            <button *ngIf="fotoPreviews.length" type="button" class="btn-sec small" (click)="removerTodasNovas()">Limpar novas</button>
           </div>
 
           <h2 class="pet-name">{{ nome || '—' }}</h2>

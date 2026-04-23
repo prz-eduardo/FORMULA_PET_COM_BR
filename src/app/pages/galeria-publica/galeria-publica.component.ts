@@ -42,10 +42,12 @@ export class GaleriaPublicaComponent {
   placeholderImages: string[] = [];
   private placeholderPage = 0;
 
-  // UI: track which pet has the reaction picker open (store pet id)
+  /** Chave do card (`_uid`) com popover de reação aberto */
   reactionPickerOpenFor: number | string | null = null;
-  // track when the picker should flip below the button to avoid viewport clipping
-  pickerFlippedFor: number | string | null = null;
+  /** Referência ao pet do popover (mesmo objeto do card) */
+  pickerAnchorPet: any | null = null;
+  /** Posição em px (viewport) do popover `position: fixed` */
+  popoverPos = { left: 0, top: 0 };
 
   // Lightbox: currently-open pet reference (or null). We keep a direct reference so
   // mutations made inside the lightbox (reaction/comment totals) reflect in the card.
@@ -159,13 +161,11 @@ export class GaleriaPublicaComponent {
 
   ngOnDestroy(): void {
     if (this.observer) this.observer.disconnect();
-    // remove document click listener if attached
     try {
       if (isPlatformBrowser(this.platformId)) {
         document.removeEventListener('click', this._docClickHandler as any);
       }
-      // also remove any picker listeners
-      this._removePickerListeners();
+      this.closeReactionPopover();
     } catch (e) {}
   }
 
@@ -177,12 +177,21 @@ export class GaleriaPublicaComponent {
       if (!el) return;
       // If suppression is active, ignore this click (used right after opening)
       if ((this as any)._suppressDocClose) return;
-      if (el.closest && (el.closest('.reaction-wrapper') || el.closest('.reaction-picker') || el.closest('.btn-like') || el.closest('.menu') || el.closest('.icon-menu') || el.closest('.nav-overlay'))) return;
-      // otherwise close and clear any preview timers
-      this.reactionPickerOpenFor = null;
-      try { this._clearAllAutoTimers(); } catch (e) {}
+      if (
+        el.closest &&
+        (el.closest('.reaction-wrapper') ||
+          el.closest('.reaction-quick-popover') ||
+          el.closest('.reaction-quick-backdrop') ||
+          el.closest('.btn-like') ||
+          el.closest('.menu') ||
+          el.closest('.icon-menu') ||
+          el.closest('.nav-overlay'))
+      ) {
+        return;
+      }
+      this.closeReactionPopover();
     } catch (e) {
-      this.reactionPickerOpenFor = null;
+      this.closeReactionPopover();
     }
   };
 
@@ -243,73 +252,117 @@ export class GaleriaPublicaComponent {
     }
   }
 
-  // Open/close reaction picker; clicking the heart toggles the picker instead
-  // We accept the pet object and the client _uid so the picker is unique per card instance
+  /** Fecha o popover de reação rápida e limpa estado auxiliar */
+  closeReactionPopover() {
+    const key = this.reactionPickerOpenFor;
+    const pet = this.pickerAnchorPet;
+    if (key != null) this._clearAutoTimerFor(key, pet || undefined);
+    this.reactionPickerOpenFor = null;
+    this.pickerAnchorPet = null;
+    (this as any)._suppressDocClose = false;
+    this._removePickerListeners();
+    try {
+      (this.pets || []).forEach((p) => {
+        if (p && (p._pickerAutoHighlight || p._pickerConfirm || p._pickerExiting)) {
+          try {
+            delete p._pickerAutoHighlight;
+            delete p._pickerConfirm;
+            delete p._pickerExiting;
+          } catch (e) {}
+        }
+      });
+    } catch (e) {}
+  }
+
+  async onPopoverSelectReaction(tipo: string) {
+    const pet = this.pickerAnchorPet;
+    if (!pet) return;
+    await this.selectReaction(pet, tipo);
+  }
+
+  /** Posiciona o popover fixo junto ao botão do card (sempre linha horizontal). */
+  private _layoutReactionPopover(key: string | number) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      const safeId = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(String(key)) : String(key);
+      const wrap = document.querySelector(`.reaction-wrapper[data-pet-id="${safeId}"]`) as HTMLElement | null;
+      const btn = wrap?.querySelector('.btn-like') as HTMLElement | null;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const margin = 10;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let popW = 236;
+      let popH = 56;
+      const el = document.querySelector('.reaction-quick-popover') as HTMLElement | null;
+      if (el) {
+        const pr = el.getBoundingClientRect();
+        if (pr.width > 0) popW = pr.width;
+        if (pr.height > 0) popH = pr.height;
+      }
+      let left = Math.round(rect.right - popW);
+      let top = Math.round(rect.top - popH - margin);
+      if (top < margin) top = Math.round(rect.bottom + margin);
+      if (top + popH > vh - margin) top = Math.max(margin, vh - popH - margin);
+      left = Math.max(margin, Math.min(left, vw - popW - margin));
+      top = Math.max(margin, Math.min(top, vh - popH - margin));
+      this.popoverPos = { left, top };
+    } catch (e) {
+      this.popoverPos = { left: 16, top: 16 };
+    }
+  }
+
+  private _schedulePopoverLayout(key: string | number) {
+    requestAnimationFrame(() => {
+      this._layoutReactionPopover(key);
+      requestAnimationFrame(() => this._layoutReactionPopover(key));
+    });
+  }
+
+  // Abre/fecha o popover de reações; posicionamento só via fixed + getBoundingClientRect
   async openReactionPicker(pet: any, uid?: string, ev?: Event) {
-    // Block opening when user is not logged in as a cliente
+    try {
+      ev?.stopPropagation?.();
+    } catch (e) {}
     try {
       const isCliente = await this.store.isClienteLoggedSilent();
       if (!isCliente) return;
     } catch (e) {}
-    // Positioning is handled via CSS (absolute inside the card). We only toggle state here.
     const key = uid ?? pet?._uid ?? pet?.id;
-      if (this.reactionPickerOpenFor === key) {
-      this.reactionPickerOpenFor = null;
+
+    if (this.reactionPickerOpenFor === key) {
+      this.closeReactionPopover();
+      return;
+    }
+
+    this.reactionPickerOpenFor = key;
+    this.pickerAnchorPet = pet;
+    (this as any)._suppressDocClose = true;
+    setTimeout(() => {
       (this as any)._suppressDocClose = false;
-      this._removePickerListeners();
-      // clear any pending auto-preview timers
+    }, 150);
+
+    this._schedulePopoverLayout(key);
+    this._attachPickerListeners();
+
+    if (!pet.userReacted) {
       this._clearAutoTimerFor(key, pet);
+      try {
+        pet._autoFlowPending = true;
+      } catch (e) {}
+      const timers: any[] = [];
+      const confirmDelay = 420;
+      const t2 = setTimeout(() => {
+        try {
+          this.selectReaction(pet, 'love');
+        } catch (e) {
+          console.warn('auto-like via sequence failed', e);
+        }
+      }, confirmDelay);
+      timers.push(t2);
+      this._autoPickerTimers.set(key, timers);
     } else {
-      // If the user hasn't reacted yet, clicking the heart should open the picker, play
-      // an animated sequence (emojis in, highlight love, confirm animation), then submit
-      // a 'love' reaction and close the picker. If the user already reacted, just open the picker.
-      if (!pet.userReacted) {
-        // open the picker UI first so animations are visible
-        this.reactionPickerOpenFor = key;
-        // ensure listeners and positioning are set
-        (this as any)._suppressDocClose = true;
-        setTimeout(() => { (this as any)._suppressDocClose = false; }, 120);
-        setTimeout(() => { try { this.adjustPickerPositionById(key); } catch (e) {} }, 40);
-        this._attachPickerListeners();
-
-        // clear any previously scheduled timers for this key
-        this._clearAutoTimerFor(key, pet);
-
-        // Sequence timings
-        const timers: any[] = [];
-        // base values (keep in sync with CSS)
-        const openDelay = 120; // ms to allow the picker to open
-        const perEmojiDelay = 100; // matches --d incremental delay in template
-        const emojiAnimMs = 280; // matches .28s animation duration for emojiIn in CSS
-        const numEmojis = Array.isArray(this.reactionTypes) ? this.reactionTypes.length : 4;
-
-        // mark as auto-flow so selectReaction knows to play the 'love' animation
-        // only after the server confirms. Avoid setting visual highlight before
-        // the increment so the love button doesn't get a white background early.
-        try { pet._autoFlowPending = true; } catch (e) {}
-
-        // compute when the last emoji will finish its entrance animation and
-        // then trigger the request. We do NOT set _pickerAutoHighlight or
-        // _pickerConfirm here; selectReaction will set them only after server
-        // confirmation so the animation happens after increment.
-        const lastEmojiEnd = openDelay + (perEmojiDelay * numEmojis) + emojiAnimMs;
-        const confirmDelay = lastEmojiEnd + 80; // small buffer after animations complete
-        const t2 = setTimeout(() => {
-          try { this.selectReaction(pet, 'love'); } catch (e) { console.warn('auto-like via sequence failed', e); }
-        }, confirmDelay);
-        timers.push(t2 as any);
-        this._autoPickerTimers.set(key, timers);
-        return;
-      }
-      // user already reacted -> open normally
-      this.reactionPickerOpenFor = key;
-      // briefly suppress document-level click closure so the opener click doesn't close it
-      (this as any)._suppressDocClose = true;
-      setTimeout(() => { (this as any)._suppressDocClose = false; }, 120);
-      // after the picker is rendered, adjust its position to avoid clipping
-      setTimeout(() => { try { this.adjustPickerPositionById(key); } catch (e) {} }, 40);
-      // attach scroll/resize handlers while picker is open
-      this._attachPickerListeners();
+      setTimeout(() => this._schedulePopoverLayout(key), 0);
     }
   }
 
@@ -329,42 +382,6 @@ export class GaleriaPublicaComponent {
         try { delete pet._pickerConfirm; } catch (e) {}
       }
     } catch (e) {}
-  }
-
-  // Start the exit animation sequence for the picker: play icons disappearing
-  // one-by-one (staggered by 100ms) and then close the picker. Timers are
-  // recorded in _autoPickerTimers so they can be cleared if needed.
-  private _startPickerExitSequence(pet: any, key?: string | number) {
-    try {
-      const k = key ?? pet?._uid ?? pet?.id;
-      // clear existing timers for this key
-      try { this._clearAutoTimerFor(k, pet); } catch (e) {}
-      const timers: any[] = [];
-      const numEmojis = Array.isArray(this.reactionTypes) ? this.reactionTypes.length : 4;
-      const perExitDelay = 100; // ms between each icon disappearing
-      const exitAnimMs = 280; // match emojiIn duration
-
-      // small kickoff delay then mark exiting so CSS animation runs with per-button --exit-d
-      const tStart = setTimeout(() => {
-        try { pet._pickerExiting = true; } catch (e) {}
-      }, 40);
-      timers.push(tStart as any);
-
-      // compute final close after last icon finishes its exit animation
-      const finalDelay = 40 + (perExitDelay * numEmojis) + exitAnimMs + 40;
-      const tClose = setTimeout(() => {
-        try { delete pet._pickerAutoHighlight; } catch (e) {}
-        try { delete pet._pickerConfirm; } catch (e) {}
-        try { delete pet._pickerExiting; } catch (e) {}
-        try { this.reactionPickerOpenFor = null; } catch (e) {}
-        try { this._autoPickerTimers.delete(k); } catch (e) {}
-        try { this._removePickerListeners(); } catch (e) {}
-      }, finalDelay);
-      timers.push(tClose as any);
-      this._autoPickerTimers.set(k, timers);
-    } catch (e) {
-      // swallow; nothing critical
-    }
   }
 
   // User selects a reaction from the picker
@@ -403,19 +420,13 @@ export class GaleriaPublicaComponent {
             };
           }
         } catch (e) { /* ignore server parse errors and keep optimistic state */ }
-  // ensure visual highlight reflects confirmed deletion
-  try { pet._visualActive = false; } catch (e) {}
-  // If this was an auto-flow we may want to play the 'love' animation now that
-  // the server confirmed. Set transient picker flags but keep the picker open;
-  // the user will close it by clicking outside or scrolling.
-  try {
-    if (pet && pet._autoFlowPending) {
-      try { pet._pickerAutoHighlight = 'love'; } catch (e) {}
-      try { pet._pickerConfirm = true; } catch (e) {}
-      try { delete pet._autoFlowPending; } catch (e) {}
-      try { this._clearAutoTimerFor(pet._uid ?? pet.id, pet); } catch (e) {}
-    }
-  } catch (e) {}
+        try {
+          pet._visualActive = false;
+        } catch (e) {}
+        try {
+          delete pet._autoFlowPending;
+        } catch (e) {}
+        this.closeReactionPopover();
       } else {
         // optimistic change/add
         if (prevTipo) {
@@ -444,18 +455,13 @@ export class GaleriaPublicaComponent {
             };
           }
         } catch (e) { /* ignore server parse errors */ }
-  // ensure visual highlight reflects confirmed addition/switch
-  try { pet._visualActive = true; } catch (e) {}
-  // If this was an auto-flow we triggered earlier, play the 'love' animation
-  // now that the server confirmed the reaction. Keep the picker open.
-  try {
-    if (pet && pet._autoFlowPending) {
-      try { pet._pickerAutoHighlight = 'love'; } catch (e) {}
-      try { pet._pickerConfirm = true; } catch (e) {}
-      try { delete pet._autoFlowPending; } catch (e) {}
-      try { this._clearAutoTimerFor(pet._uid ?? pet.id, pet); } catch (e) {}
-    }
-  } catch (e) {}
+        try {
+          pet._visualActive = true;
+        } catch (e) {}
+        try {
+          delete pet._autoFlowPending;
+        } catch (e) {}
+        this.closeReactionPopover();
       }
     } catch (err) {
       console.error('Erro ao enviar reação', err);
@@ -479,13 +485,6 @@ export class GaleriaPublicaComponent {
         pet.userReacted = !!prevTipo;
         try { pet._visualActive = !!prevTipo; } catch (e) {}
       }
-    } finally {
-      // Keep the picker open after any reaction. Users can close it by
-      // clicking outside or by scrolling (existing handlers).
-      try {
-        // clear any transient auto timers (already attempted elsewhere) to be safe
-        try { this._clearAutoTimerFor(pet?._uid ?? pet?.id, pet); } catch (e) {}
-      } catch (e) {}
     }
   }
 
@@ -498,9 +497,6 @@ export class GaleriaPublicaComponent {
     if (t.includes('ave') || t.includes('bird') || t.includes('pássar') || t.includes('passar')) return '🐦';
     return '🐾';
   }
-
-  // Track floating pickers moved to body so we can restore them later
-  private _floatingPickers = new Map<string | number, { picker: HTMLElement, wrapper: HTMLElement, parent: Node | null, nextSibling: Node | null }>();
 
   // Safe image error handler used from templates. Accepts the event target or element
   // and sets a fallback src only if the element exists and isn't already the fallback
@@ -523,27 +519,74 @@ export class GaleriaPublicaComponent {
     } catch (e) {}
   }
 
+  getGalleryUrls(p: any): string[] {
+    try {
+      if (!p || p.type === 'vet_ad') return [];
+      const direct = p.galeria_urls;
+      if (Array.isArray(direct) && direct.length) {
+        return direct.map((u: string) => String(u).trim()).filter(Boolean);
+      }
+      const fotos = p.fotos;
+      if (Array.isArray(fotos) && fotos.length) {
+        return fotos.map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean);
+      }
+      const one = p.foto || p.photo || p.photoURL || p.url || '';
+      const s = typeof one === 'string' ? one.trim() : '';
+      return s ? [s] : [];
+    } catch {
+      return [];
+    }
+  }
+
+  galleryIndices(p: any): number[] {
+    const n = this.getGalleryUrls(p).length;
+    return n > 1 ? Array.from({ length: n }, (_, i) => i) : [];
+  }
+
+  gallerySlideCount(p: any): number {
+    return this.getGalleryUrls(p).length;
+  }
+
+  private normalizeImgUrl(raw: string): string {
+    if (!raw || typeof raw !== 'string') return '/imagens/image.png';
+    let url = raw.trim();
+    if (url.startsWith('//')) {
+      url = (typeof window !== 'undefined' ? window.location.protocol : 'https:') + url;
+    }
+    if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) {
+      url = 'https://' + url;
+    }
+    return url || '/imagens/image.png';
+  }
+
   // Normalize/validate image URLs returned by the API. This helps with
   // protocol-relative URLs (//host/path) and occasional missing-protocol
   // strings that fail to load when navigating client-side.
   resolveImage(p: any) {
     try {
-      const raw = (p && (p.foto || p.photo || p.photoURL || p.url)) || '';
-      if (!raw || typeof raw !== 'string') return '/imagens/image.png';
-      let url = raw.trim();
-      // If protocol-relative (//example.com/...), prefix with current page protocol
-      if (url.startsWith('//')) {
-        url = window.location.protocol + url;
-      }
-      // If missing protocol but looks like a host (example.com/...), try https
-      if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) {
-        url = 'https://' + url;
-      }
-      // else allow relative paths (/imagens/...) and data: URIs through
-      return url || '/imagens/image.png';
+      const urls = this.getGalleryUrls(p);
+      const idx = Math.min(Math.max(0, p._galIdx || 0), Math.max(0, urls.length - 1));
+      const raw = urls[idx] || urls[0] || '';
+      if (!raw) return '/imagens/image.png';
+      return this.normalizeImgUrl(raw);
     } catch (e) {
       return '/imagens/image.png';
     }
+  }
+
+  onGalleryDotClick(p: any, idx: number, ev: Event) {
+    ev.stopPropagation();
+    p._galIdx = idx;
+  }
+
+  cycleGallery(p: any, delta: number, ev: Event) {
+    ev.stopPropagation();
+    const urls = this.getGalleryUrls(p);
+    if (urls.length < 2) return;
+    let i = (p._galIdx || 0) + delta;
+    if (i < 0) i = urls.length - 1;
+    if (i >= urls.length) i = 0;
+    p._galIdx = i;
   }
 
   // Clicar na foto abre o lightbox com foto grande, detalhes, reações e comentários.
@@ -558,7 +601,10 @@ export class GaleriaPublicaComponent {
   openLightbox(pet: any) {
     if (!pet) return;
     // close any open reaction picker so it doesn't conflict with the modal
-    try { this.reactionPickerOpenFor = null; this._clearAllAutoTimers(); this._unfloatAllPickers(); } catch (e) {}
+    try {
+      this.closeReactionPopover();
+      this._clearAllAutoTimers();
+    } catch (e) {}
     this.lightboxPet = pet;
   }
 
@@ -591,7 +637,9 @@ export class GaleriaPublicaComponent {
   // --- Picker position helpers (avoid clipping at top of viewport) ---
   private _boundRecalc = () => {
     if (this.reactionPickerOpenFor) {
-      try { this.adjustPickerPositionById(this.reactionPickerOpenFor); } catch (e) {}
+      try {
+        this._layoutReactionPopover(this.reactionPickerOpenFor);
+      } catch (e) {}
     }
   }
 
@@ -599,9 +647,7 @@ export class GaleriaPublicaComponent {
   private _onScrollClose = (ev: Event) => {
     try {
       if (this.reactionPickerOpenFor) {
-        this.reactionPickerOpenFor = null;
-        (this as any)._suppressDocClose = false;
-        this._removePickerListeners();
+        this.closeReactionPopover();
       }
     } catch (e) {}
   }
@@ -619,127 +665,6 @@ export class GaleriaPublicaComponent {
     try {
       window.removeEventListener('scroll', this._onScrollClose, true);
       window.removeEventListener('resize', this._boundRecalc);
-    } catch (e) {}
-    this.pickerFlippedFor = null;
-    try { this._clearAllAutoTimers(); } catch (e) {}
-    try { this._unfloatAllPickers(); } catch (e) {}
-  }
-
-  // Compute if the picker would be clipped by the top of the viewport and flip it below the button
-  adjustPickerPositionById(id: number | string) {
-    try {
-      const wrapper = document.querySelector(`.reaction-wrapper[data-pet-id="${id}"]`) as HTMLElement | null;
-      if (!wrapper) { this.pickerFlippedFor = null; return; }
-      const picker = wrapper.querySelector('.reaction-picker') as HTMLElement | null;
-      if (!picker) { this.pickerFlippedFor = null; return; }
-      const rect = picker.getBoundingClientRect();
-      const topThreshold = 8; // px from top of viewport
-      if (rect.top < topThreshold) {
-        this.pickerFlippedFor = id;
-      } else {
-        this.pickerFlippedFor = null;
-      }
-      // Ensure picker is rendered above content by floating it to document.body when possible.
-      try { this._floatPickerFor(id, wrapper, picker); } catch (e) {}
-    } catch (e) {
-      this.pickerFlippedFor = null;
-    }
-  }
-
-  // Move the picker element to document.body and position it as fixed so it is not
-  // clipped or occluded by ancestor stacking contexts. We keep a record so it can
-  // be restored when the picker closes.
-  private _floatPickerFor(id: string | number, wrapper?: HTMLElement | null, picker?: HTMLElement | null) {
-    try {
-      if (!picker || !wrapper) {
-        wrapper = document.querySelector(`.reaction-wrapper[data-pet-id="${id}"]`) as HTMLElement | null;
-        if (!wrapper) return;
-        picker = wrapper.querySelector('.reaction-picker') as HTMLElement | null;
-        if (!picker) return;
-      }
-      // If already floating, update position
-      if (this._floatingPickers.has(id)) {
-        // adjust coordinates only
-        this._positionFloatingPicker(id, wrapper, picker);
-        return;
-      }
-
-      // Save original parent/nextSibling so we can restore later
-      const meta = { picker, wrapper, parent: picker.parentNode, nextSibling: picker.nextSibling };
-      this._floatingPickers.set(id, meta as any);
-
-      // Append to body so it leaves any ancestor stacking contexts
-      document.body.appendChild(picker);
-      // mark wrapper so earlier :has rules still have a fallback (older browsers)
-      try { wrapper.classList.add('picker-floating'); } catch (e) {}
-      picker.classList.add('picker-floating');
-      // position and style
-      picker.style.position = 'fixed';
-      picker.style.right = 'auto';
-      picker.style.bottom = 'auto';
-      // ensure picker is above typical content but below global modals (choose 11000)
-      picker.style.zIndex = '11000';
-      this._positionFloatingPicker(id, wrapper, picker);
-    } catch (e) {
-      // swallow errors — non-critical
-    }
-  }
-
-  private _positionFloatingPicker(id: string | number, wrapper: HTMLElement, picker: HTMLElement) {
-    try {
-      const btn = wrapper.querySelector('.btn-like') as HTMLElement | null;
-      const anchor = btn || wrapper;
-      const anchorRect = anchor.getBoundingClientRect();
-      // ensure picker has layout (might be newly appended)
-      const pRect = picker.getBoundingClientRect();
-      // default: position above the anchor, aligned to the anchor's right edge
-      let top = Math.round(anchorRect.top - pRect.height - 8);
-      // if too close to top, flip below
-      if (top < 8) top = Math.round(anchorRect.bottom + 8);
-      // align right edge with some padding
-      let left = Math.round(anchorRect.right - pRect.width + 8);
-      // clamp into viewport
-      left = Math.max(8, Math.min(left, window.innerWidth - pRect.width - 8));
-      picker.style.left = `${left}px`;
-      picker.style.top = `${top}px`;
-    } catch (e) {}
-  }
-
-  private _unfloatPickerFor(id: string | number) {
-    try {
-      const meta = this._floatingPickers.get(id);
-      if (!meta) return;
-      const { picker, wrapper, parent, nextSibling } = meta;
-      // If the picker DOM node was destroyed by Angular, nothing to restore
-      if (!picker || !picker.isConnected) {
-        try { wrapper.classList.remove('picker-floating'); } catch (e) {}
-        this._floatingPickers.delete(id);
-        return;
-      }
-      // restore to original parent/position
-      try {
-        if (parent) {
-          if (nextSibling && (nextSibling.parentNode === parent)) parent.insertBefore(picker, nextSibling);
-          else parent.appendChild(picker);
-        }
-      } catch (e) {}
-      try { wrapper.classList.remove('picker-floating'); } catch (e) {}
-      picker.classList.remove('picker-floating');
-      picker.style.position = '';
-      picker.style.left = '';
-      picker.style.top = '';
-      picker.style.right = '';
-      picker.style.bottom = '';
-      picker.style.zIndex = '';
-      this._floatingPickers.delete(id);
-    } catch (e) {}
-  }
-
-  private _unfloatAllPickers() {
-    try {
-      for (const k of Array.from(this._floatingPickers.keys())) {
-        try { this._unfloatPickerFor(k); } catch (e) {}
-      }
     } catch (e) {}
   }
 
@@ -787,6 +712,7 @@ export class GaleriaPublicaComponent {
         tutor_nome: it.tutor_nome ?? null,
         tutor_foto: it.tutor_foto ?? null,
         total_comentarios: Number(it.total_comentarios ?? it.comentarios_count ?? 0),
+        _galIdx: 0,
         // size removed: visual sizing now handled by CSS and original image dimensions
       }));
 

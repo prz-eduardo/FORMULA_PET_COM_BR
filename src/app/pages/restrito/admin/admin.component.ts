@@ -51,7 +51,8 @@ export class AdminComponent implements OnInit, OnDestroy {
       'lista produtos listagem',
       'ativos ingredientes',
       'formulas receitas',
-      'marketplace categorias tags',
+      'marketplace categorias vitrine',
+      'marketplace tags vitrine',
       'temas vitrine loja cores',
     ],
     pessoas: [
@@ -186,7 +187,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   goToRelatorios() { this.router.navigate(['/restrito/admin/relatorios']); }
   goToConfiguracoes() { this.router.navigate(['/restrito/admin/configuracoes']); }
   goToFormulas() { this.router.navigate(['/restrito/admin/formulas']); }
-  goToMarketplaceCustomizacoes() { this.router.navigate(['/restrito/admin/marketplace/customizacoes']); }
+  goToMarketplaceCategorias() { this.router.navigate(['/restrito/admin/marketplace/categorias']); }
+  goToMarketplaceTags() { this.router.navigate(['/restrito/admin/marketplace/tags']); }
   goToLojaTemas() { this.router.navigate(['/restrito/admin/loja/temas']); }
   goToFornecedores() { this.router.navigate(['/restrito/admin/fornecedores']); }
   goToAtivos() { this.router.navigate(['/restrito/admin/ativos']); }

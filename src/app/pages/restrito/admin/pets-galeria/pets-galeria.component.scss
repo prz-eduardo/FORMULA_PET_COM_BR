@@ -135,26 +135,32 @@
 }
 
 .actions {
-  white-space: nowrap;
+  vertical-align: middle;
 }
-.act-btn {
-  margin-right: 6px;
-  margin-bottom: 4px;
-  padding: 6px 10px;
-  font-size: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+}
+
+/* Garantir contraste no tema escuro do admin (tokens globais + ghost legível) */
+.pets-gal .actions-row .admin-btn.ghost.small {
+  border-color: rgba(255, 255, 255, 0.18);
   color: #e2e8f0;
-  cursor: pointer;
 }
-.act-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+
+.pets-gal .actions-row .admin-btn.ghost.small:hover:not([disabled]) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.35);
+  color: #f8fafc;
 }
-.act-btn:not(:disabled):hover {
-  background: rgba(196, 214, 0, 0.12);
-  border-color: rgba(196, 214, 0, 0.35);
+
+.pets-gal .actions-row .admin-btn.secondary.small:hover:not([disabled]) {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.08);
 }
 
 .empty {

@@ -150,9 +150,14 @@
             <span>Fórmulas</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
-          <button class="item" *ngIf="matches('marketplace categorias tags')" (click)="goToMarketplaceCustomizacoes()" tabindex="0">
+          <button class="item" *ngIf="matches('marketplace categorias vitrine')" (click)="goToMarketplaceCategorias()" tabindex="0">
+            <i class="fa fa-folder-open"></i>
+            <span>Marketplace: Categorias</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('marketplace tags vitrine')" (click)="goToMarketplaceTags()" tabindex="0">
             <i class="fa fa-tags"></i>
-            <span>Marketplace: Categorias &amp; Tags</span>
+            <span>Marketplace: Tags</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
           <button class="item" *ngIf="matches('temas vitrine loja cores')" (click)="goToLojaTemas()" tabindex="0">

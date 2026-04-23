@@ -3,7 +3,19 @@
     <button class="lightbox-close" type="button" aria-label="Fechar" (click)="onClose()">×</button>
 
     <div class="lightbox-media">
+      <button type="button" class="lb-nav lb-prev" *ngIf="lbDots().length > 1" (click)="prevLb($event)" aria-label="Foto anterior">‹</button>
       <img [src]="resolveImage()" alt="Foto de {{ pet.nome || 'pet' }}" (error)="onImgError($event)" />
+      <button type="button" class="lb-nav lb-next" *ngIf="lbDots().length > 1" (click)="nextLb($event)" aria-label="Foto seguinte">›</button>
+      <div class="lb-dots" *ngIf="lbDots().length > 1">
+        <button
+          type="button"
+          *ngFor="let i of lbDots()"
+          class="lb-dot"
+          [class.lb-dot--on]="lightboxImgIndex === i"
+          (click)="goLb(i, $event)"
+          [attr.aria-label]="'Foto ' + (i + 1)"
+        ></button>
+      </div>
     </div>
 
     <aside class="lightbox-side">

@@ -1,0 +1,91 @@
+<div class="mkt-tax-wrap admin-page-wrap">
+  <app-admin-crud
+    [items]="list()"
+    [loading]="loadingList()"
+    [total]="total()"
+    [page]="page()"
+    [pageSize]="pageSize()"
+    [drawerOpen]="drawerOpen()"
+    [drawerWidth]="'480px'"
+    [drawerTitle]="editingId() ? 'Editar tag' : 'Nova tag'"
+    [drawerShowFooter]="true"
+    [drawerPrimaryLabel]="editingId() ? 'Salvar alterações' : 'Criar tag'"
+    [drawerPrimaryLoading]="submitting()"
+    (drawerOpenChange)="onDrawerOpenChange($event)"
+    (drawerPrimaryAction)="submitTag()"
+    (drawerSecondaryAction)="closeDrawer()"
+    (pageChange)="page.set($event)"
+    (edit)="editarTag($event)"
+    (create)="novaTag()"
+    (remove)="remover($event)"
+    [useDefaultActions]="true"
+    [createLabel]="'Nova tag'"
+    [useDefaultSearch]="true"
+    [searchPlaceholder]="'Buscar por nome ou ID…'"
+    (quickSearch)="onQuickSearch($event)">
+
+    <div slot="search">
+      <div class="filters">
+        <button class="admin-btn outline" type="button" (click)="loadList()">Atualizar</button>
+      </div>
+    </div>
+
+    <section slot="table" class="table-wrap" *ngIf="!loadingList(); else loadingTpl" tabindex="-1">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of list()">
+            <td>{{ t.id }}</td>
+            <td>{{ t.nome }}</td>
+            <td class="actions-cell">
+              <button type="button" class="admin-btn ghost small table-action" (click)="editarTag(t)">
+                <svg class="table-action__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Detalhes
+              </button>
+              <button type="button" class="admin-btn danger small table-action" (click)="remover(t)">
+                <svg class="table-action__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/>
+                </svg>
+                Remover
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!list().length">
+            <td colspan="3">
+              <div class="admin-empty">Nenhuma tag encontrada.</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event)"></admin-pagination>
+    <ng-template #loadingTpl><div class="admin-empty">Carregando...</div></ng-template>
+
+    <form slot="drawer" *ngIf="drawerOpen()" [formGroup]="tagForm" class="fx-drawer" (ngSubmit)="submitTag()" novalidate>
+      <section class="fx-section">
+        <header class="fx-section__head fx-section__head--actions">
+          <div>
+            <h3>Dados da tag</h3>
+            <p>Usada na vitrine e filtros de produtos.</p>
+          </div>
+          <div class="fx-section__actions" *ngIf="editingId()">
+            <button type="button" class="fx-btn danger small" (click)="removerEditando()">Remover</button>
+          </div>
+        </header>
+        <label class="fx-field">
+          <span>Nome</span>
+          <input type="text" formControlName="nome" placeholder="Ex.: pet-idoso" autocomplete="off" />
+        </label>
+      </section>
+    </form>
+  </app-admin-crud>
+</div>

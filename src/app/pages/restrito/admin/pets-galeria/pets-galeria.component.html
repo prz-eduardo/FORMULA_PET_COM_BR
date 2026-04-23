@@ -52,6 +52,7 @@
           <th>Opt-in galeria</th>
           <th>Aprovação</th>
           <th>No site</th>
+          <th>Fotos</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -88,31 +89,36 @@
             <span class="pill pill--site" *ngIf="visibleInPublicGallery(row)">Visível</span>
             <span class="muted small" *ngIf="!visibleInPublicGallery(row)">—</span>
           </td>
+          <td>
+            <span class="muted small">{{ row.imagens_count != null ? row.imagens_count : '—' }}</span>
+          </td>
           <td class="actions">
-            <button
-              type="button"
-              class="act-btn"
-              [disabled]="savingId() === row.id || isApproved(row)"
-              (click)="setApproved(row, true)"
-            >
-              Aprovar
-            </button>
-            <button
-              type="button"
-              class="act-btn"
-              [disabled]="savingId() === row.id || !isApproved(row)"
-              (click)="setApproved(row, false)"
-            >
-              Revogar
-            </button>
-            <button
-              type="button"
-              class="act-btn"
-              [disabled]="savingId() === row.id || !wantsGallery(row)"
-              (click)="setGaleria(row, false)"
-            >
-              Desligar galeria
-            </button>
+            <div class="actions-row" role="group" [attr.aria-label]="'Ações para ' + row.nome">
+              <button
+                type="button"
+                class="admin-btn ok small"
+                [disabled]="savingId() === row.id || isApproved(row)"
+                (click)="setApproved(row, true)"
+              >
+                Aprovar
+              </button>
+              <button
+                type="button"
+                class="admin-btn secondary small"
+                [disabled]="savingId() === row.id || !isApproved(row)"
+                (click)="setApproved(row, false)"
+              >
+                Revogar
+              </button>
+              <button
+                type="button"
+                class="admin-btn ghost small"
+                [disabled]="savingId() === row.id || !wantsGallery(row)"
+                (click)="setGaleria(row, false)"
+              >
+                Desligar galeria
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>

@@ -1,0 +1,19 @@
+.mkt-tax-wrap {
+  padding: 24px 16px;
+  min-height: 100vh;
+  background: var(--admin-bg-gradient);
+  color: var(--admin-text);
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--admin-text-muted, #94a3b8);
+}

@@ -85,20 +85,44 @@
                 <div class="pet-age" *ngIf="p.idade || p.age">{{ (p.idade || p.age) }} {{ (p.idade || p.age) === 1 ? 'ano' : 'anos' }}</div>
               </div>
             </div>
+            <button
+              type="button"
+              class="gallery-nav gallery-nav--prev"
+              *ngIf="gallerySlideCount(p) > 1"
+              (click)="cycleGallery(p, -1, $event)"
+              aria-label="Foto anterior"
+            >‹</button>
+            <button
+              type="button"
+              class="gallery-nav gallery-nav--next"
+              *ngIf="gallerySlideCount(p) > 1"
+              (click)="cycleGallery(p, 1, $event)"
+              aria-label="Foto seguinte"
+            >›</button>
+            <div class="gallery-dots" *ngIf="galleryIndices(p).length > 1" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                *ngFor="let i of galleryIndices(p)"
+                class="gallery-dot"
+                [class.gallery-dot--active]="(p._galIdx || 0) === i"
+                (click)="onGalleryDotClick(p, i, $event)"
+                [attr.aria-label]="'Foto ' + (i + 1)"
+              ></button>
+            </div>
             <!-- reaction button stays floating on top of the photo -->
             <div class="reaction-wrapper" [attr.data-pet-id]="p._uid" (click)="$event.stopPropagation()">
-              <button class="btn-like" [class.visualActive]="p._visualActive" (click)="openReactionPicker(p, p._uid, $event)">
+              <button
+                type="button"
+                class="btn-like"
+                [class.visualActive]="p._visualActive"
+                [class.btn-like--open]="reactionPickerOpenFor === p._uid"
+                (click)="openReactionPicker(p, p._uid, $event)"
+                [attr.aria-expanded]="reactionPickerOpenFor === p._uid"
+                aria-haspopup="listbox"
+              >
                 {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : (getDominantReaction(p)?.emoji || '\u2764\ufe0f') }}
                 <div class="likes-total" [class.has-my-like]="p._visualActive">{{ p.likes ?? 0 }}</div>
               </button>
-              <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p._uid" (click)="$event.stopPropagation()" [class.flipped]="pickerFlippedFor === p._uid">
-                <div class="reaction-row">
-                  <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'" [style.--exit-d]="(i + 1) * 100 + 'ms'" [class.active]="p.userReactionTipo === r.tipo" [class.preview]="p._pickerAutoHighlight === r.tipo" [class.confirm]="p._pickerConfirm === r.tipo" [class.exiting]="p._pickerExiting">
-                    <span class="emoji">{{ r.emoji }}</span>
-                    <span class="reaction-count" aria-hidden="true">{{ (p.reactionTotals && (p.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -150,6 +174,39 @@
 
   <div class="loading-more" *ngIf="loadingMore">Carregando mais pets…</div>
   <div #sentinel class="sentinel" aria-hidden="true"></div>
+
+  <!-- Reações rápidas: popover único em position:fixed (evita coluna/row e clipping do masonry) -->
+  <div
+    class="reaction-quick-backdrop"
+    *ngIf="reactionPickerOpenFor && pickerAnchorPet"
+    (click)="closeReactionPopover()"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="reaction-quick-popover"
+    *ngIf="reactionPickerOpenFor && pickerAnchorPet"
+    [style.left.px]="popoverPos.left"
+    [style.top.px]="popoverPos.top"
+    (click)="$event.stopPropagation()"
+    role="listbox"
+    [attr.aria-label]="'Reagir a ' + (pickerAnchorPet.nome || 'pet')"
+  >
+    <div class="reaction-quick-row">
+      <button
+        *ngFor="let r of reactionTypes"
+        type="button"
+        class="reaction-quick-btn"
+        [class.reaction-quick-btn--active]="pickerAnchorPet.userReactionTipo === r.tipo"
+        (click)="onPopoverSelectReaction(r.tipo)"
+        [attr.aria-label]="'Reação ' + r.tipo"
+        role="option"
+        [attr.aria-selected]="pickerAnchorPet.userReactionTipo === r.tipo"
+      >
+        <span class="reaction-quick-emoji" aria-hidden="true">{{ r.emoji }}</span>
+        <span class="reaction-quick-count">{{ (pickerAnchorPet.reactionTotals && (pickerAnchorPet.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
+      </button>
+    </div>
+  </div>
 
 </main>
 

@@ -34,6 +34,8 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
   novoComentario = '';
   totalComentarios = 0;
   comentariosError: string | null = null;
+  /** Índice na galeria multi-foto */
+  lightboxImgIndex = 0;
 
   private _escHandler = (ev: KeyboardEvent) => {
     if (ev.key === 'Escape') this.onClose();
@@ -68,6 +70,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
     try { document.addEventListener('keydown', this._escHandler); } catch {}
     this.novoComentario = '';
     this.comentariosError = null;
+    this.lightboxImgIndex = 0;
     this._loadComentarios();
   }
 
@@ -92,15 +95,61 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
     try { return !!this.auth.getToken(); } catch { return false; }
   }
 
+  getGalleryUrls(): string[] {
+    const p = this.pet;
+    if (!p) return [];
+    const direct = p.galeria_urls;
+    if (Array.isArray(direct) && direct.length) {
+      return direct.map((u: string) => String(u).trim()).filter(Boolean);
+    }
+    const fotos = p.fotos;
+    if (Array.isArray(fotos) && fotos.length) {
+      return fotos.map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean);
+    }
+    const one = p.foto || p.photo || p.photoURL || p.url || '';
+    const s = typeof one === 'string' ? one.trim() : '';
+    return s ? [s] : [];
+  }
+
+  lbDots(): number[] {
+    const n = this.getGalleryUrls().length;
+    return n > 1 ? Array.from({ length: n }, (_, i) => i) : [];
+  }
+
   resolveImage(): string {
     try {
-      const raw = this.pet?.foto || this.pet?.photo || this.pet?.photoURL || this.pet?.url || '';
+      const urls = this.getGalleryUrls();
+      const idx = Math.min(Math.max(0, this.lightboxImgIndex), Math.max(0, urls.length - 1));
+      const raw = urls[idx] || urls[0] || '';
       if (!raw || typeof raw !== 'string') return '/imagens/image.png';
       let url = raw.trim();
       if (url.startsWith('//')) url = (typeof window !== 'undefined' ? window.location.protocol : 'https:') + url;
       if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) url = 'https://' + url;
       return url || '/imagens/image.png';
     } catch { return '/imagens/image.png'; }
+  }
+
+  prevLb(ev: MouseEvent) {
+    ev.stopPropagation();
+    const urls = this.getGalleryUrls();
+    if (urls.length < 2) return;
+    let i = this.lightboxImgIndex - 1;
+    if (i < 0) i = urls.length - 1;
+    this.lightboxImgIndex = i;
+  }
+
+  nextLb(ev: MouseEvent) {
+    ev.stopPropagation();
+    const urls = this.getGalleryUrls();
+    if (urls.length < 2) return;
+    let i = this.lightboxImgIndex + 1;
+    if (i >= urls.length) i = 0;
+    this.lightboxImgIndex = i;
+  }
+
+  goLb(i: number, ev: MouseEvent) {
+    ev.stopPropagation();
+    this.lightboxImgIndex = i;
   }
 
   onImgError(ev: Event) {

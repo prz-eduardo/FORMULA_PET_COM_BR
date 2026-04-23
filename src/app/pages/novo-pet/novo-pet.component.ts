@@ -44,9 +44,12 @@ export class NovoPetComponent implements OnInit {
   // Item predefinido "Outras" (carregado do backend)
   outraPredefinida: { nome: string; alergia_id: string | number; ativo_id?: string | number } | null = null;
 
-  // photo
-  fotoFile: File | null = null;
-  fotoPreview: string | null = null;
+  /** URLs já salvas no servidor (edição). */
+  existingGalleryUrls: string[] = [];
+  /** Novos ficheiros a enviar (até 12). */
+  fotoFiles: File[] = [];
+  /** Previews data URL dos novos ficheiros. */
+  fotoPreviews: string[] = [];
 
   carregando = false;
   clienteMe: ClienteMeResponse | null = null;
@@ -109,9 +112,16 @@ export class NovoPetComponent implements OnInit {
               this.observacoes = pet.observacoes || '';
               const eg = pet.exibir_galeria_publica;
               this.exibirGaleriaPublica = !!(eg === 1 || eg === true || eg === '1' || String(eg).toLowerCase() === 'true');
-              // Mostrar foto atual do pet (vários nomes possíveis retornados pelo backend)
-              this.fotoPreview = pet.photoURL || pet.photoUrl || pet.foto || pet.photo || pet.photo_url || null;
-              this.fotoFile = null;
+              const gi = pet.galeria_imagens;
+              if (Array.isArray(gi) && gi.length) {
+                this.existingGalleryUrls = gi.map((x: any) => x.url).filter((u: string) => u && String(u).trim());
+              } else {
+                this.existingGalleryUrls = [];
+              }
+              const cover = pet.photoURL || pet.photoUrl || pet.foto || pet.photo || pet.photo_url || null;
+              if (cover && !this.existingGalleryUrls.length) this.existingGalleryUrls = [cover];
+              this.fotoFiles = [];
+              this.fotoPreviews = [];
 
               // Se backend retornar alergias já estruturadas (alergias_predefinidas), use-as
               if (Array.isArray(pet.alergias_predefinidas) && pet.alergias_predefinidas.length) {
@@ -214,29 +224,46 @@ export class NovoPetComponent implements OnInit {
     this.filtrarSugestoes();
   }
 
+  private readonly maxNovasFotos = 12;
+  private readonly maxFotoBytes = 3 * 1024 * 1024;
+
   onFileChange(ev: Event) {
     if (!isPlatformBrowser(this.platformId)) return;
     const input = ev.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    if (!file.type.startsWith('image/')) {
-      this.toast.info('Selecione uma imagem válida', 'Atenção');
+    const remaining = this.maxNovasFotos - this.fotoFiles.length;
+    if (remaining <= 0) {
+      this.toast.info(`Máximo de ${this.maxNovasFotos} fotos novas por envio.`, 'Atenção');
+      input.value = '';
       return;
     }
-    // opcional: limitar tamanho (3MB)
-    if (file.size > 3 * 1024 * 1024) {
-      this.toast.info('Imagem muito grande (máx. 3MB)', 'Atenção');
-      return;
+    const list = Array.from(input.files).slice(0, remaining);
+    for (const file of list) {
+      if (!file.type.startsWith('image/')) {
+        this.toast.info('Cada ficheiro deve ser uma imagem.', 'Atenção');
+        continue;
+      }
+      if (file.size > this.maxFotoBytes) {
+        this.toast.info('Cada imagem deve ter no máximo 3MB.', 'Atenção');
+        continue;
+      }
+      this.fotoFiles.push(file);
+      const reader = new FileReader();
+      reader.onload = () => this.fotoPreviews.push(reader.result as string);
+      reader.readAsDataURL(file);
     }
-    this.fotoFile = file;
-    const reader = new FileReader();
-    reader.onload = () => this.fotoPreview = reader.result as string;
-    reader.readAsDataURL(file);
+    input.value = '';
   }
 
-  removerFoto(){
-    this.fotoFile = null;
-    this.fotoPreview = null;
+  removerNovaFoto(i: number) {
+    if (i < 0 || i >= this.fotoFiles.length) return;
+    this.fotoFiles.splice(i, 1);
+    this.fotoPreviews.splice(i, 1);
+  }
+
+  removerTodasNovas() {
+    this.fotoFiles = [];
+    this.fotoPreviews = [];
   }
 
   // Mapeia nomes livres vindos do backend para a lista predefinida quando possível
@@ -284,7 +311,9 @@ export class NovoPetComponent implements OnInit {
     if (this.alergiasSelecionadas.length) {
       fd.append('alergias_predefinidas', JSON.stringify(this.alergiasSelecionadas));
     }
-    if (this.fotoFile) fd.append('foto', this.fotoFile);
+    for (const f of this.fotoFiles) {
+      fd.append('foto', f);
+    }
 
     this.carregando = true;
     const routeParamId = this.route.snapshot.paramMap.get('id');

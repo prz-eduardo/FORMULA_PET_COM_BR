@@ -77,6 +77,8 @@ export interface ProdutoDto {
   // Forma farmacêutica opcional
   formId?: number | null;
   active?: number; // 1 ativo, 0 inativo
+  /** Destaque na home (produtos_marketplace.destaque_home) */
+  destaque_home?: 0 | 1;
   // Coleções relacionadas (quando vindas do GET completo)
   variantes?: ProdutoVarianteDto[];
   documentos?: ProdutoDocumentoDto[];
@@ -212,6 +214,8 @@ export interface AdminPetRow {
   raca?: string | null;
   tutor_nome?: string | null;
   tutor_email?: string | null;
+  /** Quantidade de linhas em pet_imagens (quando migração aplicada). */
+  imagens_count?: number | null;
 }
 
 export interface FornecedorDto { id: number; nome: string }
@@ -289,24 +293,16 @@ export interface FormulaAvailabilityResponse {
   lots: Record<string, EstoqueAtivoDto[]>; // chave: ativo_id como string
 }
 
-// Marketplace Customizações
+// Marketplace Customizações (GET unificado para formulário de produto: categorias, tags, dosagens, embalagens)
 export interface MarketplaceCategoria { id?: number; nome: string; slug?: string | null; icone?: string | null }
 export interface MarketplaceTag { id?: number; nome: string }
-export interface MarketplaceCustomizacoesPayload {
-  categorias?: Array<{ id?: number; nome?: string; slug?: string; icone?: string; delete?: boolean; remover?: boolean }>;
-  tags?: Array<{ id?: number; nome?: string; delete?: boolean; remover?: boolean }>;
-}
-export interface MarketplaceCustomizacoesResponse {
-  ok: boolean;
-  changes: {
-    created: { categorias: number[]; tags: number[] };
-    updated: { categorias: number[]; tags: number[] };
-    deleted: { categorias: number[]; tags: number[] };
-  };
+export interface MarketplaceCustomizacoesList {
+  ok?: boolean;
   categorias: MarketplaceCategoria[];
   tags: MarketplaceTag[];
+  dosagens?: Array<{ id?: number; nome?: string }>;
+  embalagens?: Array<{ id?: number; nome?: string }>;
 }
-export interface MarketplaceCustomizacoesList { categorias: MarketplaceCategoria[]; tags: MarketplaceTag[] }
 
 // Promoções
 export type PromocaoTipo = 'percentual' | 'valor';
@@ -400,6 +396,16 @@ export class AdminApiService {
       .filter((s: string) => !!s);
   }
 
+  /** 1/0/undefined a partir de ativo/active vindos do MySQL ou JSON. */
+  private toActive01(v: any): 0 | 1 | undefined {
+    if (v === undefined || v === null) return undefined;
+    if (v === 1 || v === '1' || v === true) return 1;
+    if (v === 0 || v === '0' || v === false) return 0;
+    const n = Number(v);
+    if (!Number.isNaN(n)) return n ? 1 : 0;
+    return undefined;
+  }
+
   // Normaliza payloads de produto vindos do backend (vários formatos possíveis)
   private normalizeProduto(raw: any): ProdutoDto {
     if (!raw) return { id: undefined, name: '', description: '', price: 0, category: '', customizations: { dosage: [], packaging: [] }, tags: [] } as ProdutoDto;
@@ -408,6 +414,11 @@ export class AdminApiService {
     const description = raw.description ?? raw.descricao ?? '';
     const priceRaw = raw.price ?? raw.preco ?? raw.preco_br ?? raw.valor ?? 0;
     const price = (typeof priceRaw === 'string') ? parseFloat(priceRaw.replace(',', '.')) || 0 : (typeof priceRaw === 'number' ? priceRaw : 0);
+    const wv = raw.weightValue ?? raw.peso_valor ?? raw.peso;
+    const weightValue =
+      wv == null || wv === '' ? null : (typeof wv === 'string' ? (parseFloat(String(wv).replace(',', '.')) || null) : (typeof wv === 'number' ? wv : null));
+    const active01 = this.toActive01(raw.ativo) ?? this.toActive01(raw.active);
+    const destaqueHome01 = this.toActive01(raw.destaque_home) ?? 0;
     const imagensArr = Array.isArray(raw.imagens) ? raw.imagens : (Array.isArray(raw.images) ? raw.images : []);
     const images = imagensArr.map((it: any) => (typeof it === 'string' ? it : (it?.url ?? it?.data ?? it?.image ?? ''))).filter((u: string) => !!u);
     const image = raw.image ?? raw.imagem_principal ?? images[0] ?? raw.imageUrl ?? null;
@@ -441,12 +452,13 @@ export class AdminApiService {
       rating: raw.rating ?? null,
       stock: raw.stock ?? raw.estoque ?? null,
       tags,
-      weightValue: raw.weightValue ?? raw.peso ?? null,
+      weightValue,
       weightUnit: raw.weightUnit ?? raw.peso_unidade ?? null,
       ativoId: raw.ativo_id ?? raw.ativoId ?? null,
       estoqueId: raw.estoque_id ?? raw.estoqueId ?? null,
       formId: raw.formula_id ?? raw.formId ?? null,
-      active: raw.active ?? raw.ativo ?? undefined,
+      active: active01,
+      destaque_home: (destaqueHome01 === 1 ? 1 : 0) as 0 | 1,
       // Identificação expandida
       sku: raw.sku ?? null,
       marca: raw.marca ?? raw.brand ?? null,
@@ -969,12 +981,34 @@ export class AdminApiService {
   previewCupom(payload: { id?: number | string; codigo?: string; itens: Array<{ produto_id: number; preco_unit: number; quantidade: number; promo_aplicada?: boolean }> }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/cupons/preview`, payload, { headers: this.headers() });
   }
-  // Marketplace - customizações (categorias e tags)
-  manageMarketplaceCustomizacoes(body: MarketplaceCustomizacoesPayload): Observable<MarketplaceCustomizacoesResponse> {
-    return this.http.post<MarketplaceCustomizacoesResponse>(`${this.baseUrl}/marketplace/customizacoes`, body, { headers: this.headers() });
-  }
   getMarketplaceCustomizacoes(): Observable<MarketplaceCustomizacoesList> {
     return this.http.get<MarketplaceCustomizacoesList>(`${this.baseUrl}/marketplace/customizacoes`, { headers: this.headers() });
+  }
+
+  listMarketplaceCategorias(): Observable<{ data: MarketplaceCategoria[] }> {
+    return this.http.get<{ data: MarketplaceCategoria[] }>(`${this.baseUrl}/marketplace/categorias`, { headers: this.headers() });
+  }
+  createMarketplaceCategoria(body: { nome: string; slug?: string | null; icone?: string | null }): Observable<MarketplaceCategoria> {
+    return this.http.post<MarketplaceCategoria>(`${this.baseUrl}/marketplace/categorias`, body, { headers: this.headers() });
+  }
+  updateMarketplaceCategoria(id: number | string, body: Partial<{ nome: string; slug: string | null; icone: string | null }>): Observable<MarketplaceCategoria> {
+    return this.http.put<MarketplaceCategoria>(`${this.baseUrl}/marketplace/categorias/${id}`, body, { headers: this.headers() });
+  }
+  deleteMarketplaceCategoria(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/marketplace/categorias/${id}`, { headers: this.headers() });
+  }
+
+  listMarketplaceTags(): Observable<{ data: MarketplaceTag[] }> {
+    return this.http.get<{ data: MarketplaceTag[] }>(`${this.baseUrl}/marketplace/tags`, { headers: this.headers() });
+  }
+  createMarketplaceTag(body: { nome: string }): Observable<MarketplaceTag> {
+    return this.http.post<MarketplaceTag>(`${this.baseUrl}/marketplace/tags`, body, { headers: this.headers() });
+  }
+  updateMarketplaceTag(id: number | string, body: Partial<{ nome: string }>): Observable<MarketplaceTag> {
+    return this.http.put<MarketplaceTag>(`${this.baseUrl}/marketplace/tags/${id}`, body, { headers: this.headers() });
+  }
+  deleteMarketplaceTag(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/marketplace/tags/${id}`, { headers: this.headers() });
   }
 
   /** Temas da vitrine (loja) */
