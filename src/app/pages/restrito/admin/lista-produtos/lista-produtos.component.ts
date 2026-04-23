@@ -269,7 +269,8 @@ export class ListaProdutosComponent implements OnInit {
 
   toggleActive(produto: ProdutoDto) {
     if (!produto.id) return;
-    const novo = (produto.active === 1) ? 0 : 1;
+    const ativo = produto.active === 1 || (produto.active as any) === true;
+    const novo = ativo ? 0 : 1;
     this.api.updateProduto(produto.id, { active: novo }).subscribe({
       next: (p) => {
         const idx = this.produtos.findIndex(x => x.id === produto.id);

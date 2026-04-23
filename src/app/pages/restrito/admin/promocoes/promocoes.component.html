@@ -24,8 +24,6 @@
     [searchPlaceholder]="'Buscar por nome/descrição'"
     (quickSearch)="q.set($event); loadList()">
 
-    <div slot="title"><h1>Promoções</h1></div>
-
     <div slot="search">
       <div class="filters">
         <select [value]="active()" (change)="onActiveChange($event)">
@@ -63,9 +61,20 @@
                 [class.danger]="statusClass(p)==='off'"
                 [class.muted]="statusClass(p)==='muted'">{{ statusLabel(p) }}</span>
             </td>
-            <td>
-              <button class="admin-btn secondary small" type="button" (click)="editarPromocao(p)">Editar</button>
-              <button class="admin-btn danger small" type="button" (click)="remover(p)">Remover</button>
+            <td class="actions-cell">
+              <button type="button" class="admin-btn ghost small table-action" (click)="editarPromocao(p)">
+                <svg class="table-action__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Detalhes
+              </button>
+              <button type="button" class="admin-btn danger small table-action" (click)="remover(p)">
+                <svg class="table-action__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/>
+                </svg>
+                Remover
+              </button>
             </td>
           </tr>
           <tr *ngIf="!list().length">

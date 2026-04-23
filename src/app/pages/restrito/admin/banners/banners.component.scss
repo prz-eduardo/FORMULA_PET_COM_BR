@@ -8,23 +8,10 @@
 
 .banners-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  justify-content: flex-start;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-
-  .bt-title {
-    display: flex;
-    flex-direction: column;
-    h2 {
-      margin: 0;
-      font-size: 1.3rem;
-    }
-    .bt-sub {
-      color: var(--admin-muted, rgba(229, 236, 245, 0.55));
-      font-size: 0.88rem;
-    }
-  }
 
   .bt-filters {
     display: flex;

@@ -1,10 +1,18 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
 import { StoreThemeService, LojaThemeActive } from './store-theme.service';
+
+/** Alinhado a cards e admin: dosagem, embalagem, opcionais de vitrine. */
+export interface ShopProductCustomizations {
+  dosage?: string[];
+  packaging?: string[];
+  size?: string[];
+  scent?: string[];
+}
 
 export interface ShopProduct {
   id: number;
@@ -14,7 +22,7 @@ export interface ShopProduct {
   image: string;
   category: string;
   tipo?: 'manipulado'|'pronto';
-  customizations?: Record<string, string[]>;
+  customizations?: ShopProductCustomizations;
   discount?: number;
   rating?: number; // média 0-5
   ratingsCount?: number;
@@ -94,7 +102,19 @@ export interface ShopProduct {
   } | null;
   productCreatedAt?: string | Date | null;
   productUpdatedAt?: string | Date | null;
+  /** Linhas de dosagem/embalagem (paridade com admin). */
+  dosagens?: Array<{ id: number; nome: string }>;
+  embalagens?: Array<{ id: number; nome: string }>;
+  og_image_url?: string | null;
 }
+
+export type ProductDetailsLoadError = 'not_found' | 'server' | 'unknown';
+
+export interface LoadProductDetailsResult {
+  product: ShopProduct | null;
+  error?: ProductDetailsLoadError;
+}
+
 export interface StoreCategory { id: number; nome: string; produtos: number; }
 export interface StoreTag { id: number; nome: string; produtos: number; }
 export interface StoreMeta {
@@ -595,11 +615,11 @@ export class StoreService {
   }
 
   // Load full product details by ID
-  async loadProductDetails(id: number | string): Promise<ShopProduct | null> {
+  async loadProductDetails(id: number | string): Promise<LoadProductDetailsResult> {
     try {
       const token = this.getStoredJwt();
       const it = await this.api.getProductById(id, token).toPromise();
-      if (!it) return null;
+      if (!it) return { product: null, error: 'unknown' };
       const basePrice = Number(it.preco ?? it.price ?? 0);
       const promoP = it.promoPrice != null ? Number(it.promoPrice) : (it.promo_price != null ? Number(it.promo_price) : null);
       const imRaw = Array.isArray(it.images) ? it.images : (Array.isArray(it.imagens) ? it.imagens : []);
@@ -616,6 +636,25 @@ export class StoreService {
       const strk = it.strikePrice != null && Number.isFinite(Number(it.strikePrice)) ? Number(it.strikePrice) : null;
       const pDe = it.precoDe != null ? Number(it.precoDe) : (it.preco_de != null ? Number(it.preco_de) : null);
       const cLayout = (it.card_layout || it.cardLayout || 'sales') as string;
+      const dosagensArr = Array.isArray(it.dosagens)
+        ? (it.dosagens as Array<{ id?: number; nome?: string }>)
+          .map((d) => ({ id: Number(d.id), nome: String(d.nome || '') }))
+          .filter((d) => d.nome)
+        : [];
+      const embalagensArr = Array.isArray(it.embalagens)
+        ? (it.embalagens as Array<{ id?: number; nome?: string }>)
+          .map((e) => ({ id: Number(e.id), nome: String(e.nome || '') }))
+          .filter((e) => e.nome)
+        : [];
+      const customFromApi = it.customizations && typeof it.customizations === 'object' ? it.customizations as { dosage?: unknown; packaging?: unknown } : null;
+      const customizationsMerged: ShopProductCustomizations = {
+        dosage: Array.isArray(customFromApi?.dosage)
+          ? (customFromApi.dosage as string[]).map(String)
+          : dosagensArr.map((d) => d.nome),
+        packaging: Array.isArray(customFromApi?.packaging)
+          ? (customFromApi.packaging as string[]).map(String)
+          : embalagensArr.map((e) => e.nome),
+      };
       const p: ShopProduct = {
         id: Number(it.id),
         name: it.nome || it.name,
@@ -627,6 +666,10 @@ export class StoreService {
         images: imRaw.map((im: any) => ({ id: Number(im.id), url: im.url, posicao: im.posicao ?? null })),
         category: it.categoria || it.category || catFirst,
         tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
+        customizations: customizationsMerged,
+        dosagens: dosagensArr.length ? dosagensArr : undefined,
+        embalagens: embalagensArr.length ? embalagensArr : undefined,
+        og_image_url: it.og_image_url != null && String(it.og_image_url).trim() !== '' ? String(it.og_image_url) : null,
         discount: discPct,
         rating: it.rating?.media ?? it.rating_media ?? undefined,
         ratingsCount: it.rating?.total ?? it.rating_total ?? undefined,
@@ -711,10 +754,19 @@ export class StoreService {
         productCreatedAt: it.created_at ?? it.createdAt ?? null,
         productUpdatedAt: it.updated_at ?? it.updatedAt ?? null,
       };
-      return p;
-    } catch {
-      this.toast.error('Não foi possível carregar o produto.', 'Erro');
-      return null;
+      return { product: p };
+    } catch (e: unknown) {
+      const status = e instanceof HttpErrorResponse ? e.status : (e as { status?: number })?.status;
+      if (status === 404) {
+        return { product: null, error: 'not_found' };
+      }
+      if (status != null && status >= 500) {
+        return { product: null, error: 'server' };
+      }
+      if (status == null || status === 0) {
+        return { product: null, error: 'server' };
+      }
+      return { product: null, error: 'unknown' };
     }
   }
 

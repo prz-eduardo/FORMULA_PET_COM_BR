@@ -16,11 +16,31 @@
 		<p class="pd-loading-msg">Aguarde um instante…</p>
 	</ng-container>
 
-	<!-- Não encontrado -->
-	<section *ngIf="!loading && !product" class="pd-not-found card">
+	<!-- Erro de servidor (retry) -->
+	<section *ngIf="!loading && !product && loadError === 'server'" class="pd-error-server card" role="alert">
+		<h1 class="pd-not-found__title">Não foi possível carregar o produto</h1>
+		<p class="pd-not-found__text">O servidor não respondeu como esperado. Pode ser uma falha temporária — tente de novo em instantes.</p>
+		<div class="pd-error-server__actions">
+			<button type="button" class="btn primary" (click)="retryLoad()">Tentar novamente</button>
+			<a routerLink="/loja" class="btn outline">Ir para a loja</a>
+		</div>
+	</section>
+
+	<!-- Não encontrado (404) -->
+	<section *ngIf="!loading && !product && loadError === 'not_found'" class="pd-not-found card">
 		<h1 class="pd-not-found__title">Produto não encontrado</h1>
-		<p class="pd-not-found__text">Não foi possível carregar este item. Ele pode ter sido removido ou o link está incorreto.</p>
+		<p class="pd-not-found__text">Este item não está disponível. Ele pode ter sido removido ou o link está incorreto.</p>
 		<a routerLink="/loja" class="btn primary">Ir para a loja</a>
+	</section>
+
+	<!-- Outro erro -->
+	<section *ngIf="!loading && !product && loadError === 'unknown'" class="pd-not-found card">
+		<h1 class="pd-not-found__title">Não foi possível abrir o produto</h1>
+		<p class="pd-not-found__text">Não foi possível carregar este item. Tente outra vez ou volte à loja.</p>
+		<div class="pd-error-server__actions">
+			<button type="button" class="btn primary" (click)="retryLoad()">Tentar novamente</button>
+			<a routerLink="/loja" class="btn outline">Ir para a loja</a>
+		</div>
 	</section>
 
 	<!-- Conteúdo -->
@@ -143,11 +163,33 @@
 						<p *ngIf="p.validade_meses != null"><strong>Validade (meses):</strong> {{ p.validade_meses }}</p>
 						<p *ngIf="p.armazenamento"><strong>Armazenamento:</strong> {{ p.armazenamento }}</p>
 					</div>
+
+					<section class="pd-presentation" *ngIf="hasPresentationInfo()" aria-label="Apresentação e dosagem">
+						<h3 class="pd-section-label">Apresentação e dosagem</h3>
+						<div class="pd-presentation__block" *ngIf="dosagemLabels.length">
+							<span class="pd-presentation__label">Dosagem</span>
+							<div class="pd-presentation__chips">
+								<span class="chip chip--soft" *ngFor="let d of dosagemLabels">{{ d }}</span>
+							</div>
+						</div>
+						<div class="pd-presentation__block" *ngIf="embalagemLabels.length">
+							<span class="pd-presentation__label">Embalagem</span>
+							<div class="pd-presentation__chips">
+								<span class="chip chip--soft" *ngFor="let e of embalagemLabels">{{ e }}</span>
+							</div>
+						</div>
+					</section>
+
 					<div class="pd-badges">
 						<span class="badge warning" *ngIf="exigeReceitaSim()">Exige receita veterinária</span>
-						<span class="badge info" *ngIf="p.slug">Slug: {{ p.slug }}</span>
-						<span class="badge layout" *ngIf="p.cardLayout">Vitrine: {{ p.cardLayout === 'banner' ? 'Faixa' : 'Card' }}</span>
 					</div>
+					<details class="pd-admin-meta" *ngIf="p.slug || p.cardLayout">
+						<summary>Detalhes do anúncio</summary>
+						<div class="pd-admin-meta__body">
+							<p *ngIf="p.slug" class="pd-muted"><span class="pd-admin-meta__k">Slug</span> {{ p.slug }}</p>
+							<p *ngIf="p.cardLayout" class="pd-muted"><span class="pd-admin-meta__k">Vitrine</span> {{ p.cardLayout === 'banner' ? 'Faixa' : 'Card de vendas' }}</p>
+						</div>
+					</details>
 					<div class="pd-badges" *ngIf="p.cupons_aplicaveis?.length">
 						<span class="badge cupom" *ngFor="let c of p.cupons_aplicaveis">
 							Cupom {{ c.codigo }}{{ c.valor != null ? (c.tipo === 'valor' ? ' · R$ ' + (c.valor | number:'1.2-2') : ' · ' + c.valor + '%') : '' }}

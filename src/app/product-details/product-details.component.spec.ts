@@ -3,6 +3,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 
 import { ProductDetailsComponent } from './product-details.component';
+import { StoreService } from '../services/store.service';
 
 describe('ProductDetailsComponent', () => {
   let component: ProductDetailsComponent;
@@ -10,7 +11,15 @@ describe('ProductDetailsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProductDetailsComponent, HttpClientTestingModule, RouterTestingModule]
+      imports: [ProductDetailsComponent, HttpClientTestingModule, RouterTestingModule],
+      providers: [
+        {
+          provide: StoreService,
+          useValue: {
+            loadProductDetails: () => Promise.resolve({ product: null, error: 'not_found' as const })
+          }
+        }
+      ]
     })
     .compileComponents();
 

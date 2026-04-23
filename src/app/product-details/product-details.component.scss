@@ -182,6 +182,30 @@
 .pd-not-found__title { margin: 0 0 10px; font-size: 1.4rem; }
 .pd-not-found__text { color: #64748b; margin: 0 0 20px; }
 
+.pd-error-server {
+	padding: 28px; max-width: 520px; margin: 0 auto; text-align: center;
+	border: 1px solid #fecaca;
+	background: #fef2f2;
+}
+.pd-error-server__actions {
+	display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center;
+}
+.pd-error-server .btn.outline { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+.pd-presentation {
+	margin: 16px 0; padding: 14px; border-radius: 12px; background: var(--fp-yellow-50); border: 1px solid var(--fp-border);
+}
+.pd-presentation__block { margin-top: 10px; }
+.pd-presentation__block:first-child { margin-top: 0; }
+.pd-presentation__label { display: block; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+.pd-presentation__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip.chip--soft { background: #fff; border: 1px solid #e2e8f0; color: #334155; font-size: 13px; }
+
+.pd-admin-meta { margin: 12px 0; font-size: 13px; color: #64748b; }
+.pd-admin-meta summary { cursor: pointer; font-weight: 600; color: #475569; }
+.pd-admin-meta__body { margin-top: 8px; padding: 8px 0 0; border-top: 1px dashed #e2e8f0; }
+.pd-admin-meta__k { display: inline-block; min-width: 5rem; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
+
 .pd-layout { width: 100%; }
 
 .pd-main {

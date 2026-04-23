@@ -152,3 +152,77 @@
 .switch.on { background: var(--admin-ok-2); border-color: var(--admin-ok-2); }
 .switch.on::after { left: 20px; }
 .switch.readonly { pointer-events: none; cursor: default; }
+.switch:not(.readonly):not(:disabled) {
+  cursor: pointer;
+}
+.switch:not(.readonly):not(:disabled):hover {
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 3px rgba(13, 184, 222, 0.12);
+}
+.switch:focus-visible {
+  outline: 3px solid rgba(13, 184, 222, 0.28);
+  outline-offset: 2px;
+}
+
+.actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.table-action {
+  white-space: nowrap;
+}
+.table-action__ico {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.92;
+}
+
+/* Modal confirmação status (tema admin escuro) */
+.ap-active-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 14, 0.65);
+  backdrop-filter: blur(4px);
+}
+.ap-active-confirm {
+  width: 100%;
+  max-width: 420px;
+  background: var(--admin-surface-2, #141c28);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-lg, 14px);
+  padding: 22px 22px 18px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+.ap-active-confirm h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--admin-text-strong, #f1f5f9);
+}
+.ap-active-confirm__desc {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--admin-text, #e5ecf5);
+}
+.ap-active-confirm__hint {
+  margin: 0 0 20px;
+  font-size: 12px;
+  color: var(--admin-muted-2, rgba(229, 236, 245, 0.55));
+}
+.ap-active-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}

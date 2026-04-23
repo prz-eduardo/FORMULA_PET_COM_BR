@@ -85,8 +85,14 @@ export class AdminPageComponent implements AfterContentInit, AfterContentChecked
   @Output() submit = new EventEmitter<{ id?: any; values: any }>();
   @Output() cancel = new EventEmitter<void>();
   @Output() toggleActive = new EventEmitter<any>();
+  /** Quando true, a coluna Ativo/ativo/active vira um switch clicável que abre confirmação e emite `toggleActive`. */
+  @Input() tableActiveHotSwap = false;
   @Input() useDefaultActions = false;
   @Input() createLabel = 'Novo';
+
+  /** Modal confirmação troca de status na tabela */
+  activeToggleDialogOpen = false;
+  activeToggleTarget: any = null;
 
   @Output() drawerOpenChange = new EventEmitter<boolean>();
   /** Fired when the user clicks the drawer's primary (e.g. Salvar) button. Falls back to emitting `submit` via the auto-form when a schema is active. */
@@ -323,4 +329,38 @@ export class AdminPageComponent implements AfterContentInit, AfterContentChecked
   }
 
   emitToggleActive(item: any) { this.toggleActive.emit(item); }
+
+  get activeToggleItemLabel(): string {
+    const it = this.activeToggleTarget;
+    if (!it) return '';
+    const name = it.name ?? it.nome ?? it.title ?? '';
+    const s = name != null ? String(name).trim() : '';
+    if (s) return s;
+    return it.id != null ? `Registro #${it.id}` : '';
+  }
+
+  /** Estado após confirmar (o que o usuário está prestes a aplicar). */
+  get activeToggleNextActive(): boolean {
+    if (!this.activeToggleTarget) return false;
+    return !this.isActive(this.activeToggleTarget);
+  }
+
+  onActiveSwitchClicked(item: any, ev: Event) {
+    if (!this.tableActiveHotSwap) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.activeToggleTarget = item;
+    this.activeToggleDialogOpen = true;
+  }
+
+  confirmActiveToggle() {
+    const item = this.activeToggleTarget;
+    this.closeActiveToggleDialog();
+    if (item) this.emitToggleActive(item);
+  }
+
+  closeActiveToggleDialog() {
+    this.activeToggleDialogOpen = false;
+    this.activeToggleTarget = null;
+  }
 }

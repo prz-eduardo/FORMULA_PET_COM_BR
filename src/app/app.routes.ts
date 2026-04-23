@@ -32,21 +32,21 @@ export const routes: Routes = [
     component: AdminComponent,
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', loadComponent: () => import('./pages/restrito/admin/dashboard/dashboard.component').then(m => m.DashboardAdminComponent), canActivate: [authGuard] },
-      { path: 'meu-perfil-admin', loadComponent: () => import('./pages/restrito/admin/meu-perfil-admin/meu-perfil-admin.component').then(m => m.MeuPerfilAdminComponent), canActivate: [authGuard] },
-      { path: 'guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard] },
-      { path: 'estoque', loadComponent: () => import('./pages/restrito/admin/estoque/estoque.component').then(m => m.EstoqueAdminComponent), canActivate: [authGuard] },
-      { path: 'formulas', loadComponent: () => import('./pages/restrito/admin/formulas/formulas.component').then(m => m.FormulasAdminComponent), canActivate: [authGuard] },
+      { path: 'dashboard', loadComponent: () => import('./pages/restrito/admin/dashboard/dashboard.component').then(m => m.DashboardAdminComponent), canActivate: [authGuard], data: { title: 'Dashboard' } },
+      { path: 'meu-perfil-admin', loadComponent: () => import('./pages/restrito/admin/meu-perfil-admin/meu-perfil-admin.component').then(m => m.MeuPerfilAdminComponent), canActivate: [authGuard], data: { title: 'Meu Perfil (Admin)' } },
+      { path: 'guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard], data: { title: 'Guia de Ativos' } },
+      { path: 'estoque', loadComponent: () => import('./pages/restrito/admin/estoque/estoque.component').then(m => m.EstoqueAdminComponent), canActivate: [authGuard], data: { title: 'Estoque de Itens (Ativos e Insumos)' } },
+      { path: 'formulas', loadComponent: () => import('./pages/restrito/admin/formulas/formulas.component').then(m => m.FormulasAdminComponent), canActivate: [authGuard], data: { title: 'Fórmulas' } },
       { path: 'cupons', loadComponent: async () => (await import('./pages/restrito/admin/cupons/cupons.component')).CuponsAdminComponent, canActivate: [authGuard], data: { title: 'Cupons' } },
-      { path: 'promocoes', loadComponent: () => import('./pages/restrito/admin/promocoes/promocoes.component').then(m => m.AdminPromocoesComponent), canActivate: [authGuard] },
-      { path: 'banners', loadComponent: async () => (await import('./pages/restrito/admin/banners/banners.component')).BannersAdminComponent, canActivate: [authGuard] },
-      { path: 'produto-preview', loadComponent: () => import('./pages/restrito/admin/produto-preview/produto-preview.component').then(m => m.ProdutoPreviewComponent), canActivate: [authGuard] },
-      { path: 'marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard] },
+      { path: 'promocoes', loadComponent: () => import('./pages/restrito/admin/promocoes/promocoes.component').then(m => m.AdminPromocoesComponent), canActivate: [authGuard], data: { title: 'Promoções' } },
+      { path: 'banners', loadComponent: async () => (await import('./pages/restrito/admin/banners/banners.component')).BannersAdminComponent, canActivate: [authGuard], data: { title: 'Banners' } },
+      { path: 'produto-preview', loadComponent: () => import('./pages/restrito/admin/produto-preview/produto-preview.component').then(m => m.ProdutoPreviewComponent), canActivate: [authGuard], data: { title: 'Pré-visualização (Admin)' } },
+      { path: 'marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard], data: { title: 'Categorias & Tags' } },
       { path: 'loja/temas', loadComponent: () => import('./pages/restrito/admin/loja-temas/loja-temas.component').then(m => m.LojaTemasAdminComponent), canActivate: [authGuard], data: { title: 'Temas da loja' } },
-      { path: 'fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard] },
-      { path: 'lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard] },
-      { path: 'parceiros', loadComponent: async () => (await import('./pages/restrito/admin/parceiros/parceiros.component')).ParceirosAdminComponent, canActivate: [authGuard] },
-      { path: 'pedidos', component: AdminPedidosComponent, canActivate: [authGuard] },
+      { path: 'fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard], data: { title: 'Gerenciar Fornecedores' } },
+      { path: 'lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard], data: { title: 'Lista de produtos' } },
+      { path: 'parceiros', loadComponent: async () => (await import('./pages/restrito/admin/parceiros/parceiros.component')).ParceirosAdminComponent, canActivate: [authGuard], data: { title: 'Gerenciar Parceiros' } },
+      { path: 'pedidos', component: AdminPedidosComponent, canActivate: [authGuard], data: { title: 'Pedidos' } },
       {
         path: 'atendimento',
         loadComponent: () =>
@@ -55,9 +55,9 @@ export const routes: Routes = [
         data: { title: 'Atendimento' }
       },
       { path: 'ativos', loadComponent: async () => (await import('./pages/restrito/admin/ativos/ativos.component')).AtivosAdminComponent, canActivate: [authGuard], data: { title: 'Ativos' } },
-      { path: 'usuarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'admin' }, canActivate: [authGuard] },
-      { path: 'clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente' }, canActivate: [authGuard] },
-      { path: 'veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet' }, canActivate: [authGuard] }
+      { path: 'usuarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'admin', title: 'Gerenciar Usuários' }, canActivate: [authGuard] },
+      { path: 'clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente', title: 'Gerenciar Clientes' }, canActivate: [authGuard] },
+      { path: 'veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet', title: 'Gerenciar Veterinários' }, canActivate: [authGuard] }
     ]
   },
   { path: 'restrito/produto', component: ProdutoComponent, canActivate: [authGuard] },

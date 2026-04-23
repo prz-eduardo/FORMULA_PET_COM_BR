@@ -45,7 +45,16 @@
               <td *ngFor="let col of columns" [ngClass]="col.class">
                 <ng-container *ngIf="isActiveColumn(col.key); else normalCell">
                   <div class="active-cell">
-                    <button class="switch readonly" [class.on]="isActive(item)" disabled [attr.aria-pressed]="isActive(item)" [attr.aria-label]="isActive(item) ? 'Ativo' : 'Inativo'"></button>
+                    <button
+                      type="button"
+                      class="switch"
+                      [class.on]="isActive(item)"
+                      [class.readonly]="!tableActiveHotSwap"
+                      [disabled]="!tableActiveHotSwap"
+                      role="switch"
+                      [attr.aria-checked]="isActive(item)"
+                      [attr.aria-label]="isActive(item) ? 'Ativo' : 'Inativo'"
+                      (click)="onActiveSwitchClicked(item, $event)"></button>
                   </div>
                 </ng-container>
                 <ng-template #normalCell>
@@ -53,10 +62,21 @@
                 </ng-template>
               </td>
               <td class="actions-cell">
-                <button class="btn small" (click)="emitEdit(item)">Detalhes</button>
-                <button class="btn small primary" *ngIf="item.status && ['criado','aguardando_pagamento','pago','aceito','em_preparo','pronto_para_envio','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'advance', item: item })">Avançar</button>
-                <button class="btn small danger" *ngIf="item.status && item.status.toLowerCase() !== 'cancelado' && item.status.toLowerCase() !== 'concluido'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'cancel', item: item })">Cancelar</button>
-                <button class="btn small danger" (click)="emitRemove(item)">Remover</button>
+                <button type="button" class="admin-btn ghost small table-action" (click)="emitEdit(item)">
+                  <svg class="table-action__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Detalhes
+                </button>
+                <button type="button" class="admin-btn warn small" *ngIf="item.status && ['criado','aguardando_pagamento','pago','aceito','em_preparo','pronto_para_envio','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'advance', item: item })">Avançar</button>
+                <button type="button" class="admin-btn secondary small" *ngIf="item.status && item.status.toLowerCase() !== 'cancelado' && item.status.toLowerCase() !== 'concluido'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'cancel', item: item })">Cancelar</button>
+                <button type="button" class="admin-btn danger small table-action" (click)="emitRemove(item)">
+                  <svg class="table-action__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/>
+                  </svg>
+                  Remover
+                </button>
               </td>
             </tr>
           </tbody>
@@ -177,3 +197,19 @@
     </form>
   </ng-container>
 </app-admin-drawer>
+
+<!-- Confirmação: alterar Ativo/Inativo na tabela -->
+<div *ngIf="activeToggleDialogOpen" class="ap-active-confirm-backdrop" (click)="closeActiveToggleDialog()">
+  <div class="ap-active-confirm" role="alertdialog" aria-modal="true" aria-labelledby="ap-active-confirm-title" aria-describedby="ap-active-confirm-desc" (click)="$event.stopPropagation()">
+    <h3 id="ap-active-confirm-title">Alterar status</h3>
+    <p id="ap-active-confirm-desc" class="ap-active-confirm__desc">
+      <ng-container *ngIf="activeToggleItemLabel"><strong>{{ activeToggleItemLabel }}</strong> — </ng-container>
+      Confirma marcar este registro como <strong>{{ activeToggleNextActive ? 'Ativo' : 'Inativo' }}</strong>?
+    </p>
+    <p class="ap-active-confirm__hint">A alteração é aplicada imediatamente após confirmar.</p>
+    <div class="ap-active-confirm__actions">
+      <button type="button" class="admin-btn secondary small" (click)="closeActiveToggleDialog()">Cancelar</button>
+      <button type="button" class="admin-btn small" (click)="confirmActiveToggle()">Confirmar</button>
+    </div>
+  </div>
+</div>

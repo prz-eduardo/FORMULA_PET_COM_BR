@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { DomSanitizer, Meta, SafeResourceUrl, Title } from '@angular/platform-browser';
-import { StoreService, ShopProduct } from '../services/store.service';
+import { StoreService, ShopProduct, ProductDetailsLoadError } from '../services/store.service';
 import { NavmenuComponent } from '../navmenu/navmenu.component';
 import { ApiService } from '../services/api.service';
 import { BannerSlotComponent } from '../shared/banner-slot/banner-slot.component';
@@ -29,6 +29,8 @@ function youtubeVideoId(u: string): string | null {
 })
 export class ProductDetailsComponent implements OnInit {
   product: ShopProduct | null = null;
+  /** Erro de carregamento (404 / 5xx) quando product é null. */
+  loadError: ProductDetailsLoadError | null = null;
   loading = true;
   qty = 1;
   cameFromHighlights = false;
@@ -50,21 +52,36 @@ export class ProductDetailsComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    const productId = this.route.snapshot.paramMap.get('id')!;
     this.cameFromHighlights = this.route.snapshot.queryParamMap.get('src') === 'home';
-    const p = await this.store.loadProductDetails(productId);
-    this.product = p;
-    this.isFavLocal = p?.isFavorited;
+    const productId = this.route.snapshot.paramMap.get('id')!;
+    await this.loadProduct(productId);
+  }
+
+  async loadProduct(productId: string): Promise<void> {
+    this.loading = true;
+    this.loadError = null;
+    const { product, error } = await this.store.loadProductDetails(productId);
+    this.product = product;
+    this.loadError = error ?? null;
+    this.isFavLocal = product?.isFavorited;
     this.selectedImageIndex = 0;
-    const vs = (p?.variantes || []).filter(v => v.ativo !== false);
+    const variantes = product?.variantes ?? [];
+    const vs = variantes.filter(
+      (v: NonNullable<ShopProduct['variantes']>[number]) => v.ativo !== false
+    );
     this.selectedVariant = vs.length ? vs[0] : null;
-    if (p?.composicao) this.activeTab = 'composicao';
-    else if (p?.modo_uso) this.activeTab = 'modo_uso';
-    else if (p?.indicacoes) this.activeTab = 'indicacoes';
-    else if (p?.contraindicacoes) this.activeTab = 'contraindicacoes';
-    else if (p?.documentos?.length) this.activeTab = 'documentos';
-    this.applySeo(p);
+    if (product?.composicao) this.activeTab = 'composicao';
+    else if (product?.modo_uso) this.activeTab = 'modo_uso';
+    else if (product?.indicacoes) this.activeTab = 'indicacoes';
+    else if (product?.contraindicacoes) this.activeTab = 'contraindicacoes';
+    else if (product?.documentos?.length) this.activeTab = 'documentos';
+    this.applySeo(product);
     this.loading = false;
+  }
+
+  retryLoad(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) void this.loadProduct(id);
   }
 
   private applySeo(p: ShopProduct | null) {
@@ -74,6 +91,35 @@ export class ProductDetailsComponent implements OnInit {
     if (p.meta_description?.trim()) {
       this.meta.updateTag({ name: 'description', content: p.meta_description.slice(0, 320) });
     }
+    const og = p.og_image_url?.trim();
+    if (og) {
+      const abs = /^https?:\/\//i.test(og)
+        ? og
+        : (typeof window !== 'undefined' ? new URL(og, window.location.origin).href : og);
+      this.meta.updateTag({ property: 'og:image', content: abs });
+      this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+      this.meta.updateTag({ name: 'twitter:image', content: abs });
+    }
+  }
+
+  hasPresentationInfo(): boolean {
+    return this.dosagemLabels.length > 0 || this.embalagemLabels.length > 0;
+  }
+
+  get dosagemLabels(): string[] {
+    const p = this.product;
+    if (!p) return [];
+    if (p.dosagens?.length) return p.dosagens.map((d) => d.nome);
+    const d = p.customizations?.dosage;
+    return Array.isArray(d) && d.length ? d.map(String) : [];
+  }
+
+  get embalagemLabels(): string[] {
+    const p = this.product;
+    if (!p) return [];
+    if (p.embalagens?.length) return p.embalagens.map((e) => e.nome);
+    const e = p.customizations?.packaging;
+    return Array.isArray(e) && e.length ? e.map(String) : [];
   }
 
   hasTechnicalInfo(): boolean {

@@ -23,9 +23,6 @@
   [searchPlaceholder]="'Buscar por ID/cliente'"
   (customAction)="onCustomAction($event)">
 
-
-  <div slot="title"><h2>Pedidos</h2></div>
-
   <app-admin-summary-panel [summary]="summary"></app-admin-summary-panel>
 
   <admin-pagination slot="pagination" [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; load()"></admin-pagination>
