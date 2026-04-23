@@ -39,11 +39,19 @@ export class ProductCardBannerComponent {
     this.add.emit(ev);
   }
 
+  get bannerImageUrl(): string {
+    const g = this.product.images?.[0]?.url;
+    return (this.product.image || this.product.imageUrl || g || '/imagens/image.png').toString().trim() || '/imagens/image.png';
+  }
+
   get priceNow(): number {
     if (this.product.promoPrice != null) return this.product.promoPrice;
-    const price = this.product.price || 0;
+    const base = this.product.price || 0;
+    if (this.product.priceFinal != null && this.product.priceFinal < base - 0.009) {
+      return this.product.priceFinal;
+    }
     const disc = this.product.discount || 0;
-    return Math.max(0, price - price * disc / 100);
+    return Math.max(0, base - base * disc / 100);
   }
 
   get oldPriceDisplay(): number | null {

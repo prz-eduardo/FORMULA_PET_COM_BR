@@ -1,6 +1,6 @@
 <ng-template #bannerInner>
   <div class="pcb-media" [style.min-height.px]="minHeightPx">
-    <img [src]="product.image || product.imageUrl || '/imagens/image.png'" [alt]="product.name" loading="lazy" decoding="async" class="pcb-img" />
+    <img [src]="bannerImageUrl" [alt]="product.name" loading="lazy" decoding="async" class="pcb-img" />
     <div class="pcb-overlay" [style.opacity]="overlayOpacity"></div>
     <div class="pcb-content">
       <div class="pcb-top">

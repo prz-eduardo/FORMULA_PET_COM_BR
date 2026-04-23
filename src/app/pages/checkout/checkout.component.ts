@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../services/store.service';
 import { ApiService } from '../../services/api.service';
@@ -13,7 +13,7 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, NavmenuComponent, BannerSlotComponent],
+  imports: [CommonModule, FormsModule, CurrencyPipe, NavmenuComponent, BannerSlotComponent, RouterLink],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.scss']
 })

@@ -836,15 +836,15 @@ textarea.input {
 }
 
 .sugestoes {
-  position: relative;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
 }
 
 .sugestao-list {
-  position: absolute;
-  z-index: 50;
-  top: 6px;
-  left: 0;
-  right: 0;
+  position: relative;
   background: #0f1724;
   border-radius: var(--w-radius-sm);
   box-shadow: var(--w-shadow-pop);

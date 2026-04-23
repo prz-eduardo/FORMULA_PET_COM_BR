@@ -2,6 +2,7 @@
   <div class="thumb" [style.aspectRatio]="imageAspect">
     <img [src]="displayImage" [alt]="product.name" title="{{ product.name }}" width="320" height="200" loading="lazy" decoding="async" class="thumb-img"/>
     <div class="badge" *ngIf="product.discount && product.discount > 0">-{{ product.discount | number:'1.0-0' }}%</div>
+    <span class="stock-pill" *ngIf="product.inStock === false">Esgotado</span>
     <span class="tipo-pill" *ngIf="product.tipo === 'manipulado'">Manipulado</span>
     <button class="fav" *ngIf="supportsFavorites" (click)="onFavClick($event)" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
       <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>

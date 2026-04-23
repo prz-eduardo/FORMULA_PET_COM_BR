@@ -102,6 +102,8 @@ export class ProdutoComponent implements OnInit {
   promoSearchQuery = '';
   private _docDragOverHandler: any = null;
   private _docDropHandler: any = null;
+  /** Referência estável para remover o listener de clique no documento */
+  private readonly onDocumentClick = (e: MouseEvent) => this.handleClickOutsideDropdown(e);
   
   // fórmulas para produtos manipulados
   formulas: ProductFormDto[] = [];
@@ -213,6 +215,7 @@ export class ProdutoComponent implements OnInit {
         } else {
           this.embalagensList = EMBALAGENS.map((name, idx) => ({ id: idx + 1, name }));
         }
+        this.refreshTaxonomyFiltersAfterLoad();
       },
       error: () => {
         this.categoriasList = [];
@@ -403,7 +406,7 @@ export class ProdutoComponent implements OnInit {
       };
     }
     // Listener para fechar dropdown de categoria ao clicar fora
-    document.addEventListener('click', this.handleClickOutsideDropdown.bind(this));
+    document.addEventListener('click', this.onDocumentClick);
     // Evitar que o navegador abra arquivos ao soltar fora da dropzone
     this._docDragOverHandler = (ev: any) => { try { ev.preventDefault(); } catch(e) {} };
     this._docDropHandler = (ev: any) => { try { ev.preventDefault(); } catch(e) {} };
@@ -880,6 +883,23 @@ export class ProdutoComponent implements OnInit {
     if (idx > -1) this.removePackagingAt(idx); else this.addPackaging(name);
   }
 
+  /** Reaplica filtros quando a API de customizações termina depois do usuário já interagir com o campo. */
+  private refreshTaxonomyFiltersAfterLoad() {
+    if (typeof document === 'undefined') return;
+    const ae = document.activeElement as HTMLElement | null;
+    const qCat = (this.categoryQuery() || '').trim();
+    const qTag = (this.tagQuery() || '').trim();
+    const qPack = (this.packagingQuery() || '').trim();
+    if (qCat || ae?.id === 'categoryInput') this.applyCategoryFilter();
+    if (qTag || ae?.id === 'tagInput') this.applyTagFilter();
+    if (qPack || ae?.id === 'packInput') this.applyPackagingFilter();
+  }
+
+  onFormulaFieldFocus() {
+    if (this.form?.get('formulaId')?.value) return;
+    this.applyFormulaFilter();
+  }
+
   // Autocomplete helpers for Categoria
   onCategoryQueryInput(q: string) {
     this.categoryQuery.set(q || '');
@@ -1037,7 +1057,7 @@ export class ProdutoComponent implements OnInit {
   // (Removido: duplicidade de ngAfterViewInit)
 
   ngOnDestroy() {
-    try { document.removeEventListener('click', this.handleClickOutsideDropdown.bind(this)); } catch(e) {}
+    try { document.removeEventListener('click', this.onDocumentClick); } catch(e) {}
     try { if (this._docDragOverHandler) document.removeEventListener('dragover', this._docDragOverHandler); } catch(e) {}
     try { if (this._docDropHandler) document.removeEventListener('drop', this._docDropHandler); } catch(e) {}
     if (this.imagesSub) { this.imagesSub.unsubscribe(); this.imagesSub = null; }
@@ -1070,6 +1090,8 @@ export class ProdutoComponent implements OnInit {
       this.categoriesFiltered = [];
       this.tagsFiltered = [];
       this.packagingFiltered = [];
+      this.formulasFiltered = [];
+      this.selectedFormulaIndex = -1;
     }
   }
   hasDosage(name: string) { return this.dosageFA.controls.some(c => c.value === name); }

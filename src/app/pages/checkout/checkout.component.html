@@ -1,23 +1,45 @@
-<div class="checkout-wrap">
+<div class="checkout-page">
   <app-navmenu></app-navmenu>
-  <app-banner-slot posicao="checkout" mode="single" class="checkout-banner-slot"></app-banner-slot>
-  <header class="header">
-    <div class="left">
-      <div class="title-row">
-        <h1>Finalizar compra</h1>
-        <span class="order-pill" *ngIf="pedidoCodigo">#{{ pedidoCodigo }}</span>
-      </div>
-      <p class="sub">Revise seus dados e escolha a forma de pagamento. Assim que o pagamento for aprovado, começaremos a preparar seu pedido.</p>
-    </div>
-      <div class="right">
-        <div *ngIf="pagamentoStatus==='pago'; else aguardandoBadge" class="status ok badge">Pago</div>
-        <ng-template #aguardandoBadge>
-          <div class="status wait badge">Aguardando pagamento</div>
-        </ng-template>
-      </div>
-  </header>
+  <main class="checkout-container container">
+    <app-banner-slot posicao="checkout" mode="single" class="checkout-banner-slot"></app-banner-slot>
 
-  <div class="grid">
+    <header class="checkout-hero" role="banner">
+      <div class="hero-top">
+        <img src="/icones/paw.png" alt="" aria-hidden="true" class="hero-icon" />
+        <div class="hero-titles">
+          <h1 class="hero-title">
+            Finalizar compra <span class="hero-accent">com tranquilidade</span>
+          </h1>
+          <p class="hero-subtitle">
+            Revise entrega, aplique cupom se tiver e escolha PIX ou cartão. Quando o pagamento for confirmado, começamos a preparar tudo com carinho.
+          </p>
+        </div>
+      </div>
+
+      <div class="hero-stats" aria-label="Informações do pedido">
+        <span class="hero-stat" *ngIf="pedidoCodigo"><span class="stat-dot" aria-hidden="true"></span>Pedido <strong>#{{ pedidoCodigo }}</strong></span>
+        <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ resumo.item_count }}</strong> itens</span>
+        <span class="hero-stat hero-stat-status">
+          <span class="stat-dot" aria-hidden="true"></span>
+          <ng-container *ngIf="pagamentoStatus==='pago'; else aguardandoHero">Status: <strong class="status-ok">Pago</strong></ng-container>
+          <ng-template #aguardandoHero>Status: <strong class="status-wait">Aguardando pagamento</strong></ng-template>
+        </span>
+      </div>
+
+      <section class="checkout-cta-card" role="region" aria-label="Ajuda e navegação">
+        <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="checkout-cta-icon" />
+        <div class="checkout-cta-body">
+          <h2 class="checkout-cta-name">Precisa ajustar o pedido? <span class="checkout-cta-tag">suporte</span></h2>
+          <p class="checkout-cta-text">Fale com a gente no WhatsApp ou volte ao carrinho se ainda quiser mudar itens antes de pagar.</p>
+        </div>
+        <div class="checkout-cta-btns">
+          <a routerLink="/carrinho" class="checkout-cta-btn secondary" title="Voltar ao carrinho" aria-label="Voltar ao carrinho">Carrinho</a>
+          <a href="https://wa.me/554132051910" target="_blank" rel="noopener" class="checkout-cta-btn" title="WhatsApp Fórmula Pet" aria-label="Abrir WhatsApp">WhatsApp</a>
+        </div>
+      </section>
+    </header>
+
+  <div class="checkout-grid">
     <section class="col main">
       <!-- Itens do pedido -->
       <div class="card">
@@ -153,6 +175,7 @@
       </div>
     </aside>
   </div>
+  </main>
 
   <!-- Modal PIX (simulado) -->
   <div class="overlay" *ngIf="showPixModal" (click)="closePixModal()"></div>
@@ -171,15 +194,15 @@
     </div>
     <div class="simulado">Transação simulada - nenhum valor será cobrado.</div>
   </div>
-</div>
 
-<!-- Mobile sticky pay bar -->
-<div class="sticky-paybar" [class.bump]="animacaoValor!==''">
-  <div class="sum">
-    <div class="lbl">Total</div>
-    <div class="amt">{{ totalVisual | currency:'BRL' }}</div>
+  <!-- Barra fixa mobile -->
+  <div class="sticky-paybar" [class.bump]="animacaoValor!==''">
+    <div class="sum">
+      <div class="lbl">Total</div>
+      <div class="amt">{{ totalVisual | currency:'BRL' }}</div>
+    </div>
+    <button class="btn cta" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">
+      {{ pagamentoMetodo==='pix' ? 'Pagar com Pix' : (pagamentoMetodo==='cartao' ? 'Pagar com Cartão' : 'Pagar') }}
+    </button>
   </div>
-  <button class="btn cta" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">
-    {{ pagamentoMetodo==='pix' ? 'Pagar com Pix' : (pagamentoMetodo==='cartao' ? 'Pagar com Cartão' : 'Pagar') }}
-  </button>
 </div>

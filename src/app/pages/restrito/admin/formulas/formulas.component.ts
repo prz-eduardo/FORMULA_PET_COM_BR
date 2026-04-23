@@ -21,7 +21,7 @@ import {
  *
  * O payload de criação/edição envia:
  *   name, form_id, output_unit_code, dose_amount, dose_unit_code,
- *   output_quantity_per_batch, price, notes, active + itens.
+ *   price, notes, active + itens.
  */
 @Component({
   selector: 'app-admin-formulas',
@@ -45,7 +45,6 @@ export class FormulasAdminComponent implements OnInit {
     name: ['', Validators.required],
     form_id: [null as number | null, Validators.required],
     output_unit_code: ['', Validators.required],
-    output_quantity_per_batch: [null as number | null],
     dose_amount: [null as number | null],
     dose_unit_code: [null as string | null],
     price: [null as number | null],
@@ -187,7 +186,6 @@ export class FormulasAdminComponent implements OnInit {
       name: f.name,
       form_id: (f.form_id as any) ?? null,
       output_unit_code: f.output_unit_code || '',
-      output_quantity_per_batch: (f.output_quantity_per_batch as any) ?? null,
       dose_amount: (f.dose_amount as any) ?? null,
       dose_unit_code: (f.dose_unit_code as any) ?? null,
       price: (f.price as any) ?? null,
@@ -281,7 +279,7 @@ export class FormulasAdminComponent implements OnInit {
       name: v.name!,
       form_id: Number(v.form_id),
       output_unit_code: String(v.output_unit_code),
-      output_quantity_per_batch: this.toNumOrNull(v.output_quantity_per_batch),
+      output_quantity_per_batch: null,
       dose_amount: this.toNumOrNull(v.dose_amount),
       dose_unit_code: v.dose_unit_code || null,
       price: this.toNumOrNull(v.price),

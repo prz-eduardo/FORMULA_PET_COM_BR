@@ -7,14 +7,14 @@ import { ApiService, Receita } from '../../services/api.service';
 import { PrescriptionPickerComponent } from '../../components/prescription-picker/prescription-picker.component';
 import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
 @Component({
   selector: 'app-carrinho',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule, ProductCardV2Component, BannerSlotComponent],
+  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule, ProductCardV2Component, BannerSlotComponent, RouterLink],
   templateUrl: './carrinho.component.html',
   styleUrls: ['./carrinho.component.scss']
 })

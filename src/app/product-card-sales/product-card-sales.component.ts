@@ -43,15 +43,19 @@ export class ProductCardSalesComponent {
   }
 
   get displayImage(): string {
-    const u = (this.product.image || this.product.imageUrl || '').toString().trim();
+    const fromGallery = this.product.images?.[0]?.url;
+    const u = (this.product.image || this.product.imageUrl || fromGallery || '').toString().trim();
     return u || '/imagens/image.png';
   }
 
   get priceNow(): number {
     if (this.product.promoPrice != null) return this.product.promoPrice;
-    const price = this.product.price || 0;
+    const base = this.product.price ?? 0;
+    if (this.product.priceFinal != null && this.product.priceFinal < base - 0.009) {
+      return this.product.priceFinal;
+    }
     const disc = this.product.discount || 0;
-    return Math.max(0, price - price * disc / 100);
+    return Math.max(0, base - base * disc / 100);
   }
 
   /** Preço riscado: strike do servidor (promo ou preco_de) ou fallback promo local. */

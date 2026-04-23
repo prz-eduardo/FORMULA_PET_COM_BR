@@ -44,6 +44,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.stock-pill {
+  position: absolute;
+  bottom: 90px;
+  left: 8px;
+  z-index: 1;
+  background: #374151;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .badge {
   position: absolute;
   top: 8px;

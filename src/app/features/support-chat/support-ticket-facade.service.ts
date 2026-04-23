@@ -39,12 +39,14 @@ export class SupportTicketFacadeService {
       enqueuedAt: now,
       adminUid: null
     };
-    const updates: Record<string, unknown> = {
+    // Meta primeiro: num único `update()` com fila, `root` nas regras ainda não vê o meta novo — queue falha (PERMISSION_DENIED).
+    await update(ref(supportRtdb), {
       [`${P.SUPPORT_ROOT}/tickets/${tid}/meta`]: meta,
+    });
+    await update(ref(supportRtdb), {
       [`${P.SUPPORT_ROOT}/queue/${tid}`]: now,
-      [`${P.SUPPORT_ROOT}/cliente_active/${myUid}`]: tid
-    };
-    await update(ref(supportRtdb), updates);
+      [`${P.SUPPORT_ROOT}/cliente_active/${myUid}`]: tid,
+    });
     void this.supportApi.ensureSalaFireAndForget(tid, meta.clienteLabel);
     return tid;
   }

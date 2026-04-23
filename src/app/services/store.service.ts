@@ -74,8 +74,13 @@ export interface ShopProduct {
   shortDescription?: string | null;
   priceOriginal?: number | null;
   priceFinal?: number | null;
-  /** Objeto de desconto agregado da API (GET /products/:id). */
-  apiDiscount?: { value: number; percent: number; promotionId: number | null } | null;
+  /** Objeto de desconto agregado da API (listagem e detalhe). */
+  apiDiscount?: {
+    value: number;
+    percent: number;
+    promotionId: number | null;
+    promotion?: { id: number; nome?: string; descricao?: string; tipo?: string; valor?: number | null; inicio?: string | null; fim?: string | null } | null;
+  } | null;
   /** Melhor promoção ativa retornada pela API. */
   activePromotion?: {
     id: number;
@@ -268,9 +273,8 @@ export class StoreService {
       const raw = Array.isArray(res) ? res : ((res as any)?.data || (res as any)?.items || []);
       const list: ShopProduct[] = (raw || []).map((it: any) => {
         const price = Number(it.priceOriginal ?? it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0));
-        // Preço promocional efetivo: só preenche quando há promoção real (API: promo_price ou final < base).
-        const rawPromo = it.promo_price != null ? Number(it.promo_price) : (it.promoPrice != null ? Number(it.promoPrice) : null);
         const finalFromApi = it.priceFinal != null ? Number(it.priceFinal) : null;
+        const rawPromo = it.promo_price != null ? Number(it.promo_price) : (it.promoPrice != null ? Number(it.promoPrice) : null);
         const promoCandidate =
           rawPromo != null && Number.isFinite(rawPromo) && rawPromo < price - 0.009
             ? rawPromo
@@ -278,13 +282,12 @@ export class StoreService {
         const promoPrice = promoCandidate;
         const discountFromPromo = (promoPrice != null && price > 0) ? Math.max(0, (1 - promoPrice / price) * 100) : 0;
         const discountPercent = (it.discount && typeof it.discount.percent === 'number') ? Number(it.discount.percent)
-                              : (typeof it.desconto === 'number' ? Number(it.desconto) : 0);
+          : (typeof it.desconto === 'number' ? Number(it.desconto) : 0);
         const desconto = discountPercent || discountFromPromo;
-        // Detecta destaque: campo dedicado ou via tag/flag comum
         const flagDestaque = (it.destaque ?? it.featured ?? it.highlight ?? it.destaque_home ?? it.destacado);
         const hasTagDestaque = Array.isArray(it.tags) && it.tags.some((t: any) => {
-          const s = (t?.nome || t?.name || t || '').toString().toLowerCase();
-          return s.includes('destaque') || s.includes('featured') || s.includes('highlight');
+          const s = (typeof t === 'object' && t != null) ? (t.nome || t.name || '') : (t || '');
+          return s.toString().toLowerCase().includes('destaque') || s.toString().toLowerCase().includes('featured') || s.toString().toLowerCase().includes('highlight');
         });
         const layoutRaw = (it.card_layout || 'sales').toString().toLowerCase();
         const cardLayout: 'sales' | 'banner' = layoutRaw === 'banner' ? 'banner' : 'sales';
@@ -292,30 +295,98 @@ export class StoreService {
         const shortD = it.shortDescription != null && String(it.shortDescription).trim() !== '' ? String(it.shortDescription) : null;
         const longD = (it.descricao != null && String(it.descricao) !== '') ? String(it.descricao) : (it.description != null ? String(it.description) : '');
         const lineDesc = shortD != null ? shortD : longD;
+
+        const tagStrings = Array.isArray(it.tags)
+          ? (it.tags as any[]).map((t) => {
+            if (t == null) return '';
+            if (typeof t === 'object' && (t as any).nome) return String((t as any).nome);
+            if (typeof t === 'object' && (t as any).name) return String((t as any).name);
+            return String(t);
+          }).filter((s) => s.length > 0)
+          : undefined;
+
+        const catFromApi: Array<{ id: number; nome: string; slug?: string }> = Array.isArray(it.categorias)
+          ? (it.categorias as any[]).map((c) => ({
+            id: Number(c.id),
+            nome: String(c.nome || ''),
+            slug: c.slug != null ? String(c.slug) : undefined,
+          })).filter((c) => Number.isFinite(c.id) && c.nome)
+          : [];
+        const category =
+          (catFromApi[0]?.nome) ||
+          (it.categoria_nome != null ? String(it.categoria_nome) : '') ||
+          (it.categoria != null ? String(it.categoria) : '') ||
+          (it.category != null ? String(it.category) : '');
+
+        const gallery = Array.isArray(it.images)
+          ? (it.images as any[]).map((im) => ({
+            id: Number(im.id),
+            url: String(im.url || ''),
+            posicao: im.posicao != null ? Number(im.posicao) : (im.ordem != null ? Number(im.ordem) : null),
+          })).filter((im) => Number.isFinite(im.id) && im.url.length > 0)
+          : [];
+        const primaryImg = (it.imageUrl || it.imagem_url || it.image || gallery[0]?.url || '').toString().trim();
+
+        const disc = it.discount;
+        const pro = disc && typeof disc === 'object' && disc.promotion && typeof disc.promotion === 'object' ? disc.promotion as Record<string, unknown> : null;
+        const apiDiscount = disc && typeof disc === 'object' ? {
+          value: Number(disc.value ?? 0),
+          percent: Number(disc.percent ?? 0),
+          promotionId: disc.promotionId != null ? (disc.promotionId as number) : (disc.promotion_id != null ? (disc.promotion_id as number) : null),
+          promotion: pro && pro['id'] != null ? {
+            id: Number(pro['id']),
+            nome: pro['nome'] as string | undefined,
+            descricao: pro['descricao'] as string | undefined,
+            tipo: pro['tipo'] as string | undefined,
+            valor: pro['valor'] != null ? Number(pro['valor']) : null,
+            inicio: pro['inicio'] as string | null | undefined,
+            fim: pro['fim'] as string | null | undefined,
+          } : null,
+        } : null;
+
+        const estoqueVal = it.estoque != null ? Number(it.estoque) : null;
+        let inStock: boolean | number | null | undefined;
+        if (typeof it.in_stock === 'boolean') inStock = it.in_stock;
+        else if (estoqueVal != null && Number.isFinite(estoqueVal)) inStock = estoqueVal > 0;
+        else inStock = it.inStock;
+
         return {
           id: Number(it.id),
           name: it.nome || it.name,
           description: lineDesc,
+          shortDescription: shortD,
           price,
+          priceOriginal: price,
+          priceFinal: finalFromApi != null && Number.isFinite(finalFromApi) ? finalFromApi : null,
           promoPrice,
-          image: it.imagem_url || it.image || it.imageUrl || '',
-          imageUrl: it.imageUrl ?? it.imagem_url ?? null,
-          category: it.categoria_nome || it.categoria || it.category || '',
+          image: primaryImg,
+          imageUrl: primaryImg || null,
+          images: gallery.length ? gallery : undefined,
+          category,
+          categoriasList: catFromApi.length ? catFromApi : undefined,
           tipo: it.tipo === 'manipulado' || it.tipo === 'pronto' ? it.tipo : undefined,
           discount: Math.max(0, Math.round(desconto * 100) / 100),
+          apiDiscount,
           rating: (typeof it.rating_media === 'number') ? it.rating_media : (typeof it.rating_media === 'string' ? parseFloat(it.rating_media) : (it.rating?.media ?? undefined)),
           ratingsCount: (typeof it.rating_total === 'number') ? it.rating_total : (it.rating?.total ?? undefined),
           isFavorited: typeof it.is_favorited === 'boolean' ? it.is_favorited : (it.is_favorited === 1 ? true : (it.is_favorited === 0 ? false : undefined)),
           favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
-          tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
+          tags: tagStrings,
           featured: typeof flagDestaque === 'boolean' ? flagDestaque
-                    : (flagDestaque === 1 || flagDestaque === '1' ? true : (hasTagDestaque || false)),
+            : (flagDestaque === 1 || flagDestaque === '1' ? true : (hasTagDestaque || false)),
           cardLayout,
           strikePrice: Number.isFinite(strikePrice as number) ? strikePrice : null,
           precoDe: it.preco_de != null ? Number(it.preco_de) : undefined,
           marca: it.marca ?? undefined,
           sku: it.sku ?? undefined,
           slug: it.slug ?? undefined,
+          stock: estoqueVal != null && Number.isFinite(estoqueVal) ? estoqueVal : undefined,
+          inStock,
+          parcelas_max: it.parcelas_max != null ? Number(it.parcelas_max) : undefined,
+          peso_valor: it.peso_valor != null ? Number(it.peso_valor) : undefined,
+          peso_unidade: it.peso_unidade != null ? String(it.peso_unidade) : undefined,
+          productCreatedAt: it.created_at ?? null,
+          productUpdatedAt: it.updated_at ?? null,
         } as ShopProduct;
       });
 

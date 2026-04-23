@@ -52,6 +52,8 @@
    HERO DO USUÁRIO LOGADO
    ============================================================ */
 .cliente-hero {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -248,6 +250,7 @@
   flex-direction: column;
   gap: 18px;
   position: relative;
+  z-index: 1;
 }
 
 .actions-grid {

@@ -311,9 +311,10 @@
 
 // --------- Fila de pedidos ---------
 .queue-columns {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 220px;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  justify-content: safe center;
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 8px;
@@ -321,6 +322,7 @@
 }
 
 .queue-col {
+  flex: 0 0 220px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   border-radius: 10px;

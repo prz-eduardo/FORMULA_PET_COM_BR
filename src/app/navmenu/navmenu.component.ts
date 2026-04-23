@@ -5,13 +5,12 @@ import { filter } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
 import { AuthService } from '../services/auth.service';
-import { NotificationsBellComponent } from '../shared/notifications-bell/notifications-bell.component';
 import { gsap } from 'gsap';
 
 @Component({
   selector: 'app-navmenu',
   standalone: true,
-  imports: [RouterLink, CommonModule, NotificationsBellComponent], // precisa pro [routerLink] e *ngIf
+  imports: [RouterLink, CommonModule], // precisa pro [routerLink] e *ngIf
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })
@@ -25,7 +24,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     return url.includes('/institucional') || url.includes('/area-vet');
   }
 
-  /** Sino de notificações só para cliente (não na área vet). */
   get isAreaVetRoute(): boolean {
     return (this.currentRoute || '').includes('/area-vet');
   }
