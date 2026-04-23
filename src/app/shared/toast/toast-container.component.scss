@@ -7,7 +7,8 @@
 
 .toast-root {
   position: fixed;
-  z-index: 9999;
+  /* Acima do nav (2M) e do modal área do cliente */
+  z-index: 2500000;
   right: 12px;
   bottom: 12px;
   display: flex;

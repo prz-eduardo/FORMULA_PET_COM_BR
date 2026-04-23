@@ -81,9 +81,10 @@
 					<span class="stat-dot" aria-hidden="true"></span>
 					<strong>{{ p.favoritesCount ?? 0 }}</strong> favoritos
 				</span>
-				<span class="hero-stat">
+				<span class="hero-stat" *ngIf="effectiveImageCount > 0">
 					<span class="stat-dot" aria-hidden="true"></span>
-					<strong>{{ imageCount || 1 }}</strong> imagens
+					<strong>{{ effectiveImageCount }}</strong>
+					{{ effectiveImageCount === 1 ? 'foto na galeria' : 'fotos na galeria' }}
 				</span>
 				<span class="hero-stat" *ngIf="p.sku"><span class="stat-dot" aria-hidden="true"></span>SKU {{ p.sku }}</span>
 			</div>
@@ -104,16 +105,16 @@
 		<div class="pd-layout">
 			<div class="pd-main">
 				<div class="pd-gallery">
-					<div class="thumbs thumbs-vertical" *ngIf="p.images?.length">
-						<img *ngFor="let t of p.images; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" [alt]="'Miniatura ' + (i + 1)" />
+					<div class="thumbs thumbs-vertical" *ngIf="showGalleryThumbs">
+						<img *ngFor="let t of dedupedImages; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" [alt]="'Miniatura ' + (i + 1)" />
 					</div>
 					<div class="media">
 						<div class="thumb main">
 							<img [src]="displayImageUrl" [alt]="p.name" />
 							<div class="badge promo percent" *ngIf="discountPercent">-{{ discountPercent }}%</div>
 						</div>
-						<div class="thumbs thumbs-mobile" *ngIf="p?.images?.length">
-							<img *ngFor="let t of p.images; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" [alt]="'Miniatura ' + (i + 1)" />
+						<div class="thumbs thumbs-mobile" *ngIf="showGalleryThumbs">
+							<img *ngFor="let t of dedupedImages; let i = index" [src]="t.url" (click)="selectImage(i)" [class.active]="i === selectedImageIndex" [alt]="'Miniatura ' + (i + 1)" />
 						</div>
 					</div>
 				</div>
@@ -130,6 +131,48 @@
 							<li *ngIf="weightLabel"><span>Peso líquido</span> {{ weightLabel }}</li>
 						</ul>
 					</div>
+
+					<section class="pd-ficha-resumo" aria-label="Ficha resumida">
+						<h3 class="pd-section-label">Ficha resumida</h3>
+						<ul class="pd-ficha-resumo__list">
+							<li *ngIf="displaySku()"><span class="pd-ficha-resumo__k">SKU</span> {{ displaySku() }}</li>
+							<li class="pd-ficha-resumo__disp">
+								<span class="pd-ficha-resumo__k">Disponibilidade</span>
+								<span
+									[class.pd-ficha-resumo__ok]="availabilityLabel.indexOf('Em estoque') === 0"
+									[class.pd-ficha-resumo__bad]="availabilityLabel === 'Indisponível'">
+									{{ availabilityLabel }}
+								</span>
+							</li>
+							<li class="pd-ficha-resumo__rx">
+								<span class="pd-ficha-resumo__k">Receita veterinária</span>
+								<span
+									[class.pd-ficha-resumo__rx-sim]="exigeReceitaSim()"
+									[class.pd-ficha-resumo__rx-nao]="!exigeReceitaSim()">
+									{{ exigeReceitaSim() ? 'Sim — obrigatória' : 'Não exige' }}
+								</span>
+							</li>
+							<li *ngIf="dosagemLabels.length">
+								<span class="pd-ficha-resumo__k">Dosagem</span>
+								<span class="pd-ficha-resumo__v">{{ dosagemLabels.join(' · ') }}</span>
+							</li>
+							<li *ngIf="embalagemLabels.length">
+								<span class="pd-ficha-resumo__k">Embalagem</span>
+								<span class="pd-ficha-resumo__v">{{ embalagemLabels.join(' · ') }}</span>
+							</li>
+							<li *ngIf="composicaoExcerpt" class="pd-ficha-resumo__composicao">
+								<span class="pd-ficha-resumo__k">Composição</span>
+								<p class="pd-ficha-resumo__text">{{ composicaoExcerpt }}</p>
+								<button
+									*ngIf="showComposicaoMore"
+									type="button"
+									class="pd-ficha-resumo__link"
+									(click)="goToComposicaoTab()">
+									Ver composição completa
+								</button>
+							</li>
+						</ul>
+					</section>
 
 					<div class="price-row">
 						<div>
@@ -153,9 +196,6 @@
 							<span class="r-total">({{ p.ratingsCount || 0 }})</span>
 						</div>
 						<button type="button" class="btn fav" (click)="toggleFav()"><span [class.on]="isFavLocal || p.isFavorited">♥</span> Favoritar</button>
-					</div>
-					<div class="pd-availability">
-						<span [class.in-stock]="availabilityLabel.indexOf('Em estoque') === 0" [class.out-stock]="availabilityLabel === 'Indisponível'">{{ availabilityLabel }}</span>
 					</div>
 					<div class="desc" *ngIf="p.description?.trim() && p.description !== p.shortDescription">{{ p.description }}</div>
 					<div class="pd-reg" *ngIf="p.registro_mapa"><span>Registro</span> {{ p.registro_mapa }}</div>
@@ -248,15 +288,20 @@
 						<span class="chip" *ngFor="let tag of p.tags">{{ tag }}</span>
 					</div>
 
-					<div class="actions">
+					<div class="actions" role="group" aria-label="Comprar">
 						<div class="qty" aria-label="Quantidade">
-							<button type="button" (click)="decrease()">-</button>
-							<input type="number" [value]="qty" readonly aria-readonly="true" />
-							<button type="button" (click)="increase()">+</button>
+							<button type="button" (click)="decrease()" aria-label="Diminuir quantidade">−</button>
+							<input
+								type="number"
+								[value]="qty"
+								readonly
+								aria-readonly="true"
+								[attr.aria-label]="'Quantidade: ' + qty" />
+							<button type="button" (click)="increase()" aria-label="Aumentar quantidade">+</button>
 						</div>
 						<div class="cta">
-							<button type="button" class="btn primary large" (click)="addToCart($event)">Adicionar ao carrinho</button>
-							<button type="button" class="btn outline" (click)="buyNow($event)">Comprar agora</button>
+							<button type="button" class="btn primary large" (click)="onClickAddToCart($event)">Adicionar ao carrinho</button>
+							<button type="button" class="btn outline" (click)="onClickBuyNow($event)">Comprar agora</button>
 						</div>
 					</div>
 				</aside>
@@ -292,7 +337,7 @@
 			</div>
 		</section>
 
-		<section class="pd-extra" *ngIf="hasTechnicalInfo()">
+		<section class="pd-extra" *ngIf="hasTechnicalInfo()" id="pd-ficha-tecnica">
 			<h2 class="pd-extra__head">Ficha técnica e documentos</h2>
 			<nav class="pd-tabs" role="tablist" aria-label="Conteúdo complementar">
 				<button type="button" role="tab" [class.active]="activeTab === 'composicao'" *ngIf="p.composicao" (click)="activeTab = 'composicao'">Composição</button>
@@ -314,5 +359,33 @@
 				</div>
 			</div>
 		</section>
+
+		<div
+			class="pd-receita-modal"
+			*ngIf="receitaModalOpen"
+			role="presentation"
+			(click)="dismissReceitaModal()">
+			<div
+				class="pd-receita-modal__card"
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="pd-receita-modal-title"
+				(click)="$event.stopPropagation()">
+				<h2 id="pd-receita-modal-title" class="pd-receita-modal__title">Receita veterinária</h2>
+				<div class="pd-receita-modal__body">
+					<p>
+						Este produto <strong>exige receita veterinária</strong>. Receitas emitidas <strong>fora desta plataforma</strong> só podem ser usadas em compras com
+						<strong>retirada na loja</strong>, por causa da retenção e da conferência do documento junto ao pedido, conforme exige a legislação.
+					</p>
+					<p>
+						Na finalização do pedido, escolha a opção <strong>retire na loja</strong> quando a receita não tiver sido gerada no nosso ambiente.
+					</p>
+				</div>
+				<div class="pd-receita-modal__actions">
+					<button type="button" class="btn outline" (click)="dismissReceitaModal()">Cancelar</button>
+					<button type="button" class="btn primary" (click)="confirmReceitaModal()">Entendi, continuar</button>
+				</div>
+			</div>
+		</div>
 	</ng-container>
 </main>

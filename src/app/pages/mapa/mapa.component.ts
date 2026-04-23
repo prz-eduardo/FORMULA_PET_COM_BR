@@ -5,14 +5,13 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
-import { FooterComponent } from '../../footer/footer.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
   // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [CommonModule, NavmenuComponent, FooterComponent, RouterModule, BannerSlotComponent],
+  imports: [CommonModule, RouterModule, NavmenuComponent, BannerSlotComponent],
   templateUrl: './mapa.component.html',
   styleUrls: ['./mapa.component.scss']
 })

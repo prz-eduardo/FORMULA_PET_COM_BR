@@ -10,7 +10,8 @@ import { AboutComponent } from './about/about.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
 import { ProductPreviewComponent } from './product-preview/product-preview.component';
 import { ToastContainerComponent } from './shared/toast/toast-container.component';
-import { LoginComponent } from './pages/restrito/login/login.component';
+import { LoginClienteComponent } from './pages/restrito/area-cliente/login-cliente/login-cliente.component';
+import { StoreService } from './services/store.service';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -22,7 +23,7 @@ import { register } from 'swiper/element/bundle';
     ToastContainerComponent,
     NavmenuComponent,
     FooterComponent,
-    LoginComponent,
+    LoginClienteComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -36,7 +37,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   showLoginModal = false;
   private openLoginHandler?: EventListenerOrEventListenerObject;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: any, private zone: NgZone, private router: Router) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: any,
+    private zone: NgZone,
+    private router: Router,
+    private store: StoreService
+  ) {
     register(); // Swiper
   }
 
@@ -82,6 +88,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   closeLoginModal() {
     this.showLoginModal = false;
+  }
+
+  onClienteLoggedIn() {
+    this.closeLoginModal();
+    this.store.resetClienteGate();
   }
 
   ngAfterViewInit(): void {

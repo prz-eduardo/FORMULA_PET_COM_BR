@@ -8,9 +8,12 @@
 <app-footer *ngIf="showFooter"></app-footer>
 
 <!-- Global login modal (opened by dispatching 'open-login' on window) -->
-<div class="login-overlay" *ngIf="showLoginModal" (click)="closeLoginModal()"></div>
-<div class="login-popover" *ngIf="showLoginModal" role="dialog" aria-label="Login do cliente" (click)="$event.stopPropagation()">
-	<app-login></app-login>
+<div class="global-login-modal" *ngIf="showLoginModal">
+	<div class="login-overlay" (click)="closeLoginModal()"></div>
+	<div class="login-popover app-login-popover" role="dialog" aria-modal="true" aria-label="Login do cliente" (click)="$event.stopPropagation()">
+		<button type="button" class="app-login-popover__close" (click)="closeLoginModal()" aria-label="Fechar">×</button>
+		<app-login-cliente (close)="closeLoginModal()" (loggedIn)="onClienteLoggedIn()"></app-login-cliente>
+	</div>
 </div>
 
 <!-- Global toast container -->

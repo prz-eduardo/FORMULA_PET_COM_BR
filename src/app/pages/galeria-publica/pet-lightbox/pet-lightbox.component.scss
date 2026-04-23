@@ -6,7 +6,7 @@
   background: rgba(6, 10, 18, 0.78);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 12000;
+  z-index: 2000100; /* acima do header fixo (2M) */
   display: flex;
   align-items: center;
   justify-content: center;

@@ -40,6 +40,11 @@ export class ProductDetailsComponent implements OnInit {
   selectedVariant: NonNullable<ShopProduct['variantes']>[number] | null = null;
   activeTab: 'composicao' | 'modo_uso' | 'indicacoes' | 'contraindicacoes' | 'documentos' = 'composicao';
 
+  /** Alerta de receita antes de adicionar (produto exige receita). */
+  receitaModalOpen = false;
+  private pendingAddEvent?: Event;
+  private pendingBuyAfterAdd = false;
+
   constructor(
     private route: ActivatedRoute,
     private store: StoreService,
@@ -106,6 +111,39 @@ export class ProductDetailsComponent implements OnInit {
     return this.dosagemLabels.length > 0 || this.embalagemLabels.length > 0;
   }
 
+  /** SKU da variante selecionada ou do produto. */
+  displaySku(): string | null {
+    const p = this.product;
+    if (!p) return null;
+    const v = this.selectedVariant;
+    if (v?.sku != null && String(v.sku).trim() !== '') return String(v.sku).trim();
+    if (p.sku != null && String(p.sku).trim() !== '') return String(p.sku).trim();
+    return null;
+  }
+
+  get composicaoExcerpt(): string | null {
+    const c = this.product?.composicao?.trim();
+    if (!c) return null;
+    const oneLine = c.replace(/\s+/g, ' ');
+    if (oneLine.length <= 220) return oneLine;
+    return `${oneLine.slice(0, 220).trim()}…`;
+  }
+
+  get showComposicaoMore(): boolean {
+    const c = this.product?.composicao?.trim();
+    if (!c) return false;
+    return c.length > 220 || /\n/.test(c);
+  }
+
+  goToComposicaoTab(): void {
+    if (!this.product?.composicao) return;
+    this.activeTab = 'composicao';
+    if (typeof document === 'undefined') return;
+    setTimeout(() => {
+      document.getElementById('pd-ficha-tecnica')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }
+
   get dosagemLabels(): string[] {
     const p = this.product;
     if (!p) return [];
@@ -156,8 +194,46 @@ export class ProductDetailsComponent implements OnInit {
     return e === true || e === 1;
   }
 
-  get imageCount(): number {
-    return this.product?.images?.length || 0;
+  private static readonly PLACEHOLDER = '/imagens/image.png';
+
+  /** URLs únicas da galeria (evita miniaturas duplicadas se a BD tiver a mesma URL duas vezes). */
+  get dedupedImages(): NonNullable<ShopProduct['images']> {
+    const p = this.product;
+    if (!p?.images?.length) return [];
+    const seen = new Set<string>();
+    const out: NonNullable<ShopProduct['images']> = [];
+    for (const im of p.images) {
+      const u = (im.url || '').trim();
+      if (!u) continue;
+      const k = u.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(im);
+    }
+    return out;
+  }
+
+  /** Número de fotos distintas alinhado ao que a galeria representa. */
+  get effectiveImageCount(): number {
+    const p = this.product;
+    if (!p) return 0;
+    const n = this.dedupedImages.length;
+    if (n > 0) return n;
+    const fallback = (p.imageUrl || p.image || '').toString().trim();
+    if (fallback && !this.isPlaceholderPath(fallback)) return 1;
+    return 0;
+  }
+
+  get showGalleryThumbs(): boolean {
+    return this.dedupedImages.length > 1;
+  }
+
+  private isPlaceholderPath(u: string): boolean {
+    try {
+      return u.trim().toLowerCase().endsWith('/imagens/image.png');
+    } catch {
+      return false;
+    }
   }
 
   get hasApiPromotionBlock(): boolean {
@@ -197,10 +273,10 @@ export class ProductDetailsComponent implements OnInit {
   }
 
   get displayImageUrl(): string {
-    if (!this.product) return '/imagens/image.png';
-    const imgs = this.product.images || [];
+    if (!this.product) return ProductDetailsComponent.PLACEHOLDER;
+    const imgs = this.dedupedImages;
     if (imgs.length && imgs[this.selectedImageIndex]) return imgs[this.selectedImageIndex].url;
-    return (this.product.imageUrl || this.product.image || '/imagens/image.png');
+    return (this.product.imageUrl || this.product.image || ProductDetailsComponent.PLACEHOLDER);
   }
 
   selectImage(i: number) {
@@ -232,9 +308,48 @@ export class ProductDetailsComponent implements OnInit {
     return !!ok;
   }
 
-  async buyNow(ev?: Event): Promise<void> {
+  /** Adiciona ao carrinho; se exigir receita, abre o alerta antes. */
+  async onClickAddToCart(ev: Event): Promise<void> {
+    if (!this.product) return;
+    if (this.exigeReceitaSim()) {
+      this.pendingAddEvent = ev;
+      this.pendingBuyAfterAdd = false;
+      this.receitaModalOpen = true;
+      return;
+    }
+    await this.addToCart(ev);
+  }
+
+  /** Compra agora; se exigir receita, abre o alerta antes. */
+  async onClickBuyNow(ev: Event): Promise<void> {
+    if (!this.product) return;
+    if (this.exigeReceitaSim()) {
+      this.pendingAddEvent = ev;
+      this.pendingBuyAfterAdd = true;
+      this.receitaModalOpen = true;
+      return;
+    }
     const ok = await this.addToCart(ev);
-    if (ok) this.router.navigate(['/carrinho']);
+    if (ok) void this.router.navigate(['/carrinho']);
+  }
+
+  confirmReceitaModal(): void {
+    this.receitaModalOpen = false;
+    const ev = this.pendingAddEvent;
+    const goCarrinho = this.pendingBuyAfterAdd;
+    this.pendingAddEvent = undefined;
+    this.pendingBuyAfterAdd = false;
+    void (async () => {
+      if (!this.product) return;
+      const ok = await this.addToCart(ev);
+      if (ok && goCarrinho) void this.router.navigate(['/carrinho']);
+    })();
+  }
+
+  dismissReceitaModal(): void {
+    this.receitaModalOpen = false;
+    this.pendingAddEvent = undefined;
+    this.pendingBuyAfterAdd = false;
   }
 
   decrease() {

@@ -39,6 +39,56 @@ html, body{
     box-sizing: border-box;
 }
 
+/* App-root login modal: fixed overlay (styles in loja.component.scss are encapsulated and do not apply here) */
+.global-login-modal {
+    .login-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        /* Acima do header fixo (2M) */
+        z-index: 2000030;
+        animation: globalLoginOverlayFadeIn 0.25s ease forwards;
+    }
+    .login-popover.app-login-popover {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(420px, calc(100vw - 32px));
+        max-height: min(88vh, 800px);
+        overflow: auto;
+        z-index: 2000040;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+        padding: 16px 16px 20px;
+        box-sizing: border-box;
+    }
+    .app-login-popover__close {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        z-index: 1;
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 8px;
+        background: #f3f4f6;
+        color: #111827;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .app-login-popover__close:hover {
+        background: #e5e7eb;
+    }
+}
+@keyframes globalLoginOverlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 /* Make Poppins available for headers and pet names */
 .pf-poppins { font-family: 'Poppins', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
 
