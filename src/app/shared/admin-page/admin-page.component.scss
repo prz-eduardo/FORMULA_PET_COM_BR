@@ -1,0 +1,154 @@
+/* Local styles for AdminPageComponent — complements global admin tokens. */
+
+:host { display: block; }
+
+.admin-default-search input {
+  padding: 10px 12px;
+  height: 40px;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-input-bg);
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-text);
+  outline: none;
+  min-width: 260px;
+  transition: box-shadow .15s, border-color .15s;
+}
+.admin-default-search input:focus {
+  border-color: var(--admin-focus-border);
+  box-shadow: var(--admin-focus-ring);
+}
+
+.admin-default-actions { display: inline-flex; gap: 8px; }
+
+.admin-loading {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--admin-muted-2);
+}
+
+/* ----------------------------------------------------------------------------
+   Drawer auto-form (schema-driven)
+   Aplica o mesmo visual `fx-*` para auto-forms gerados via `formSchema`
+   (páginas que ainda não migraram para slot=drawer explícito).
+   ---------------------------------------------------------------------------- */
+
+:host form { display: flex; flex-direction: column; gap: 18px; margin: 0; }
+
+/* Seção = .form-section → visual de .fx-section */
+:host form .form-section {
+  background: rgba(255, 255, 255, .02);
+  border: 1px solid var(--admin-border, rgba(255, 255, 255, .08));
+  border-radius: 14px;
+  padding: 16px;
+}
+:host form .form-section > h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--admin-text, #e5ecf5);
+}
+
+/* Grid = .form-grid → .fx-grid (2 colunas padrão) */
+:host form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+  align-items: start;
+}
+:host form .form-grid.two-up { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 640px) {
+  :host form .form-grid { grid-template-columns: 1fr; }
+}
+
+/* Field = .field → .fx-field */
+:host form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+:host form .field > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--admin-muted, rgba(229, 236, 245, .7));
+}
+:host form .field .control { display: contents; }
+:host form .field .control input,
+:host form .field .control select,
+:host form .field .control textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid var(--admin-border, rgba(255, 255, 255, .12));
+  background: var(--admin-card, rgba(255, 255, 255, .04));
+  color: var(--admin-text, #e5ecf5);
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+:host form .field .control input:focus,
+:host form .field .control select:focus,
+:host form .field .control textarea:focus {
+  border-color: rgba(13, 184, 222, .55);
+  box-shadow: 0 0 0 3px rgba(13, 184, 222, .14);
+}
+:host form .field .control select {
+  color-scheme: dark;
+  cursor: pointer;
+}
+:host form .field .control select option,
+:host form .field .control select optgroup {
+  background-color: var(--admin-surface, #0f1722);
+  color: var(--admin-text, #e5ecf5);
+}
+:host form .field .control textarea { resize: vertical; min-height: 70px; }
+:host form .field .control input[type='checkbox'] { width: auto; }
+
+:host form .drawer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* Action cell switch used by auto-generated table */
+.active-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.switch {
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  border-radius: 22px;
+  background: #334155;
+  border: 1px solid var(--admin-border-strong);
+  position: relative;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left .12s ease;
+}
+.switch.on { background: var(--admin-ok-2); border-color: var(--admin-ok-2); }
+.switch.on::after { left: 20px; }
+.switch.readonly { pointer-events: none; cursor: default; }

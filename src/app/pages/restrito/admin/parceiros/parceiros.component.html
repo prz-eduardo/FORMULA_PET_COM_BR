@@ -1,139 +1,350 @@
 <div class="fornec-wrap">
+  <!-- Header -->
   <div class="header">
     <h2>Gerenciar Parceiros</h2>
     <div class="filters">
       <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, CNPJ, contato…" />
-      <select [value]="active()" (change)="onActive($event)">
-        <option value="all">Todos</option>
-        <option value="1">Ativos</option>
-        <option value="0">Inativos</option>
-      </select>
-      <button appBtn class="outline" (click)="openTypes()">Gerir Tipos</button>
-      <button appBtn (click)="openCreate()" class="primary">Novo</button>
+      <button appBtn class="ghost" (click)="openTypes()">
+        <i class="fa fa-tags"></i> Gerir Tipos
+      </button>
+      <button appBtn class="primary" (click)="openCreate()">
+        <i class="fa fa-plus"></i> Novo
+      </button>
     </div>
   </div>
 
+  <!-- Advanced filters -->
+  <div class="filters-adv">
+    <select [value]="active()" (change)="onActive($event)" aria-label="Status">
+      <option value="all">Todos</option>
+      <option value="1">Ativos</option>
+      <option value="0">Inativos</option>
+    </select>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- List -->
   <div class="list" *ngIf="items().length; else emptyTpl">
-    <div class="row" *ngFor="let s of items()" (click)="view(s)">
+    <div class="row" *ngFor="let s of items()" [class.expanded]="isExpanded(s)" (click)="toggleExpand(s)">
       <div class="avatar">{{ initials(s) }}</div>
+
       <div class="col main">
-        <div class="name">{{ s.nome }}</div>
-        <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : '-' }}</div>
+        <div class="name">
+          {{ s.nome }}
+          <span class="chip tipo" *ngIf="s.tipo">{{ partnerTypeName(s.tipo) }}</span>
+        </div>
+        <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : 'CNPJ não informado' }}</div>
         <div class="chips">
-          <span class="chip tipo">{{ s.tipo || '-' }}</span>
+          <span class="chip" [class.ok]="(s.ativo ?? 1)===1" [class.danger]="(s.ativo ?? 1)!==1">
+            {{ (s.ativo ?? 1) === 1 ? 'Ativo' : 'Inativo' }}
+          </span>
+          <span class="chip warn" *ngIf="s.status === 'pending'">Pendente</span>
+          <span class="chip ok" *ngIf="s.status === 'approved'">Aprovado</span>
+          <span class="chip danger" *ngIf="s.status === 'rejected'">Reprovado</span>
         </div>
       </div>
+
       <div class="col meta">
-        <div class="muted">{{ s.email || s.telefone || s.contato || '-' }}</div>
+        <div class="muted">{{ s.email || '—' }}</div>
+        <div class="muted">{{ s.telefone || s.contato || '—' }}</div>
       </div>
+
       <div class="col actions" (click)="$event.stopPropagation()">
-        <button appBtn (click)="view(s)">Ver/Editar</button>
+        <button appBtn (click)="toggleExpand(s)">
+          {{ isExpanded(s) ? 'Fechar' : 'Ver/Editar' }}
+        </button>
+        <button appBtn class="ok" *ngIf="(s.ativo ?? 1) !== 1" (click)="toggleActive(s)">Ativar</button>
+        <button appBtn class="warn" *ngIf="(s.ativo ?? 1) === 1" (click)="toggleActive(s)">Desativar</button>
+      </div>
+
+      <!-- Expanded panel (inline edit) ----------------------------------- -->
+      <div class="row-expand" *ngIf="isExpanded(s) && selected() as sel" (click)="$event.stopPropagation()">
+        <div class="panel fx-drawer">
+          <button class="close-x" (click)="toggleExpand(s)" aria-label="Fechar">×</button>
+
+          <!-- Cabeçalho do painel --------------------------------------- -->
+          <section class="fx-section">
+            <header class="fx-section__head fx-section__head--actions">
+              <div class="id">
+                <div class="avatar lg">{{ initials(sel) }}</div>
+                <div>
+                  <h3>{{ sel.nome }}</h3>
+                  <div class="chips">
+                    <span class="chip tipo">{{ partnerTypeName(sel.tipo) }}</span>
+                    <span class="chip" [class.ok]="(sel.ativo ?? 1) === 1" [class.danger]="(sel.ativo ?? 1) !== 1">
+                      {{ (sel.ativo ?? 1) === 1 ? 'Ativo' : 'Inativo' }}
+                    </span>
+                    <span class="chip warn" *ngIf="sel.status === 'pending'">Pendente</span>
+                    <span class="chip ok" *ngIf="sel.status === 'approved'">Aprovado</span>
+                    <span class="chip danger" *ngIf="sel.status === 'rejected'">Reprovado</span>
+                  </div>
+                  <div class="meta-dates muted">
+                    <span *ngIf="sel.created_at">Criado em {{ sel.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                    <span *ngIf="sel.updated_at"> · Atualizado em {{ sel.updated_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="fx-section__actions">
+                <button type="button" class="fx-btn ok small" (click)="approveSelected()" *ngIf="sel.status !== 'approved'">
+                  <i class="fa fa-check"></i> Aprovar
+                </button>
+                <button type="button" class="fx-btn small" (click)="toggleActive()">
+                  {{ (sel.ativo ?? 1) === 1 ? 'Desativar' : 'Ativar' }}
+                </button>
+                <button type="button" class="fx-btn danger small" (click)="remove()"><i class="fa fa-trash"></i> Remover</button>
+                <button type="button" class="fx-btn primary small" (click)="save()" [disabled]="form.invalid"><i class="fa fa-save"></i> Salvar</button>
+              </div>
+            </header>
+          </section>
+
+          <!-- Dados --------------------------------------------------- -->
+          <form [formGroup]="form" class="fx-section">
+            <header class="fx-section__head">
+              <h3>Dados gerais</h3>
+              <p>Identificação, contato e classificação do parceiro.</p>
+            </header>
+
+            <div class="fx-grid">
+              <div class="fx-field fx-col-2">
+                <label>Nome</label>
+                <input formControlName="nome" />
+              </div>
+              <div class="fx-field">
+                <label>CNPJ</label>
+                <input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"
+                       (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'edit')" />
+              </div>
+              <div class="fx-field">
+                <label>Tipo</label>
+                <select formControlName="tipo">
+                  <option value="">—</option>
+                  <option *ngFor="let t of partnerTypes()" [value]="t.id">{{ t.name }}</option>
+                </select>
+              </div>
+              <div class="fx-field">
+                <label>Contato</label>
+                <input formControlName="contato" />
+              </div>
+              <div class="fx-field">
+                <label>Email</label>
+                <input type="email" formControlName="email" />
+              </div>
+              <div class="fx-field">
+                <label>Telefone</label>
+                <input formControlName="telefone" />
+              </div>
+              <div class="fx-field">
+                <label>Status</label>
+                <select formControlName="ativo">
+                  <option [ngValue]="1">Ativo</option>
+                  <option [ngValue]="0">Inativo</option>
+                </select>
+              </div>
+              <div class="fx-field fx-col-2">
+                <label>Observações</label>
+                <textarea rows="3" formControlName="obs"></textarea>
+              </div>
+            </div>
+          </form>
+
+          <!-- Endereço ------------------------------------------------ -->
+          <section class="fx-section">
+            <header class="fx-section__head">
+              <h3>Endereço</h3>
+              <p>Usado para localizar o parceiro no mapa e em notas.</p>
+            </header>
+            <app-admin-address [group]="$any(form.get('address'))"></app-admin-address>
+          </section>
+
+          <!-- Geolocalização ------------------------------------------ -->
+          <section class="fx-section">
+            <header class="fx-section__head fx-section__head--actions">
+              <div>
+                <h3><i class="fa fa-map-marker"></i> Geolocalização</h3>
+                <p>Lat/lng usados no mapa público. Pode ser preenchido a partir do endereço.</p>
+              </div>
+              <div class="fx-section__actions">
+                <button type="button" class="fx-btn small" (click)="geocodeFromAddress()">
+                  <i class="fa fa-location-arrow"></i> Usar endereço
+                </button>
+              </div>
+            </header>
+            <div class="fx-grid" [formGroup]="form">
+              <div class="fx-field">
+                <label>Latitude</label>
+                <input formControlName="latitude" inputmode="decimal" />
+              </div>
+              <div class="fx-field">
+                <label>Longitude</label>
+                <input formControlName="longitude" inputmode="decimal" />
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   </div>
+
   <ng-template #emptyTpl>
     <div class="empty">Nenhum parceiro encontrado.</div>
   </ng-template>
 
-  <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
-
-  <div class="detail" *ngIf="selected() as s">
-    <div class="panel">
-      <div class="panel-head">
-        <h3>{{ s.nome }}</h3>
-        <div class="head-actions">
-          <button appBtn (click)="closeDetail()">Fechar</button>
-          <button appBtn class="ok" (click)="approveSelected()">Aceitar</button>
-          <button appBtn class="ghost" (click)="toggleActive()">{{ (s.ativo ?? 1) === 1 ? 'Inativar' : 'Ativar' }}</button>
-          <button appBtn class="danger" (click)="remove()">Remover</button>
-          <button appBtn class="primary" (click)="save()" [disabled]="form.invalid">Salvar</button>
-        </div>
-      </div>
-      <form [formGroup]="form" class="grid">
-        <div><label>Nome</label><input formControlName="nome" /></div>
-        <div><label>CNPJ</label><input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'edit')" /></div>
-        <div><label>Contato</label><input formControlName="contato" /></div>
-        <div><label>Email</label><input type="email" formControlName="email" /></div>
-        <div><label>Telefone</label><input formControlName="telefone" /></div>
-        <div><label>Tipo</label>
-          <select formControlName="tipo">
-            <option value="">--</option>
-            <option *ngFor="let t of partnerTypes()" [value]="t.id">{{ t.name }}</option>
-          </select>
-        </div>
-        <div class="colspan2"><label>Endereço</label><input formControlName="endereco" /></div>
-        <div><label>Número</label><input formControlName="numero" /></div>
-        <div><label>Complemento</label><input formControlName="complemento" /></div>
-        <div><label>Latitude</label><input formControlName="latitude" /></div>
-        <div><label>Longitude</label><input formControlName="longitude" /></div>
-        <div class="colspan2"><label>Observações</label><textarea formControlName="obs"></textarea></div>
-        <div>
-          <label>Status</label>
-          <select formControlName="ativo">
-            <option [ngValue]="1">Ativo</option>
-            <option [ngValue]="0">Inativo</option>
-          </select>
-        </div>
-      </form>
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="total() > pageSize()">
+    <div class="left">
+      <label>Tamanho da página
+        <select [value]="pageSize()" (change)="onSelectPageSize($event)">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </label>
+      <span class="range">{{ ((page()-1)*pageSize())+1 }}–{{ pageEnd() }} de {{ total() }}</span>
+    </div>
+    <div class="right">
+      <button appBtn (click)="prev()" [disabled]="!canPrev()">Anterior</button>
+      <span class="muted">Página {{ page() }} de {{ totalPages() }}</span>
+      <button appBtn (click)="next()" [disabled]="!canNext()">Próxima</button>
     </div>
   </div>
 
-  <div class="create-drawer" *ngIf="showCreate()">
-    <div class="drawer">
-      <form [formGroup]="createForm" (ngSubmit)="create()" class="grid">
-        <div><label>Nome</label><input formControlName="nome" /></div>
-        <div><label>CNPJ</label><input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'create')" /></div>
-        <div><label>Contato</label><input formControlName="contato" /></div>
-        <div><label>Email</label><input type="email" formControlName="email" /></div>
-        <div><label>Telefone</label><input formControlName="telefone" /></div>
-        <div><label>Tipo</label>
-          <select formControlName="tipo">
-            <option value="">--</option>
-            <option *ngFor="let t of partnerTypes()" [value]="t.id">{{ t.name }}</option>
-          </select>
-        </div>
-        <div class="colspan2"><label>Endereço</label><input formControlName="endereco" /></div>
-        <div><label>Número</label><input formControlName="numero" /></div>
-        <div><label>Complemento</label><input formControlName="complemento" /></div>
-        <div><label>Latitude</label><input formControlName="latitude" /></div>
-        <div><label>Longitude</label><input formControlName="longitude" /></div>
-        <div class="colspan2"><label>Observações</label><textarea formControlName="obs"></textarea></div>
-        <div>
-          <label>Status</label>
-          <select formControlName="ativo">
-            <option [ngValue]="1">Ativo</option>
-            <option [ngValue]="0">Inativo</option>
-          </select>
-        </div>
-        <div class="drawer-actions">
-            <button appBtn type="button" class="ghost" (click)="cancelCreate()">Cancelar</button>
-            <button appBtn type="submit" class="primary" [disabled]="createForm.invalid">Criar</button>
+  <!-- Create drawer ------------------------------------------------------ -->
+  <app-admin-drawer
+    [open]="showCreate()"
+    [title]="'Novo parceiro'"
+    [primaryLabel]="'Criar parceiro'"
+    [primaryDisabled]="createForm.invalid"
+    (primaryAction)="create()"
+    (secondaryAction)="cancelCreate()"
+    (closeRequest)="cancelCreate()">
+    <form [formGroup]="createForm" (ngSubmit)="create()" class="fx-drawer" novalidate>
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Dados gerais</h3>
+          <p>Identificação, contato e classificação do parceiro.</p>
+        </header>
+
+        <div class="fx-grid">
+          <div class="fx-field fx-col-2">
+            <label>Nome <span class="req">*</span></label>
+            <input formControlName="nome" />
           </div>
-      </form>
-    </div>
-  </div>
+          <div class="fx-field">
+            <label>CNPJ</label>
+            <input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"
+                   (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'create')" />
+          </div>
+          <div class="fx-field">
+            <label>Tipo</label>
+            <select formControlName="tipo">
+              <option value="">—</option>
+              <option *ngFor="let t of partnerTypes()" [value]="t.id">{{ t.name }}</option>
+            </select>
+          </div>
+          <div class="fx-field">
+            <label>Contato</label>
+            <input formControlName="contato" />
+          </div>
+          <div class="fx-field">
+            <label>Email</label>
+            <input type="email" formControlName="email" />
+          </div>
+          <div class="fx-field">
+            <label>Telefone</label>
+            <input formControlName="telefone" />
+          </div>
+          <div class="fx-field">
+            <label>Status</label>
+            <select formControlName="ativo">
+              <option [ngValue]="1">Ativo</option>
+              <option [ngValue]="0">Inativo</option>
+            </select>
+          </div>
+          <div class="fx-field fx-col-2">
+            <label>Observações</label>
+            <textarea rows="3" formControlName="obs"></textarea>
+          </div>
+        </div>
+      </section>
 
-  <div class="types-drawer" *ngIf="showTypes()">
-    <div class="drawer">
-      <div class="drawer-head">
-        <h3>Tipos de Parceiros</h3>
-        <button appBtn class="ghost" (click)="closeTypes()">Fechar</button>
-      </div>
-      <div class="drawer-body">
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Endereço</h3>
+          <p>Usado para localizar o parceiro e emitir documentos.</p>
+        </header>
+        <app-admin-address [group]="$any(createForm.get('address'))"></app-admin-address>
+      </section>
+
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Geolocalização</h3>
+          <p>Opcional. Defina manualmente ou preencha pelo endereço ao salvar.</p>
+        </header>
+        <div class="fx-grid">
+          <div class="fx-field">
+            <label>Latitude</label>
+            <input formControlName="latitude" inputmode="decimal" />
+          </div>
+          <div class="fx-field">
+            <label>Longitude</label>
+            <input formControlName="longitude" inputmode="decimal" />
+          </div>
+        </div>
+      </section>
+    </form>
+  </app-admin-drawer>
+
+  <!-- Types drawer ------------------------------------------------------- -->
+  <app-admin-drawer
+    [open]="showTypes()"
+    [title]="'Tipos de Parceiros'"
+    [primaryLabel]="'Concluir'"
+    [secondaryLabel]="'Fechar'"
+    [showSecondary]="false"
+    (primaryAction)="closeTypes()"
+    (secondaryAction)="closeTypes()"
+    (closeRequest)="closeTypes()">
+    <div class="fx-drawer">
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Tipos cadastrados</h3>
+          <p>Classifique os parceiros para filtros e relatórios.</p>
+        </header>
+
         <div class="types-list">
           <div *ngFor="let t of partnerTypes()" class="type-row">
             <span>{{ t.name }}</span>
-            <div>
-              <button appBtn class="ghost" (click)="editType(t)">Editar</button>
-              <button appBtn class="danger" (click)="deleteType(t.id)">Remover</button>
+            <div class="fx-section__actions">
+              <button type="button" class="fx-btn small" (click)="editType(t)">Editar</button>
+              <button type="button" class="fx-btn danger small" (click)="deleteType(t.id)">Remover</button>
             </div>
           </div>
+          <div class="fx-items-empty" *ngIf="!partnerTypes().length">
+            <div class="fx-items-empty__title">Nenhum tipo cadastrado.</div>
+            <div class="fx-items-empty__desc">Crie o primeiro tipo abaixo.</div>
+          </div>
         </div>
-        <div class="types-create">
-          <input #newType placeholder="Nome do tipo" />
-          <button appBtn (click)="createType(newType.value); newType.value='';" class="primary">Criar</button>
+      </section>
+
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Novo tipo</h3>
+          <p>Adicione uma nova categoria de parceiro.</p>
+        </header>
+
+        <div class="fx-grid">
+          <div class="fx-field">
+            <label>Nome</label>
+            <input #newType placeholder="Ex.: Clínica veterinária" />
+          </div>
+          <div class="fx-field fx-inline">
+            <button type="button" class="fx-btn primary" (click)="createType(newType.value); newType.value='';">
+              <i class="fa fa-plus"></i> Criar tipo
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
-  </div>
+  </app-admin-drawer>
 </div>

@@ -22,6 +22,8 @@ export class ProductDetailsComponent implements OnInit {
   isFavLocal?: boolean;
   @ViewChild('cartBtn', { static: false }) cartBtn?: ElementRef<HTMLButtonElement>;
   selectedImageIndex = 0;
+  selectedVariant: NonNullable<ShopProduct['variantes']>[number] | null = null;
+  activeTab: 'composicao' | 'modo_uso' | 'indicacoes' | 'contraindicacoes' | 'documentos' = 'composicao';
 
   constructor(private route: ActivatedRoute, private store: StoreService, private api: ApiService, private router: Router, private renderer: Renderer2) {}
 
@@ -32,11 +34,31 @@ export class ProductDetailsComponent implements OnInit {
     this.product = p;
     this.isFavLocal = p?.isFavorited;
     this.selectedImageIndex = 0;
+    // Seleciona primeira variante ativa (se houver) para exibir preço/estoque inicial
+    const vs = (p?.variantes || []).filter(v => v.ativo !== false);
+    this.selectedVariant = vs.length ? vs[0] : null;
+    // Define aba inicial como a primeira com conteúdo
+    if (p?.composicao) this.activeTab = 'composicao';
+    else if (p?.modo_uso) this.activeTab = 'modo_uso';
+    else if (p?.indicacoes) this.activeTab = 'indicacoes';
+    else if (p?.contraindicacoes) this.activeTab = 'contraindicacoes';
+    else if (p?.documentos?.length) this.activeTab = 'documentos';
     this.loading = false;
+  }
+
+  hasTechnicalInfo(): boolean {
+    const p = this.product;
+    if (!p) return false;
+    return !!(p.composicao || p.modo_uso || p.indicacoes || p.contraindicacoes || (p.documentos && p.documentos.length));
+  }
+
+  selectVariant(v: NonNullable<ShopProduct['variantes']>[number]) {
+    this.selectedVariant = v;
   }
 
   priceNow(): number {
     if (!this.product) return 0;
+    if (this.selectedVariant && this.selectedVariant.preco != null) return Number(this.selectedVariant.preco);
     if (typeof this.product.promoPrice === 'number') return this.product.promoPrice;
     return this.store.getPriceWithDiscount(this.product);
   }

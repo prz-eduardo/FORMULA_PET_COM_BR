@@ -3,13 +3,16 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
-import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
+import { AdminDrawerComponent } from '../shared/admin-drawer/admin-drawer.component';
+import { ButtonDirective } from '../../../../shared/button';
 import { AdminApiService, AdminFornecedorDto, PartnerTypeDto, Paged } from '../../../../services/admin-api.service';
+import { ApiService } from '../../../../services/api.service';
+import { AdminAddressComponent, buildAddressGroup, flattenAddress } from '../../../../shared/admin-address';
 
 @Component({
   selector: 'app-admin-parceiros',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent, ButtonDirective, ButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent, AdminDrawerComponent, ButtonDirective, AdminAddressComponent],
   templateUrl: './parceiros.component.html',
   styleUrls: ['./parceiros.component.scss']
 })
@@ -23,6 +26,7 @@ export class ParceirosAdminComponent implements OnInit {
   loading = signal(false);
 
   selected = signal<AdminFornecedorDto|null>(null);
+  expandedId = signal<number|string|null>(null);
   form!: FormGroup;
 
   partnerTypes = signal<PartnerTypeDto[]>([]);
@@ -31,7 +35,7 @@ export class ParceirosAdminComponent implements OnInit {
   showCreate = signal(false);
   createForm!: FormGroup;
 
-  constructor(private api: AdminApiService, private fb: FormBuilder) {}
+  constructor(private api: AdminApiService, private publicApi: ApiService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.initCreateForm();
@@ -47,13 +51,11 @@ export class ParceirosAdminComponent implements OnInit {
       email: ['', Validators.email],
       telefone: [''],
       tipo: [''],
-      endereco: [''],
-      numero: [''],
-      complemento: [''],
       latitude: [''],
       longitude: [''],
       obs: [''],
-      ativo: [1]
+      ativo: [1],
+      address: buildAddressGroup(this.fb)
     });
   }
 
@@ -73,14 +75,22 @@ export class ParceirosAdminComponent implements OnInit {
 
   onQ(ev: Event) { const el = ev.target as HTMLInputElement|null; if (el) { this.q.set(el.value); this.page.set(1); this.load(); } }
   onActive(ev: Event) { const el = ev.target as HTMLSelectElement|null; if (el) { this.active.set(el.value as any); this.page.set(1); this.load(); } }
+  onSelectPageSize(ev: Event) { const el = ev.target as HTMLSelectElement|null; if (!el) return; this.pageSize.set(Number(el.value) || 10); this.page.set(1); this.load(); }
   totalPages() { const s=this.pageSize(); const t=this.total(); return s? Math.max(1, Math.ceil(t/s)) : 1; }
   canPrev() { return this.page()>1; }
   canNext() { return this.page()<this.totalPages(); }
   prev() { if (this.canPrev()) { this.page.set(this.page()-1); this.load(); } }
   next() { if (this.canNext()) { this.page.set(this.page()+1); this.load(); } }
+  pageEnd(): number { return Math.min(this.page() * this.pageSize(), this.total()); }
+
+  idOf(u: AdminFornecedorDto|null|undefined): number|string|null { return (u?.id ?? null) as any; }
+  isExpanded(u: AdminFornecedorDto): boolean { const id = this.idOf(u); return id != null && id === this.expandedId(); }
+  toggleExpand(u: AdminFornecedorDto) { if (this.isExpanded(u)) { this.closeDetail(); } else { this.view(u); } }
 
   view(item: AdminFornecedorDto) {
     this.selected.set(item);
+    this.expandedId.set(this.idOf(item));
+    const anyItem = item as any;
     this.form = this.fb.group({
       nome: [item.nome, [Validators.required, Validators.minLength(2)]],
       cnpj: [this.formatCnpjDisplay(item.cnpj || '')],
@@ -88,27 +98,34 @@ export class ParceirosAdminComponent implements OnInit {
       email: [item.email || '', Validators.email],
       telefone: [item.telefone || ''],
       tipo: [item.tipo ?? ''],
-      endereco: [item.endereco || ''],
-      numero: [item.numero || ''],
-      complemento: [item.complemento || ''],
-      latitude: [item.latitude || ''],
-      longitude: [item.longitude || ''],
+      latitude: [item.latitude ?? ''],
+      longitude: [item.longitude ?? ''],
       obs: [item.obs || ''],
-      ativo: [item.ativo ?? 1]
+      ativo: [item.ativo ?? 1],
+      address: buildAddressGroup(this.fb, {
+        cep: anyItem.cep ?? '',
+        logradouro: anyItem.logradouro ?? item.endereco ?? '',
+        numero: item.numero ?? '',
+        complemento: item.complemento ?? '',
+        bairro: anyItem.bairro ?? '',
+        city: anyItem.city ?? anyItem.cidade ?? '',
+        uf: anyItem.uf ?? anyItem.estado ?? ''
+      })
     });
   }
 
-  closeDetail() { this.selected.set(null); }
+  closeDetail() { this.selected.set(null); this.expandedId.set(null); }
 
   save() {
     const s = this.selected(); if (!s || !this.form || this.form.invalid) { this.form?.markAllAsTouched(); return; }
-    const payload = { ...this.form.value } as any;
+    const payload: any = flattenAddress(this.form.getRawValue());
     if (payload.cnpj) payload.cnpj = this.digitsOnly(payload.cnpj);
     if (payload.latitude) payload.latitude = Number(payload.latitude);
     if (payload.longitude) payload.longitude = Number(payload.longitude);
+    payload.endereco = this.composeAddressLine(payload);
     this.api.updateAdminFornecedor(s.id!, payload).subscribe(updated => {
       this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x));
-      this.selected.set(updated);
+      this.selected.set({ ...(this.selected() as any), ...updated });
     })
   }
 
@@ -116,7 +133,7 @@ export class ParceirosAdminComponent implements OnInit {
     const s = this.selected(); if (!s) return;
     if (!confirm('Remover parceiro?')) return;
     this.api.deleteAdminFornecedor(s.id!).subscribe(() => {
-      this.selected.set(null);
+      this.closeDetail();
       this.load();
     })
   }
@@ -125,10 +142,11 @@ export class ParceirosAdminComponent implements OnInit {
   cancelCreate() { this.showCreate.set(false); }
   create() {
     if (this.createForm.invalid) { this.createForm.markAllAsTouched(); return; }
-    const payload = { ...this.createForm.value } as any;
+    const payload: any = flattenAddress(this.createForm.getRawValue());
     if (payload.cnpj) payload.cnpj = this.digitsOnly(payload.cnpj);
     if (payload.latitude) payload.latitude = Number(payload.latitude);
     if (payload.longitude) payload.longitude = Number(payload.longitude);
+    payload.endereco = this.composeAddressLine(payload);
     this.api.createAdminFornecedor(payload).subscribe(created => {
       this.showCreate.set(false);
       this.page.set(1);
@@ -160,31 +178,69 @@ export class ParceirosAdminComponent implements OnInit {
     this.api.deletePartnerType(id).subscribe(() => this.loadPartnerTypes());
   }
 
-  // Interactive edit using browser prompt (wrapped to satisfy template type checking)
   editType(t: PartnerTypeDto) {
     try {
       const name = window.prompt('Novo nome', t.name || '');
-      if (name == null) return; // cancelled
+      if (name == null) return;
       const trimmed = (name || '').trim();
       if (!trimmed) return;
       this.updateType(t.id, trimmed);
-    } catch (e) {
-      // ignore
-    }
+    } catch {}
   }
 
   // Approve / toggle active
   approveSelected() {
     const s = this.selected(); if (!s) return;
     const payload: any = { status: 'approved', ativo: 1 };
-    this.api.updateAdminFornecedor(s.id!, payload).subscribe(u => { this.selected.set(u); this.load(); });
+    this.api.updateAdminFornecedor(s.id!, payload).subscribe(u => {
+      this.selected.set(u);
+      this.items.set(this.items().map(x => x.id === u.id ? { ...x, ...u } : x));
+    });
   }
 
-  toggleActive() {
-    const s = this.selected(); if (!s) return;
-    const next = (s.ativo ?? 1) === 1 ? 0 : 1;
-    const payload: any = { ativo: next };
-    this.api.updateAdminFornecedor(s.id!, payload).subscribe(u => { this.selected.set(u); this.items.set(this.items().map(x => x.id === u.id ? { ...x, ...u } : x)); });
+  toggleActive(u?: AdminFornecedorDto | null) {
+    const target = u || this.selected(); if (!target) return;
+    const next: 0|1 = (target.ativo ?? 1) === 1 ? 0 : 1;
+    this.api.updateAdminFornecedor(target.id!, { ativo: next }).subscribe(upd => {
+      this.items.set(this.items().map(x => x.id === upd.id ? { ...x, ...upd } : x));
+      if (this.selected()?.id === upd.id) this.selected.set({ ...(this.selected() as any), ...upd });
+    });
+  }
+
+  /** Use the selected CEP/address fields to geocode lat/lng via Nominatim. */
+  geocodeFromAddress() {
+    if (!this.form) return;
+    const v = flattenAddress(this.form.getRawValue());
+    const line = this.composeAddressLine(v);
+    if (!line) return;
+    this.publicApi.geocodeAddress(line).subscribe(res => {
+      if (Array.isArray(res) && res.length > 0) {
+        const first = res[0];
+        this.form.patchValue({
+          latitude: first.lat ? String(first.lat) : '',
+          longitude: first.lon ? String(first.lon) : ''
+        });
+      }
+    });
+  }
+
+  initials(u: AdminFornecedorDto | null | undefined): string {
+    if (!u || !u.nome) return '?';
+    const parts = (u.nome || '').split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+
+  partnerTypeName(id: string | number | null | undefined): string {
+    if (id == null || id === '') return '—';
+    const found = this.partnerTypes().find(t => String(t.id) === String(id));
+    return found?.name || String(id);
+  }
+
+  composeAddressLine(p: any): string {
+    const parts = [p.logradouro, p.numero ? `nº ${p.numero}` : '', p.bairro, p.city && p.uf ? `${p.city}/${p.uf}` : (p.city || p.uf)];
+    return parts.filter(x => x && String(x).trim()).join(', ');
   }
 
   // CNPJ helpers
@@ -212,10 +268,5 @@ export class ParceirosAdminComponent implements OnInit {
     el.value = masked;
     if (ctx === 'edit') this.form?.get('cnpj')?.setValue(masked, { emitEvent: false });
     else this.createForm?.get('cnpj')?.setValue(masked, { emitEvent: false });
-  }
-
-  initials(item: AdminFornecedorDto | null | undefined): string {
-    if (!item || !item.nome) return '';
-    return (item.nome || '').split(/\s+/).filter(Boolean).map(s => s[0]).slice(0,2).join('').toUpperCase();
   }
 }

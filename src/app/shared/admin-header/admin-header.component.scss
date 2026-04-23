@@ -2,13 +2,86 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
+  /* Espaço extra à direita para sino / Conta e dropdowns não colarem na borda */
+  padding: 14px clamp(16px, 3vw, 28px) 14px clamp(16px, 2.5vw, 24px);
 }
-.admin-header h1 { margin: 0; }
+.admin-header h1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 1.6px;
+  color: #e9f2fb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .badge-super {
   font-size: 0.6em;
   margin-left: 0.5rem;
-  color: #fff;
-  background: #333;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
+  color: #0b1220;
+  background: #10b981;
+  padding: 0.12rem 0.44rem;
+  border-radius: 6px;
+  font-weight: 800;
 }
+
+/* Header actions (projected content lives here) */
+.header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Primary command button used by admin header (Conta) */
+.header-actions .btn-command {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  color: #e6faff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, transform .12s ease, box-shadow .12s ease;
+  backdrop-filter: blur(4px) saturate(120%);
+}
+.header-actions .btn-command .caret { font-size: 12px; opacity: .85; }
+.header-actions .btn-command:hover { background: rgba(255,255,255,0.04); transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,0.28); }
+.header-actions .btn-command:focus-visible { outline: 3px solid rgba(13,184,222,0.18); }
+
+/* Account menu dropdown */
+.command { position: relative; }
+.command .menu {
+  position: absolute;
+  right: 0; top: calc(100% + 8px);
+  min-width: 180px;
+  background: #0b1117;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.45);
+  padding: 6px;
+  z-index: 6000;
+}
+
+.command .menu button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  color: #e5ecf5;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.command .menu button:hover { background: rgba(255,255,255,0.03); }
+
+/* Make sure projected labels inside header look good */
+.header-actions .label { color: #dbeafe; font-weight: 700; }

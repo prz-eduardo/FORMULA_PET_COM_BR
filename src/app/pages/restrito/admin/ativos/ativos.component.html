@@ -1,26 +1,86 @@
 <app-admin-crud
   [columns]="ativosColumns"
-  [formSchema]="ativosFormSchema"
-  [editItem]="selected()"
   [items]="items()"
   [loading]="loading()"
   [page]="page()"
   [pageSize]="pageSize()"
   [total]="total()"
-  [drawerOpen]="(selected() !== null) || showCreate()"
+  [totalLabel]="'ativos'"
+  [useDefaultSearch]="true"
+  [searchPlaceholder]="'Buscar ativos por nome ou descrição...'"
+  [showClearFilters]="hasFilters()"
+  [drawerOpen]="drawerOpen()"
+  [drawerTitle]="selected() ? 'Editar ativo' : 'Novo ativo'"
+  [drawerWidth]="'580px'"
+  [drawerShowFooter]="true"
+  [drawerPrimaryLabel]="selected() ? 'Salvar alterações' : 'Criar ativo'"
+  [drawerPrimaryLoading]="submitting()"
   (drawerOpenChange)="onDrawerOpenChange($event)"
+  (drawerPrimaryAction)="submitAtivo()"
+  (drawerSecondaryAction)="closeDrawer()"
   (pageChange)="page.set($event); load()"
+  (quickSearch)="onQuickSearch($event)"
+  (clearFilters)="clearFilters()"
   (edit)="view($event)"
-  (create)="openCreateForSchema()"
-  (remove)="removeFromTable($event)"
-  (submit)="onSchemaSubmit($event)"
+  (create)="openCreate()"
+  (remove)="remove($event)"
   [useDefaultActions]="true"
-  [createLabel]="'Novo Ativo'">
+  [createLabel]="'+ Novo ativo'">
 
-  
-  <input slot="search" class="search-input" type="text" placeholder="Buscar por nome ou descrição" (input)="onQ($event)" aria-label="Buscar ativos" />
-  <div slot="actions"></div>
+  <div slot="title"><h2>Ativos</h2></div>
+
+  <div slot="filters">
+    <div class="filter-group">Status</div>
+    <button type="button" class="filter-chip" [class.active]="active() === 'all'" (click)="setActive('all')">Todos</button>
+    <button type="button" class="filter-chip" [class.active]="active() === '1'"   (click)="setActive('1')">Ativos</button>
+    <button type="button" class="filter-chip" [class.active]="active() === '0'"   (click)="setActive('0')">Inativos</button>
+  </div>
 
   <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
+
+  <!-- Drawer Ativo ------------------------------------------------------ -->
+  <form slot="drawer" *ngIf="drawerOpen()" [formGroup]="ativoForm" class="fx-drawer" (ngSubmit)="submitAtivo()" novalidate>
+    <section class="fx-section">
+      <header class="fx-section__head fx-section__head--actions">
+        <div>
+          <h3>Dados do ativo</h3>
+          <p>Identificação e informações farmacológicas básicas.</p>
+        </div>
+        <div class="fx-section__actions" *ngIf="selected()">
+          <button type="button" class="fx-btn danger small" (click)="remove(null)">Remover</button>
+        </div>
+      </header>
+
+      <div class="fx-grid">
+        <div class="fx-field fx-col-2">
+          <label>Nome <span class="req">*</span></label>
+          <input type="text" formControlName="nome" placeholder="Ex.: Cetoconazol" />
+        </div>
+
+        <div class="fx-field fx-col-2">
+          <label>Descrição</label>
+          <textarea rows="3" formControlName="descricao" placeholder="Resumo do ativo, indicações e observações."></textarea>
+        </div>
+
+        <div class="fx-field">
+          <label>Dose em cães</label>
+          <textarea rows="3" formControlName="doseCaes" placeholder="Ex.: 5mg/kg, 1x ao dia"></textarea>
+        </div>
+
+        <div class="fx-field">
+          <label>Dose em gatos</label>
+          <textarea rows="3" formControlName="doseGatos" placeholder="Ex.: 5mg/kg, 1x ao dia"></textarea>
+        </div>
+
+        <div class="fx-field fx-col-2">
+          <label>Status</label>
+          <select formControlName="active">
+            <option [ngValue]="1">Ativo</option>
+            <option [ngValue]="0">Inativo</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  </form>
 
 </app-admin-crud>

@@ -8,6 +8,9 @@
   [drawerOpen]="selected != null"
   (drawerOpenChange)="onDrawerOpenChange($event)"
   [drawerFull]="drawerFull"
+  [drawerTitle]="selected ? ('Pedido #' + (selected.id || selected.codigo || '')) : 'Pedido'"
+  [drawerSubtitle]="selected?.cliente_nome || selected?.customer_name || null"
+  [drawerHideFooter]="true"
   (pageChange)="page = $event; load()"
   (edit)="openDetails($event)"
   (quickSearch)="onQuickSearch($event)"
@@ -17,6 +20,8 @@
 
 
   <div slot="title"><h2>Pedidos</h2></div>
+
+  <app-admin-summary-panel [summary]="summary"></app-admin-summary-panel>
 
   <admin-pagination slot="pagination" [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; load()"></admin-pagination>
 

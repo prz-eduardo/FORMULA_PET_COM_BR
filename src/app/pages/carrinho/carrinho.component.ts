@@ -9,11 +9,12 @@ import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.co
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
 @Component({
   selector: 'app-carrinho',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule, ProductCardV2Component],
+  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule, ProductCardV2Component, BannerSlotComponent],
   templateUrl: './carrinho.component.html',
   styleUrls: ['./carrinho.component.scss']
 })

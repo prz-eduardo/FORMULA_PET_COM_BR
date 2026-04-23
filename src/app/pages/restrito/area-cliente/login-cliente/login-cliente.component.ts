@@ -58,7 +58,12 @@ export class LoginClienteComponent {
     } catch (err: any) {
       const parsed = this.parseErrorLocal(err) || 'Erro ao fazer login.';
       this.mensagemErro = parsed;
-      this.toastService.error(parsed, 'Erro no login');
+      const status = err?.status;
+      if (status === 403) {
+        this.toastService.error(parsed, 'Conta desativada');
+      } else {
+        this.toastService.error(parsed, 'Erro no login');
+      }
     } finally {
       this.carregando = false;
     }
@@ -111,7 +116,12 @@ export class LoginClienteComponent {
     } catch (err: any) {
       const parsed = this.parseErrorLocal(err) || 'Erro ao autenticar com Google.';
       this.mensagemErro = parsed;
-      this.toastService.error(parsed, 'Erro no login');
+      const status = err?.status;
+      if (status === 403) {
+        this.toastService.error(parsed, 'Conta desativada');
+      } else {
+        this.toastService.error(parsed, 'Erro no login');
+      }
     } finally {
       this.carregando = false;
     }

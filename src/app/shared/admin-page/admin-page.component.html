@@ -1,18 +1,29 @@
-<app-admin-listing [loading]="loading">
+<app-admin-listing
+  [loading]="loading"
+  [total]="total"
+  [totalLabel]="totalLabel"
+  [showFilters]="showFilters"
+  [showClearFilters]="showClearFilters"
+  (clearFilters)="emitClearFilters()">
   <div slot="title"><ng-content select="[slot=title]"></ng-content></div>
 
   <div slot="search">
     <ng-content select="[slot=search]"></ng-content>
-    <div *ngIf="useDefaultSearch" class="admin-default-search">
-      <input type="search" [placeholder]="searchPlaceholder" (input)="onQuickSearch($event)" />
-    </div>
+    <input
+      *ngIf="useDefaultSearch"
+      class="search-input"
+      type="search"
+      [placeholder]="searchPlaceholder"
+      (input)="onQuickSearch($event)" />
+  </div>
+
+  <div slot="filters">
+    <ng-content select="[slot=filters]"></ng-content>
   </div>
 
   <div slot="actions">
     <ng-content select="[slot=actions]"></ng-content>
-    <div *ngIf="useDefaultActions" class="admin-default-actions">
-      <button class="btn primary" (click)="emitCreate()">{{ createLabel }}</button>
-    </div>
+    <button *ngIf="useDefaultActions" class="admin-btn" type="button" (click)="emitCreate()">{{ createLabel }}</button>
   </div>
 
   <section slot="table" class="table-wrap">
@@ -43,10 +54,8 @@
               </td>
               <td class="actions-cell">
                 <button class="btn small" (click)="emitEdit(item)">Detalhes</button>
-                <!-- Botão avançar status -->
-                <button class="btn small primary" *ngIf="item.status && ['criado','aguardando_pagamento','pago','em_preparo','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({action: 'advance', item: item})">Avançar</button>
-                <!-- Botão cancelar pedido -->
-                <button class="btn small danger" *ngIf="item.status && item.status.toLowerCase() !== 'cancelado' && item.status.toLowerCase() !== 'concluido'" (click)="$event.stopPropagation(); emitCustomAction({action: 'cancel', item: item})">Cancelar</button>
+                <button class="btn small primary" *ngIf="item.status && ['criado','aguardando_pagamento','pago','em_preparo','enviado'].includes(item.status.toLowerCase()) && item.status.toLowerCase() !== 'concluido' && item.status.toLowerCase() !== 'cancelado'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'advance', item: item })">Avançar</button>
+                <button class="btn small danger" *ngIf="item.status && item.status.toLowerCase() !== 'cancelado' && item.status.toLowerCase() !== 'concluido'" (click)="$event.stopPropagation(); emitCustomAction({ action: 'cancel', item: item })">Cancelar</button>
                 <button class="btn small danger" (click)="emitRemove(item)">Remover</button>
               </td>
             </tr>
@@ -71,15 +80,24 @@
   </div>
 </app-admin-listing>
 
-<!-- Drawer area: project any content marked with slot="drawer" inside the shared side-drawer -->
-<app-side-drawer [open]="drawerOpen" (openChange)="onSideDrawerOpenChange($event)" (closeRequest)="onSideDrawerCloseRequest($event)" [width]="drawerWidth" [full]="drawerFull">
-  <!-- Drawer projection (projected content is rendered below). Debug markers removed. -->
-  <!-- If page provided a projected drawer, show it. If it lacks a header, render a standard header above it. -->
-  <!-- Render projected drawer content always (fixes cases where detection fails). Only show the default header
-       when there's no auto-generated form schema and the projected content doesn't provide its own header. -->
+<!-- Drawer area: standardized wrapper with sticky header / scrollable body / sticky footer -->
+<app-admin-drawer
+  [open]="drawerOpen"
+  [width]="drawerWidth"
+  [full]="drawerFull"
+  [title]="drawerTitle"
+  [subtitle]="drawerSubtitle"
+  [primaryLabel]="resolvedPrimaryLabel"
+  [secondaryLabel]="drawerSecondaryLabel"
+  [primaryDisabled]="drawerPrimaryDisabled"
+  [primaryLoading]="drawerPrimaryLoading"
+  [hideFooter]="!resolvedShowFooter"
+  (openChange)="onSideDrawerOpenChange($event)"
+  (closeRequest)="onSideDrawerCloseRequest($event)"
+  (primaryAction)="onDrawerPrimaryAction()"
+  (secondaryAction)="onDrawerSecondaryAction()">
   <ng-content select="[slot=drawer]"></ng-content>
 
-  <!-- Auto-generated form: render only when page did not provide a projected drawer and a schema is available -->
   <ng-container *ngIf="!hasProjectedDrawer && (formSchema?.fields?.length || formSchema?.sections?.length)">
     <form [formGroup]="autoForm" (ngSubmit)="onSubmitAutoForm()">
 
@@ -156,11 +174,6 @@
           </ng-container>
         </div>
       </ng-template>
-
-      <div class="drawer-actions actions">
-        <button class="btn secondary" type="button" (click)="onCancelAutoForm()">Cancelar</button>
-        <button class="btn primary" type="submit">{{ formSubmitLabel || 'Salvar' }}</button>
-      </div>
     </form>
   </ng-container>
-</app-side-drawer>
+</app-admin-drawer>

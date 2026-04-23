@@ -36,6 +36,7 @@
     "lodash-es": "^4.17.21",
     "ngx-mask": "^20.0.3",
     "rxjs": "~7.8.0",
+    "socket.io-client": "^4.8.3",
     "swiper": "^11.1.15",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"

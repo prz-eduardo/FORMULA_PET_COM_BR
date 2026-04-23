@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
@@ -8,30 +9,63 @@ import { ButtonDirective, ButtonComponent } from '../../../shared/button';
 
 import { AdminNotificationComponent } from '../../../admin-notification/admin-notification.component';
 import { AdminHeaderComponent } from '../../../shared/admin-header/admin-header.component';
+import { AdminHomeOverviewComponent } from './home-overview/home-overview.component';
+
+type SectionKey = 'inteligencia' | 'catalogo' | 'pessoas' | 'operacao';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ButtonDirective, ButtonComponent, AdminNotificationComponent, AdminHeaderComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterOutlet,
+    ButtonDirective,
+    ButtonComponent,
+    AdminNotificationComponent,
+    AdminHeaderComponent,
+    AdminHomeOverviewComponent,
+  ],
   templateUrl: './admin.component.html',
-  styleUrls: ['./admin.component.scss']
+  styleUrls: ['./admin.component.scss'],
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, OnDestroy {
   headerTitle = 'ADMIN PANEL';
-  hasProducts = true; // ajuste conforme sua lógica
+  hasProducts = true;
   isAdmin = false;
   isSuper = false;
   showUserMenu = false;
   isRootView = true;
-  private routerSub?: Subscription;
 
-  // Persist collapsible state by key
+  searchTerm = '';
+  greeting = 'Olá novamente';
+
+  private routerSub?: Subscription;
   private collapsed: Record<string, boolean> = {};
+
+  /** Map of section key -> list of searchable keyword groups (one per item). */
+  private sectionItems: Record<SectionKey, string[]> = {
+    inteligencia: ['dashboard'],
+    catalogo: [
+      'cadastrar produto novo',
+      'lista produtos listagem',
+      'ativos ingredientes',
+      'formulas receitas',
+      'marketplace categorias tags',
+      'temas vitrine loja cores',
+    ],
+    pessoas: [
+      'gerenciar usuarios admins',
+      'gerenciar clientes',
+      'veterinarios vet',
+      'parceiros gestao',
+    ],
+    operacao: ['banners', 'pedidos compras', 'cupons desconto', 'promocoes ofertas'],
+  };
 
   constructor(private router: Router, private session: SessionService) {}
 
   async ngOnInit() {
-    // Check backend JWT for admin role
     if (!this.session.hasValidSession(true)) {
       this.router.navigate(['/restrito/login']);
       return;
@@ -39,42 +73,93 @@ export class AdminComponent implements OnInit {
     this.isAdmin = this.session.isAdmin();
     this.isSuper = this.session.isSuper();
 
-    // restore collapsed state from localStorage (SSR-safe guard)
+    this.greeting = this.computeGreeting();
+
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('admin_collapsed') : null;
       if (raw) this.collapsed = JSON.parse(raw);
     } catch {}
 
-    // Track whether we're on the admin root (dashboard) so we can show/hide the dashboard tiles
     try {
       const u = this.router.url || '';
       this.isRootView = u === '/restrito/admin' || u === '/restrito/admin/';
       this.updateHeaderTitle();
-      this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
-        const nu = ev.urlAfterRedirects || ev.url || '';
-        this.isRootView = nu === '/restrito/admin' || nu === '/restrito/admin/';
-        this.updateHeaderTitle();
-      });
+      this.routerSub = this.router.events
+        .pipe(filter((e) => e instanceof NavigationEnd))
+        .subscribe((ev: any) => {
+          const nu = ev.urlAfterRedirects || ev.url || '';
+          this.isRootView = nu === '/restrito/admin' || nu === '/restrito/admin/';
+          this.updateHeaderTitle();
+        });
     } catch {}
   }
 
   ngOnDestroy() {
-    try { if (this.routerSub) this.routerSub.unsubscribe(); } catch (e) {}
+    try { this.routerSub?.unsubscribe(); } catch {}
+  }
+
+  private computeGreeting(): string {
+    const h = new Date().getHours();
+    if (h < 5) return 'Boa madrugada';
+    if (h < 12) return 'Bom dia';
+    if (h < 18) return 'Boa tarde';
+    return 'Boa noite';
   }
 
   private updateHeaderTitle() {
     try {
       let route: any = this.router.routerState.root;
       while (route.firstChild) route = route.firstChild;
-      const title = route && route.snapshot && route.snapshot.data && route.snapshot.data['title'];
+      const title = route?.snapshot?.data?.['title'];
       this.headerTitle = title ? title : 'ADMIN PANEL';
-    } catch (e) {
+    } catch {
       this.headerTitle = 'ADMIN PANEL';
     }
   }
 
+  /** Keyboard shortcut: focus search on "/" */
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(ev: KeyboardEvent) {
+    const target = ev.target as HTMLElement | null;
+    const typing = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+    if (!typing && ev.key === '/' && this.isRootView) {
+      const input = document.querySelector<HTMLInputElement>('.hero-search input');
+      if (input) { ev.preventDefault(); input.focus(); }
+    }
+  }
+
+  // -------- Search helpers --------
+  private normalize(v: string): string {
+    return (v || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  /** Returns true when the given item keywords match the current search term. */
+  matches(keywords: string): boolean {
+    const q = this.normalize(this.searchTerm);
+    if (!q) return true;
+    return this.normalize(keywords).includes(q);
+  }
+
+  sectionHasMatches(key: SectionKey): boolean {
+    if (!this.searchTerm) return true;
+    return (this.sectionItems[key] || []).some((k) => this.matches(k));
+  }
+
+  sectionCount(key: SectionKey): number {
+    if (!this.searchTerm) return (this.sectionItems[key] || []).length;
+    return (this.sectionItems[key] || []).filter((k) => this.matches(k)).length;
+  }
+
+  hasAnyMatch(): boolean {
+    return (Object.keys(this.sectionItems) as SectionKey[]).some((k) => this.sectionHasMatches(k));
+  }
+
+  // -------- Navigation --------
   logout() {
-    // Clear local backend token and go to login
     this.session.saveBackendToken('');
     this.router.navigate(['/restrito/login']);
   }
@@ -83,14 +168,12 @@ export class AdminComponent implements OnInit {
   goToLista() { this.router.navigate(['/restrito/lista-produtos']); }
   goToUsuarios() { this.router.navigate(['/restrito/admin/usuarios']); }
 
-  // Extras úteis baseados no app
   goToHistoricoReceitas() { this.router.navigate(['/historico-receitas']); }
   goToPacientes() { this.router.navigate(['/pacientes']); }
   goToAreaVet() { this.router.navigate(['/area-vet']); }
   goToLoja() { this.router.navigate(['/loja']); }
   goToPerfil() { this.router.navigate(['/restrito/admin/meu-perfil-admin']); }
 
-  // Novos atalhos do painel admin (rotas placeholders para implementar)
   goToDashboard() { this.router.navigate(['/restrito/admin/dashboard']); }
   goToEstoque() { this.router.navigate(['/restrito/admin/estoque']); }
   goToClientes() { this.router.navigate(['/restrito/admin/clientes']); }
@@ -103,20 +186,19 @@ export class AdminComponent implements OnInit {
   goToConfiguracoes() { this.router.navigate(['/restrito/admin/configuracoes']); }
   goToFormulas() { this.router.navigate(['/restrito/admin/formulas']); }
   goToMarketplaceCustomizacoes() { this.router.navigate(['/restrito/admin/marketplace/customizacoes']); }
+  goToLojaTemas() { this.router.navigate(['/restrito/admin/loja/temas']); }
   goToFornecedores() { this.router.navigate(['/restrito/admin/fornecedores']); }
   goToAtivos() { this.router.navigate(['/restrito/admin/ativos']); }
   goToInsumos() { this.router.navigate(['/restrito/admin/insumos']); }
   goToParceiros() { this.router.navigate(['/restrito/admin/parceiros']); }
 
-  // Header user menu
+  // -------- Header user menu --------
   toggleUserMenu(force?: boolean) {
     this.showUserMenu = typeof force === 'boolean' ? force : !this.showUserMenu;
   }
 
-  // Collapsible sections utilities
-  isCollapsed(key: string): boolean {
-    return !!this.collapsed[key];
-  }
+  // -------- Collapsible sections --------
+  isCollapsed(key: string): boolean { return !!this.collapsed[key]; }
 
   toggleSection(key: string) {
     this.collapsed[key] = !this.collapsed[key];

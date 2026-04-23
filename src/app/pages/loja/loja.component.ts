@@ -8,13 +8,15 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
+import { ProductCardSalesComponent } from '../../product-card-sales/product-card-sales.component';
+import { ProductCardBannerComponent } from '../../product-card-banner/product-card-banner.component';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../constants/card.constants';
+import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
 @Component({
   selector: 'app-loja',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NavmenuComponent, FooterComponent, ProductCardV2Component],
+  imports: [CommonModule, FormsModule, RouterLink, NavmenuComponent, FooterComponent, ProductCardSalesComponent, ProductCardBannerComponent, BannerSlotComponent],
   templateUrl: './loja.component.html',
   styleUrls: ['./loja.component.scss']
 })

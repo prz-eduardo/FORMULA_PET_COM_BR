@@ -1,0 +1,89 @@
+.summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-card {
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-sm);
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border-strong);
+  overflow: hidden;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--admin-surface-3);
+  border-bottom: 1px solid var(--admin-border);
+  transition: background 0.2s;
+  color: var(--admin-text);
+}
+.card-head--clickable:hover { background: rgba(255, 255, 255, 0.04); }
+.card-actions { display: flex; align-items: center; color: var(--admin-muted-2); }
+.chev { transition: transform 0.2s; }
+.chev.open { transform: rotate(180deg); }
+.card-body { padding: 12px 16px; color: var(--admin-text); }
+
+.segment-title {
+  font-size: 1rem;
+  font-weight: var(--admin-font-weight-bold);
+  margin: 0;
+  color: var(--admin-text-strong);
+}
+
+.segment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tot-line,
+.status-item,
+.payment-list li,
+.top-clientes-list li,
+.top-cupons-list li,
+.pedidos-recentes-list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.status-label {
+  min-width: 120px;
+  font-weight: var(--admin-font-weight-medium);
+  color: var(--admin-muted-2);
+}
+
+.top-clientes-list img.cliente-foto {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 0.5rem;
+}
+
+.payment-list,
+.top-clientes-list,
+.top-cupons-list,
+.pedidos-recentes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .summary-panel { gap: 0.75rem; }
+  .card-head, .card-body { padding: 10px 12px; }
+  .segment-title { font-size: 0.95rem; }
+}

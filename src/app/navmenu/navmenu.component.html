@@ -35,8 +35,14 @@
     <div class="menubar">
 <a routerLink="/institucional" class="home">
   <div class="logo-container">
-    <div id="wrapper">
-      <div id="ball"></div>
+    <div id="wrapper" class="goo-wrapper">
+      <div id="ball" class="ball-core"></div>
+      <div class="ball-orbit ball-orbit-a"></div>
+      <div class="ball-orbit ball-orbit-b"></div>
+      <div class="ball-orbit ball-orbit-c"></div>
+      <div class="ball-orbit ball-orbit-d"></div>
+      <div class="ball-orbit ball-orbit-e"></div>
+      <div class="ball-orbit ball-orbit-f"></div>
     </div>
     <img src="/imagens/image.png" alt="Logo" class="imagem-navbar">
   </div>
@@ -83,6 +89,9 @@
           </div>
         </div>
   <i class="icon-menu" *ngIf="showFullMenu && !isMenuHiddenOnRoute()" [class.icon-closed]="menuOpen" (click)="toggleMenu()"><span></span></i>
+  <span class="navmenu-bell" *ngIf="isCliente && !showFullMenu">
+    <app-notifications-bell audience="cliente"></app-notifications-bell>
+  </span>
   <button *ngIf="!showFullMenu" #userBtn class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
     <ng-container *ngIf="userFoto; else defaultUserIcon">
       <img [src]="userFoto" alt="Foto do usuário" />

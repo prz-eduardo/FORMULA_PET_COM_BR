@@ -64,7 +64,7 @@
     </div>
 
     <section class="order-list" *ngIf="!carregando && pedidos.length; else stateBlock">
-      <article class="order-card" *ngFor="let p of pedidos" [attr.data-id]="p.id">
+      <article class="order-card" *ngFor="let p of pedidos" [attr.data-id]="p.id" [attr.data-pedido-id]="p.id" [class.highlighted]="highlightId === p.id">
         <header class="order-head" (click)="toggleExpand(p.id)" [attr.aria-expanded]="expanded[p.id] ? 'true' : 'false'">
           <div class="left">
             <div class="codigo">#{{ p.id }}</div>

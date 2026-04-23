@@ -1,0 +1,76 @@
+/* ==========================================================================
+   Admin Design Tokens
+   --------------------------------------------------------------------------
+   CSS custom properties used by all admin pages/components. Keep this file
+   as the single source of truth for the admin dark theme. Component SCSS
+   should reference these tokens instead of hardcoding colors/spacings.
+   ========================================================================== */
+:root {
+    /* ---------- Surfaces ---------- */
+    --admin-bg: #0d151f;
+    --admin-bg-gradient: linear-gradient(135deg, #0d151f, #1a2230);
+    --admin-surface: #0f1722;
+    --admin-surface-2: #0f2135;
+    --admin-surface-3: #132235;
+    --admin-card: rgba(255, 255, 255, 0.02);
+    --admin-card-strong: rgba(255, 255, 255, 0.04);
+    --admin-input-bg: #0b1220;
+
+    /* ---------- Borders ---------- */
+    --admin-border: rgba(255, 255, 255, 0.08);
+    --admin-border-strong: #263241;
+    --admin-border-soft: rgba(255, 255, 255, 0.04);
+
+    /* ---------- Typography colors ---------- */
+    --admin-text: #e5ecf5;
+    --admin-text-strong: #f8fafc;
+    --admin-muted: #9fb0c3;
+    --admin-muted-2: #9aa4b2;
+
+    /* ---------- Brand / state ---------- */
+    --admin-primary: #0db8de;
+    --admin-primary-2: #2563eb;
+    --admin-primary-ink: #05222b;
+    --admin-ok: #10b981;
+    --admin-ok-2: #22c55e;
+    --admin-warn: #f59e0b;
+    --admin-danger: #ef4444;
+    --admin-danger-2: #dc2626;
+    --admin-info: #3b82f6;
+
+    /* ---------- Radius ---------- */
+    --admin-radius-xs: 4px;
+    --admin-radius-sm: 6px;
+    --admin-radius-md: 8px;
+    --admin-radius-lg: 12px;
+    --admin-radius-xl: 16px;
+    --admin-radius-pill: 999px;
+
+    /* ---------- Spacing ---------- */
+    --admin-space-1: 4px;
+    --admin-space-2: 8px;
+    --admin-space-3: 12px;
+    --admin-space-4: 16px;
+    --admin-space-5: 24px;
+    --admin-space-6: 32px;
+
+    /* ---------- Shadows ---------- */
+    --admin-shadow-sm: 0 2px 8px rgba(2, 6, 23, 0.24);
+    --admin-shadow-md: 0 8px 24px rgba(2, 6, 23, 0.32);
+    --admin-shadow-lg: 0 16px 48px rgba(2, 6, 23, 0.45);
+
+    /* ---------- Focus ring ---------- */
+    --admin-focus-ring: 0 0 0 3px rgba(13, 184, 222, 0.28);
+    --admin-focus-border: rgba(13, 184, 222, 0.45);
+
+    /* ---------- Typography ---------- */
+    --admin-font-size-xs: 12px;
+    --admin-font-size-sm: 13px;
+    --admin-font-size-md: 14px;
+    --admin-font-size-lg: 16px;
+    --admin-font-size-xl: 18px;
+    --admin-font-weight-regular: 400;
+    --admin-font-weight-medium: 500;
+    --admin-font-weight-semibold: 600;
+    --admin-font-weight-bold: 700;
+}

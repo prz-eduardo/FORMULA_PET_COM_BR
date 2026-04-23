@@ -1,26 +1,184 @@
 <app-admin-crud
   [columns]="cuponsColumns"
-  [formSchema]="cuponsFormSchema"
-  [editItem]="selected()"
   [items]="items()"
   [loading]="loading()"
   [page]="page()"
   [pageSize]="pageSize()"
   [total]="total()"
-  [drawerOpen]="(selected() !== null) || showCreate()"
+  [drawerOpen]="drawerOpen()"
+  [drawerWidth]="'680px'"
+  [drawerTitle]="selected() ? 'Editar cupom' : 'Novo cupom'"
+  [drawerShowFooter]="true"
+  [drawerPrimaryLabel]="selected() ? 'Salvar alterações' : 'Criar cupom'"
+  [drawerPrimaryLoading]="submitting()"
   (drawerOpenChange)="onDrawerOpenChange($event)"
+  (drawerPrimaryAction)="submitCupom()"
+  (drawerSecondaryAction)="closeDrawer()"
   (pageChange)="page.set($event); load()"
   (edit)="view($event)"
-  (create)="openCreateForSchema()"
-  (remove)="removeFromTable($event)"
-  (submit)="onSchemaSubmit($event)"
+  (create)="openCreate()"
+  (remove)="remove($event)"
   [useDefaultActions]="true"
   [createLabel]="'Novo cupom'">
 
-  
   <input slot="search" type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por código, descrição…" />
   <div slot="actions"></div>
 
   <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
+
+  <!-- Drawer Cupom ----------------------------------------------------- -->
+  <form slot="drawer" *ngIf="drawerOpen()" [formGroup]="cupomForm" class="fx-drawer" (ngSubmit)="submitCupom()" novalidate>
+    <!-- Informações básicas -->
+    <section class="fx-section">
+      <header class="fx-section__head fx-section__head--actions">
+        <div>
+          <h3>Informações básicas</h3>
+          <p>Identificação e tipo do cupom.</p>
+        </div>
+        <div class="fx-section__actions" *ngIf="selected()">
+          <button type="button" class="fx-btn danger small" (click)="remove(null)">Remover</button>
+        </div>
+      </header>
+
+      <div class="fx-grid">
+        <div class="fx-field">
+          <label>Código <span class="req">*</span></label>
+          <input type="text" formControlName="codigo" placeholder="Ex.: BEMVINDO10" />
+        </div>
+        <div class="fx-field">
+          <label>Tipo <span class="req">*</span></label>
+          <select formControlName="tipo">
+            <option value="percentual">Percentual</option>
+            <option value="valor">Valor</option>
+          </select>
+        </div>
+        <div class="fx-field fx-col-2">
+          <label>Descrição</label>
+          <input type="text" formControlName="descricao" placeholder="Texto opcional que aparece para o cliente" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Valores -->
+    <section class="fx-section">
+      <header class="fx-section__head">
+        <h3>Valores</h3>
+        <p>Define quanto o cupom desconta e os limites de aplicação.</p>
+      </header>
+
+      <div class="fx-grid fx-grid--3">
+        <div class="fx-field">
+          <label>Valor <span class="req">*</span></label>
+          <input type="number" step="0.01" min="0" formControlName="valor" />
+          <small class="fx-hint">Percentual (ex.: 10 = 10%) ou valor em R$, conforme tipo.</small>
+        </div>
+        <div class="fx-field">
+          <label>Valor mínimo do pedido</label>
+          <input type="number" step="0.01" min="0" formControlName="valor_minimo" />
+        </div>
+        <div class="fx-field">
+          <label>Desconto máximo</label>
+          <input type="number" step="0.01" min="0" formControlName="desconto_maximo" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Regras -->
+    <section class="fx-section">
+      <header class="fx-section__head">
+        <h3>Regras</h3>
+        <p>Validade, limites e comportamento com outras promoções.</p>
+      </header>
+
+      <div class="fx-grid fx-grid--3">
+        <div class="fx-field">
+          <label>Validade</label>
+          <input type="date" formControlName="validade" />
+        </div>
+        <div class="fx-field">
+          <label>Máximo de usos</label>
+          <input type="number" min="0" formControlName="max_uso" />
+        </div>
+        <div class="fx-field">
+          <label>Limite por cliente</label>
+          <input type="number" min="0" formControlName="limite_por_cliente" />
+        </div>
+
+        <div class="fx-field">
+          <label>Primeira compra</label>
+          <select formControlName="primeira_compra">
+            <option [ngValue]="0">Não</option>
+            <option [ngValue]="1">Sim</option>
+          </select>
+        </div>
+        <div class="fx-field">
+          <label>Frete grátis</label>
+          <select formControlName="frete_gratis">
+            <option [ngValue]="0">Não</option>
+            <option [ngValue]="1">Sim</option>
+          </select>
+        </div>
+        <div class="fx-field">
+          <label>Acumular com promoção</label>
+          <select formControlName="cumulativo_promo">
+            <option [ngValue]="0">Não (exclui itens em promoção)</option>
+            <option [ngValue]="1">Sim (aplica sobre qualquer item)</option>
+          </select>
+        </div>
+
+        <div class="fx-field">
+          <label>Status</label>
+          <select formControlName="ativo">
+            <option [ngValue]="1">Ativo</option>
+            <option [ngValue]="0">Inativo</option>
+          </select>
+        </div>
+        <div class="fx-field">
+          <label>Usado</label>
+          <input type="number" min="0" formControlName="usado" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Vínculos -->
+    <section class="fx-section">
+      <header class="fx-section__head">
+        <h3>Vínculos</h3>
+        <p>Restringe o cupom a produtos, categorias ou tags específicas.</p>
+      </header>
+
+      <div class="fx-grid">
+        <div class="fx-field fx-col-2">
+          <label>IDs de produtos</label>
+          <input type="text" formControlName="produto_ids_csv" placeholder="Ex.: 10, 15, 23" />
+          <small class="fx-hint">Separe os IDs por vírgula.</small>
+        </div>
+        <div class="fx-field fx-col-2">
+          <label>IDs de categorias</label>
+          <input type="text" formControlName="categoria_ids_csv" placeholder="Ex.: 3, 7" />
+        </div>
+        <div class="fx-field fx-col-2">
+          <label>IDs de tags</label>
+          <input type="text" formControlName="tag_ids_csv" placeholder="Ex.: 4, 9" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Avançado -->
+    <section class="fx-section">
+      <header class="fx-section__head">
+        <h3>Avançado</h3>
+        <p>Regras especializadas em formato JSON (opcional).</p>
+      </header>
+
+      <div class="fx-grid">
+        <div class="fx-field fx-col-2">
+          <label>Restrições (JSON)</label>
+          <textarea rows="4" formControlName="restricoes_json" placeholder='{"categorias_excluidas":[12,15]}'></textarea>
+          <small class="fx-hint">JSON livre interpretado no backend para regras customizadas.</small>
+        </div>
+      </div>
+    </section>
+  </form>
 
 </app-admin-crud>

@@ -1,68 +1,160 @@
-<app-admin-crud
-  [items]="list()"
-  [loading]="loadingList()"
-  [total]="total()"
-  [page]="page()"
-  [pageSize]="pageSize()"
-  [drawerOpen]="showCreateModal() || !!editingId()"
-  (drawerOpenChange)="onDrawerOpenChange($event)"
-  (pageChange)="page.set($event); loadList()"
-  (edit)="editarPromocao($event)"
-  (create)="novaPromocao()"
-  (remove)="remover($event)"
-  [useDefaultActions]="true"
-  [createLabel]="'Nova promoção'"
-  [useDefaultSearch]="true"
-  [searchPlaceholder]="'Buscar por nome/descrição'"
-  (quickSearch)="q.set($event); loadList()"
-  [formSchema]="promocoesFormSchema"
-  [editItem]="editingItem"
-  (submit)="onSchemaSubmit($event)"
-  (cancel)="closeCreateModal()">
+<div class="promos-wrap admin-page-wrap">
+  <app-admin-crud
+    [items]="list()"
+    [loading]="loadingList()"
+    [total]="total()"
+    [page]="page()"
+    [pageSize]="pageSize()"
+    [drawerOpen]="drawerOpen()"
+    [drawerWidth]="'660px'"
+    [drawerTitle]="editingId() ? 'Editar promoção' : 'Nova promoção'"
+    [drawerShowFooter]="true"
+    [drawerPrimaryLabel]="editingId() ? 'Salvar alterações' : 'Criar promoção'"
+    [drawerPrimaryLoading]="submitting()"
+    (drawerOpenChange)="onDrawerOpenChange($event)"
+    (drawerPrimaryAction)="submitPromo()"
+    (drawerSecondaryAction)="closeCreateModal()"
+    (pageChange)="page.set($event); loadList()"
+    (edit)="editarPromocao($event)"
+    (create)="novaPromocao()"
+    (remove)="remover($event)"
+    [useDefaultActions]="true"
+    [createLabel]="'Nova promoção'"
+    [useDefaultSearch]="true"
+    [searchPlaceholder]="'Buscar por nome/descrição'"
+    (quickSearch)="q.set($event); loadList()">
 
-  <div slot="title"><h1>Promoções</h1></div>
+    <div slot="title"><h1>Promoções</h1></div>
 
-  <div slot="search">
-    <div class="filters">
-      <select [value]="active()" (change)="onActiveChange($event)">
-        <option value="all">Todos</option>
-        <option value="1">Ativos</option>
-        <option value="0">Inativos</option>
-      </select>
-      <button class="outline" (click)="loadList()">Atualizar</button>
+    <div slot="search">
+      <div class="filters">
+        <select [value]="active()" (change)="onActiveChange($event)">
+          <option value="all">Todos</option>
+          <option value="1">Ativos</option>
+          <option value="0">Inativos</option>
+        </select>
+        <button class="admin-btn outline" type="button" (click)="loadList()">Atualizar</button>
+      </div>
     </div>
-  </div>
 
-  <section slot="table" class="table-wrap" *ngIf="!loadingList(); else loadingTpl" #listRef tabindex="-1">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Tipo</th>
-          <th>Valor</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let p of list()">
-          <td>{{ p.id }}</td>
-          <td>{{ p.nome }}</td>
-          <td>{{ p.tipo || 'percentual' }}</td>
-          <td>{{ formatValor(p) }}</td>
-          <td><span [class.ok]="statusClass(p)==='ok'" [class.info]="statusClass(p)==='info'" [class.warn]="statusClass(p)==='warn'" [class.off]="statusClass(p)==='off'" [class.muted]="statusClass(p)==='muted'">{{ statusLabel(p) }}</span></td>
-          <td>
-            <button class="btn secondary" (click)="editarPromocao(p)">Editar</button>
-            <button class="btn danger" (click)="remover(p)">Remover</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <section slot="table" class="table-wrap" *ngIf="!loadingList(); else loadingTpl" #listRef tabindex="-1">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of list()">
+            <td>{{ p.id }}</td>
+            <td>{{ p.nome }}</td>
+            <td>{{ p.tipo || 'percentual' }}</td>
+            <td>{{ formatValor(p) }}</td>
+            <td>
+              <span class="admin-badge"
+                [class.ok]="statusClass(p)==='ok'"
+                [class.info]="statusClass(p)==='info'"
+                [class.warn]="statusClass(p)==='warn'"
+                [class.danger]="statusClass(p)==='off'"
+                [class.muted]="statusClass(p)==='muted'">{{ statusLabel(p) }}</span>
+            </td>
+            <td>
+              <button class="admin-btn secondary small" type="button" (click)="editarPromocao(p)">Editar</button>
+              <button class="admin-btn danger small" type="button" (click)="remover(p)">Remover</button>
+            </td>
+          </tr>
+          <tr *ngIf="!list().length">
+            <td colspan="6">
+              <div class="admin-empty">Nenhuma promoção encontrada.</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
     <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); loadList()"></admin-pagination>
-  </section>
-  <ng-template #loadingTpl><div class="empty">Carregando...</div></ng-template>
+    <ng-template #loadingTpl><div class="admin-empty">Carregando...</div></ng-template>
 
-  <!-- Using auto-generated schema-driven drawer (no projected drawer content) -->
+    <!-- Drawer Promoção -------------------------------------------------- -->
+    <form slot="drawer" *ngIf="drawerOpen()" [formGroup]="promoForm" class="fx-drawer" (ngSubmit)="submitPromo()" novalidate>
+      <section class="fx-section">
+        <header class="fx-section__head fx-section__head--actions">
+          <div>
+            <h3>Dados da promoção</h3>
+            <p>Defina como e quando a promoção será aplicada.</p>
+          </div>
+          <div class="fx-section__actions" *ngIf="editingId()">
+            <button type="button" class="fx-btn danger small" (click)="removerEditando()">Remover</button>
+          </div>
+        </header>
 
-</app-admin-crud>
+        <div class="fx-grid">
+          <div class="fx-field fx-col-2">
+            <label>Nome <span class="req">*</span></label>
+            <input type="text" formControlName="nome" placeholder="Ex.: Queima de verão" />
+          </div>
+
+          <div class="fx-field fx-col-2">
+            <label>Descrição</label>
+            <textarea rows="3" formControlName="descricao" placeholder="Descrição opcional exibida internamente."></textarea>
+          </div>
+
+          <div class="fx-field">
+            <label>Tipo <span class="req">*</span></label>
+            <select formControlName="tipo">
+              <option value="percentual">Percentual</option>
+              <option value="valor">Valor fixo</option>
+            </select>
+          </div>
+
+          <div class="fx-field">
+            <label>Valor <span class="req">*</span></label>
+            <input type="number" step="0.01" min="0" formControlName="valor" />
+            <small class="fx-hint">Em percentual ou R$, conforme o tipo selecionado.</small>
+          </div>
+
+          <div class="fx-field">
+            <label>Início</label>
+            <input type="datetime-local" formControlName="inicio" />
+          </div>
+
+          <div class="fx-field">
+            <label>Fim</label>
+            <input type="datetime-local" formControlName="fim" />
+          </div>
+
+          <div class="fx-field fx-inline fx-col-2">
+            <input id="promo-ativa" type="checkbox" formControlName="ativo" />
+            <label for="promo-ativa">Promoção ativa</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Produtos vinculados</h3>
+          <p>Busque produtos pelo nome para vinculá-los a esta promoção.</p>
+        </header>
+
+        <div class="fx-grid">
+          <div class="fx-field fx-col-2">
+            <label>Produtos</label>
+            <app-entity-lookup
+              [selectedIds]="selectedProdutoIds()"
+              (selectedIdsChange)="onProdutoIdsChange($event)"
+              [selectedItems]="selectedProdutos()"
+              (selectedItemsChange)="onProdutosChange($event)"
+              [searchFn]="searchProdutosFn"
+              [placeholder]="'Buscar produtos pelo nome'">
+            </app-entity-lookup>
+          </div>
+        </div>
+      </section>
+    </form>
+
+  </app-admin-crud>
+</div>

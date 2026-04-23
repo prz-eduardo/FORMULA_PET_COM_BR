@@ -45,7 +45,7 @@
 				<div class="price-row">
 					<div>
 						<div class="price-meta">
-							<span class="badge tipo" *ngIf="product?.tipo">{{ product?.tipo | titlecase }}</span>
+							<span class="badge tipo" *ngIf="product?.tipo">{{ product.tipo | titlecase }}</span>
 						</div>
 						<div class="price-now">R$ {{ priceNow() | number:'1.2-2' }}</div>
 						<div class="price-old" *ngIf="product?.promoPrice">R$ {{ product!.price | number:'1.2-2' }}</div>
@@ -61,9 +61,31 @@
 					<button class="btn fav" (click)="toggleFav()"><span [class.on]="isFavLocal || product!.isFavorited">♥</span></button>
 				</div>
 				<div class="desc">{{ product!.description }}</div>
+
+				<!-- Badges regulatórios e de cupom -->
+				<div class="pd-badges">
+					<span class="badge warning" *ngIf="product?.exige_receita">Exige receita veterinária</span>
+					<span class="badge cupom" *ngFor="let c of product?.cupons_aplicaveis">
+						Cupom {{ c.codigo }}{{ c.valor != null ? (c.tipo === 'valor' ? ' • R$ ' + (c.valor | number:'1.2-2') : ' • ' + c.valor + '%') : '' }}
+					</span>
+				</div>
+
+				<!-- Seletor de variantes -->
+				<div class="pd-variantes" *ngIf="product?.variantes && product!.variantes!.length">
+					<label class="pd-section-label">Escolha uma opção</label>
+					<div class="variantes-list">
+						<button *ngFor="let v of product!.variantes" type="button" class="variante-chip"
+								[class.selected]="selectedVariant?.id === v.id"
+								(click)="selectVariant(v)">
+							{{ v.nome }}<span *ngIf="v.preco != null"> — R$ {{ v.preco | number:'1.2-2' }}</span>
+						</button>
+					</div>
+				</div>
+
 				<div class="chips">
 					<span class="chip" *ngFor="let tag of product?.tags">{{ tag }}</span>
 				</div>
+
 				<div class="actions">
 					<div class="qty">
 						<button type="button" (click)="decrease()">-</button>
@@ -77,5 +99,33 @@
 				</div>
 			</aside>
 		</div>
+
+		<!-- Abas com conteúdo técnico (Composição, Modo de uso, Indicações, Documentos) -->
+		<section class="pd-extra" *ngIf="hasTechnicalInfo()">
+			<nav class="pd-tabs" role="tablist">
+				<button type="button" role="tab" [class.active]="activeTab === 'composicao'"
+						*ngIf="product?.composicao" (click)="activeTab = 'composicao'">Composição</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'modo_uso'"
+						*ngIf="product?.modo_uso" (click)="activeTab = 'modo_uso'">Modo de uso</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'indicacoes'"
+						*ngIf="product?.indicacoes" (click)="activeTab = 'indicacoes'">Indicações</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'contraindicacoes'"
+						*ngIf="product?.contraindicacoes" (click)="activeTab = 'contraindicacoes'">Contraindicações</button>
+				<button type="button" role="tab" [class.active]="activeTab === 'documentos'"
+						*ngIf="product?.documentos?.length" (click)="activeTab = 'documentos'">Documentos</button>
+			</nav>
+			<div class="pd-tab-content">
+				<div *ngIf="activeTab === 'composicao'" class="pd-tab-pane">{{ product?.composicao }}</div>
+				<div *ngIf="activeTab === 'modo_uso'" class="pd-tab-pane">{{ product?.modo_uso }}</div>
+				<div *ngIf="activeTab === 'indicacoes'" class="pd-tab-pane">{{ product?.indicacoes }}</div>
+				<div *ngIf="activeTab === 'contraindicacoes'" class="pd-tab-pane">{{ product?.contraindicacoes }}</div>
+				<div *ngIf="activeTab === 'documentos'" class="pd-tab-pane pd-docs">
+					<a *ngFor="let d of product?.documentos" [href]="d.url" target="_blank" rel="noopener" class="pd-doc">
+						<span class="pd-doc-type" *ngIf="d.tipo">{{ d.tipo }}</span>
+						<span class="pd-doc-name">{{ d.nome }}</span>
+					</a>
+				</div>
+			</div>
+		</section>
 	</div>
 </div>

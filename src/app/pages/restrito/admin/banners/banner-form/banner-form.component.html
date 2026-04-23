@@ -1,0 +1,140 @@
+<form *ngIf="form" [formGroup]="form" (ngSubmit)="onSubmit()" class="fx-drawer" novalidate>
+  <!-- Seção 1: Dados do banner ----------------------------------------- -->
+  <section class="fx-section">
+    <header class="fx-section__head fx-section__head--actions">
+      <div>
+        <h3>Dados do banner</h3>
+        <p>Um banner precisa de uma imagem para <strong>desktop</strong> e outra para <strong>mobile</strong>.</p>
+      </div>
+      <div class="fx-section__actions">
+        <label class="fx-switch" title="Ativar ou desativar exibição pública">
+          <input type="checkbox"
+                 [checked]="!!form.get('ativo')?.value"
+                 (change)="form.get('ativo')?.setValue($any($event.target).checked ? 1 : 0)" />
+          <span class="fx-switch__track"></span>
+          <span>{{ form.get('ativo')?.value ? 'Ativo' : 'Inativo' }}</span>
+        </label>
+        <button *ngIf="isEdit" type="button" class="fx-btn danger small" (click)="onRemove()" [disabled]="submitting">
+          Remover
+        </button>
+      </div>
+    </header>
+
+    <div class="fx-grid">
+      <div class="fx-field fx-col-2">
+        <label for="banner-nome">Nome <span class="req">*</span></label>
+        <input id="banner-nome" type="text" formControlName="nome" placeholder="Ex.: Campanha Outubro Pet" />
+        <small class="fx-alert fx-alert--error" *ngIf="form.get('nome')?.touched && form.get('nome')?.errors?.['required']">Nome é obrigatório.</small>
+        <small class="fx-alert fx-alert--error" *ngIf="form.get('nome')?.touched && form.get('nome')?.errors?.['minlength']">Mínimo 2 caracteres.</small>
+      </div>
+
+      <div class="fx-field fx-col-2">
+        <label for="banner-posicao">Posição <span class="req">*</span></label>
+        <select id="banner-posicao" formControlName="posicao">
+          <option *ngFor="let p of positions" [value]="p.value">{{ p.label }}</option>
+        </select>
+        <small class="fx-hint">{{ positionDescription() }}</small>
+      </div>
+
+      <div class="fx-field fx-col-2">
+        <label for="banner-link">Link (opcional)</label>
+        <input id="banner-link" type="url" formControlName="link" placeholder="https://" />
+      </div>
+
+      <div class="fx-field fx-col-2">
+        <label for="banner-alt">Texto alternativo (alt)</label>
+        <input id="banner-alt" type="text" formControlName="alt" placeholder="Descrição da imagem para acessibilidade" />
+      </div>
+
+      <div class="fx-field">
+        <label for="banner-ordem">Ordem</label>
+        <input id="banner-ordem" type="number" min="0" formControlName="ordem" />
+      </div>
+
+      <div class="fx-field fx-inline">
+        <input id="banner-target-blank" type="checkbox"
+               [checked]="!!form.get('target_blank')?.value"
+               (change)="form.get('target_blank')?.setValue($any($event.target).checked ? 1 : 0)" />
+        <label for="banner-target-blank">Abrir link em nova aba</label>
+      </div>
+
+      <div class="fx-field">
+        <label for="banner-inicio">Início</label>
+        <input id="banner-inicio" type="datetime-local" formControlName="inicio" />
+      </div>
+
+      <div class="fx-field">
+        <label for="banner-fim">Fim</label>
+        <input id="banner-fim" type="datetime-local" formControlName="fim" />
+      </div>
+
+      <div class="fx-field fx-col-2" *ngIf="form.errors?.['dateRange']">
+        <div class="fx-alert fx-alert--error">A data de início precisa ser anterior ou igual à data de fim.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Seção 2: Imagens ------------------------------------------------- -->
+  <section class="fx-section">
+    <header class="fx-section__head fx-section__head--actions">
+      <div>
+        <h3>Imagens</h3>
+        <p>Recorte e envie as versões desktop e mobile do banner.</p>
+      </div>
+      <div class="fx-section__actions">
+        <span class="fx-item-tag" [ngClass]="hasDesktopImage ? 'ok' : 'warn'">
+          Desktop {{ hasDesktopImage ? 'OK' : 'pendente' }}
+        </span>
+        <span class="fx-item-tag" [ngClass]="hasMobileImage ? 'ok' : 'warn'">
+          Mobile {{ hasMobileImage ? 'OK' : 'pendente' }}
+        </span>
+      </div>
+    </header>
+
+    <div class="fx-tabs" role="tablist">
+      <button type="button" role="tab" class="fx-tab" [class.active]="activeTab() === 'desktop'" (click)="toggleTab('desktop')">
+        Desktop
+        <span class="fx-tab-dot" [class.done]="hasDesktopImage" [class.pending]="!hasDesktopImage"></span>
+      </button>
+      <button type="button" role="tab" class="fx-tab" [class.active]="activeTab() === 'mobile'" (click)="toggleTab('mobile')">
+        Mobile
+        <span class="fx-tab-dot" [class.done]="hasMobileImage" [class.pending]="!hasMobileImage"></span>
+      </button>
+    </div>
+
+    <div class="bf-editors">
+      <div class="bf-editor" [hidden]="activeTab() !== 'desktop'">
+        <div class="bf-editor-meta">
+          <span>Proporção sugerida: <strong>{{ desktopRatio | number:'1.0-2' }}:1</strong></span>
+          <small *ngIf="desktopWarn()" class="fx-alert fx-alert--warn">{{ desktopWarn() }}</small>
+        </div>
+        <app-banner-image-editor
+          #desktopEditor
+          [expectedRatio]="desktopRatio"
+          [initialImage]="desktopPreview"
+          (previewChange)="desktopPreview = $event"
+          (fileChange)="desktopFile = $event"
+          (warnChange)="desktopWarn.set($event)">
+        </app-banner-image-editor>
+      </div>
+
+      <div class="bf-editor" [hidden]="activeTab() !== 'mobile'">
+        <div class="bf-editor-meta">
+          <span>Proporção sugerida: <strong>{{ mobileRatio | number:'1.0-2' }}:1</strong></span>
+          <small *ngIf="mobileWarn()" class="fx-alert fx-alert--warn">{{ mobileWarn() }}</small>
+        </div>
+        <app-banner-image-editor
+          #mobileEditor
+          [expectedRatio]="mobileRatio"
+          [initialImage]="mobilePreview"
+          (previewChange)="mobilePreview = $event"
+          (fileChange)="mobileFile = $event"
+          (warnChange)="mobileWarn.set($event)">
+        </app-banner-image-editor>
+      </div>
+    </div>
+  </section>
+
+  <!-- Submit oculto p/ permitir trigger do footer padrão do drawer ----- -->
+  <button type="submit" class="fx-hidden-submit" aria-hidden="true" tabindex="-1"></button>
+</form>

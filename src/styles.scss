@@ -3,6 +3,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 @import 'app/shared/styles/form-layout';
+@import 'app/shared/styles/admin-tokens';
+@import 'app/shared/styles/admin-mixins';
+@import 'app/shared/styles/admin-drawer';
 html, body{
     margin: 0;
     padding: 0;
@@ -759,6 +762,17 @@ html.force-light *, body.force-light * {
 .sd-overlay .drawer app-entity-lookup:focus-within {
     border-color: rgba(13,184,222,.45);
     box-shadow: 0 0 0 3px rgba(13,184,222,.12);
+}
+
+/* <select> nativo no drawer lateral: popup de opções alinhado ao tema admin (fundo claro + texto pálido) */
+.sd-overlay .drawer select {
+    color-scheme: dark;
+    cursor: pointer;
+}
+.sd-overlay .drawer select option,
+.sd-overlay .drawer select optgroup {
+    background-color: var(--admin-surface, #0f1722);
+    color: var(--admin-text, #e5ecf5);
 }
 
 .sd-overlay .drawer label {

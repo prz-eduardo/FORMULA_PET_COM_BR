@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
+import { StoreThemeService, LojaThemeActive } from './store-theme.service';
 
 export interface ShopProduct {
   id: number;
@@ -29,8 +30,37 @@ export interface ShopProduct {
   promoPrice?: number | null;
   inStock?: boolean | number | null;
   imageUrl?: string | null;
-  images?: Array<{ id: number; url: string; posicao?: number | null }>
+  images?: Array<{ id: number; url: string; posicao?: number | null }>;
+  // Campos expandidos (Fase 2)
+  sku?: string | null;
+  marca?: string | null;
+  composicao?: string | null;
+  modo_uso?: string | null;
+  indicacoes?: string | null;
+  contraindicacoes?: string | null;
+  exige_receita?: boolean | number | null;
+  validade_meses?: number | null;
+  armazenamento?: string | null;
+  video_url?: string | null;
+  variantes?: Array<{
+    id?: number;
+    nome: string;
+    sku?: string | null;
+    preco?: number | null;
+    preco_de?: number | null;
+    estoque?: number | null;
+    peso_g?: number | null;
+    ativo?: boolean | number;
+  }>;
+  documentos?: Array<{ id?: number; nome: string; url: string; tipo?: string | null }>;
+  cupons_aplicaveis?: Array<{ id: number; codigo: string; descricao?: string; tipo?: string; valor?: number; cumulativo_promo?: boolean | number }>;
   created_at?: string | Date;
+  /** Layout na vitrine: card de vendas ou faixa grande (2 colunas no grid). */
+  cardLayout?: 'sales' | 'banner';
+  /** Preço a exibir riscado (promo ou preco_de), quando aplicável. */
+  strikePrice?: number | null;
+  precoDe?: number | null;
+  slug?: string | null;
 }
 export interface StoreCategory { id: number; nome: string; produtos: number; }
 export interface StoreTag { id: number; nome: string; produtos: number; }
@@ -41,6 +71,7 @@ export interface StoreMeta {
   supports?: { images?: boolean; favorites?: boolean; ratings?: boolean; categories?: boolean; tags?: boolean };
   categories?: StoreCategory[];
   tags?: StoreTag[];
+  activeTheme?: LojaThemeActive | null;
 }
 
 export interface CartItem {
@@ -83,7 +114,8 @@ export class StoreService {
     private http: HttpClient,
     private api: ApiService,
     private toast: ToastService,
-    private router: Router
+    private router: Router,
+    private storeTheme: StoreThemeService
   ) {}
     // --- Cliente me caching ---
     // Cache the last successful response and also dedupe in-flight requests so
@@ -195,6 +227,9 @@ export class StoreService {
           const s = (t?.nome || t?.name || t || '').toString().toLowerCase();
           return s.includes('destaque') || s.includes('featured') || s.includes('highlight');
         });
+        const layoutRaw = (it.card_layout || 'sales').toString().toLowerCase();
+        const cardLayout: 'sales' | 'banner' = layoutRaw === 'banner' ? 'banner' : 'sales';
+        const strikePrice = it.strikePrice != null ? Number(it.strikePrice) : null;
         return {
           id: Number(it.id),
           name: it.nome || it.name,
@@ -212,6 +247,12 @@ export class StoreService {
           tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
           featured: typeof flagDestaque === 'boolean' ? flagDestaque
                     : (flagDestaque === 1 || flagDestaque === '1' ? true : (hasTagDestaque || false)),
+          cardLayout,
+          strikePrice: Number.isFinite(strikePrice as number) ? strikePrice : null,
+          precoDe: it.preco_de != null ? Number(it.preco_de) : undefined,
+          marca: it.marca ?? undefined,
+          sku: it.sku ?? undefined,
+          slug: it.slug ?? undefined,
         } as ShopProduct;
       });
 
@@ -247,8 +288,12 @@ export class StoreService {
         supports: res.meta.supports,
         categories: res.meta.categories,
         tags: res.meta.tags,
+        activeTheme: res.meta.activeTheme ?? null,
       } : undefined;
       this.metaSubject.next(meta || null);
+      try {
+        this.storeTheme.applyTheme(meta?.activeTheme ?? null);
+      } catch { /* SSR */ }
       const cats = meta?.categories || [];
       this.categoriesSubject.next(cats);
       return { total: (!Array.isArray(res) ? (res?.total || list.length) : list.length), totalPages: (!Array.isArray(res) ? (res?.totalPages || 1) : 1), page: (!Array.isArray(res) ? (res?.page || (params?.page || 1)) : (params?.page || 1)), pageSize: (!Array.isArray(res) ? (res?.pageSize || (params?.pageSize || 20)) : (params?.pageSize || 20)), meta };
@@ -439,7 +484,34 @@ export class StoreService {
         favoritesCount: typeof it.favoritos === 'number' ? it.favoritos : undefined,
         stock: typeof it.inStock === 'number' ? it.inStock : (typeof it.in_stock === 'number' ? it.in_stock : undefined),
         tags: Array.isArray(it.tags) ? it.tags.map((t: any) => t.nome || t.name || String(t)) : undefined,
-        requiresPrescription: it.requiresPrescription ?? undefined,
+        requiresPrescription: it.requiresPrescription ?? (it.exige_receita ? !!it.exige_receita : undefined),
+        sku: it.sku ?? null,
+        marca: it.marca ?? null,
+        composicao: it.composicao ?? null,
+        modo_uso: it.modo_uso ?? null,
+        indicacoes: it.indicacoes ?? null,
+        contraindicacoes: it.contraindicacoes ?? null,
+        exige_receita: it.exige_receita ?? null,
+        validade_meses: it.validade_meses ?? null,
+        armazenamento: it.armazenamento ?? null,
+        video_url: it.video_url ?? null,
+        variantes: Array.isArray(it.variantes) ? it.variantes.map((v: any) => ({
+          id: v.id ?? undefined,
+          nome: v.nome,
+          sku: v.sku ?? null,
+          preco: v.preco != null ? Number(v.preco) : null,
+          preco_de: v.preco_de != null ? Number(v.preco_de) : null,
+          estoque: v.estoque != null ? Number(v.estoque) : null,
+          peso_g: v.peso_g != null ? Number(v.peso_g) : null,
+          ativo: !!v.ativo,
+        })) : [],
+        documentos: Array.isArray(it.documentos) ? it.documentos.map((d: any) => ({
+          id: d.id ?? undefined,
+          nome: d.nome,
+          url: d.url,
+          tipo: d.tipo ?? null,
+        })) : [],
+        cupons_aplicaveis: Array.isArray(it.cupons_aplicaveis) ? it.cupons_aplicaveis : [],
       };
       return p;
     } catch {

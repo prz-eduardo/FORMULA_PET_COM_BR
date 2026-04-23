@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SmartStatusButtonComponent } from '../smart-status-button/smart-status-button.component';
 import { extractItems, extractCliente, extractShipping, extractTotals, formatCurrency } from '../order-utils';
@@ -11,7 +11,7 @@ import { ORDER_STATUSES, STATUS_ORDER, statusLabel as statusLabelConst, getAllow
   templateUrl: './order-details.component.html',
   styleUrls: ['./order-details.component.scss']
 })
-export class OrderDetailsComponent {
+export class OrderDetailsComponent implements OnChanges {
   @Input() order: any;
   @Input() mode: 'compact' | 'full' = 'compact';
   @Input() hideHeader: boolean = false;
@@ -24,7 +24,12 @@ export class OrderDetailsComponent {
 
   get items() { return extractItems(this.order); }
   get cliente() { return extractCliente(this.order); }
-  get shipping() { return extractShipping(this.order); }
+  shipping: any;
+    ngOnChanges(changes: SimpleChanges) {
+      if (changes['order']) {
+        this.shipping = extractShipping(this.order);
+      }
+    }
   get totals() { return extractTotals(this.order); }
   formatCurrency = formatCurrency;
 

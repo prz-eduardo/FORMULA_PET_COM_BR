@@ -6,7 +6,8 @@ import { Subscription } from 'rxjs';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
 import { EMBALAGENS } from '../../../../constants/embalagens';
-import { ProductCardV2Component } from '../../../../product-card-v2/product-card-v2.component';
+import { ProductCardSalesComponent } from '../../../../product-card-sales/product-card-sales.component';
+import { ProductCardBannerComponent } from '../../../../product-card-banner/product-card-banner.component';
 import { ShopProduct } from '../../../../services/store.service';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../../../constants/card.constants';
 
@@ -15,7 +16,7 @@ interface AtivoBasic { id: number | string; nome: string; descricao?: string }
 @Component({
   selector: 'app-produto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardV2Component],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardSalesComponent, ProductCardBannerComponent],
   templateUrl: './produto.component.html',
   styleUrls: ['./produto.component.scss']
 })
@@ -59,12 +60,16 @@ export class ProdutoComponent implements OnInit {
   ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   imageMessage = signal<string | null>(null);
 
-  // stepper state
-  step = signal(0); // 0..3
+  // stepper state — agora 8 passos
+  step = signal(0);
   steps = [
-    { key: 'imagem', label: 'Imagens' },
-    { key: 'detalhes', label: 'Detalhes' },
+    { key: 'midia', label: 'Mídia' },
+    { key: 'identificacao', label: 'Identificação' },
     { key: 'comercial', label: 'Comercial' },
+    { key: 'tecnico', label: 'Técnico' },
+    { key: 'regulatorio', label: 'Regulatório' },
+    { key: 'variantes', label: 'Variantes' },
+    { key: 'seo', label: 'SEO' },
     { key: 'revisao', label: 'Revisão' }
   ];
 
@@ -93,10 +98,8 @@ export class ProdutoComponent implements OnInit {
   promocaoSelecionada: PromocaoDto | null = null;
   showPromoDetail = false;
   promoDetalhe: PromocaoDto | null = null;
-  // overlay refs for promo modal
-  private promoOverlay: HTMLDivElement | null = null;
-  private promoListContainer: HTMLDivElement | null = null;
-  private loadingPromos = false;
+  loadingPromos = false;
+  promoSearchQuery = '';
   private _docDragOverHandler: any = null;
   private _docDropHandler: any = null;
   
@@ -150,7 +153,36 @@ export class ProdutoComponent implements OnInit {
         packaging: this.fb.array<string>([])
       }),
       ativoId: [null],
-      estoqueId: [null]
+      estoqueId: [null],
+      // Identificação expandida
+      sku: [null],
+      marca: [null],
+      codigoBarras: [null],
+      // Técnico
+      composicao: [null],
+      modoUso: [null],
+      indicacoes: [null],
+      contraindicacoes: [null],
+      // Regulatório
+      exigeReceita: [false],
+      validadeMeses: [null],
+      armazenamento: [null],
+      registroMapa: [null],
+      // SEO
+      slug: [null],
+      metaTitle: [null],
+      metaDescription: [null],
+      ogImageUrl: [null],
+      // Preço avançado
+      precoCusto: [null],
+      precoDe: [null],
+      parcelasMax: [null],
+      // Mídia extra
+      videoUrl: [null],
+      // Variantes e documentos (FormArrays dinâmicos)
+      variantes: this.fb.array<FormGroup>([]),
+      documentos: this.fb.array<FormGroup>([]),
+      cardLayout: ['sales' as 'sales' | 'banner'],
     });
 
     // initialize formula toggle based on any pre-filled form value
@@ -383,11 +415,42 @@ export class ProdutoComponent implements OnInit {
   get dosageFA() { return this.form.get(['customizations','dosage']) as FormArray; }
   get packagingFA() { return this.form.get(['customizations','packaging']) as FormArray; }
   get imagesFA() { return this.form.get('images') as FormArray; }
+  get variantesFA() { return this.form.get('variantes') as FormArray; }
+  get documentosFA() { return this.form.get('documentos') as FormArray; }
+
+  addVariante() {
+    this.variantesFA.push(this.fb.group({
+      id: [null],
+      nome: ['', Validators.required],
+      sku: [null],
+      preco: [null],
+      preco_de: [null],
+      estoque: [null],
+      peso_g: [null],
+      ativo: [true],
+    }));
+  }
+  removeVariante(i: number) { this.variantesFA.removeAt(i); }
+
+  addDocumento() {
+    this.documentosFA.push(this.fb.group({
+      id: [null],
+      nome: ['', Validators.required],
+      url: ['', Validators.required],
+      tipo: ['outro'],
+    }));
+  }
+  removeDocumento(i: number) { this.documentosFA.removeAt(i); }
 
   get previewProduct(): ShopProduct {
     const fv = this.form?.value || {};
     const price = Number(fv.price) || 0;
     const promo = this.discountedPriceValue();
+    const precoDe = fv.precoDe != null ? Number(fv.precoDe) : null;
+    const final = promo != null ? promo : price;
+    let strikePrice: number | null = null;
+    if (promo != null && promo < price - 0.009) strikePrice = price;
+    else if (precoDe != null && precoDe > final + 0.009) strikePrice = precoDe;
     const img = this.imagemPrincipal || (this.imagesFA?.controls?.length ? this.imagesFA.controls[0].value : '/imagens/placeholder.png');
     const discount = (fv.discount && Number(fv.discount) > 0) ? Number(fv.discount) : (promo != null && price > 0 ? Math.round((1 - (promo / price)) * 100) : 0);
     return {
@@ -408,7 +471,21 @@ export class ProdutoComponent implements OnInit {
       promoPrice: promo ?? null,
       inStock: fv.stock ?? null,
       images: (this.imagesFA?.controls || []).map((c: any, i: number) => ({ id: i + 1, url: c.value })),
+      cardLayout: fv.cardLayout === 'banner' ? 'banner' : 'sales',
+      strikePrice,
+      marca: fv.marca || null,
+      sku: fv.sku || null,
+      precoDe: precoDe ?? undefined,
     } as ShopProduct;
+  }
+
+  /** JSON mínimo para preview dos cards no admin (sem chamar API). */
+  get previewThemeConfig(): Record<string, unknown> {
+    return {
+      version: 1,
+      cardSales: { showMarca: true, showSku: true },
+      cardBanner: { overlayOpacity: 0.45, minHeightPx: 220, titleLines: 2 },
+    };
   }
 
   // helpers for template display
@@ -494,8 +571,6 @@ export class ProdutoComponent implements OnInit {
 
   // footer next button label
   nextLabel(): string {
-    // Step 1 (Fórmula): permitir pular se nenhuma fórmula selecionada
-    if (this.step() === 1 && !this.form.get('formulaId')?.value) return 'Pular';
     return 'Avançar';
   }
 
@@ -509,7 +584,6 @@ export class ProdutoComponent implements OnInit {
         const catId = (p as any).categoryId ?? this.categoriasList.find(c => c.name === (p as any).category)?.id ?? null;
         this.form.patchValue({
           id: p.id,
-          // mapeamento básico para compatibilidade de edição antiga
           name: p.name,
           description: p.description,
           price: p.price,
@@ -521,8 +595,58 @@ export class ProdutoComponent implements OnInit {
           weightValue: p.weightValue ?? null,
           weightUnit: p.weightUnit ?? 'g',
           formulaId: (p as any).formId ?? null,
-          manipulado: !!((p as any).formId || (p as any).tipo === 'manipulado')
+          manipulado: !!((p as any).formId || (p as any).tipo === 'manipulado'),
+          // Identificação expandida
+          sku: (p as any).sku ?? null,
+          marca: (p as any).marca ?? null,
+          codigoBarras: (p as any).codigo_barras ?? null,
+          // Técnico
+          composicao: (p as any).composicao ?? null,
+          modoUso: (p as any).modo_uso ?? null,
+          indicacoes: (p as any).indicacoes ?? null,
+          contraindicacoes: (p as any).contraindicacoes ?? null,
+          // Regulatório
+          exigeReceita: !!((p as any).exige_receita),
+          validadeMeses: (p as any).validade_meses ?? null,
+          armazenamento: (p as any).armazenamento ?? null,
+          registroMapa: (p as any).registro_mapa ?? null,
+          // SEO
+          slug: (p as any).slug ?? null,
+          metaTitle: (p as any).meta_title ?? null,
+          metaDescription: (p as any).meta_description ?? null,
+          ogImageUrl: (p as any).og_image_url ?? null,
+          // Preço avançado
+          precoCusto: (p as any).preco_custo ?? null,
+          precoDe: (p as any).preco_de ?? null,
+          parcelasMax: (p as any).parcelas_max ?? null,
+          // Mídia extra
+          videoUrl: (p as any).video_url ?? null,
+          cardLayout: ((p as any).card_layout === 'banner' ? 'banner' : 'sales') as 'sales' | 'banner',
         });
+
+        // Populate variantes e documentos (se presentes no GET)
+        try {
+          this.variantesFA.clear();
+          const vs: any[] = (p as any).variantes || [];
+          vs.forEach(v => this.variantesFA.push(this.fb.group({
+            id: [v.id ?? null],
+            nome: [v.nome ?? '', Validators.required],
+            sku: [v.sku ?? null],
+            preco: [v.preco ?? null],
+            preco_de: [v.preco_de ?? null],
+            estoque: [v.estoque ?? null],
+            peso_g: [v.peso_g ?? null],
+            ativo: [v.ativo !== false],
+          })));
+          this.documentosFA.clear();
+          const docs: any[] = (p as any).documentos || [];
+          docs.forEach(d => this.documentosFA.push(this.fb.group({
+            id: [d.id ?? null],
+            nome: [d.nome ?? '', Validators.required],
+            url: [d.url ?? '', Validators.required],
+            tipo: [d.tipo ?? 'outro'],
+          })));
+        } catch (_) { /* noop */ }
 
         // tags, dosages, packaging
         this.tagsFA.clear(); (p.tags || []).forEach((t: any) => this.tagsFA.push(this.fb.control<string>(t)));
@@ -537,6 +661,17 @@ export class ProdutoComponent implements OnInit {
           // preferir imagem_principal / image
           this.imagemPrincipal = p.image ?? (imgs.length ? imgs[0] : null);
         } catch(e) { console.error('Erro ao popular imagens do produto', e); }
+
+        // Pré-selecionar promoção ativa já vinculada ao produto (quando o
+        // backend retorna `promotions` no payload do GET).
+        try {
+          const prs: any[] = (p as any).promotions || [];
+          if (Array.isArray(prs) && prs.length) {
+            this.promocaoSelecionada = prs[0] as PromocaoDto;
+          } else {
+            this.promocaoSelecionada = null;
+          }
+        } catch (_) { this.promocaoSelecionada = null; }
 
         // garantir que máscara/dígitos do preço reflitam o valor carregado
         try { this.syncPrecoDigitsFromForm(); } catch(e) { /* noop */ }
@@ -574,21 +709,35 @@ export class ProdutoComponent implements OnInit {
   }
   isStepValid(i: number): boolean {
     switch (i) {
-      case 0: {
+      case 0: { // Mídia
         const imgs = this.form.get('images') as FormArray;
         return !!imgs && imgs.length > 0;
       }
-      case 1: {
-        // Detalhes + Fórmula: nome/descrição obrigatórios, fórmula opcional
+      case 1: { // Identificação
         const name = this.form.get('name');
         const desc = this.form.get('description');
-        return !!name && !!desc && name.valid && desc.valid;
-      }
-      case 2: {
-        // Comercial: preço e categoria obrigatórios
-        const price = this.form.get('price');
         const cat = this.form.get('categoryId');
-        return !!price && price.valid && !!cat && cat.valid;
+        return !!name && !!desc && !!cat && name.valid && desc.valid && cat.valid;
+      }
+      case 2: { // Comercial
+        const price = this.form.get('price');
+        return !!price && price.valid;
+      }
+      case 3: { // Técnico — opcional, sempre válido
+        return true;
+      }
+      case 4: { // Regulatório — opcional, sempre válido
+        return true;
+      }
+      case 5: { // Variantes — se existirem, cada linha precisa de nome
+        const arr = this.variantesFA;
+        for (let k = 0; k < arr.length; k++) {
+          if (!arr.at(k)?.get('nome')?.valid) return false;
+        }
+        return true;
+      }
+      case 6: { // SEO — opcional, sempre válido
+        return true;
       }
       default:
         return true;
@@ -598,8 +747,9 @@ export class ProdutoComponent implements OnInit {
     const mark = (path: string) => this.form.get(path)?.markAsTouched();
     switch (i) {
       case 0: mark('image'); break;
-      case 1: mark('formulaId'); mark('name'); mark('description'); break;
-      case 2: mark('price'); mark('categoryId'); break;
+      case 1: mark('formulaId'); mark('name'); mark('description'); mark('categoryId'); break;
+      case 2: mark('price'); break;
+      case 5: this.variantesFA.controls.forEach(c => c.markAllAsTouched()); break;
     }
   }
 
@@ -618,10 +768,6 @@ export class ProdutoComponent implements OnInit {
     this.categoriesFiltered = [];
     this.packagingFiltered = [];
 
-    // remove any dynamic overlays appended to body
-    try {
-      if (this.promoOverlay) { this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; }
-    } catch (e) { /* noop */ }
   }
 
 
@@ -1032,39 +1178,19 @@ export class ProdutoComponent implements OnInit {
     this.form.patchValue({ estoqueId: lote.id });
   }
   openPromoModal() {
-    console.log('openPromoModal called');
     try {
-      this.promocaoSelecionada = null;
-      // Always use dynamic overlay in browser to avoid *ngIf scoping issues
-      if (typeof document === 'undefined') {
-        // fallback for SSR/hosted render
-        if (!this.promocoes || this.promocoes.length === 0) {
-          this.promocoes = [];
-          this.api.listPromocoes({ active: 1, page: 1, pageSize: 50 }).subscribe({
-            next: (res) => { this.promocoes = res.data || []; },
-            error: () => { this.promocoes = []; }
-          });
-        }
-        this.showPromoModal = true;
-        return;
-      }
-
-      // show overlay immediately (will display loading or items)
-      this.showPromoOverlay();
-
-      // load promos if not already loaded, then update list
+      // Carrega promoções (se necessário) e abre o modal do template
       if (!this.promocoes || this.promocoes.length === 0) {
-        this.promocoes = [];
         this.loadingPromos = true;
         this.api.listPromocoes({ active: 1, page: 1, pageSize: 50 }).subscribe({
-          next: (res) => { this.promocoes = res.data || []; this.loadingPromos = false; this.updatePromoList(); },
-          error: () => { this.promocoes = []; this.loadingPromos = false; this.updatePromoList(); }
+          next: (res) => { this.promocoes = res.data || []; this.loadingPromos = false; try { this.cdr.detectChanges(); } catch (e) { /* noop */ } },
+          error: () => { this.promocoes = []; this.loadingPromos = false; try { this.cdr.detectChanges(); } catch (e) { /* noop */ } }
         });
-      } else {
-        this.loadingPromos = false;
-        this.updatePromoList();
       }
-      console.log('openPromoModal finished, promocoes.length ->', (this.promocoes || []).length);
+      this.zone.run(() => {
+        this.showPromoModal = true;
+        try { this.cdr.detectChanges(); } catch (e) { /* noop */ }
+      });
     } catch (err) {
       console.error('openPromoModal error', err);
     }
@@ -1112,16 +1238,8 @@ export class ProdutoComponent implements OnInit {
     }
   }
 
-  // remove any leftover overlays appended to document.body (defensive)
-  private removeStrayOverlays() {
-    if (typeof document === 'undefined') return;
-    try {
-      const els = Array.from(document.querySelectorAll('.modal.dynamic-overlay'));
-      els.forEach(e => { try { e.remove(); } catch(_) { /* noop */ } });
-    } catch (e) { /* noop */ }
-    this.promoOverlay = null;
-    this.promoListContainer = null;
-  }
+  // (legacy) - no-op mantido para compatibilidade caso algum template referencie
+  private removeStrayOverlays() { /* overlays dinâmicos removidos do fluxo */ }
 
   selectPackagingModal(item: any) {
     try {
@@ -1140,126 +1258,6 @@ export class ProdutoComponent implements OnInit {
       this.pickTag(name);
       this.zone.run(() => { try { this.cdr.detectChanges(); } catch(e) { /* noop */ } });
     } catch (e) { console.error('selectTagModal error', e); }
-  }
-
-  // Create a simple DOM overlay attached to document.body (browser-only)
-  private createOverlay(): HTMLDivElement | null {
-    if (typeof document === 'undefined') return null;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal dynamic-overlay';
-    Object.assign(overlay.style as any, {
-      position: 'fixed', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.45)', padding: '20px'
-    });
-    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
-    return overlay;
-  }
-
-  private showPromoOverlay() {
-    if (typeof document === 'undefined') return;
-    // If overlay already exists, keep reference
-    if (this.promoOverlay) return;
-    const overlay = this.createOverlay();
-    if (!overlay) return;
-    this.promoOverlay = overlay;
-
-    const modal = document.createElement('div');
-    Object.assign(modal.style as any, { maxWidth: '920px', width: '100%', background: '#0d1419', borderRadius: '12px', padding: '18px', boxSizing: 'border-box', boxShadow: '0 16px 40px rgba(2,6,23,0.6)', color: '#fff', maxHeight: '90vh', overflow: 'auto' });
-
-    const header = document.createElement('div'); header.style.display = 'flex'; header.style.justifyContent = 'space-between'; header.style.alignItems = 'center';
-    const title = document.createElement('h2'); title.textContent = 'Selecionar Campanha'; title.style.margin = '0'; header.appendChild(title);
-    const closeX = document.createElement('button'); closeX.textContent = '✕'; Object.assign(closeX.style as any, { background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }); closeX.addEventListener('click', () => { overlay.remove(); this.promoOverlay = null; this.promoListContainer = null; try { this.zone.run(() => { this.showPromoModal = false; }); } catch(e) {} });
-    header.appendChild(closeX);
-    modal.appendChild(header);
-
-    // search box
-    const searchRow = document.createElement('div'); searchRow.style.margin = '12px 0';
-    const searchInput = document.createElement('input'); searchInput.placeholder = 'Buscar campanha...'; Object.assign(searchInput.style as any, { width: '100%', boxSizing: 'border-box', maxWidth: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: '#071217', color: '#e6eef8' });
-    searchRow.appendChild(searchInput);
-    modal.appendChild(searchRow);
-
-    // list container (kept in instance to update later)
-    const list = document.createElement('div'); list.style.maxHeight = '60vh'; list.style.overflow = 'auto'; list.style.display = 'flex'; list.style.flexDirection = 'column'; list.style.gap = '12px'; list.style.boxSizing = 'border-box';
-    this.promoListContainer = list;
-    modal.appendChild(list);
-
-    const footer = document.createElement('div'); footer.style.display = 'flex'; footer.style.justifyContent = 'flex-end'; footer.style.marginTop = '12px';
-    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Fechar'; Object.assign(closeBtn.style as any, { padding: '8px 12px', borderRadius: '8px' }); closeBtn.addEventListener('click', () => { overlay.remove(); this.promoOverlay = null; this.promoListContainer = null; try { this.zone.run(() => { this.showPromoModal = false; }); } catch(e) {} });
-    footer.appendChild(closeBtn);
-    modal.appendChild(footer);
-
-    // keep reference to allow programmatic removal
-    overlay.appendChild(modal); document.body.appendChild(overlay);
-    overlay.addEventListener('click', (ev) => {
-      if (ev.target === overlay) {
-        overlay.remove();
-        this.promoOverlay = null;
-        this.promoListContainer = null;
-        try { this.zone.run(() => { this.showPromoModal = false; }); } catch(e) {}
-      }
-    });
-
-    // search filtering
-    searchInput.addEventListener('input', () => { this.updatePromoList(searchInput.value || ''); });
-
-    // initial populate (may show loading)
-    this.updatePromoList();
-  }
-
-  // category overlay removed
-
-  // tag overlay removed
-
-  private updatePromoList(filter: string = '') {
-    if (!this.promoListContainer) return;
-    // clear
-    this.promoListContainer.innerHTML = '';
-    if (this.loadingPromos) {
-      const loading = document.createElement('div'); loading.textContent = 'Carregando promoções...'; loading.style.padding = '12px'; loading.style.opacity = '0.9'; this.promoListContainer.appendChild(loading); return;
-    }
-    const items = (this.promocoes || []).filter(p => !filter || (p.nome || '').toLowerCase().includes(filter.toLowerCase()));
-    if (!items.length) {
-      const empty = document.createElement('div'); empty.textContent = 'Nenhuma promoção encontrada.'; empty.style.padding = '12px'; this.promoListContainer.appendChild(empty); return;
-    }
-    items.forEach(pr => {
-      const item = document.createElement('div');
-      Object.assign(item.style as any, { padding: '14px', borderRadius: '8px', background: '#0b1114', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.02)' });
-      const left = document.createElement('div'); left.style.flex = '1';
-      const rowTop = document.createElement('div'); rowTop.style.display = 'flex'; rowTop.style.justifyContent = 'space-between'; rowTop.style.alignItems = 'center';
-      const name = document.createElement('div'); name.textContent = pr.nome || '—'; name.style.fontWeight = '800'; name.style.fontSize = '1rem';
-      const st = (pr.ui && pr.ui.status) || '';
-      const status = document.createElement('span'); status.textContent = this.promoStatusLabel(st);
-      // status badge colors (keeps mapping by machine status)
-      let bg = '#6b7280'; let color = '#fff';
-      if (st === 'active') { bg = '#10b981'; color = '#072'; }
-      else if (st === 'upcoming') { bg = '#f59e0b'; color = '#2b1a00'; }
-      else if (st === 'expired' || st === 'inactive') { bg = '#374151'; color = '#cbd5e1'; }
-      Object.assign(status.style as any, { background: bg, color: color, padding: '6px 8px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700, boxSizing: 'border-box' });
-      rowTop.appendChild(name); rowTop.appendChild(status);
-      left.appendChild(rowTop);
-
-      if (pr.descricao) {
-        const desc = document.createElement('div'); desc.textContent = pr.descricao; desc.style.opacity = '0.85'; desc.style.marginTop = '6px'; desc.style.fontSize = '0.95rem'; desc.style.color = '#cfe8ff'; left.appendChild(desc);
-      }
-
-      const metaRow = document.createElement('div'); metaRow.style.display = 'flex'; metaRow.style.gap = '12px'; metaRow.style.marginTop = '8px'; metaRow.style.alignItems = 'center';
-      const valor = document.createElement('div'); valor.textContent = (pr.ui && pr.ui.valor_label) ? pr.ui.valor_label : (pr.tipo === 'percentual' ? (pr.valor + '%') : (pr.valor ? String(pr.valor) : ''));
-      valor.style.opacity = '0.9'; valor.style.fontWeight = '700'; metaRow.appendChild(valor);
-      if (pr.ui?.start?.human || pr.ui?.end?.human) {
-        const dates = document.createElement('div'); dates.textContent = 'De: ' + (pr.ui?.start?.human || '—') + ' • Até: ' + (pr.ui?.end?.human || 'sem validade'); dates.style.opacity = '0.65'; dates.style.fontSize = '0.85rem'; metaRow.appendChild(dates);
-      }
-      left.appendChild(metaRow);
-
-      const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.flexDirection = 'column'; actions.style.gap = '8px'; actions.style.alignItems = 'stretch'; actions.style.width = '120px';
-      const applyBtn = document.createElement('button'); applyBtn.textContent = 'Aplicar'; Object.assign(applyBtn.style as any, { padding: '6px 12px', borderRadius: '6px', background: '#e6eef8', color: '#07121a', border: 'none', cursor: 'pointer', width: '100%', boxSizing: 'border-box' });
-      applyBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.zone.run(() => { this.pickPromo(pr); }); if (this.promoOverlay) this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; });
-      const detailBtn = document.createElement('button'); detailBtn.textContent = 'Detalhes'; Object.assign(detailBtn.style as any, { padding: '6px 12px', borderRadius: '6px', background: 'transparent', color: '#cfe8ff', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', width: '100%', boxSizing: 'border-box' });
-      detailBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.zone.run(() => { this.openPromoDetail(pr.id); }); });
-      actions.appendChild(applyBtn); actions.appendChild(detailBtn);
-      item.appendChild(left); item.appendChild(actions);
-      item.addEventListener('click', () => { this.zone.run(() => { this.pickPromo(pr); }); if (this.promoOverlay) this.promoOverlay.remove(); this.promoOverlay = null; this.promoListContainer = null; });
-      this.promoListContainer!.appendChild(item);
-    });
   }
 
   // When a promo is selected from modal/list, set it on component and close modal
@@ -1295,6 +1293,13 @@ export class ProdutoComponent implements OnInit {
       }
     });
   }
+  // Filtered promos for the template modal (uses promoSearchQuery)
+  get promocoesFiltradas(): PromocaoDto[] {
+    const q = (this.promoSearchQuery || '').toLowerCase().trim();
+    if (!q) return this.promocoes || [];
+    return (this.promocoes || []).filter(p => (p.nome || '').toLowerCase().includes(q) || (p.descricao || '').toLowerCase().includes(q));
+  }
+
   updateTaxonomia(tipo: TaxonomyType, item: { id: number|string; name: string }, newName: string) {
     if (!newName) return;
     this.api.updateTaxonomia(tipo, item.id, newName).subscribe();
@@ -1337,6 +1342,25 @@ export class ProdutoComponent implements OnInit {
 
     const tipo: 'pronto' | 'manipulado' = fv.manipulado ? 'manipulado' : 'pronto';
     const parsedWeight = this.parseWeightValue(fv.weightValue);
+    const variantes = (this.variantesFA.value || []).map((v: any, idx: number) => ({
+      id: v.id ?? undefined,
+      nome: v.nome,
+      sku: v.sku ?? null,
+      preco: v.preco != null ? Number(v.preco) : null,
+      preco_de: v.preco_de != null ? Number(v.preco_de) : null,
+      estoque: v.estoque != null ? Number(v.estoque) : null,
+      peso_g: v.peso_g != null ? Number(v.peso_g) : null,
+      ativo: v.ativo ? 1 : 0,
+      posicao: idx,
+    }));
+    const documentos = (this.documentosFA.value || []).map((d: any, idx: number) => ({
+      id: d.id ?? undefined,
+      nome: d.nome,
+      url: d.url,
+      tipo: d.tipo ?? 'outro',
+      posicao: idx,
+    }));
+
     const body: any = {
       nome: fv.name,
       descricao: fv.description,
@@ -1357,43 +1381,54 @@ export class ProdutoComponent implements OnInit {
       weightUnit: fv.weightUnit ?? null,
       discount: fv.discount ?? null,
       rating: fv.rating ?? null,
-      estoque_id: fv.estoqueId ?? null
+      estoque_id: fv.estoqueId ?? null,
+      // Identificação expandida
+      sku: fv.sku ?? null,
+      marca: fv.marca ?? null,
+      codigo_barras: fv.codigoBarras ?? null,
+      // Técnico
+      composicao: fv.composicao ?? null,
+      modo_uso: fv.modoUso ?? null,
+      indicacoes: fv.indicacoes ?? null,
+      contraindicacoes: fv.contraindicacoes ?? null,
+      // Regulatório
+      exige_receita: fv.exigeReceita ? 1 : 0,
+      validade_meses: fv.validadeMeses != null ? Number(fv.validadeMeses) : null,
+      armazenamento: fv.armazenamento ?? null,
+      registro_mapa: fv.registroMapa ?? null,
+      // SEO
+      slug: fv.slug ?? null,
+      meta_title: fv.metaTitle ?? null,
+      meta_description: fv.metaDescription ?? null,
+      og_image_url: fv.ogImageUrl ?? null,
+      // Preço avançado
+      preco_custo: fv.precoCusto != null ? Number(fv.precoCusto) : null,
+      preco_de: fv.precoDe != null ? Number(fv.precoDe) : null,
+      parcelas_max: fv.parcelasMax != null ? Number(fv.parcelasMax) : null,
+      // Mídia extra
+      video_url: fv.videoUrl ?? null,
+      // Coleções
+      variantes,
+      documentos,
+      card_layout: fv.cardLayout === 'banner' ? 'banner' : 'sales',
     };
     if (tipo === 'manipulado') body.formula_id = fv.formulaId;
-    // Se for edição de produto legado, usamos update antigo; para novo, usar endpoint full
+    // Payload unificado em português para criação e edição (mesmo shape).
     const legacyId = fv.id;
     let req$: any;
     if (legacyId) {
-      const updateBody: any = {
-        id: legacyId,
-        name: fv.name,
-        description: fv.description,
-        price: fv.price,
-        image: fv.image ?? null,
-        category: (this.categoriasList.find((c: any) => c.id === fv.categoryId)?.name) || '',
-        customizations: { dosage: this.dosageFA.value ?? [], packaging: this.packagingFA.value ?? [] },
-        tags: this.tagsFA.value ?? [],
-        discount: fv.discount ?? null,
-        rating: fv.rating ?? null,
-        stock: fv.stock ?? null,
-        weightValue: parsedWeight,
-        weightUnit: fv.weightUnit ?? null,
-        formId: fv.formulaId ?? null,
-        ativoId: fv.ativoId ?? null,
-        estoqueId: fv.estoqueId ?? null
-      };
-      console.debug('update produto payload:', updateBody);
-      req$ = this.api.updateProduto(legacyId, updateBody);
+      console.debug('update produto payload (full):', body);
+      req$ = this.api.updateMarketplaceProdutoFull(legacyId, body);
     } else {
       console.debug('create produto payload:', body);
       req$ = this.api.createMarketplaceProdutoFull(body);
     }
     req$.subscribe({
       next: (res: any) => {
-        // Após criar, se houver promoção selecionada, vincular produto à promoção
-        const newId = res?.id;
+        // Vincular promoção selecionada ao produto (cria e edita).
+        const newId = res?.id || legacyId;
         const promoId = this.promocaoSelecionada?.id;
-        if (!legacyId && newId && promoId) {
+        if (newId && promoId) {
           this.api.setPromocaoProdutos(promoId, [Number(newId)]).subscribe({
             next: () => {
               this.saving.set(false);

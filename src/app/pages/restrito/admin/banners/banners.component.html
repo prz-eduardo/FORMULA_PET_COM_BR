@@ -1,4 +1,32 @@
-<div class="fornec-wrap">
+<div class="banners-wrap">
+  <div class="banners-toolbar">
+    <div class="bt-title">
+      <h2>Banners</h2>
+      <span class="bt-sub">Gerencie as imagens exibidas nas várias seções do site.</span>
+    </div>
+    <div class="bt-filters">
+      <input
+        class="bt-input"
+        type="search"
+        placeholder="Buscar por nome, alt ou link"
+        [value]="q()"
+        (input)="onQ($event)"
+      />
+      <select class="bt-input" [value]="positionFilter()" (change)="onPosition($event)">
+        <option value="all">Todas as posições</option>
+        <option *ngFor="let p of positions" [value]="p.value">{{ p.label }}</option>
+      </select>
+      <select class="bt-input" [value]="active()" (change)="onActive($event)">
+        <option value="all">Todos</option>
+        <option value="1">Ativos</option>
+        <option value="0">Inativos</option>
+      </select>
+      <button class="bt-btn primary" type="button" (click)="openCreate()">
+        <span aria-hidden="true">＋</span> Novo banner
+      </button>
+    </div>
+  </div>
+
   <app-admin-crud
     [items]="items()"
     [loading]="loading()"
@@ -6,105 +34,34 @@
     [page]="page()"
     [pageSize]="pageSize()"
     [columns]="columns"
-    [drawerOpen]="showCreate() || !!selected()"
-    [drawerWidth]="'520px'"
+    [drawerOpen]="drawerOpen()"
+    [drawerWidth]="'640px'"
+    [drawerTitle]="selected() ? 'Editar banner' : 'Novo banner'"
+    [drawerShowFooter]="true"
+    [drawerPrimaryLabel]="selected() ? 'Salvar alterações' : 'Criar banner'"
+    [drawerPrimaryDisabled]="!bannerForm?.canSubmit"
+    [drawerPrimaryLoading]="submitting()"
     (drawerOpenChange)="onDrawerOpenChange($event)"
+    (drawerPrimaryAction)="bannerForm?.submitFromHost()"
+    (drawerSecondaryAction)="closeDrawer()"
     (pageChange)="page.set($event); load()"
-    (edit)="onCrudEdit($event)"
-    (create)="onCrudCreate()"
-    (remove)="removeItem($event)"
-    [formSchema]="bannerFormSchema"
-    (submit)="onSchemaSubmit($event)"
+    (edit)="openEdit($event)"
+    (create)="openCreate()"
+    (remove)="remove($event)"
   >
-    <div slot="title">
-      <h2>Banners</h2>
-    </div>
-
-    <div slot="actions">
-      <button class="primary" (click)="openCreate()">Novo</button>
-    </div>
-
-    <div slot="drawer" *ngIf="selected() || showCreate()">
-        <div class="drawer-content">
-          <form [formGroup]="selected() ? form : createForm" (ngSubmit)="selected() ? save() : create()" class="admin-form-grid">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="nome">Nome</label>
-              <input id="nome" formControlName="nome" class="basico-input" placeholder="Nome do banner" />
-            </div>
-            <div class="form-group">
-              <label for="link">Link</label>
-              <input id="link" formControlName="link" class="basico-input" placeholder="https://" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="alt">Alt</label>
-              <input id="alt" formControlName="alt" class="basico-input" placeholder="Texto alternativo" />
-            </div>
-            <div class="form-group">
-              <label for="posicao">Posição</label>
-              <select id="posicao" formControlName="posicao" class="basico-input">
-                <option value="loja">Loja</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="ordem">Ordem</label>
-              <input id="ordem" type="number" formControlName="ordem" class="basico-input" min="1" />
-            </div>
-            <div class="form-group">
-              <label for="inicio">Início</label>
-              <input id="inicio" type="datetime-local" formControlName="inicio" class="basico-input" />
-            </div>
-            <div class="form-group">
-              <label for="fim">Fim</label>
-              <input id="fim" type="datetime-local" formControlName="fim" class="basico-input" />
-            </div>
-            <div class="form-group">
-              <label for="ativo">Status</label>
-              <select id="ativo" formControlName="ativo" class="basico-input">
-                <option [ngValue]="1">Ativo</option>
-                <option [ngValue]="0">Inativo</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group full-width">
-              <label>Banner Desktop (4:1)</label>
-              <div>
-                <ng-container *ngIf="!showCreate(); else createDesktopEditor">
-                  <app-banner-image-editor #desktopEditor [expectedRatio]="desktopExpected" [initialImage]="desktopPreviewUrl" (previewChange)="desktopPreviewUrl=$event" (fileChange)="desktopFile=$event" (warnChange)="desktopWarn.set($event)"></app-banner-image-editor>
-                </ng-container>
-                <ng-template #createDesktopEditor>
-                  <app-banner-image-editor #desktopEditorCreate [expectedRatio]="desktopExpected" [initialImage]="desktopPreviewUrl" (previewChange)="desktopPreviewUrl=$event" (fileChange)="desktopFile=$event" (warnChange)="desktopWarn.set($event)"></app-banner-image-editor>
-                </ng-template>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group full-width">
-              <label>Banner Mobile (4:1)</label>
-              <div>
-                <ng-container *ngIf="!showCreate(); else createMobileEditor">
-                  <app-banner-image-editor #mobileEditor [expectedRatio]="mobileExpected" [initialImage]="mobilePreviewUrl" (previewChange)="mobilePreviewUrl=$event" (fileChange)="mobileFile=$event" (warnChange)="mobileWarn.set($event)"></app-banner-image-editor>
-                </ng-container>
-                <ng-template #createMobileEditor>
-                  <app-banner-image-editor #mobileEditorCreate [expectedRatio]="mobileExpected" [initialImage]="mobilePreviewUrl" (previewChange)="mobilePreviewUrl=$event" (fileChange)="mobileFile=$event" (warnChange)="mobileWarn.set($event)"></app-banner-image-editor>
-                </ng-template>
-              </div>
-            </div>
-          </div>
-          <div class="drawer-actions">
-            <button type="button" class="ghost" (click)="onCrudCancel()">Cancelar</button>
-            <button type="submit" class="primary" [disabled]="(selected() ? form : createForm).invalid">{{ selected() ? 'Salvar' : 'Criar' }}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div slot="pagination">
-      <admin-pagination [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); load()"></admin-pagination>
+    <div slot="drawer" *ngIf="drawerOpen()">
+      <app-banner-form
+        [banner]="selected()"
+        [submitting]="submitting()"
+        (submitted)="onFormSubmitted($event)"
+        (cancelled)="closeDrawer()"
+        (removed)="remove($event)"
+      ></app-banner-form>
     </div>
   </app-admin-crud>
+
+  <div class="banners-toast" *ngIf="toast() as t" [class.ok]="t.kind === 'ok'" [class.error]="t.kind === 'error'">
+    <span>{{ t.message }}</span>
+    <button type="button" (click)="toast.set(null)" aria-label="Fechar">×</button>
+  </div>
+</div>

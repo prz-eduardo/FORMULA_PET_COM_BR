@@ -1,41 +1,68 @@
 <app-navmenu></app-navmenu>
-<main class="mapa-container container">
-  <header class="mapa-header">
-  <h1 class="mapa-title">Mapa <span class="emoji">🗺️</span></h1>
-    <p class="mapa-subtitle">Encontre serviços pet próximos: veterinários, dog walkers, petsitters e creches caninas.</p>
-    <section class="farmacia-info" role="region" aria-label="Localização da farmácia">
-      <h2 class="farmacia-title">Nossa Farmácia</h2>
-      <p class="farmacia-address">Rua Treze de Maio, 506, Conjunto 04, São Francisco, Curitiba - PR, CEP 80510-030</p>
-      <p class="farmacia-directions">
-        <button
-          type="button"
-          class="farmacia-center-btn btn primary"
-          aria-label="Centralizar mapa na localização da farmácia"
-          title="Centralizar mapa"
-          (click)="centerOnPharmacy()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
-        <circle cx="12" cy="9" r="2.5" fill="#fff" />
-          </svg>
-          Centralizar no mapa
-        </button>
-      </p>
+
+<main class="mapa-container">
+  <app-banner-slot posicao="mapa" mode="carousel" class="mapa-banner-slot"></app-banner-slot>
+
+  <!-- ========================================================= HERO -->
+  <header class="mapa-hero" role="banner">
+    <div class="hero-top">
+      <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="hero-icon" />
+      <div class="hero-titles">
+        <h1 class="hero-title">
+          Encontre serviços pet <span class="hero-accent">perto de você</span>
+        </h1>
+        <p class="hero-subtitle">
+          Veterinários, dog walkers, petsitters, creches caninas e muito mais — tudo em um só mapa, com a confiança da Fórmula Pet.
+        </p>
+      </div>
+    </div>
+
+    <div class="hero-stats" aria-label="Informações da página">
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ tabs.length || 0 }}</strong> categorias</span>
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ allPartners.length || 0 }}</strong> parceiros</span>
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span>Curitiba - PR</span>
+    </div>
+
+    <section class="farmacia-card" role="region" aria-label="Localização da farmácia">
+      <img src="/icones/pin-fp.png" alt="" aria-hidden="true" class="farmacia-pin" />
+      <div class="farmacia-body">
+        <h2 class="farmacia-name">Fórmula Pet <span class="farmacia-tag">Nossa loja</span></h2>
+        <p class="farmacia-address">Rua Treze de Maio, 506, Conjunto 04 — São Francisco, Curitiba - PR, CEP 80510-030</p>
+      </div>
+      <button
+        type="button"
+        class="farmacia-center-btn"
+        aria-label="Centralizar mapa na localização da farmácia"
+        title="Centralizar mapa"
+        (click)="centerOnPharmacy()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
+          <circle cx="12" cy="9" r="2.5" fill="#fff" />
+        </svg>
+        Centralizar no mapa
+      </button>
     </section>
   </header>
 
+  <!-- ========================================================= LAYOUT -->
   <div class="map-layout">
-    <aside class="map-sidebar neumorph-card">
+    <!-- ======================================================= SIDEBAR -->
+    <aside class="map-sidebar">
+      <!-- Abas de serviço -->
       <nav class="service-tabs" role="tablist" aria-label="Serviços">
-  <button *ngFor="let t of tabs"
-    (click)="select(t.id)"
-    [class.active]="active===t.id"
-    role="tab"
-    [attr.aria-selected]="(active===t.id) ? 'true' : 'false'"
-    [attr.aria-controls]="'panel-' + t.id">
-          {{ t.label }}
+        <button *ngFor="let t of tabs"
+          (click)="select(t.id)"
+          [class.active]="active===t.id"
+          role="tab"
+          [attr.aria-selected]="(active===t.id) ? 'true' : 'false'"
+          [attr.aria-controls]="'panel-' + t.id">
+          <img [src]="getTabIcon(t)" class="tab-icon" alt="" aria-hidden="true" />
+          <span class="tab-label">{{ t.label }}</span>
+          <span class="tab-count" *ngIf="active===t.id && partners?.length">{{ partners.length }}</span>
         </button>
       </nav>
 
+      <!-- Filtros -->
       <div class="filters" role="region" [attr.aria-labelledby]="'filters-' + active">
         <h4 [attr.id]="'filters-' + active">Filtros — {{ getActiveLabel() }}</h4>
         <div class="filter-list" id="panel-{{active}}">
@@ -48,44 +75,80 @@
         </div>
       </div>
 
+      <!-- Resultados -->
       <div class="results">
         <h4>Resultados</h4>
-        <div *ngIf="loading">Carregando parceiros...</div>
+
+        <div *ngIf="loading" class="loading-text">Carregando parceiros...</div>
         <div *ngIf="error" class="error">{{ error }}</div>
 
         <ul *ngIf="!loading && partners?.length">
-          <li *ngFor="let p of partners" class="result-item" role="button" tabindex="0" (click)="centerOnPartner(p)" (keyup.enter)="centerOnPartner(p)" [attr.aria-label]="'Centralizar ' + (p.nome || p.name || 'parceiro') + ' no mapa'">
-            <div class="result-thumb" aria-hidden="true"></div>
+          <li *ngFor="let p of partners"
+              class="result-item"
+              role="button"
+              tabindex="0"
+              (click)="centerOnPartner(p)"
+              (keyup.enter)="centerOnPartner(p)"
+              [attr.aria-label]="'Centralizar ' + (p.nome || p.name || 'parceiro') + ' no mapa'">
+            <div class="result-avatar" aria-hidden="true">
+              <ng-container *ngIf="getPartnerAvatar(p) as avatar">
+                <img [src]="avatar.src" [class.is-icon]="avatar.isIcon" alt="" />
+              </ng-container>
+            </div>
             <div class="result-body">
               <div class="result-title">{{ p.nome || p.name || 'Parceiro' }}</div>
-              <div class="result-meta">{{ p.telefone || p.phone || '' }} {{ p.email ? '· ' + p.email : '' }}</div>
+              <span class="result-badge" *ngIf="getPartnerTypeLabel(p) as typeLabel">{{ typeLabel }}</span>
+              <div class="result-meta" *ngIf="getPartnerLocation(p) as loc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/>
+                </svg>
+                <span>{{ loc }}</span>
+              </div>
             </div>
           </li>
         </ul>
 
-        <div *ngIf="!loading && !partners?.length">Nenhum parceiro encontrado.</div>
+        <div *ngIf="!loading && !partners?.length" class="empty-state">
+          <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" />
+          <h4>Nenhum parceiro por aqui ainda</h4>
+          <p>Experimente trocar de categoria ou volte em breve — novos parceiros chegam toda semana.</p>
+        </div>
 
-        <!-- Partner CTA: invite businesses to appear on the map -->
-        <div class="partner-cta neumorph-card" role="group" aria-label="Quer aparecer aqui?">
-          <div class="partner-cta-inner">
-            <!-- Updated CTA image (Unsplash) to ensure reliable loading -->
-            <img class="partner-cta-img" src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1200&q=80" alt="Parceiros - pet shop e serviços"/>
-            <div class="partner-cta-body">
-              <h4>Quer aparecer aqui?</h4>
-              <p>Seja nosso parceiro e mostre seus serviços para clientes perto de você. Cadastre sua empresa e conecte-se com donos de pets na sua região.</p>
-              <a class="btn partner-cta-btn" routerLink="/parceiro/cadastrar" title="Quero ser parceiro">Quero ser parceiro</a>
-            </div>
-          </div>
+        <!-- CTA: Quer aparecer aqui? -->
+        <div class="partner-cta" role="group" aria-label="Quer aparecer aqui?">
+          <h4><span class="sparkle">✦</span> Quer aparecer aqui?</h4>
+          <p>Seja nosso parceiro e mostre seus serviços para clientes perto de você. Cadastre sua empresa e conecte-se com donos de pets na sua região.</p>
+          <a class="partner-cta-btn" routerLink="/parceiro/cadastrar" title="Quero ser parceiro">
+            Quero ser parceiro
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
         </div>
       </div>
     </aside>
 
+    <!-- ======================================================= MAPA -->
     <section class="map-area">
       <div class="map-frame-wrap">
-        <!-- Google Map container: initialized dynamically in the component when Maps API key is available -->
+        <!-- Legenda flutuante -->
+        <div class="map-legend" aria-hidden="true">
+          <div class="legend-item">
+            <img src="/icones/pin-fp.png" alt="" />
+            <span>Fórmula Pet</span>
+          </div>
+          <span class="legend-divider"></span>
+          <div class="legend-item paw">
+            <img src="/icones/paw.png" alt="" />
+            <span>Parceiros</span>
+          </div>
+        </div>
+
+        <!-- Container do Google Maps (inicializado dinamicamente) -->
         <div id="gmap" class="gmap" role="region" aria-label="Mapa de parceiros"></div>
-        <!-- fallback handled programmatically; noscript iframe removed to avoid hydration mismatches -->
       </div>
     </section>
   </div>
 </main>
+
+<app-footer></app-footer>

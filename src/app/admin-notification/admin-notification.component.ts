@@ -1,34 +1,12 @@
-// Angular standalone patch: garantir detecção correta pelo compilador
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AdminNotificationService } from './admin-notification.service';
+import { NotificationsBellComponent } from '../shared/notifications-bell/notifications-bell.component';
 
 @Component({
   selector: 'app-admin-notification',
   standalone: true,
-  imports: [CommonModule],
-  templateUrl: './admin-notification.component.html',
-  styleUrls: ['./admin-notification.component.scss']
+  imports: [CommonModule, NotificationsBellComponent],
+  template: `<app-notifications-bell audience="admin"></app-notifications-bell>`,
+  styles: [':host { display: inline-block; }'],
 })
-export class AdminNotificationComponent implements OnInit, OnDestroy {
-  notifications: any[] = [];
-  unreadCount = 0;
-  private sub: any;
-
-  constructor(private notificationService: AdminNotificationService) {}
-
-  ngOnInit() {
-    this.sub = this.notificationService.notifications$.subscribe((data) => {
-      this.notifications = data;
-      this.unreadCount = data.filter(n => !n.read).length;
-    });
-  }
-
-  ngOnDestroy() {
-    if (this.sub) this.sub.unsubscribe();
-  }
-
-  markAllAsRead() {
-    this.notificationService.markAllAsRead();
-  }
-}
+export class AdminNotificationComponent {}

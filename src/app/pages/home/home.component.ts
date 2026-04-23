@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { StoreService, ShopProduct } from '../../services/store.service';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
 // import { HeroComponent } from '../hero/hero.component';
 // import { ProductPreviewComponent } from '../product-preview/product-preview.component';
@@ -15,15 +16,9 @@ import { firstValueFrom } from 'rxjs';
   standalone: true,
   imports: [
     CommonModule,
-  // SwiperTopoComponent,
-  // HeroComponent,
-    // FooterComponent,
-    // NavmenuComponent,
     RouterLink,
     CurrencyPipe,
-    // TestimonialsComponent,
-    // AboutComponent,
-    // ContactComponent
+    BannerSlotComponent,
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']

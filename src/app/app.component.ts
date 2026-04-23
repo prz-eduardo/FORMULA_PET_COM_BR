@@ -4,7 +4,6 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 import { NavmenuComponent } from './navmenu/navmenu.component';
-import { SwiperTopoComponent } from './swiper-topo/swiper-topo.component';
 import { HeroComponent } from './hero/hero.component';
 import { FooterComponent } from './footer/footer.component';
 import { AboutComponent } from './about/about.component';

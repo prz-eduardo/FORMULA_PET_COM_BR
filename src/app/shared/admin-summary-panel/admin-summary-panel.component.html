@@ -1,0 +1,140 @@
+<div class="summary-panel">
+  <!-- Totais -->
+  <section class="card summary-card">
+    <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggle('totals')">
+      <h4 class="segment-title">Totais</h4>
+      <div class="card-actions">
+        <svg class="chev" [class.open]="!isCollapsed('totals')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+    <div class="card-body" *ngIf="!isCollapsed('totals')">
+      <div class="segment-body">
+        <div class="tot-line">Pedidos: <b>{{ summary?.totals?.total_pedidos }}</b></div>
+        <div class="tot-line">Receita: <b>{{ summary?.totals?.receita_total | currency:'BRL':'symbol-narrow' }}</b></div>
+        <div class="tot-line">Descontos: <b>{{ summary?.totals?.descontos_total | currency:'BRL':'symbol-narrow' }}</b></div>
+        <div class="tot-line">Ticket médio: <b>{{ summary?.totals?.ticket_medio | number:'1.2-2' }}</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Status Breakdown -->
+  <section class="card summary-card">
+    <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggle('status')">
+      <h4 class="segment-title">Status dos Pedidos</h4>
+      <div class="card-actions">
+        <svg class="chev" [class.open]="!isCollapsed('status')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+    <div class="card-body" *ngIf="!isCollapsed('status')">
+      <div class="segment-body">
+        <div class="status-list">
+          <div class="status-item" *ngFor="let key of summary?.statusBreakdown | keyvalue">
+            <span class="status-label">{{ key.key | titlecase }}:</span>
+            <b>{{ key.value }}</b>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Formas de Pagamento -->
+  <section class="card summary-card" *ngIf="summary?.formasPagamento?.length">
+    <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggle('pagamento')">
+      <h4 class="segment-title">Formas de Pagamento</h4>
+      <div class="card-actions">
+        <svg class="chev" [class.open]="!isCollapsed('pagamento')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+    <div class="card-body" *ngIf="!isCollapsed('pagamento')">
+      <div class="segment-body">
+        <ul class="payment-list">
+          <li *ngFor="let f of summary?.formasPagamento">
+            <span class="payment-forma">{{ f.forma | titlecase }}</span> —
+            <span class="payment-qtd">{{ f.quantidade }}x</span> —
+            <span class="payment-total">{{ f.valor_total | currency:'BRL':'symbol-narrow' }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top Clientes -->
+  <section class="card summary-card" *ngIf="summary?.topClientes?.length">
+    <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggle('clientes')">
+      <h4 class="segment-title">Top Clientes</h4>
+      <div class="card-actions">
+        <svg class="chev" [class.open]="!isCollapsed('clientes')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+    <div class="card-body" *ngIf="!isCollapsed('clientes')">
+      <div class="segment-body">
+        <ul class="top-clientes-list">
+          <li *ngFor="let c of summary?.topClientes">
+            <img *ngIf="c.foto" [src]="c.foto" class="cliente-foto" alt="Foto do cliente" />
+            <span class="cliente-nome">{{ c.nome }}</span>
+            <span class="cliente-email">{{ c.email }}</span>
+            <span class="cliente-pedidos">Pedidos: <b>{{ c.total_pedidos }}</b></span>
+            <span class="cliente-total">Total: <b>{{ c.valor_total | currency:'BRL':'symbol-narrow' }}</b></span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top Cupons -->
+  <section class="card summary-card" *ngIf="summary?.topCupons?.length">
+    <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggle('cupons')">
+      <h4 class="segment-title">Top Cupons</h4>
+      <div class="card-actions">
+        <svg class="chev" [class.open]="!isCollapsed('cupons')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+    <div class="card-body" *ngIf="!isCollapsed('cupons')">
+      <div class="segment-body">
+        <ul class="top-cupons-list">
+          <li *ngFor="let c of summary?.topCupons">
+            <span class="cupom-codigo">{{ c.codigo }}</span> —
+            <span class="cupom-desc">{{ c.descricao }}</span> —
+            <span class="cupom-vezes">Usos: <b>{{ c.vezes_usado }}</b></span> —
+            <span class="cupom-total">Desconto: <b>{{ c.desconto_gerado | currency:'BRL':'symbol-narrow' }}</b></span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pedidos Recentes -->
+  <section class="card summary-card" *ngIf="summary?.pedidosRecentes?.length">
+    <div class="card-head card-head--clickable" role="button" tabindex="0" (click)="toggle('pedidos')">
+      <h4 class="segment-title">Pedidos Recentes</h4>
+      <div class="card-actions">
+        <svg class="chev" [class.open]="!isCollapsed('pedidos')" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+    <div class="card-body" *ngIf="!isCollapsed('pedidos')">
+      <div class="segment-body">
+        <ul class="pedidos-recentes-list">
+          <li *ngFor="let p of summary?.pedidosRecentes">
+            <span class="pedido-id">#{{ p.id }}</span>
+            <span class="pedido-status">{{ p.status | titlecase }}</span>
+            <span class="pedido-total">{{ p.total_liquido | currency:'BRL':'symbol-narrow' }}</span>
+            <span class="pedido-cliente">{{ p.cliente_nome }}</span>
+            <span class="pedido-data">{{ p.created_at | date:'short' }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

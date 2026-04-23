@@ -1,239 +1,257 @@
-<section id="header" class="header">
-  <app-navmenu></app-navmenu>
-</section>
+<div class="sobre-page">
+  <!-- =========================================================
+       HERO
+       ========================================================= -->
+  <section class="sobre-hero" aria-labelledby="sobre-hero-title">
+    <div class="hero-shell">
+      <div class="hero-copy">
+        <span class="hero-kicker">
+          <i class="fa-solid fa-paw" aria-hidden="true"></i>
+          Fórmula Pet · Quem somos
+        </span>
+        <h1 id="sobre-hero-title" class="hero-title">
+          Cuidar de pets é <span class="hero-accent">a nossa</span><br />
+          fórmula favorita.
+        </h1>
+        <p class="hero-subtitle">
+          Somos uma farmácia de manipulação veterinária dedicada a transformar
+          prescrições em soluções personalizadas, com qualidade farmacêutica e
+          carinho do tamanho do seu pet.
+        </p>
 
-<div style="padding: 1vh;"></div>
+        <div class="hero-actions">
+          <a routerLink="/loja" class="btn btn-primary">
+            <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
+            Ver produtos
+          </a>
+          <a [href]="whatsappLink" target="_blank" rel="noopener" class="btn btn-whatsapp">
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+            Falar no WhatsApp
+          </a>
+        </div>
 
-<!-- Seção Hero -->
-<section class="about-hero">
-  <div class="hero-content">
-    <h1 class="hero-title">Sobre Nós</h1>
-    <p class="hero-subtitle">
-      Descubra a história da Fórmula Pet e como nos tornamos referência em manipulação veterinária.
-    </p>
-  </div>
-</section>
-
-<!-- Seção História -->
-<section class="about-history">
-  <div class="about-content">
-    <h2 class="section-title">Nossa História</h2>
-    <p class="section-text">
-      Fundada com o objetivo de cuidar da saúde animal de forma personalizada, a Fórmula Pet nasceu da paixão por pets e da necessidade de oferecer medicamentos manipulados com qualidade, segurança e amor. 
-      Ao longo dos anos, evoluímos e nos especializamos em soluções exclusivas para cães, gatos e animais exóticos.
-    </p>
-  </div>
-</section>
-
-<!-- Seção Missão, Visão e Valores -->
-<section class="about-mvv">
-  <div class="mvv-cards">
-    <div class="mvv-card">
-      <h3>Missão</h3>
-      <p>Oferecer saúde e bem-estar aos pets com fórmulas personalizadas, seguras e eficazes, priorizando a qualidade de vida de cada paciente.</p>
-    </div>
-    <div class="mvv-card">
-      <h3>Visão</h3>
-      <p>Ser a farmácia de manipulação veterinária mais confiável e inovadora do país, reconhecida pela excelência no atendimento e nos produtos.</p>
-    </div>
-    <div class="mvv-card">
-      <h3>Valores</h3>
-      <p>Compromisso, ética, transparência, cuidado com os animais e inovação constante são a base de tudo que fazemos.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Seção Equipe -->
-<section class="about-team">
-  <div class="team-content">
-    <h2 class="section-title">Nossa Equipe</h2>
-    <p class="section-text">
-      Contamos com profissionais qualificados, apaixonados por animais, prontos para orientar tutores e veterinários com atenção e conhecimento técnico.
-    </p>
-    <div class="team-cards">
-      <div class="team-card">
-        <img src="assets/team1.jpg" alt="Veterinário 1">
-        <h4>Dr. Lucas</h4>
-        <p>Veterinário Responsável</p>
+        <ul class="hero-trust" aria-label="Indicadores de confiança">
+          <li *ngFor="let s of stats">
+            <span class="trust-icon"><i [class]="s.icon" aria-hidden="true"></i></span>
+            <span class="trust-value">{{ s.value }}</span>
+            <span class="trust-label">{{ s.label }}</span>
+          </li>
+        </ul>
       </div>
-      <div class="team-card">
-        <img src="assets/team2.jpg" alt="Farmacêutica 1">
-        <h4>Dra. Marina</h4>
-        <p>Farmacêutica Especialista</p>
-      </div>
-      <div class="team-card">
-        <img src="assets/team3.jpg" alt="Atendimento 1">
-        <h4>Carla</h4>
-        <p>Atendimento ao Cliente</p>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="hero-blob blob-a"></div>
+        <div class="hero-blob blob-b"></div>
+        <div class="hero-card hero-card-main">
+          <img src="/imagens/image.png" alt="Mascote Fórmula Pet" loading="eager" decoding="async" />
+        </div>
+        <div class="hero-chip chip-a">
+          <i class="fa-solid fa-flask" aria-hidden="true"></i>
+          Manipulação sob medida
+        </div>
+        <div class="hero-chip chip-b">
+          <i class="fa-solid fa-heart" aria-hidden="true"></i>
+          Feito com amor
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- CTA WhatsApp -->
-<section class="about-cta">
-  <div class="cta-content">
-    <h2>Quer saber mais?</h2>
-    <p>Fale com nossa equipe pelo WhatsApp e tire todas as suas dúvidas sobre fórmulas personalizadas para seu pet.</p>
-    <a href="https://wa.me/4132051910?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20as%20fórmulas%20personalizadas%20para%20meu%20pet."
-       target="_blank"
-       class="cta-whatsapp-btn">
-      Fale pelo WhatsApp
-      <i class="fa-brands fa-whatsapp"></i>
-    </a>
-  </div>
-</section>
+  <!-- =========================================================
+       NOSSA HISTÓRIA
+       ========================================================= -->
+  <section class="sobre-historia" aria-labelledby="historia-title">
+    <div class="section-inner two-col">
+      <div class="col-text">
+        <span class="eyebrow">Nossa história</span>
+        <h2 id="historia-title" class="section-title">
+          Nascemos da paixão por pets e da busca por um cuidado único.
+        </h2>
+        <p class="section-text">
+          A Fórmula Pet surgiu para preencher uma lacuna: oferecer medicamentos
+          manipulados com a mesma precisão das farmácias humanas, mas
+          totalmente voltados ao universo animal. Desde o primeiro dia,
+          apostamos em tecnologia, ciência e acolhimento.
+        </p>
+        <p class="section-text">
+          Hoje somos referência em manipulação veterinária, atendendo cães,
+          gatos e pets exóticos com fórmulas adaptadas à realidade clínica de
+          cada um — porque cada bichinho merece um tratamento que funcione
+          de verdade.
+        </p>
 
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+        <div class="quote-card">
+          <i class="fa-solid fa-quote-left quote-mark" aria-hidden="true"></i>
+          <p>
+            Do focinho ao rabinho, a dose certa de carinho. Esse é o nosso
+            compromisso com cada tutor e cada paciente.
+          </p>
+        </div>
+      </div>
 
-/* Hero */
-.about-hero {
-  background: #f8fafc;
-  text-align: center;
-  padding: 6rem 2rem;
-}
-.hero-title {
-  font-family: 'Pacifico', cursive, 'Montserrat', sans-serif;
-  font-size: 3rem;
-  color: #2d3a4a;
-  margin-bottom: 1rem;
-}
-.hero-subtitle {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 1.2rem;
-  color: #444;
-}
+      <div class="col-visual">
+        <div class="visual-stack">
+          <div class="visual-card card-1">
+            <i class="fa-solid fa-vial-circle-check" aria-hidden="true"></i>
+            <strong>Precisão</strong>
+            <span>Dosagem certa para cada espécie e porte.</span>
+          </div>
+          <div class="visual-card card-2">
+            <i class="fa-solid fa-syringe" aria-hidden="true"></i>
+            <strong>Apresentação ideal</strong>
+            <span>Comprimidos, pastas, líquidos e muito mais.</span>
+          </div>
+          <div class="visual-card card-3">
+            <i class="fa-solid fa-paw" aria-hidden="true"></i>
+            <strong>Cuidado integral</strong>
+            <span>Desde o dia 1, pensando no bem-estar do seu pet.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-/* Seções */
-section {
-  padding: 4rem 6vw;
-}
-.section-title {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #2d3a4a;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-.section-text {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 1.05rem;
-  color: #444;
-  line-height: 1.7;
-  max-width: 900px;
-  margin: 0 auto 2rem auto;
-  text-align: center;
-}
+  <!-- =========================================================
+       MISSÃO · VISÃO · VALORES
+       ========================================================= -->
+  <section class="sobre-mvv" aria-labelledby="mvv-title">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow">O que nos move</span>
+        <h2 id="mvv-title" class="section-title">Missão, Visão e Valores</h2>
+        <p class="section-lead">
+          Princípios que guiam cada fórmula, cada atendimento e cada decisão.
+        </p>
+      </div>
 
-/* MVV Cards */
-.mvv-cards {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.mvv-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
-  padding: 2rem 1.5rem;
-  max-width: 300px;
-  flex: 1 1 260px;
-  text-align: center;
-}
-.mvv-card h3 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #3b5d50;
-  margin-bottom: 0.7rem;
-}
-.mvv-card p {
-  font-size: 1rem;
-  color: #444;
-  line-height: 1.5;
-}
+      <div class="mvv-grid">
+        <article class="mvv-card" *ngFor="let card of mvv" [attr.data-accent]="card.accent">
+          <div class="mvv-icon">
+            <i [class]="card.icon" aria-hidden="true"></i>
+          </div>
+          <h3>{{ card.title }}</h3>
+          <p>{{ card.text }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
 
-/* Equipe */
-.team-cards {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 2rem;
-}
-.team-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
-  padding: 1.5rem;
-  max-width: 220px;
-  text-align: center;
-  flex: 1 1 200px;
-}
-.team-card img {
-  width: 100%;
-  border-radius: 50%;
-  margin-bottom: 1rem;
-}
+  <!-- =========================================================
+       DIFERENCIAIS
+       ========================================================= -->
+  <section class="sobre-diferenciais" aria-labelledby="dif-title">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow">Por que Fórmula Pet</span>
+        <h2 id="dif-title" class="section-title">Feito para quem ama de verdade</h2>
+        <p class="section-lead">
+          Tudo pensado para que seu pet receba o tratamento certo, com
+          segurança e praticidade.
+        </p>
+      </div>
 
-/* CTA */
-.about-cta {
-  background: #25d366;
-  color: #fff;
-  text-align: center;
-  padding: 4rem 2rem;
-  border-radius: 16px;
-  margin: 4rem 6vw;
-}
-.about-cta h2 {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 2rem;
-  margin-bottom: 1rem;
-}
-.about-cta p {
-  font-size: 1.05rem;
-  margin-bottom: 2rem;
-}
-.cta-whatsapp-btn {
-  display: inline-block;
-  padding: 0.8rem 2rem;
-  background: #fff;
-  color: #25d366;
-  font-weight: 700;
-  font-size: 1.1rem;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.cta-whatsapp-btn:hover {
-  background: #f0f0f0;
-}
+      <div class="dif-grid">
+        <div class="dif-card" *ngFor="let d of differentials">
+          <div class="dif-icon"><i [class]="d.icon" aria-hidden="true"></i></div>
+          <h3>{{ d.title }}</h3>
+          <p>{{ d.text }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-/* Responsivo */
-@media (max-width: 900px) {
-  .mvv-cards, .team-cards {
-    flex-direction: column;
-    align-items: center;
-  }
-}
-@media (max-width: 600px) {
-  .hero-title {
-    font-size: 2rem;
-  }
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-  .section-title {
-    font-size: 1.5rem;
-  }
-  .section-text {
-    font-size: 0.98rem;
-  }
-  .mvv-card, .team-card {
-    max-width: 100%;
-  }
-}
-</style>
+  <!-- =========================================================
+       COMO FUNCIONA (TIMELINE)
+       ========================================================= -->
+  <section class="sobre-timeline" aria-labelledby="timeline-title">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow">Como funciona</span>
+        <h2 id="timeline-title" class="section-title">Da receita à patinha</h2>
+        <p class="section-lead">
+          Um processo simples, transparente e rápido para cuidar do seu pet.
+        </p>
+      </div>
+
+      <ol class="timeline">
+        <li class="timeline-item" *ngFor="let step of timeline; let i = index">
+          <div class="timeline-dot">
+            <i [class]="step.icon" aria-hidden="true"></i>
+          </div>
+          <div class="timeline-body">
+            <span class="timeline-step">Etapa {{ i + 1 }}</span>
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.text }}</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       EQUIPE
+       ========================================================= -->
+  <section class="sobre-equipe" aria-labelledby="equipe-title">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow">Quem faz acontecer</span>
+        <h2 id="equipe-title" class="section-title">Nosso time</h2>
+        <p class="section-lead">
+          Profissionais apaixonados, prontos para orientar tutores e veterinários
+          com atenção e conhecimento técnico.
+        </p>
+      </div>
+
+      <div class="team-grid">
+        <article class="team-card" *ngFor="let member of team">
+          <div class="team-photo">
+            <img
+              [src]="member.image"
+              [alt]="member.name"
+              loading="lazy"
+              decoding="async"
+              (error)="$any($event.target).style.display='none'"
+            />
+            <span class="team-initials" aria-hidden="true">{{ member.initials }}</span>
+          </div>
+          <h3>{{ member.name }}</h3>
+          <span class="team-role">{{ member.role }}</span>
+          <p>{{ member.bio }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       CTA FINAL
+       ========================================================= -->
+  <section class="sobre-cta" aria-labelledby="cta-title">
+    <div class="section-inner">
+      <div class="cta-shell">
+        <div class="cta-copy">
+          <span class="eyebrow light">Vamos conversar?</span>
+          <h2 id="cta-title">Tire suas dúvidas pelo WhatsApp</h2>
+          <p>
+            Nossa equipe responde rapidinho, ajuda a entender a receita e
+            encontra a melhor apresentação para o seu pet.
+          </p>
+          <div class="cta-actions">
+            <a [href]="whatsappLink" target="_blank" rel="noopener" class="btn btn-whatsapp lg">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+              Falar agora
+            </a>
+            <a routerLink="/loja" class="btn btn-ghost lg">
+              <i class="fa-solid fa-store" aria-hidden="true"></i>
+              Conhecer a loja
+            </a>
+          </div>
+        </div>
+        <div class="cta-illu" aria-hidden="true">
+          <i class="fa-solid fa-paw paw-1"></i>
+          <i class="fa-solid fa-paw paw-2"></i>
+          <i class="fa-solid fa-paw paw-3"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

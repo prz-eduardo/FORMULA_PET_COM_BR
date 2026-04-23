@@ -1,0 +1,56 @@
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-form .field { margin-bottom: 10px; }
+.admin-form .field > label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: var(--admin-font-weight-semibold);
+  font-size: 0.95rem;
+  color: var(--admin-muted-2);
+}
+.admin-form .field .control input,
+.admin-form .field .control select,
+.admin-form .field .control textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-input-bg);
+  color: var(--admin-text);
+  border-radius: var(--admin-radius-md);
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.admin-form .field .control input:focus,
+.admin-form .field .control select:focus,
+.admin-form .field .control textarea:focus {
+  border-color: var(--admin-focus-border);
+  box-shadow: var(--admin-focus-ring);
+}
+.admin-form .field .control input[type='checkbox'] { width: auto; }
+
+.admin-form .form-section {
+  padding: 12px;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+}
+.admin-form .form-section > h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  font-weight: var(--admin-font-weight-bold);
+  color: var(--admin-text);
+}
+
+.admin-form .drawer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--admin-border);
+}

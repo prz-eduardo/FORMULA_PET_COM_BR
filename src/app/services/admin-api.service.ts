@@ -4,8 +4,29 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../enviroments/environment';
 import { SessionService } from './session.service';
+import { BannerPosition } from '../shared/banner/banner-positions';
 
 export type TaxonomyType = 'categorias' | 'tags' | 'dosages' | 'embalagens';
+
+export interface ProdutoVarianteDto {
+  id?: number | null;
+  nome: string;
+  sku?: string | null;
+  preco?: number | null;
+  preco_de?: number | null;
+  estoque?: number | null;
+  peso_g?: number | null;
+  ativo?: number | boolean;
+  posicao?: number | null;
+}
+
+export interface ProdutoDocumentoDto {
+  id?: number | null;
+  nome: string;
+  url: string;
+  tipo?: 'ficha_tecnica' | 'bula' | 'certificado' | 'outro' | string | null;
+  posicao?: number | null;
+}
 
 export interface ProdutoDto {
   id?: string | number;
@@ -24,6 +45,31 @@ export interface ProdutoDto {
   tags: string[];
   weightValue?: number | null;
   weightUnit?: string | null;
+  // Identificação expandida
+  sku?: string | null;
+  marca?: string | null;
+  codigo_barras?: string | null;
+  // Conteúdo técnico
+  composicao?: string | null;
+  modo_uso?: string | null;
+  indicacoes?: string | null;
+  contraindicacoes?: string | null;
+  // Regulatório
+  exige_receita?: number | boolean | null;
+  validade_meses?: number | null;
+  armazenamento?: string | null;
+  registro_mapa?: string | null;
+  // SEO
+  slug?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image_url?: string | null;
+  // Preço avançado
+  preco_custo?: number | null;
+  preco_de?: number | null;
+  parcelas_max?: number | null;
+  // Mídia extra
+  video_url?: string | null;
   // Associação opcional com um ativo (pode ser null ou ausente)
   ativoId?: string | number | null;
   // Se vinculado a um ativo, a associação deve ser feita a um lote do estoque
@@ -31,6 +77,24 @@ export interface ProdutoDto {
   // Forma farmacêutica opcional
   formId?: number | null;
   active?: number; // 1 ativo, 0 inativo
+  // Coleções relacionadas (quando vindas do GET completo)
+  variantes?: ProdutoVarianteDto[];
+  documentos?: ProdutoDocumentoDto[];
+  promotions?: any[];
+  promo_price?: number | null;
+  created_at?: string;
+  updated_at?: string;
+  /** Layout do card na vitrine pública */
+  card_layout?: 'sales' | 'banner';
+}
+
+export interface LojaTemaDto {
+  id?: number;
+  nome: string;
+  slug?: string;
+  ativo?: boolean;
+  is_preset?: boolean;
+  config?: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
 }
@@ -257,7 +321,7 @@ export interface BannerDto {
   nome?: string;
   link?: string | null;
   alt?: string | null;
-  posicao?: string | null;
+  posicao?: BannerPosition | string | null;
   ordem?: number | null;
   inicio?: string | null;
   fim?: string | null;
@@ -286,6 +350,11 @@ export interface CupomDto {
   limite_por_cliente?: number | null;
   restricoes_json?: string | null;
   usado?: number;
+  cumulativo_promo?: 0 | 1 | boolean;
+  // Vínculos — povoados pelo GET, persistidos via create/update ou endpoints dedicados
+  produto_ids?: Array<number | string>;
+  categoria_ids?: Array<number | string>;
+  tag_ids?: Array<number | string>;
   created_at?: string;
   updated_at?: string;
 }
@@ -298,6 +367,20 @@ export class AdminApiService {
   private dashboardUrl = `${environment.apiBaseUrl}/dashboard`;
 
   constructor(private http: HttpClient, private session: SessionService) {}
+
+  /** Converte itens de taxonomia (string | { nome, name }) em string[] para o formulário. */
+  private taxonomyItemsToStrings(arr: unknown): string[] {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((x: any) => {
+        if (x == null) return '';
+        if (typeof x === 'string') return x;
+        if (typeof x === 'number') return String(x);
+        return (x.nome ?? x.name ?? x.label ?? '').toString();
+      })
+      .map((s: string) => s.trim())
+      .filter((s: string) => !!s);
+  }
 
   // Normaliza payloads de produto vindos do backend (vários formatos possíveis)
   private normalizeProduto(raw: any): ProdutoDto {
@@ -313,7 +396,13 @@ export class AdminApiService {
     const tags = Array.isArray(raw.tags) ? raw.tags.map((t: any) => (typeof t === 'string' ? t : (t?.nome ?? t?.name ?? ''))).filter((s: string) => !!s) : [];
     const category = raw.category ?? (Array.isArray(raw.categorias) && raw.categorias.length ? (raw.categorias[0].nome ?? raw.categorias[0].name) : (raw.categoria ?? raw.category ?? ''));
     const categoryId = (Array.isArray(raw.categorias) && raw.categorias.length) ? (raw.categorias[0].id ?? null) : (raw.categoria_id ?? raw.categoryId ?? raw.categoria_id ?? null);
-    const customizations = raw.customizations ?? raw.customizacoes ?? { dosage: raw.dosages ?? [], packaging: raw.embalagens ?? [] };
+    const custBlock = raw.customizations ?? raw.customizacoes;
+    const dosageRaw = custBlock
+      ? (custBlock.dosage ?? custBlock.dosagem ?? custBlock.dosages ?? [])
+      : (raw.dosagens ?? raw.dosages ?? []);
+    const packagingRaw = custBlock
+      ? (custBlock.packaging ?? custBlock.embalagens ?? custBlock.packagings ?? [])
+      : (raw.embalagens ?? raw.packaging ?? []);
     return {
       id,
       // keep original aliases for compatibility
@@ -327,8 +416,8 @@ export class AdminApiService {
       categoryId,
       images,
       customizations: {
-        dosage: customizations?.dosage ?? customizations?.dosagem ?? customizations?.dosages ?? [],
-        packaging: customizations?.packaging ?? customizations?.embalagens ?? customizations?.packaging ?? []
+        dosage: this.taxonomyItemsToStrings(dosageRaw),
+        packaging: this.taxonomyItemsToStrings(packagingRaw),
       },
       discount: raw.discount ?? raw.desconto ?? null,
       rating: raw.rating ?? null,
@@ -340,8 +429,55 @@ export class AdminApiService {
       estoqueId: raw.estoque_id ?? raw.estoqueId ?? null,
       formId: raw.formula_id ?? raw.formId ?? null,
       active: raw.active ?? raw.ativo ?? undefined,
+      // Identificação expandida
+      sku: raw.sku ?? null,
+      marca: raw.marca ?? raw.brand ?? null,
+      codigo_barras: raw.codigo_barras ?? raw.barcode ?? null,
+      // Técnico
+      composicao: raw.composicao ?? null,
+      modo_uso: raw.modo_uso ?? null,
+      indicacoes: raw.indicacoes ?? null,
+      contraindicacoes: raw.contraindicacoes ?? null,
+      // Regulatório
+      exige_receita: raw.exige_receita ?? null,
+      validade_meses: raw.validade_meses ?? null,
+      armazenamento: raw.armazenamento ?? null,
+      registro_mapa: raw.registro_mapa ?? null,
+      // SEO
+      slug: raw.slug ?? null,
+      meta_title: raw.meta_title ?? null,
+      meta_description: raw.meta_description ?? null,
+      og_image_url: raw.og_image_url ?? null,
+      // Preço avançado
+      preco_custo: raw.preco_custo != null ? Number(raw.preco_custo) : null,
+      preco_de: raw.preco_de != null ? Number(raw.preco_de) : null,
+      parcelas_max: raw.parcelas_max != null ? Number(raw.parcelas_max) : null,
+      // Mídia extra
+      video_url: raw.video_url ?? null,
+      // Coleções
+      variantes: Array.isArray(raw.variantes) ? raw.variantes.map((v: any) => ({
+        id: v.id ?? null,
+        nome: v.nome ?? v.name ?? '',
+        sku: v.sku ?? null,
+        preco: v.preco != null ? Number(v.preco) : null,
+        preco_de: v.preco_de != null ? Number(v.preco_de) : null,
+        estoque: v.estoque != null ? Number(v.estoque) : null,
+        peso_g: v.peso_g != null ? Number(v.peso_g) : null,
+        ativo: v.ativo != null ? !!v.ativo : true,
+        posicao: v.posicao != null ? Number(v.posicao) : null,
+      })) : [],
+      documentos: Array.isArray(raw.documentos) ? raw.documentos.map((d: any) => ({
+        id: d.id ?? null,
+        nome: d.nome ?? '',
+        url: d.url ?? '',
+        tipo: d.tipo ?? null,
+        posicao: d.posicao != null ? Number(d.posicao) : null,
+      })) : [],
+      promotions: Array.isArray(raw.promotions) ? raw.promotions : [],
+      promo_price: raw.promo_price != null ? Number(raw.promo_price) : null,
       created_at: raw.created_at ?? raw.createdAt,
-      updated_at: raw.updated_at ?? raw.updatedAt
+      updated_at: raw.updated_at ?? raw.updatedAt,
+      card_layout: String(raw.card_layout || raw.cardLayout || 'sales').toLowerCase() === 'banner' ? 'banner' : 'sales',
     } as ProdutoDto;
   }
 
@@ -726,7 +862,7 @@ export class AdminApiService {
   estimateFormula(id: number | string): Observable<{ producible_units: number; limiting?: any }> {
     return this.http.get<{ producible_units: number; limiting?: any }>(`${this.baseUrl}/formulas/${id}/estimate`, { headers: this.headers() });
   }
-  listFormulas(params?: { includeEstimates?: 0 | 1; q?: string; page?: number; pageSize?: number; active?: 0 | 1 }): Observable<Paged<FormulaDto & { estimate?: { producible_units: number; limiting?: any } }>> {
+  listFormulas(params?: { includeEstimates?: 0 | 1; q?: string; page?: number; pageSize?: number; active?: 0 | 1; form_id?: number | null }): Observable<Paged<FormulaDto & { estimate?: { producible_units: number; limiting?: any } }>> {
     let httpParams = new HttpParams();
     if (params) {
       if (typeof params.includeEstimates === 'number') httpParams = httpParams.set('includeEstimates', String(params.includeEstimates));
@@ -734,6 +870,7 @@ export class AdminApiService {
       if (params.page) httpParams = httpParams.set('page', String(params.page));
       if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
       if (typeof params.active === 'number') httpParams = httpParams.set('active', String(params.active));
+      if (params.form_id != null) httpParams = httpParams.set('form_id', String(params.form_id));
     }
     return this.http.get<Paged<FormulaDto & { estimate?: { producible_units: number; limiting?: any } }>>(`${this.baseUrl}/formulas`, { headers: this.headers(), params: httpParams });
   }
@@ -750,12 +887,56 @@ export class AdminApiService {
   createMarketplaceProdutoFull(body: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/marketplace/produtos/full`, body, { headers: this.headers() });
   }
+  // Marketplace - atualização full (payload unificado em português)
+  updateMarketplaceProdutoFull(id: number | string, body: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/marketplace/produtos/${id}/full`, body, { headers: this.headers() });
+  }
+  // Marketplace - documentos anexos e variantes
+  setMarketplaceProdutoDocumentos(id: number | string, documentos: Array<{ nome: string; url: string; tipo?: string }>): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/marketplace/produtos/${id}/documentos`, { documentos }, { headers: this.headers() });
+  }
+  setMarketplaceProdutoVariantes(id: number | string, variantes: Array<Record<string, any>>): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/marketplace/produtos/${id}/variantes`, { variantes }, { headers: this.headers() });
+  }
+  // Cupons — vínculos (produtos/categorias/tags)
+  setCupomProdutos(id: number | string, produto_ids: number[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/cupons/${id}/produtos`, { produto_ids }, { headers: this.headers() });
+  }
+  setCupomCategorias(id: number | string, categoria_ids: number[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/cupons/${id}/categorias`, { categoria_ids }, { headers: this.headers() });
+  }
+  setCupomTags(id: number | string, tag_ids: number[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/cupons/${id}/tags`, { tag_ids }, { headers: this.headers() });
+  }
+  previewCupom(payload: { id?: number | string; codigo?: string; itens: Array<{ produto_id: number; preco_unit: number; quantidade: number; promo_aplicada?: boolean }> }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/cupons/preview`, payload, { headers: this.headers() });
+  }
   // Marketplace - customizações (categorias e tags)
   manageMarketplaceCustomizacoes(body: MarketplaceCustomizacoesPayload): Observable<MarketplaceCustomizacoesResponse> {
     return this.http.post<MarketplaceCustomizacoesResponse>(`${this.baseUrl}/marketplace/customizacoes`, body, { headers: this.headers() });
   }
   getMarketplaceCustomizacoes(): Observable<MarketplaceCustomizacoesList> {
     return this.http.get<MarketplaceCustomizacoesList>(`${this.baseUrl}/marketplace/customizacoes`, { headers: this.headers() });
+  }
+
+  /** Temas da vitrine (loja) */
+  listLojaTemas(): Observable<{ data: LojaTemaDto[]; activeThemeId: number | null }> {
+    return this.http.get<{ data: LojaTemaDto[]; activeThemeId: number | null }>(`${this.baseUrl}/loja/temas`, { headers: this.headers() });
+  }
+  getLojaTema(id: number | string): Observable<LojaTemaDto> {
+    return this.http.get<LojaTemaDto>(`${this.baseUrl}/loja/temas/${id}`, { headers: this.headers() });
+  }
+  createLojaTema(body: Partial<LojaTemaDto> & { nome: string }): Observable<LojaTemaDto> {
+    return this.http.post<LojaTemaDto>(`${this.baseUrl}/loja/temas`, body, { headers: this.headers() });
+  }
+  updateLojaTema(id: number | string, body: Partial<LojaTemaDto>): Observable<LojaTemaDto> {
+    return this.http.put<LojaTemaDto>(`${this.baseUrl}/loja/temas/${id}`, body, { headers: this.headers() });
+  }
+  deleteLojaTema(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/loja/temas/${id}`, { headers: this.headers() });
+  }
+  activateLojaTema(id: number | string): Observable<{ ok: boolean; activeTheme: LojaTemaDto | null }> {
+    return this.http.post<{ ok: boolean; activeTheme: LojaTemaDto | null }>(`${this.baseUrl}/loja/temas/${id}/ativar`, {}, { headers: this.headers() });
   }
 
   // Admin - Promoções

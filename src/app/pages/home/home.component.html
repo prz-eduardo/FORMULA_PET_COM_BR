@@ -13,34 +13,35 @@
       </defs>
     </svg>
 
-    <!-- Banner estático da Home (imagem diferente da loja) -->
-    <section class="home-hero-banner" aria-label="Farmácia de manipulação veterinária">
-      <div class="banner-overlay" aria-hidden="true"></div>
-      <div class="banner-content">
-        <div class="banner-inner">
-          <div class="banner-glass">
-            <h1 class="banner-title">Manipulação veterinária sob medida</h1>
-            <p class="banner-sub">Fórmulas personalizadas para o seu pet, com qualidade e carinho.</p>
-            <p class="banner-info">Medicamentos manipulados com precisão, dosagem certa e apresentação ideal para cada espécie.</p>
-            <p class="banner-tagline">Do focinho ao rabinho a dose certa de carinho!💓</p>
-            <div class="banner-features">
-              <span class="chip"><i class="fa-solid fa-truck"></i> Entrega rápida</span>
-              <span class="chip"><i class="fa-solid fa-dog"></i> Cães e gatos</span>
-              <span class="chip"><i class="fa-solid fa-stethoscope"></i> Com receita</span>
+    <!-- Banner da Home: usa app-banner-slot (posicao home_hero); se não houver
+         banners cadastrados/ativos, cai para o conteúdo estático original. -->
+    <app-banner-slot posicao="home_hero" mode="carousel">
+      <section class="home-hero-banner" aria-label="Farmácia de manipulação veterinária">
+        <div class="banner-overlay" aria-hidden="true"></div>
+        <div class="banner-content">
+          <div class="banner-inner">
+            <div class="banner-glass">
+              <h1 class="banner-title">Manipulação veterinária sob medida</h1>
+              <p class="banner-sub">Fórmulas personalizadas para o seu pet, com qualidade e carinho.</p>
+              <p class="banner-info">Medicamentos manipulados com precisão, dosagem certa e apresentação ideal para cada espécie.</p>
+              <p class="banner-tagline">Do focinho ao rabinho a dose certa de carinho!💓</p>
+              <div class="banner-features">
+                <span class="chip"><i class="fa-solid fa-truck"></i> Entrega rápida</span>
+                <span class="chip"><i class="fa-solid fa-dog"></i> Cães e gatos</span>
+                <span class="chip"><i class="fa-solid fa-stethoscope"></i> Com receita</span>
+              </div>
+              <div class="banner-ctas">
+                <a routerLink="/loja" class="btn">Ver produtos</a>
+                <a href="https://wa.me/4132051910?text=Olá!%20Preciso%20de%20uma%20fórmula%20para%20meu%20pet" target="_blank" rel="noopener" class="btn whatsapp"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
+              </div>
             </div>
-            <div class="banner-ctas">
-              <a routerLink="/loja" class="btn">Ver produtos</a>
-              <a href="https://wa.me/4132051910?text=Olá!%20Preciso%20de%20uma%20fórmula%20para%20meu%20pet" target="_blank" rel="noopener" class="btn whatsapp"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
+            <div class="banner-illustration" aria-hidden="true">
+              <img src="/imagens/image.png" alt="Mascote Fórmula Pet" loading="eager" decoding="async" />
             </div>
-          </div>
-          <div class="banner-illustration" aria-hidden="true">
-            <img src="/imagens/image.png" alt="Mascote Fórmula Pet" loading="eager" decoding="async" />
           </div>
         </div>
-      </div>
-      <!-- banner-wave removed: we now use clipPath to make the bottom of the hero truly transparent -->
-    </section>
-    <!-- <app-swiper-topo app-swiper-topo></app-swiper-topo> -->
+      </section>
+    </app-banner-slot>
   <section class="info-section">
     <div class="info-content">
       <div class="intro-top">

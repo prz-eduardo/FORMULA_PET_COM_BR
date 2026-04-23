@@ -1,77 +1,200 @@
 <div class="partner-register-wrap">
-  <h2>Cadastro de Parceiro</h2>
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <div class="grid">
-      <div>
-        <label>Nome *</label>
-        <input formControlName="nome" />
-      </div>
-      <div>
-        <label>Tipo *</label>
-        <select formControlName="tipo">
-          <option value="">-- selecione --</option>
-          <option *ngFor="let t of types" [value]="t.id">{{ t.nome || t.label || t.id }}</option>
-        </select>
-      </div>
-      <div>
-        <label>CNPJ</label>
-        <input formControlName="cnpj" maxlength="18" inputmode="numeric" (input)="onCnpjInput($event)" placeholder="00.000.000/0000-00" />
-      </div>
-      <div>
-        <label>Email *</label>
-        <input type="email" formControlName="email" />
-      </div>
-      <div>
-        <label>Telefone *</label>
-        <input formControlName="telefone" maxlength="15" inputmode="tel" (input)="onTelefoneInput($event)" placeholder="(00) 00000-0000" />
-      </div>
-      <div>
-        <label>CEP *</label>
-        <input formControlName="cep" maxlength="9" inputmode="numeric" (input)="onCepInput($event)" placeholder="00000-000" />
-      </div>
-      <div class="colspan2">
-        <label>Endereço *</label>
-        <input formControlName="endereco" />
-      </div>
-      <div>
-        <label>Número</label>
-        <input formControlName="numero" />
-      </div>
-      <div>
-        <label>Complemento</label>
-        <input formControlName="complemento" />
-      </div>
-      <div>
-        <label>Cidade</label>
-        <input formControlName="cidade" />
-      </div>
-      <div>
-        <label>Estado</label>
-        <input formControlName="estado" />
-      </div>
-      <div>
-        <label>Latitude</label>
-        <input formControlName="latitude" readonly />
-      </div>
-      <div>
-        <label>Longitude</label>
-        <input formControlName="longitude" readonly />
-      </div>
-      <div class="colspan2">
-        <label>Descrição</label>
-        <textarea formControlName="descricao"></textarea>
-      </div>
-      <div class="colspan2">
-        <label>Logo (imagem)</label>
-        <input type="file" accept="image/*" (change)="onLogoSelected($event)" />
-        <div *ngIf="logoPreview" class="logo-preview">
-          <img [src]="logoPreview" alt="Logo preview" />
+  <header class="header">
+    <h2>Cadastro de Parceiro</h2>
+    <p class="subtitle">Preencha os dados abaixo. Após o envio, seu acesso ficará aguardando aprovação do administrador.</p>
+  </header>
+
+  <div class="success-box" *ngIf="success">
+    <h3>✅ Cadastro enviado!</h3>
+    <p>Assim que seu cadastro for aprovado você poderá acessar o painel com o e-mail e a senha informados.</p>
+    <button type="button" class="btn-secondary" (click)="irParaLogin()">Ir para o login</button>
+  </div>
+
+  <form *ngIf="!success" [formGroup]="form" (ngSubmit)="submit()" novalidate autocomplete="on">
+    <fieldset class="section">
+      <legend>Dados do negócio</legend>
+      <div class="grid">
+        <div>
+          <label>Nome / Razão social *</label>
+          <input formControlName="nome" [class.err]="hasError('nome')" maxlength="150" />
+          <small class="err-msg" *ngIf="hasError('nome','required')">Informe o nome.</small>
+          <small class="err-msg" *ngIf="hasError('nome','minlength')">Mínimo 2 caracteres.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['nome']">{{ serverFieldErrors['nome'] }}</small>
+        </div>
+        <div>
+          <label>Tipo de parceiro *</label>
+          <select formControlName="tipo" [class.err]="hasError('tipo')">
+            <option value="">-- selecione --</option>
+            <option *ngFor="let t of types" [value]="t.id">{{ t.nome || t.label || t.id }}</option>
+          </select>
+          <small class="err-msg" *ngIf="hasError('tipo','required')">Selecione o tipo.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['tipo']">{{ serverFieldErrors['tipo'] }}</small>
+        </div>
+        <div>
+          <label>CNPJ</label>
+          <input
+            formControlName="cnpj"
+            maxlength="18"
+            inputmode="numeric"
+            (input)="onCnpjInput($event)"
+            placeholder="00.000.000/0000-00"
+            [class.err]="hasError('cnpj')" />
+          <small class="err-msg" *ngIf="hasError('cnpj','cnpjFormat')">CNPJ deve ter 14 dígitos.</small>
+          <small class="err-msg" *ngIf="hasError('cnpj','cnpjInvalid')">CNPJ inválido.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['cnpj']">{{ serverFieldErrors['cnpj'] }}</small>
+        </div>
+        <div>
+          <label>Telefone *</label>
+          <input
+            formControlName="telefone"
+            maxlength="15"
+            inputmode="tel"
+            (input)="onTelefoneInput($event)"
+            placeholder="(00) 00000-0000"
+            [class.err]="hasError('telefone')" />
+          <small class="err-msg" *ngIf="hasError('telefone','required')">Informe o telefone.</small>
+          <small class="err-msg" *ngIf="hasError('telefone','minlength')">Telefone incompleto.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['telefone']">{{ serverFieldErrors['telefone'] }}</small>
+        </div>
+        <div class="colspan2">
+          <label>Descrição (breve)</label>
+          <textarea formControlName="descricao" maxlength="1000" rows="3"
+                    placeholder="Conte um pouco sobre o seu negócio"></textarea>
+        </div>
+        <div class="colspan2">
+          <label>Logo (opcional)</label>
+          <input type="file" accept="image/*" (change)="onLogoSelected($event)" />
+          <div *ngIf="logoPreview" class="logo-preview">
+            <img [src]="logoPreview" alt="Logo preview" />
+          </div>
         </div>
       </div>
-    </div>
+    </fieldset>
+
+    <fieldset class="section">
+      <legend>Endereço</legend>
+      <div class="grid">
+        <div>
+          <label>CEP *</label>
+          <input
+            formControlName="cep"
+            maxlength="9"
+            inputmode="numeric"
+            (input)="onCepInput($event)"
+            placeholder="00000-000"
+            [class.err]="hasError('cep')" />
+          <small class="err-msg" *ngIf="hasError('cep','required')">Informe o CEP.</small>
+          <small class="err-msg" *ngIf="hasError('cep','minlength')">CEP incompleto.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['cep']">{{ serverFieldErrors['cep'] }}</small>
+        </div>
+        <div>
+          <label>Estado</label>
+          <input formControlName="estado" maxlength="2" placeholder="UF" />
+        </div>
+        <div class="colspan2">
+          <label>Endereço *</label>
+          <input formControlName="endereco" [class.err]="hasError('endereco')" />
+          <small class="err-msg" *ngIf="hasError('endereco','required')">Informe o endereço.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['endereco']">{{ serverFieldErrors['endereco'] }}</small>
+        </div>
+        <div>
+          <label>Número</label>
+          <input formControlName="numero" />
+        </div>
+        <div>
+          <label>Complemento</label>
+          <input formControlName="complemento" />
+        </div>
+        <div>
+          <label>Bairro</label>
+          <input formControlName="bairro" />
+        </div>
+        <div>
+          <label>Cidade</label>
+          <input formControlName="cidade" />
+        </div>
+        <div>
+          <label>Latitude</label>
+          <input formControlName="latitude" readonly />
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input formControlName="longitude" readonly />
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="section">
+      <legend>Acesso ao painel</legend>
+      <div class="grid">
+        <div>
+          <label>E-mail *</label>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="username"
+            [class.err]="hasError('email')"
+            maxlength="150" />
+          <small class="err-msg" *ngIf="hasError('email','required')">Informe o e-mail.</small>
+          <small class="err-msg" *ngIf="hasError('email','email')">E-mail inválido.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['email']">{{ serverFieldErrors['email'] }}</small>
+        </div>
+        <div></div>
+
+        <div>
+          <label>Senha *</label>
+          <div class="pwd-wrap">
+            <input
+              [type]="showPwd ? 'text' : 'password'"
+              formControlName="senha"
+              autocomplete="new-password"
+              [class.err]="hasError('senha')"
+              placeholder="Mín. 8 caracteres, com letras e números" />
+            <button type="button" class="pwd-toggle" (click)="showPwd = !showPwd"
+                    [attr.aria-label]="showPwd ? 'Ocultar senha' : 'Mostrar senha'">
+              {{ showPwd ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          <small class="err-msg" *ngIf="hasError('senha','required')">Informe uma senha.</small>
+          <small class="err-msg" *ngIf="hasError('senha','minLength')">Mínimo 8 caracteres.</small>
+          <small class="err-msg" *ngIf="hasError('senha','needLetter')">Precisa conter letras.</small>
+          <small class="err-msg" *ngIf="hasError('senha','needDigit')">Precisa conter números.</small>
+          <small class="err-msg" *ngIf="serverFieldErrors['senha']">{{ serverFieldErrors['senha'] }}</small>
+        </div>
+        <div>
+          <label>Confirmar senha *</label>
+          <div class="pwd-wrap">
+            <input
+              [type]="showPwd2 ? 'text' : 'password'"
+              formControlName="confirmSenha"
+              autocomplete="new-password"
+              [class.err]="hasError('confirmSenha') || passwordMismatch" />
+            <button type="button" class="pwd-toggle" (click)="showPwd2 = !showPwd2"
+                    [attr.aria-label]="showPwd2 ? 'Ocultar senha' : 'Mostrar senha'">
+              {{ showPwd2 ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          <small class="err-msg" *ngIf="hasError('confirmSenha','required')">Confirme a senha.</small>
+          <small class="err-msg" *ngIf="passwordMismatch">As senhas não conferem.</small>
+        </div>
+      </div>
+
+      <label class="terms">
+        <input type="checkbox" formControlName="aceitoTermos" />
+        Li e concordo com os termos de uso e a política de privacidade.
+      </label>
+      <small class="err-msg" *ngIf="hasError('aceitoTermos','required')">
+        É necessário aceitar os termos.
+      </small>
+    </fieldset>
+
+    <div class="server-error" *ngIf="serverError">{{ serverError }}</div>
 
     <div class="actions">
-      <button type="submit" class="primary" [disabled]="form.invalid || loading">Enviar cadastro</button>
+      <button type="submit" class="primary" [disabled]="loading">
+        <span *ngIf="!loading">Enviar cadastro</span>
+        <span *ngIf="loading">Enviando…</span>
+      </button>
     </div>
   </form>
 </div>

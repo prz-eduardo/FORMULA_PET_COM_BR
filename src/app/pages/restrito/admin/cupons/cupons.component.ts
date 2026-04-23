@@ -1,11 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, CupomDto, CupomPayload, Paged } from '../../../../services/admin-api.service';
-import { FormSchema } from '../../../../shared/admin-crud/form-schema';
 import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
 import { AdminListingComponent } from '../../../../shared/admin-listing/admin-listing.component';
 import { SideDrawerComponent } from '../../../../shared/side-drawer/side-drawer.component';
@@ -25,12 +24,13 @@ export class CuponsAdminComponent implements OnInit {
   total = signal(0);
   items = signal<CupomDto[]>([]);
   loading = signal(false);
+  submitting = signal(false);
 
   selected = signal<CupomDto|null>(null);
-  form!: FormGroup;
-
   showCreate = signal(false);
-  createForm!: FormGroup;
+
+  cupomForm!: FormGroup;
+  drawerOpen = computed(() => this.selected() !== null || this.showCreate());
 
   cuponsColumns = [
     { key: 'codigo', label: 'Código' },
@@ -42,71 +42,47 @@ export class CuponsAdminComponent implements OnInit {
     { key: 'usado', label: 'Usado', width: '80px' }
   ];
 
-  cuponsFormSchema: FormSchema = {
-    sections: [
-      {
-        title: 'Informações básicas',
-        fields: [
-          { key: 'codigo', label: 'Código', type: 'text', required: true },
-          { key: 'descricao', label: 'Descrição', type: 'text' },
-          { key: 'tipo', label: 'Tipo', type: 'select', options: [{ value: 'percentual', label: 'Percentual' }, { value: 'valor', label: 'Valor' }], default: 'percentual' }
-        ]
-      },
-      {
-        title: 'Valores',
-        fields: [
-          { key: 'valor', label: 'Valor', type: 'number' },
-          { key: 'valor_minimo', label: 'Valor mínimo', type: 'number' },
-          { key: 'desconto_maximo', label: 'Desconto máximo', type: 'number' }
-        ]
-      },
-      {
-        title: 'Regras',
-        fields: [
-          { key: 'validade', label: 'Validade', type: 'date' },
-          { key: 'primeira_compra', label: 'Primeira compra', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
-          { key: 'frete_gratis', label: 'Frete grátis', type: 'select', options: [{ value: 0, label: 'Não' }, { value: 1, label: 'Sim' }], default: 0 },
-          { key: 'ativo', label: 'Ativo', type: 'select', options: [{ value: 1, label: 'Ativo' }, { value: 0, label: 'Inativo' }], default: 1 },
-          { key: 'usado', label: 'Usado', type: 'number' },
-          { key: 'max_uso', label: 'Max uso', type: 'number' }
-        ]
-      },
-      {
-        title: 'Avançado',
-        fields: [
-          { key: 'restricoes_json', label: 'Restrições (JSON)', type: 'textarea' },
-          { key: 'limite_por_cliente', label: 'Limite por cliente', type: 'number' }
-        ]
-      }
-    ],
-    submitLabel: 'Salvar',
-    title: 'Cupom'
-  };
-
   constructor(private api: AdminApiService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    this.initCreateForm();
+    this.resetCupomForm();
     this.load();
   }
 
-  initCreateForm() {
-    this.createForm = this.fb.group({
-      codigo: ['', [Validators.required, Validators.minLength(2)]],
-      descricao: [''],
-      tipo: ['percentual', Validators.required],
-      valor: [0, [Validators.required]],
-      valor_minimo: [null],
-      desconto_maximo: [null],
-      primeira_compra: [0],
-      frete_gratis: [0],
-      ativo: [1],
-      validade: [''],
-      max_uso: [null],
-      limite_por_cliente: [1],
-      restricoes_json: [''],
-      usado: [0]
+  /** Cria/reseta o FormGroup. Se `item` for informado, popula com os dados. */
+  resetCupomForm(item?: CupomDto | null) {
+    const it: any = item || {};
+    this.cupomForm = this.fb.group({
+      codigo: [it.codigo || '', [Validators.required, Validators.minLength(2)]],
+      descricao: [it.descricao || ''],
+      tipo: [it.tipo || 'percentual', Validators.required],
+      valor: [it.valor ?? 0, [Validators.required]],
+      valor_minimo: [it.valor_minimo ?? null],
+      desconto_maximo: [it.desconto_maximo ?? null],
+      primeira_compra: [it.primeira_compra ?? 0],
+      frete_gratis: [it.frete_gratis ?? 0],
+      cumulativo_promo: [Number(it.cumulativo_promo ?? 0) ? 1 : 0],
+      ativo: [it.ativo ?? 1],
+      validade: [it.validade || ''],
+      max_uso: [it.max_uso ?? null],
+      limite_por_cliente: [it.limite_por_cliente ?? 1],
+      restricoes_json: [it.restricoes_json || ''],
+      usado: [it.usado ?? 0],
+      produto_ids_csv: [this.idsToCsv(it.produto_ids)],
+      categoria_ids_csv: [this.idsToCsv(it.categoria_ids)],
+      tag_ids_csv: [this.idsToCsv(it.tag_ids)]
     });
+  }
+
+  private parseIdsCsv(v: any): number[] {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.map((x: any) => Number(x)).filter((n: number) => Number.isFinite(n) && n > 0);
+    return String(v).split(',').map(s => Number(String(s).trim())).filter(n => Number.isFinite(n) && n > 0);
+  }
+
+  private idsToCsv(v: any): string {
+    if (!Array.isArray(v)) return '';
+    return v.map(x => Number(x)).filter(n => Number.isFinite(n) && n > 0).join(', ');
   }
 
   load() {
@@ -138,134 +114,80 @@ export class CuponsAdminComponent implements OnInit {
 
   view(item: CupomDto) {
     this.selected.set(item);
-    this.form = this.fb.group({
-      codigo: [item.codigo || '', [Validators.required]],
-      descricao: [item.descricao || ''],
-      tipo: [item.tipo || 'percentual', Validators.required],
-      valor: [item.valor ?? 0, Validators.required],
-      valor_minimo: [item.valor_minimo ?? null],
-      desconto_maximo: [item.desconto_maximo ?? null],
-      primeira_compra: [item.primeira_compra ?? 0],
-      frete_gratis: [item.frete_gratis ?? 0],
-      ativo: [item.ativo ?? 1],
-      validade: [item.validade || ''],
-      max_uso: [item.max_uso ?? null],
-      limite_por_cliente: [item.limite_por_cliente ?? 1],
-      restricoes_json: [item.restricoes_json || ''],
-      usado: [item.usado ?? 0]
+    this.resetCupomForm(item);
+    this.api.getCupom(item.id!).subscribe({
+      next: (full: CupomDto) => {
+        this.selected.set(full);
+        this.resetCupomForm(full);
+      },
+      error: () => {}
     });
   }
 
-  closeDetail() { this.selected.set(null); }
-
-  save() {
-    const s = this.selected(); if (!s || !this.form || this.form.invalid) { this.form?.markAllAsTouched(); return; }
-    const payload: any = { ...this.form.value } as CupomPayload;
-    // Ensure numeric fields
-    payload.valor = Number(payload.valor || 0);
-    if (payload.valor_minimo != null) payload.valor_minimo = Number(payload.valor_minimo);
-    if (payload.desconto_maximo != null) payload.desconto_maximo = Number(payload.desconto_maximo);
-    payload.primeira_compra = Number(payload.primeira_compra) ? 1 : 0;
-    payload.frete_gratis = Number(payload.frete_gratis) ? 1 : 0;
-    payload.ativo = Number(payload.ativo) ? 1 : 0;
-    payload.usado = Number(payload.usado || 0);
-    // Validate JSON
-    if (payload.restricoes_json) {
-      try { JSON.parse(payload.restricoes_json); } catch (e) { alert('restricoes_json inválido'); return; }
-    }
-    this.api.updateCupom(s.id!, payload).subscribe(updated => {
-      this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x));
-      this.selected.set(updated);
-    });
+  openCreate() {
+    this.selected.set(null);
+    this.showCreate.set(true);
+    this.resetCupomForm();
   }
 
-  remove() {
-    const s = this.selected(); if (!s) return; if (!confirm('Remover cupom?')) return;
-    this.api.deleteCupom(s.id!).subscribe(() => { this.selected.set(null); this.load(); });
+  closeDrawer() {
+    this.selected.set(null);
+    this.showCreate.set(false);
   }
 
-  removeItem(item: CupomDto) {
-    if (!item) return;
-    if (!confirm('Remover cupom?')) return;
-    this.api.deleteCupom(item.id!).subscribe(() => this.load());
-  }
+  onDrawerOpenChange(open: boolean) { if (!open) this.closeDrawer(); }
 
-  openCreate() { this.showCreate.set(true); this.initCreateForm(); }
-  cancelCreate() { this.showCreate.set(false); }
-
-  create() {
-    if (this.createForm.invalid) { this.createForm.markAllAsTouched(); return; }
-    const payload: any = { ...this.createForm.value } as CupomPayload;
-    payload.valor = Number(payload.valor || 0);
-    payload.primeira_compra = Number(payload.primeira_compra) ? 1 : 0;
-    payload.frete_gratis = Number(payload.frete_gratis) ? 1 : 0;
-    payload.ativo = Number(payload.ativo) ? 1 : 0;
-    if (payload.restricoes_json) {
-      try { JSON.parse(payload.restricoes_json); } catch (e) { alert('restricoes_json inválido'); return; }
-    }
-    this.api.createCupom(payload).subscribe(created => {
-      this.showCreate.set(false);
-      this.page.set(1);
-      this.load();
-      setTimeout(() => this.view(created), 0);
-    });
-  }
-
-  validar(codigo: string) {
-    if (!codigo) return;
-    this.api.validarCupom({ codigo }).subscribe(res => {
-      alert(res?.message || (res?.ok ? 'Validação OK' : 'Cupom inválido'));
-    }, err => {
-      alert('Erro ao validar cupom');
-    });
-  }
-
-  // Schema-driven submit handler (used by app-admin-crud)
-  onSchemaSubmit(ev: { id?: any; values: any }) {
-    const id = ev.id;
-    const body: any = { ...ev.values };
+  submitCupom() {
+    if (this.cupomForm.invalid) { this.cupomForm.markAllAsTouched(); return; }
+    const raw: any = { ...this.cupomForm.value };
+    const produto_ids = this.parseIdsCsv(raw.produto_ids_csv);
+    const categoria_ids = this.parseIdsCsv(raw.categoria_ids_csv);
+    const tag_ids = this.parseIdsCsv(raw.tag_ids_csv);
+    delete raw.produto_ids_csv; delete raw.categoria_ids_csv; delete raw.tag_ids_csv;
+    const body: any = { ...raw, produto_ids, categoria_ids, tag_ids } as CupomPayload;
     body.valor = Number(body.valor || 0);
-    if (body.valor_minimo != null) body.valor_minimo = Number(body.valor_minimo);
-    if (body.desconto_maximo != null) body.desconto_maximo = Number(body.desconto_maximo);
+    if (body.valor_minimo != null && body.valor_minimo !== '') body.valor_minimo = Number(body.valor_minimo);
+    if (body.desconto_maximo != null && body.desconto_maximo !== '') body.desconto_maximo = Number(body.desconto_maximo);
     body.primeira_compra = Number(body.primeira_compra) ? 1 : 0;
     body.frete_gratis = Number(body.frete_gratis) ? 1 : 0;
+    body.cumulativo_promo = Number(body.cumulativo_promo) ? 1 : 0;
     body.ativo = Number(body.ativo) ? 1 : 0;
     body.usado = Number(body.usado || 0);
     if (body.restricoes_json) {
       try { JSON.parse(body.restricoes_json); } catch (e) { alert('restricoes_json inválido'); return; }
     }
 
-    if (id) {
-      this.api.updateCupom(id, body).subscribe((updated: any) => {
-        this.items.set(this.items().map(x => x.id === updated.id ? { ...x, ...updated } : x));
-        this.selected.set(updated);
-        this.load();
-      });
-    } else {
-      this.api.createCupom(body).subscribe((created: any) => {
-        this.showCreate.set(false);
+    const current = this.selected();
+    this.submitting.set(true);
+    const req$ = current?.id
+      ? this.api.updateCupom(current.id, body)
+      : this.api.createCupom(body);
+
+    req$.subscribe({
+      next: (saved: any) => {
+        this.submitting.set(false);
+        this.closeDrawer();
         this.page.set(1);
         this.load();
-        setTimeout(() => this.view(created), 0);
-      });
-    }
+        if (!current?.id) setTimeout(() => this.view(saved), 0);
+      },
+      error: () => {
+        this.submitting.set(false);
+      }
+    });
   }
 
-  removeFromTable(item: any) {
-    if (!item?.id) return;
+  remove(item: CupomDto | null) {
+    const s = item || this.selected();
+    if (!s?.id) return;
     if (!confirm('Remover cupom?')) return;
-    this.api.deleteCupom(item.id).subscribe(() => this.load());
+    this.api.deleteCupom(s.id).subscribe(() => { this.closeDrawer(); this.load(); });
   }
 
-  openCreateForSchema() {
-    this.selected.set(null);
-    this.showCreate.set(true);
-  }
-
-  onDrawerOpenChange(open: boolean) {
-    if (!open) {
-      try { this.showCreate.set(false); } catch (e) {}
-      try { this.selected.set(null); } catch (e) {}
-    }
+  validar(codigo: string) {
+    if (!codigo) return;
+    this.api.validarCupom({ codigo }).subscribe((res: any) => {
+      alert(res?.message || (res?.ok ? 'Validação OK' : 'Cupom inválido'));
+    }, () => alert('Erro ao validar cupom'));
   }
 }

@@ -1,0 +1,87 @@
+<div class="bell" [class.compact]="compact">
+  <button
+    type="button"
+    class="bell-btn"
+    [attr.aria-label]="'Notificações'"
+    [attr.aria-expanded]="open"
+    (click)="toggle($event)"
+  >
+    <i class="fa-solid fa-bell"></i>
+    <span class="badge" *ngIf="unread > 0" [attr.aria-label]="unread + ' não lidas'">
+      {{ unread > 99 ? '99+' : unread }}
+    </span>
+  </button>
+
+  <div class="panel" *ngIf="open" (click)="$event.stopPropagation()">
+    <div class="panel-header">
+      <strong>Notificações</strong>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="tab"
+          [class.active]="filter === 'all'"
+          (click)="setFilter('all', $event)"
+        >
+          Todas
+        </button>
+        <button
+          type="button"
+          class="tab"
+          [class.active]="filter === 'unread'"
+          (click)="setFilter('unread', $event)"
+        >
+          Não lidas
+        </button>
+        <button
+          type="button"
+          class="link"
+          (click)="markAll($event)"
+          *ngIf="unread > 0"
+          title="Marcar todas como lidas"
+        >
+          <i class="fa-solid fa-check-double"></i>
+        </button>
+      </div>
+    </div>
+
+    <ul class="list" *ngIf="visible.length; else emptyTpl">
+      <li
+        *ngFor="let n of visible; trackBy: trackById"
+        class="item"
+        [class.unread]="!n.lida"
+        (click)="handleClick(n, $event)"
+      >
+        <span class="icon"><i [class]="iconFor(n.tipo)"></i></span>
+        <div class="content">
+          <div class="title-row">
+            <span class="title">{{ n.titulo }}</span>
+            <span class="time">{{ relativeTime(n.created_at) }}</span>
+          </div>
+          <div class="message" *ngIf="n.mensagem">{{ n.mensagem }}</div>
+        </div>
+        <button
+          type="button"
+          class="remove"
+          (click)="remove(n, $event)"
+          title="Remover"
+          aria-label="Remover notificação"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </li>
+    </ul>
+
+    <ng-template #emptyTpl>
+      <div class="empty">
+        <i class="fa-regular fa-bell-slash"></i>
+        <span>{{ filter === 'unread' ? 'Tudo em dia!' : 'Sem notificações por aqui.' }}</span>
+      </div>
+    </ng-template>
+
+    <div class="panel-footer" *ngIf="visible.length">
+      <button type="button" class="more" (click)="loadMore($event)" *ngIf="svc_hasMore()">
+        {{ loading ? 'Carregando…' : 'Carregar mais' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -26,9 +26,9 @@
                   <div class="cliente-header">
                     <img *ngIf="cliente?.foto" [src]="cliente.foto" class="cliente-foto" alt="">
                     <div class="cliente-info">
-                      <div class="cliente-name">{{ cliente?.nome || order?.cliente_nome }}</div>
-                      <div class="cliente-email" *ngIf="cliente?.email || order?.cliente_email">{{ cliente?.email || order?.cliente_email }}</div>
-                      <div class="cliente-cpf" *ngIf="cliente?.cpf || order?.cliente_cpf">CPF: {{ cliente?.cpf || order?.cliente_cpf }}</div>
+                      <div class="cliente-name">{{ cliente.nome || order?.cliente_nome }}</div>
+                      <div class="cliente-email" *ngIf="cliente.email || order?.cliente_email">{{ cliente.email || order?.cliente_email }}</div>
+                      <div class="cliente-cpf" *ngIf="cliente.cpf || order?.cliente_cpf">CPF: {{ cliente.cpf || order?.cliente_cpf }}</div>
                       <div class="cliente-phone" *ngIf="cliente?.telefone">{{ cliente.telefone }}</div>
                     </div>
                   </div>
@@ -119,38 +119,19 @@
                   <div class="card-body" *ngIf="!isCollapsed('shipping')">
                     <div class="segment-body">
                       <div class="address">
-                        <ng-container *ngIf="order?.endereco_entrega">
-                          <ng-container *ngIf="order.endereco_entrega?.endereco_cliente; else lojaBlock">
-                            <div><strong>Endereço de entrega</strong></div>
-                            <div><b>{{ order.endereco_entrega.endereco_cliente?.nome || cliente?.nome || 'Endereço' }}</b></div>
-                            <div *ngIf="order.endereco_entrega.endereco_cliente?.logradouro">{{ order.endereco_entrega.endereco_cliente.logradouro }}, {{ order.endereco_entrega.endereco_cliente.numero || '' }}<span *ngIf="order.endereco_entrega.endereco_cliente.complemento"> — {{ order.endereco_entrega.endereco_cliente.complemento }}</span></div>
-                            <div *ngIf="order.endereco_entrega.endereco_cliente?.bairro">{{ order.endereco_entrega.endereco_cliente.bairro }}</div>
-                            <div *ngIf="order.endereco_entrega.endereco_cliente?.cidade">{{ order.endereco_entrega.endereco_cliente.cidade }} / {{ order.endereco_entrega.endereco_cliente.estado }}</div>
-                            <div *ngIf="order.endereco_entrega.endereco_cliente?.cep">CEP: <b>{{ order.endereco_entrega.endereco_cliente.cep }}</b></div>
-                            <div *ngIf="order.endereco_entrega.endereco_cliente?.telefone">Tel: <b>{{ order.endereco_entrega.endereco_cliente.telefone }}</b></div>
-                          </ng-container>
-                          <ng-template #lojaBlock>
-                            <div><strong>{{ order.endereco_entrega.descricao_tipo || 'Retirar na loja' }}</strong></div>
-                            <div><b>{{ order.endereco_entrega.endereco_loja?.nome || order.endereco_entrega.endereco_loja?.logradouro }}</b></div>
-                            <div *ngIf="order.endereco_entrega.endereco_loja?.logradouro">{{ order.endereco_entrega.endereco_loja.logradouro }}<span *ngIf="order.endereco_entrega.endereco_loja.numero">, {{ order.endereco_entrega.endereco_loja.numero }}</span></div>
-                            <div *ngIf="order.endereco_entrega.endereco_loja?.cidade">{{ order.endereco_entrega.endereco_loja.cidade }} / {{ order.endereco_entrega.endereco_loja.estado }}</div>
-                            <div *ngIf="order.endereco_entrega.endereco_loja?.cep">CEP: <b>{{ order.endereco_entrega.endereco_loja.cep }}</b></div>
-                            <div *ngIf="order.endereco_entrega.endereco_loja?.telefone">Tel: <b>{{ order.endereco_entrega.endereco_loja.telefone }}</b></div>
-                            <div *ngIf="order.endereco_entrega.endereco_loja?.observacao">Obs: {{ order.endereco_entrega.endereco_loja.observacao }}</div>
-                          </ng-template>
-
-                          <div class="shipping-method" *ngIf="shipping?.frete">
-                            <small>Método:</small> <b>{{ shipping.frete.nome }} — {{ formatCurrency(shipping.frete.valor) }}</b>
+                        <ng-container *ngIf="order?.endereco_entrega?.endereco_cliente">
+                          <div><strong>Endereço de entrega</strong></div>
+                          <div><b>{{ order.endereco_entrega.endereco_cliente.nome }}</b></div>
+                          <div>{{ order.endereco_entrega.endereco_cliente.logradouro }}, {{ order.endereco_entrega.endereco_cliente.numero }}<span *ngIf="order.endereco_entrega.endereco_cliente.complemento"> — {{ order.endereco_entrega.endereco_cliente.complemento }}</span></div>
+                          <div *ngIf="order.endereco_entrega.endereco_cliente.bairro">{{ order.endereco_entrega.endereco_cliente.bairro }}</div>
+                          <div>{{ order.endereco_entrega.endereco_cliente.cidade }} / {{ order.endereco_entrega.endereco_cliente.estado }}</div>
+                          <div>CEP: <b>{{ order.endereco_entrega.endereco_cliente.cep }}</b></div>
+                          <div *ngIf="order.endereco_entrega.endereco_cliente.telefone">Tel: <b>{{ order.endereco_entrega.endereco_cliente.telefone }}</b></div>
+                          <div class="shipping-method" *ngIf="order.raw_shipping?.frete">
+                            <small>Método:</small> <b>{{ order.raw_shipping.frete.nome }} — {{ formatCurrency(order.raw_shipping.frete.valor) }}</b>
                           </div>
-
-                          <div *ngIf="order.endereco_entrega?.valor_frete != null && !shipping?.frete">
-                            Frete: <b>{{ formatCurrency(order.endereco_entrega.valor_frete) }}</b>
-                          </div>
-
-                          <div *ngIf="order.endereco_entrega?.prazo_dias">Prazo: <b>{{ order.endereco_entrega.prazo_dias }} dias</b></div>
+                          <div *ngIf="order.raw_shipping?.frete?.prazo_dias">Prazo: <b>{{ order.raw_shipping.frete.prazo_dias }} dias</b></div>
                         </ng-container>
-
-                        <div *ngIf="!order?.endereco_entrega && order?.raw_snapshot?.input?.entrega?.endereco">Endereço: <b>{{ order.raw_snapshot.input.entrega.endereco.street || order.raw_snapshot.input.entrega.endereco.logradouro }}, {{ order.raw_snapshot.input.entrega.endereco.numero || order.raw_snapshot.input.entrega.endereco.number }} — {{ order.raw_snapshot.input.entrega.endereco.neighborhood || order.raw_snapshot.input.entrega.endereco.bairro }}</b></div>
                       </div>
 
                       <!-- Opções de frete ocultadas (removido botão 'Ver opções') -->

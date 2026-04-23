@@ -1,0 +1,49 @@
+<app-side-drawer
+  [open]="open"
+  [width]="width"
+  [full]="full"
+  [position]="position"
+  [backdropClose]="backdropClose"
+  (openChange)="onOpenChange($event)"
+  (closeRequest)="onCloseRequest($event)">
+  <div class="admin-drawer">
+    <header class="admin-drawer__header">
+      <div class="admin-drawer__titles">
+        <h3 *ngIf="title">{{ title }}</h3>
+        <span class="admin-drawer__subtitle" *ngIf="subtitle">{{ subtitle }}</span>
+      </div>
+      <div class="admin-drawer__header-actions">
+        <ng-content select="[slot=header-actions]"></ng-content>
+        <button type="button" class="admin-drawer__close" (click)="onSecondary()" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="admin-drawer__body">
+      <ng-content></ng-content>
+    </section>
+
+    <footer class="admin-drawer__footer" *ngIf="!hideFooter">
+      <ng-content select="[slot=footer-extra]"></ng-content>
+      <ng-container *ngIf="showSecondary">
+        <button type="button" class="admin-btn secondary" (click)="onSecondary()">{{ secondaryLabel }}</button>
+      </ng-container>
+      <ng-container *ngIf="showPrimary">
+        <button
+          [type]="primaryType"
+          [attr.form]="primaryForm || null"
+          class="admin-btn"
+          [disabled]="primaryDisabled || primaryLoading"
+          (click)="primaryType === 'button' ? onPrimary() : null">
+          <span *ngIf="primaryLoading" class="admin-drawer__spinner" aria-hidden="true"></span>
+          {{ primaryLoading ? 'Salvando...' : primaryLabel }}
+        </button>
+      </ng-container>
+    </footer>
+
+    <ng-content select="[slot=footer]"></ng-content>
+  </div>
+</app-side-drawer>

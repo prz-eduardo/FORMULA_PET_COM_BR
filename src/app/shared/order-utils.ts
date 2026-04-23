@@ -55,10 +55,48 @@ export function extractCliente(o: any) {
 }
 
 export function extractShipping(o: any) {
-  const raw = o?.raw_shipping || {};
-  const frete = raw?.frete || (o?.frete_valor != null ? { nome: 'Frete', valor: o.frete_valor } : null);
-  const opcoes = Array.isArray(raw?.opcoes) ? raw.opcoes : [];
-  return { frete, opcoes };
+  // Corrigido para funcionar com o JSON fornecido
+  const endereco_entrega: any = o.endereco_entrega;
+  const tipo: any = endereco_entrega?.tipo;
+  const isRetirada: boolean = tipo === 'retirada_loja';
+  const freteInfo = o.raw_shipping?.frete || o.raw_shipping || {};
+  const frete_valor: any = freteInfo.valor ?? o.frete_valor ?? endereco_entrega?.valor_frete ?? 0;
+
+  if (isRetirada) {
+    // Se for retirada, tenta pegar endereço da loja se existir
+    const endereco_loja = endereco_entrega?.endereco_loja || {};
+    return {
+      endereco_loja: {
+        cep: endereco_loja.cep || null,
+        cidade: endereco_loja.cidade || null,
+        estado: endereco_loja.estado || null,
+        logradouro: endereco_loja.logradouro || endereco_loja.observacao || null,
+      },
+      valor_frete: frete_valor,
+      tipo: tipo
+    };
+  } else {
+    // Entrega normal: prioriza endereco_entrega.endereco_cliente se existir, senão pega direto de endereco_entrega
+    const ec = endereco_entrega?.endereco_cliente || endereco_entrega || {};
+    return {
+      endereco_cliente: {
+        cep: ec.cep || null,
+        cidade: ec.cidade || null,
+        estado: ec.estado || null,
+        logradouro: ec.logradouro || null,
+        numero: ec.numero || null,
+        bairro: ec.bairro || null,
+        complemento: ec.complemento || null,
+        nome: ec.nome || null,
+        telefone: ec.telefone || null
+      },
+      valor_frete: frete_valor,
+      tipo: tipo,
+      modalidade_de_envio: freteInfo.nome || null,
+      prazo_dias: freteInfo.prazo_dias || null,
+      condigo_rastreamento: freteInfo.codigo_rastreamento || "não implementado"
+    };
+  }
 }
 
 export function extractTotals(o: any) {
@@ -67,7 +105,7 @@ export function extractTotals(o: any) {
   const items = Number(t.items_total ?? t.items ?? o.total_bruto ?? o.total_liquido ?? 0) || 0;
   const frete = Number(t.frete_total ?? t.shipping ?? o.frete_valor ?? 0) || 0;
   const desconto = Number(t.desconto_total ?? t.discount ?? o.desconto_total ?? 0) || 0;
-  const total = Number(t.grand_total ?? t.total ?? o.total_liquido ?? o.total_bruto ?? (items + frete - desconto) ?? 0) || 0;
+  const total = Number(t.total ?? o.total ?? o.total_liquido ?? 0) || 0;
   return { items, frete, desconto, total };
 }
 

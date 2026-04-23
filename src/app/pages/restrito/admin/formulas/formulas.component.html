@@ -1,125 +1,241 @@
-<app-admin-crud [loading]="loading()" [page]="page()" [pageSize]="pageSize()" [total]="total()" [drawerOpen]="step() !== 0" (drawerOpenChange)="onDrawerOpenChange($event)" (pageChange)="page.set($event); loadRows()">
-  <div slot="title"><h2>Fórmulas</h2></div>
-  <input slot="search" class="search-input" type="text" [value]="filterQ()" (input)="filterQ.set($any($event.target).value); loadRows()" placeholder="Buscar por nome..." />
-  <div slot="actions"><button class="btn" (click)="newFormula()">Nova fórmula</button></div>
+<div class="formulas-wrapper admin-page-wrap">
+  <app-admin-crud
+    [loading]="loading()"
+    [page]="page()"
+    [pageSize]="pageSize()"
+    [total]="total()"
+    [totalLabel]="'fórmulas'"
+    [useDefaultSearch]="true"
+    [searchPlaceholder]="'Buscar fórmulas por nome...'"
+    [showClearFilters]="hasFilters()"
+    [drawerOpen]="step() !== 0"
+    [drawerTitle]="form.value.id ? 'Editar fórmula' : 'Nova fórmula'"
+    [drawerShowFooter]="true"
+    [drawerPrimaryLabel]="'Salvar fórmula'"
+    [drawerSecondaryLabel]="'Cancelar'"
+    [drawerPrimaryLoading]="saving()"
+    [drawerPrimaryDisabled]="saving()"
+    [drawerWidth]="'680px'"
+    (drawerPrimaryAction)="saveAll()"
+    (drawerSecondaryAction)="step.set(0)"
+    (drawerOpenChange)="onDrawerOpenChange($event)"
+    (quickSearch)="onQuickSearch($event)"
+    (clearFilters)="clearFilters()"
+    (pageChange)="page.set($event); loadRows()">
 
-  <!-- debug: show raw rows for troubleshooting -->
-  <pre style="color:var(--admin-muted); font-size:12px; max-height:160px; overflow:auto; margin:8px 0;">{{ rows() | json }}</pre>
+    <div slot="title"><h2>Fórmulas</h2></div>
 
-  <div slot="table" class="table-wrap" *ngIf="!loading(); else loadingTpl">
-      <table class="table">
+    <div slot="filters" class="fx-filters">
+      <div class="filter-group">Status</div>
+      <button type="button" class="filter-chip" [class.active]="filterActive() === 'all'"  (click)="setActiveFilter('all')">Todas</button>
+      <button type="button" class="filter-chip" [class.active]="filterActive() === '1'"    (click)="setActiveFilter('1')">Ativas</button>
+      <button type="button" class="filter-chip" [class.active]="filterActive() === '0'"    (click)="setActiveFilter('0')">Inativas</button>
+      <select class="filter-select" [value]="filterFormId() ?? ''" (change)="setFormFilter($any($event.target).value)">
+        <option value="">Todas as formas</option>
+        <option *ngFor="let f of forms" [value]="f.id">{{ f.name }}</option>
+      </select>
+    </div>
+
+    <div slot="actions">
+      <button class="admin-btn" type="button" (click)="newFormula()">+ Nova fórmula</button>
+    </div>
+
+    <section slot="table" class="table-wrap" *ngIf="!loading(); else loadingTpl">
+      <table class="admin-table">
         <thead>
           <tr>
-            <th>ID</th><th>Nome</th><th>Status</th><th>Ações</th>
+            <th style="width:72px">ID</th>
+            <th>Nome</th>
+            <th style="width:180px">Forma</th>
+            <th style="width:160px">Unidade saída</th>
+            <th style="width:110px">Status</th>
+            <th style="width:140px; text-align:right">Ações</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let r of rows()">
             <td>{{ r.id }}</td>
-            <td>{{ r.name }}</td>
+            <td><strong>{{ r.name }}</strong></td>
+            <td>{{ getFormName(r.form_id) || '-' }}</td>
+            <td>{{ r.output_unit_code || '-' }}</td>
             <td>
               <div class="active-cell">
-                <button class="switch readonly" [class.on]="r.active" disabled [attr.aria-pressed]="r.active" [attr.aria-label]="r.active ? 'Ativo' : 'Inativo'"></button>
+                <button class="switch readonly"
+                        [class.on]="r.active"
+                        disabled
+                        [attr.aria-pressed]="r.active"
+                        [attr.aria-label]="r.active ? 'Ativa' : 'Inativa'"></button>
               </div>
             </td>
-            <td>
-              <button class="btn secondary" (click)="editFormula(r)">Editar</button>
+            <td style="text-align:right">
+              <button class="admin-btn secondary small" type="button" (click)="editFormula(r)">Editar</button>
+            </td>
+          </tr>
+          <tr *ngIf="(rows().length || 0) === 0">
+            <td colspan="6">
+              <div class="admin-empty">
+                <div class="title">Nenhuma fórmula encontrada</div>
+                <div class="desc">Ajuste os filtros ou crie uma nova fórmula.</div>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
-      <div *ngIf="(rows().length || 0) === 0 && !loading()" class="empty">Nenhuma fórmula encontrada.</div>
-    </div>
+    </section>
 
-        <admin-pagination slot="pagination" [page]="page()" [total]="total()" [pageSize]="pageSize()" (pageChange)="page.set($event); loadRows()"></admin-pagination>
+    <admin-pagination slot="pagination"
+                      [page]="page()"
+                      [total]="total()"
+                      [pageSize]="pageSize()"
+                      (pageChange)="page.set($event); loadRows()"></admin-pagination>
 
-  <ng-template #loadingTpl><div class="empty">Carregando...</div></ng-template>
+    <ng-template #loadingTpl><div class="admin-empty">Carregando fórmulas...</div></ng-template>
 
-  <div slot="drawer">
-    <div class="drawer-content" [hidden]="step() !== 1">
-      <form [formGroup]="form">
-        <div class="grid">
-          <div class="field">
-            <label>Nome</label>
-            <input type="text" formControlName="name" />
+    <!-- ======================================================================
+         DRAWER: cadastro/edição da fórmula
+         ====================================================================== -->
+    <div slot="drawer" class="fx-drawer" [hidden]="step() !== 1">
+      <form [formGroup]="form" class="fx-form">
+        <div class="fx-section">
+          <header class="fx-section__head">
+            <h3>Dados da fórmula</h3>
+            <p>Informações principais para identificar e precificar a fórmula.</p>
+          </header>
+
+          <div class="fx-grid">
+            <div class="fx-field fx-col-2">
+              <label>Nome <span class="req">*</span></label>
+              <input type="text" formControlName="name" placeholder="Ex.: Shampoo antisséptico 200 ml" />
+            </div>
+
+            <div class="fx-field">
+              <label>Forma <span class="req">*</span></label>
+              <select formControlName="form_id">
+                <option [ngValue]="null">Selecione...</option>
+                <option *ngFor="let f of forms" [ngValue]="f.id">{{ f.name }}</option>
+              </select>
+            </div>
+
+            <div class="fx-field">
+              <label>Unidade de saída <span class="req">*</span></label>
+              <select formControlName="output_unit_code">
+                <option value="">Selecione...</option>
+                <option *ngFor="let u of units" [value]="u.code">{{ u.name }} ({{ u.code }})</option>
+              </select>
+            </div>
+
+            <div class="fx-field">
+              <label>Qtd por lote produzido</label>
+              <input type="number" formControlName="output_quantity_per_batch" placeholder="Ex.: 60" min="0" step="1" />
+            </div>
+
+            <div class="fx-field">
+              <label>Preço (R$)</label>
+              <input type="number" formControlName="price" placeholder="0,00" min="0" step="0.01" />
+            </div>
+
+            <div class="fx-field">
+              <label>Dose</label>
+              <input type="number" formControlName="dose_amount" placeholder="Ex.: 5" min="0" step="0.01" />
+            </div>
+
+            <div class="fx-field">
+              <label>Unidade da dose</label>
+              <select formControlName="dose_unit_code">
+                <option [ngValue]="null">—</option>
+                <option *ngFor="let u of units" [value]="u.code">{{ u.name }} ({{ u.code }})</option>
+              </select>
+            </div>
+
+            <div class="fx-field">
+              <label>Status</label>
+              <select formControlName="active">
+                <option [ngValue]="1">Ativa</option>
+                <option [ngValue]="0">Inativa</option>
+              </select>
+            </div>
+
+            <div class="fx-field fx-col-2">
+              <label>Observações</label>
+              <textarea formControlName="notes" rows="3" placeholder="Notas internas sobre a fórmula..."></textarea>
+            </div>
           </div>
-          <div class="field">
-            <label>Status</label>
-            <select formControlName="active">
-              <option [ngValue]="1">Ativa</option>
-              <option [ngValue]="0">Inativa</option>
-            </select>
-          </div>
-          <div class="field full">
-            <label>Observações</label>
-            <textarea formControlName="notes" rows="3"></textarea>
-          </div>
-        </div>
-        <div class="actions">
-          <span class="err" *ngIf="error()">{{ error() }}</span>
         </div>
       </form>
 
-      <div class="items-section">
-        <h3>Itens da Fórmula</h3>
-        <div class="actions">
-          <button class="btn" (click)="addItem('ativo')">Adicionar Ativo</button>
-        </div>
-        <div class="items">
-          <div class="item" *ngFor="let c of items.controls; let i = index" [formGroup]="$any(c)">
-            <div class="field small" *ngIf="c.value.tipo !== 'ativo'">
-              <label>Tipo</label>
-              <select formControlName="tipo">
-                <option [ngValue]="'ativo'">Ativo</option>
-                <option [ngValue]="'insumo'">Insumo</option>
-              </select>
+      <!-- Seção: linkagem de ativos/insumos ================================== -->
+      <div class="fx-section">
+        <header class="fx-section__head fx-section__head--actions">
+          <div>
+            <h3>Composição</h3>
+            <p>Ativos e insumos utilizados por unidade produzida.</p>
+          </div>
+          <div class="fx-section__actions">
+            <button class="admin-btn secondary small" type="button" (click)="addItem('ativo')">+ Ativo</button>
+            <button class="admin-btn secondary small" type="button" (click)="addItem('insumo')">+ Insumo</button>
+          </div>
+        </header>
+
+        <div class="fx-items" *ngIf="items.length > 0; else noItemsTpl">
+          <div class="fx-item-card" *ngFor="let c of items.controls; let i = index" [formGroup]="$any(c)">
+            <div class="fx-item-card__head">
+              <span class="fx-item-tag" [class.insumo]="c.value.tipo === 'insumo'">
+                {{ c.value.tipo === 'ativo' ? 'Ativo' : 'Insumo' }} #{{ i + 1 }}
+              </span>
+              <button type="button" class="fx-item-remove" (click)="removeItem(i)" title="Remover">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
             </div>
-            <div class="field small" *ngIf="c.value.tipo === 'ativo'">
-              <label>Tipo</label>
-              <input type="hidden" formControlName="tipo" />
-              <div class="static-typelabel">Ativo</div>
-            </div>
-            <div class="field grow" *ngIf="c.value.tipo==='ativo'">
-              <label>Ativo</label>
-              <div class="ativo-search">
-                <input type="text"
-                       [value]="itemAtivoQueries[i] || getAtivoNomeById(c.value?.ativo_id) || ''"
-                       (input)="onItemAtivoQueryChange(i, $any($event.target).value)"
-                       placeholder="Buscar ativo por nome" autocomplete="off" />
-                <ul class="suggestions" *ngIf="(itemSugestoes[i]?.length || 0) > 0">
-                  <li *ngFor="let op of itemSugestoes[i]" (click)="selecionarItemAtivo(i, op)">{{ op.ativo_nome }}</li>
-                </ul>
-                <input type="hidden" formControlName="ativo_id" />
-                <small class="muted" *ngIf="c.value?.ativo_id">Selecionado: {{ getAtivoNomeById(c.value?.ativo_id) || '-' }}</small>
+
+            <div class="fx-item-body">
+              <div class="fx-field fx-col-2" *ngIf="c.value.tipo === 'ativo'">
+                <label>Ativo <span class="req">*</span></label>
+                <div class="ativo-search">
+                  <input type="text"
+                         [value]="itemAtivoQueries[i] || getAtivoNomeById(c.value?.ativo_id) || ''"
+                         (input)="onItemAtivoQueryChange(i, $any($event.target).value)"
+                         placeholder="Buscar ativo por nome..." autocomplete="off" />
+                  <ul class="suggestions" *ngIf="(itemSugestoes[i]?.length || 0) > 0">
+                    <li *ngFor="let op of itemSugestoes[i]" (click)="selecionarItemAtivo(i, op)">{{ op.ativo_nome }}</li>
+                  </ul>
+                  <input type="hidden" formControlName="ativo_id" />
+                  <small class="muted" *ngIf="c.value?.ativo_id">Selecionado: {{ getAtivoNomeById(c.value?.ativo_id) || '-' }}</small>
+                </div>
               </div>
-            </div>
-            <div class="field grow" *ngIf="c.value.tipo==='insumo'">
-              <label>Nome do insumo</label>
-              <input type="text" formControlName="insumo_nome" placeholder="Ex.: Base creme neutra" />
-            </div>
-            <div class="field small">
-              <label>Quantidade</label>
-              <input type="number" formControlName="quantity" placeholder="Qtd" />
-            </div>
-            <div class="field small">
-              <label>Unidade</label>
-              <select formControlName="unit_code">
-                <option *ngFor="let u of units" [ngValue]="u.code">{{ u.code }}</option>
-              </select>
-            </div>
-            <div class="field actions-inline">
-              <label>&nbsp;</label>
-              <button class="btn danger" type="button" (click)="removeItem(i)">Remover</button>
+
+              <div class="fx-field fx-col-2" *ngIf="c.value.tipo === 'insumo'">
+                <label>Nome do insumo <span class="req">*</span></label>
+                <input type="text" formControlName="insumo_nome" placeholder="Ex.: Base creme neutra" />
+              </div>
+
+              <div class="fx-field">
+                <label>Quantidade <span class="req">*</span></label>
+                <input type="number" formControlName="quantity" placeholder="0" min="0" step="0.01" />
+              </div>
+
+              <div class="fx-field">
+                <label>Unidade <span class="req">*</span></label>
+                <select formControlName="unit_code">
+                  <option value="">Selecione...</option>
+                  <option *ngFor="let u of units" [value]="u.code">{{ u.name }} ({{ u.code }})</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
-        <div class="actions">
-          <button class="btn" type="button" (click)="saveAll()" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar' }}</button>
-          <button class="btn secondary" type="button" (click)="step.set(0)" [disabled]="saving()">Voltar</button>
-          <span class="err" *ngIf="error()">{{ error() }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
-</app-admin-crud>
+        <ng-template #noItemsTpl>
+          <div class="fx-items-empty">
+            <div class="fx-items-empty__title">Sem ativos/insumos vinculados</div>
+            <div class="fx-items-empty__desc">Adicione pelo menos um ativo ou insumo para compor esta fórmula.</div>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="fx-alert fx-alert--error" *ngIf="error()">{{ error() }}</div>
+    </div>
+
+  </app-admin-crud>
+</div>

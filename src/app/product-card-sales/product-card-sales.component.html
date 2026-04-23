@@ -1,0 +1,46 @@
+<ng-template #inner>
+  <div class="thumb">
+    <img [src]="product.image" [alt]="product.name" title="{{ product.name }}" width="320" height="200" loading="lazy" decoding="async" class="thumb-img"/>
+    <div class="badge" *ngIf="product.discount && product.discount > 0">-{{ product.discount | number:'1.0-0' }}%</div>
+    <button class="fav" *ngIf="supportsFavorites" (click)="onFavClick($event)" [attr.aria-pressed]="favoriteActive ?? product.isFavorited">
+      <span class="heart">{{ (favoriteActive ?? product.isFavorited) ? '❤️' : '🤍' }}</span>
+      <span class="count" *ngIf="product.favoritesCount != null">{{ product.favoritesCount }}</span>
+    </button>
+    <button type="button" class="btn add" (click)="onAddClick($event)" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
+  </div>
+  <div class="info">
+    <h3 class="nome" [title]="product.name">{{ product.name }}</h3>
+    <div class="meta-line" *ngIf="showMarca || showSku">
+      <span class="marca" *ngIf="showMarca">{{ product.marca }}</span>
+      <span class="sku" *ngIf="showSku">SKU {{ product.sku }}</span>
+    </div>
+    <div class="linha">
+      <div class="categoria" *ngIf="product.category">{{ product.category }}</div>
+      <div class="rating" *ngIf="supportsRatings && product.ratingsCount && product.ratingsCount > 0">
+        <span class="stars">
+          <ng-container *ngFor="let s of stars; let i = index">
+            <span class="star">{{ i + 1 <= ratingValue ? '★' : '☆' }}</span>
+          </ng-container>
+        </span>
+        <span class="r-val">{{ ratingValue | number:'1.1-1' }}</span>
+        <span class="r-total">({{ product.ratingsCount }})</span>
+      </div>
+    </div>
+    <div class="tags" *ngIf="product.tags?.length">
+      <span class="tag" *ngFor="let t of (product.tags | slice:0:2)">{{ t }}</span>
+      <span class="tag more" *ngIf="(product.tags?.length || 0) > 2">+{{ (product.tags?.length || 0) - 2 }}</span>
+    </div>
+    <p class="desc" *ngIf="product.description">{{ product.description }}</p>
+    <div class="preco">
+      <span class="atual">{{ priceNow | currency:'BRL' }}</span>
+      <span class="old" *ngIf="oldPriceDisplay != null">{{ oldPriceDisplay | currency:'BRL' }}</span>
+    </div>
+  </div>
+</ng-template>
+
+<a *ngIf="!disableLink" class="p-card" [ngClass]="extraClass" [class.has-discount]="oldPriceDisplay != null || product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" style="width:100%" [style.max-width]="cardWidth">
+  <ng-container *ngTemplateOutlet="inner"></ng-container>
+</a>
+<div *ngIf="disableLink" class="p-card" [ngClass]="extraClass" [class.has-discount]="oldPriceDisplay != null || product.promoPrice != null || (product.discount && product.discount > 0)" style="width:100%" [style.max-width]="cardWidth">
+  <ng-container *ngTemplateOutlet="inner"></ng-container>
+</div>

@@ -8,11 +8,12 @@ import { ToastService } from '../../services/toast.service';
 import { CardsService } from '../../services/cards.service';
 import { AuthService } from '../../services/auth.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
+import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, NavmenuComponent],
+  imports: [CommonModule, FormsModule, CurrencyPipe, NavmenuComponent, BannerSlotComponent],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.scss']
 })

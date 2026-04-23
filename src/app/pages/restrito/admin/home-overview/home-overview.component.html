@@ -1,0 +1,124 @@
+<section class="home-overview">
+  <div *ngIf="loading && !data" class="loader">Carregando painel…</div>
+
+  <ng-container *ngIf="data">
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-icon receita"><i class="fa-solid fa-dollar-sign"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Receita hoje</div>
+          <div class="kpi-value">{{ formatCurrency(kpis.receita_hoje) }}</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon pedidos"><i class="fa-solid fa-box"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Pedidos hoje</div>
+          <div class="kpi-value">{{ kpis.pedidos_hoje }}</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon ticket"><i class="fa-solid fa-receipt"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Ticket médio</div>
+          <div class="kpi-value">{{ formatCurrency(kpis.ticket_medio_hoje) }}</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon aguard"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Aguardando pagamento</div>
+          <div class="kpi-value">{{ kpis.aguardando_pagamento }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico 7 dias + Alertas -->
+    <div class="row two-cols">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>Vendas dos últimos 7 dias</h3>
+          <small>Atualiza automaticamente a cada 30s.</small>
+        </div>
+        <div class="chart-wrap">
+          <canvas #salesChart></canvas>
+        </div>
+      </div>
+      <div class="card alerts-card">
+        <div class="card-header">
+          <h3>Últimos alertas</h3>
+          <small>Notificações recentes do painel.</small>
+        </div>
+        <ul class="alerts" *ngIf="alerts.length; else noAlerts">
+          <li
+            *ngFor="let a of alerts"
+            class="alert-item"
+            [class.unread]="!a.lida"
+            (click)="openAlert(a)"
+          >
+            <span class="icon"><i [class]="iconFor(a.tipo)"></i></span>
+            <div class="body">
+              <div class="title">{{ a.titulo }}</div>
+              <div class="msg" *ngIf="a.mensagem">{{ a.mensagem }}</div>
+            </div>
+            <div class="time">{{ relativeTime(a.created_at) }}</div>
+          </li>
+        </ul>
+        <ng-template #noAlerts>
+          <div class="empty"><i class="fa-regular fa-face-smile"></i> Nenhum alerta por aqui.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Fila de pedidos -->
+    <div class="card queue-card">
+      <div class="card-header">
+        <h3>Fila de pedidos</h3>
+        <small>{{ data?.queue?.total || 0 }} pedido(s) em andamento.</small>
+      </div>
+
+      <div class="queue-columns">
+        <div class="queue-col" *ngFor="let s of statuses">
+          <div class="col-head">
+            <span class="col-title">{{ statusLabel(s) }}</span>
+            <span class="col-count">{{ ordersOf(s).length }}</span>
+          </div>
+          <div class="col-body">
+            <div
+              *ngFor="let p of ordersOf(s)"
+              class="order"
+              (click)="openOrder(p)"
+            >
+              <div class="top">
+                <strong>#{{ p.id }}</strong>
+                <span class="total">{{ formatCurrency(p.total_liquido) }}</span>
+              </div>
+              <div class="cliente" [title]="p.cliente_nome || ''">{{ p.cliente_nome || 'Cliente ' + p.cliente_id }}</div>
+              <div class="meta">
+                <span class="age"><i class="fa-regular fa-clock"></i> {{ relativeTime(p.created_at) }}</span>
+                <span class="pagto" *ngIf="p.pagamento_forma">{{ p.pagamento_forma }}</span>
+              </div>
+              <div class="actions">
+                <button
+                  type="button"
+                  class="btn btn-advance"
+                  [disabled]="!nextStatus(p)"
+                  (click)="advance(p, $event)"
+                  [title]="nextStatus(p) ? 'Avançar para ' + nextStatusLabel(p) : 'Sem próxima etapa'"
+                >
+                  <i class="fa-solid fa-forward-step"></i>
+                  {{ nextStatus(p) ? nextStatusLabel(p) : '—' }}
+                </button>
+                <button type="button" class="btn btn-cancel" (click)="cancel(p, $event)" title="Cancelar pedido">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-empty" *ngIf="!ordersOf(s).length">Sem pedidos aqui.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</section>

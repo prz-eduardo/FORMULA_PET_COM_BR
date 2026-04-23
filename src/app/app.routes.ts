@@ -41,6 +41,7 @@ export const routes: Routes = [
       { path: 'banners', loadComponent: async () => (await import('./pages/restrito/admin/banners/banners.component')).BannersAdminComponent, canActivate: [authGuard] },
       { path: 'produto-preview', loadComponent: () => import('./pages/restrito/admin/produto-preview/produto-preview.component').then(m => m.ProdutoPreviewComponent), canActivate: [authGuard] },
       { path: 'marketplace/customizacoes', loadComponent: () => import('./pages/restrito/admin/marketplace-customizacoes/marketplace-customizacoes.component').then(m => m.MarketplaceCustomizacoesAdminComponent), canActivate: [authGuard] },
+      { path: 'loja/temas', loadComponent: () => import('./pages/restrito/admin/loja-temas/loja-temas.component').then(m => m.LojaTemasAdminComponent), canActivate: [authGuard], data: { title: 'Temas da loja' } },
       { path: 'fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard] },
       { path: 'lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard] },
       { path: 'parceiros', loadComponent: async () => (await import('./pages/restrito/admin/parceiros/parceiros.component')).ParceirosAdminComponent, canActivate: [authGuard] },

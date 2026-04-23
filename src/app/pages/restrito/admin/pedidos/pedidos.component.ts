@@ -12,11 +12,12 @@ import { SessionService } from '../../../../services/session.service';
 import { OrderService } from '../../../../services/order.service';
 import { normalizeOrder, extractCliente, extractShipping } from '../../../../shared/order-utils';
 import { getNextStatus } from '../../../../constants/order-status.constants';
+import { AdminSummaryPanelComponent, SummaryData } from '../../../../shared/admin-summary-panel';
 
 @Component({
   selector: 'app-admin-pedidos',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminPaginationComponent, ButtonDirective, AdminCrudComponent, OrderDetailsComponent, ConfirmCancelModalComponent],
+  imports: [CommonModule, FormsModule, AdminPaginationComponent, ButtonDirective, AdminCrudComponent, OrderDetailsComponent, ConfirmCancelModalComponent, AdminSummaryPanelComponent],
   
   templateUrl: './pedidos.component.html',
   styleUrls: ['./pedidos.component.scss']
@@ -51,7 +52,14 @@ export class AdminPedidosComponent implements OnInit {
   loading = false;
   items: any[] = [];
   // summary
-  summary: Record<string, number> = {};
+  summary: SummaryData = {
+    totals: { total_pedidos: 0, receita_total: 0, descontos_total: 0, ticket_medio: 0 },
+    statusBreakdown: {},
+    formasPagamento: [],
+    topClientes: [],
+    topCupons: [],
+    pedidosRecentes: []
+  };
 
   // selection/state
   view: 'list' | 'details' | 'payments' | 'shipping' | 'invoices' | 'edit' = 'list';
@@ -85,12 +93,19 @@ export class AdminPedidosComponent implements OnInit {
   async fetchSummary() {
     this.loading = true;
     try {
-      // Admin: hitting admin namespace
-  const base = this.session.getBackendBaseUrl();
-  const url = `${base}/admin/orders-summary`;
-  const headers = this.session.getAuthHeaders();
-  const data = await this.http.get(url, { headers }).toPromise() as any;
-  this.summary = (data && (data as any).counts) || {};
+      const base = this.session.getBackendBaseUrl();
+      const url = `${base}/admin/orders-summary`;
+      const headers = this.session.getAuthHeaders();
+      const data = await this.http.get(url, { headers }).toPromise() as any;
+      // Adapta o retorno para o formato SummaryData
+      this.summary = {
+        totals: data?.totals || { total_pedidos: 0, receita_total: 0, descontos_total: 0, ticket_medio: 0 },
+        statusBreakdown: data?.statusBreakdown || {},
+        formasPagamento: data?.formasPagamento || [],
+        topClientes: data?.topClientes || [],
+        topCupons: data?.topCupons || [],
+        pedidosRecentes: data?.pedidosRecentes || []
+      };
     } finally { this.loading = false; }
   }
 
@@ -166,8 +181,8 @@ export class AdminPedidosComponent implements OnInit {
     this.selected = normalizeOrder(this.selected || {});
     this.selectedCliente = extractCliente(this.selected);
     const ship = extractShipping(this.selected);
-    this.selectedFrete = ship.frete;
-    this.shippingOptions = ship.opcoes || [];
+    this.selectedFrete = (ship as any)?.frete || null;
+    this.shippingOptions = (ship as any)?.opcoes || [];
   }
 
   async setStatus(status: string) {

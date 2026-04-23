@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { ButtonDirective, ButtonComponent } from '../../../../../shared/button';
 
 @Component({
@@ -9,7 +9,7 @@ import { ButtonDirective, ButtonComponent } from '../../../../../shared/button';
   templateUrl: './admin-pagination.component.html',
   styleUrls: ['./admin-pagination.component.scss']
 })
-export class AdminPaginationComponent implements OnChanges {
+export class AdminPaginationComponent {
   @Input() page = 1;
   @Input() total = 0; // total items
   @Input() pageSize = 10;
@@ -44,12 +44,4 @@ export class AdminPaginationComponent implements OnChanges {
   emitPage(n: number) { if (n === this.page) return; this.pageChange.emit(n); }
   // wrapper to be used from template because template expressions cannot use TS casts
   emitPageNumber(p: number | string) { if (typeof p === 'number') this.emitPage(p); }
-
-  ngOnChanges(changes: SimpleChanges) {
-    try {
-      // Debugging: log values to help identify why pager shows 1/1
-      // eslint-disable-next-line no-console
-      console.debug('AdminPagination change', { page: this.page, total: this.total, pageSize: this.pageSize, totalPages: this.totalPages() });
-    } catch (e) {}
-  }
 }

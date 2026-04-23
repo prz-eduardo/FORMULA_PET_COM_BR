@@ -1,0 +1,113 @@
+<div class="pet-lightbox-overlay" *ngIf="isOpen && pet" (click)="onOverlayClick($event)" role="dialog" aria-modal="true">
+  <div class="pet-lightbox" [attr.aria-label]="'Foto de ' + (pet.nome || 'pet')">
+    <button class="lightbox-close" type="button" aria-label="Fechar" (click)="onClose()">×</button>
+
+    <div class="lightbox-media">
+      <img [src]="resolveImage()" alt="Foto de {{ pet.nome || 'pet' }}" (error)="onImgError($event)" />
+    </div>
+
+    <aside class="lightbox-side">
+      <header class="pet-header">
+        <div class="pet-title-row">
+          <h2 class="pet-name">{{ pet.nome || pet.name || 'Sem nome' }}</h2>
+          <span class="pet-species-emoji" [attr.title]="pet.especie || pet.tipo || 'Pet'">{{ typeEmoji(pet.especie || pet.tipo) }}</span>
+        </div>
+        <div class="pet-meta">
+          <span *ngIf="pet.raca" class="chip">{{ pet.raca }}</span>
+          <span *ngIf="pet.especie" class="chip">{{ pet.especie }}</span>
+          <span *ngIf="pet.idade != null" class="chip">{{ pet.idade }} {{ pet.idade === 1 ? 'ano' : 'anos' }}</span>
+          <span *ngIf="pet.sexo" class="chip">{{ pet.sexo }}</span>
+          <span *ngIf="pet.pesoKg" class="chip">{{ pet.pesoKg }} kg</span>
+        </div>
+        <div class="pet-tutor" *ngIf="pet.tutor_nome">
+          <img *ngIf="pet.tutor_foto" [src]="pet.tutor_foto" alt="Tutor" class="tutor-avatar" (error)="onImgError($event)" />
+          <span class="tutor-label">por</span>
+          <span class="tutor-name">{{ pet.tutor_nome }}</span>
+        </div>
+      </header>
+
+      <section class="pet-obs" *ngIf="pet.observacoes">
+        <p>{{ pet.observacoes }}</p>
+      </section>
+
+      <section class="reactions-section">
+        <div class="reactions-summary" *ngIf="getTotalReactions() > 0">
+          <div class="reaction-stack">
+            <span class="stacked-emoji" *ngFor="let r of getTopReactions(); let i = index; trackBy: trackReaction" [style.--i]="i">
+              {{ r.emoji }}
+            </span>
+          </div>
+          <span class="reaction-total-label">
+            {{ getTotalReactions() }} {{ getTotalReactions() === 1 ? 'reação' : 'reações' }}
+          </span>
+        </div>
+        <div class="reactions-bar">
+          <button *ngFor="let r of reactionTypes; trackBy: trackReaction"
+                  type="button"
+                  class="reaction-chip"
+                  [class.active]="pet.userReactionTipo === r.tipo"
+                  (click)="onSelectReaction(r.tipo)"
+                  [attr.aria-label]="r.label">
+            <span class="emoji">{{ r.emoji }}</span>
+            <span class="count">{{ getReactionCount(r.tipo) }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="comments-section">
+        <h3 class="comments-title">
+          <span>Comentários</span>
+          <span class="comments-count">{{ totalComentarios }}</span>
+        </h3>
+
+        <form class="comment-form" *ngIf="isLogged(); else needLogin" (submit)="$event.preventDefault(); enviarComentario()">
+          <textarea
+            [(ngModel)]="novoComentario"
+            name="comentario"
+            placeholder="Escreva um comentário carinhoso..."
+            maxlength="500"
+            rows="2"
+            [disabled]="sendingComentario"></textarea>
+          <div class="comment-form-footer">
+            <span class="char-count" [class.warn]="(novoComentario.length || 0) > 450">
+              {{ novoComentario.length }}/500
+            </span>
+            <button
+              type="submit"
+              class="btn-comment-send"
+              [disabled]="sendingComentario || !novoComentario.trim().length">
+              {{ sendingComentario ? 'Enviando…' : 'Comentar' }}
+            </button>
+          </div>
+        </form>
+        <ng-template #needLogin>
+          <div class="comment-login-cta">Faça login para deixar um comentário.</div>
+        </ng-template>
+
+        <div class="comments-list" *ngIf="!loadingComentarios">
+          <div *ngIf="comentariosError" class="comments-error">{{ comentariosError }}</div>
+          <div *ngIf="!comentarios.length && !comentariosError" class="comments-empty">
+            Seja o primeiro a comentar.
+          </div>
+          <article class="comment-item" *ngFor="let c of comentarios; trackBy: trackComentario">
+            <div class="comment-avatar">
+              <img *ngIf="c.cliente?.foto; else initials" [src]="c.cliente.foto" alt="Avatar" (error)="onImgError($event)" />
+              <ng-template #initials>
+                <span class="avatar-initials">{{ (c.cliente?.nome || '?').charAt(0).toUpperCase() }}</span>
+              </ng-template>
+            </div>
+            <div class="comment-body">
+              <div class="comment-head">
+                <strong class="comment-author">{{ c.cliente?.nome || 'Usuário' }}</strong>
+                <span class="comment-time">{{ formatDate(c.created_at) }}</span>
+                <button *ngIf="canDeleteComment(c)" class="btn-delete-comment" type="button" title="Remover" (click)="removerComentario(c)">×</button>
+              </div>
+              <p class="comment-text">{{ c.comentario }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="comments-loading" *ngIf="loadingComentarios">Carregando comentários…</div>
+      </section>
+    </aside>
+  </div>
+</div>

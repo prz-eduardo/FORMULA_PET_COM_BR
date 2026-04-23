@@ -1,4 +1,3 @@
-<!-- lista-produtos.component.html (wrapped with app-admin-crud) -->
 <app-admin-crud
   [items]="produtos"
   [loading]="loading"
@@ -6,21 +5,167 @@
   [page]="page"
   [pageSize]="pageSize"
   [columns]="columns"
-  [formSchema]="productFormSchema"
-  [formTitle]="'Produto'"
-  [formSubmitLabel]="'Salvar'"
   [useDefaultActions]="true"
+  [drawerOpen]="drawerOpen"
+  [drawerWidth]="'640px'"
+  [drawerTitle]="drawerTitleLabel"
+  [drawerSubtitle]="drawerSubtitleText"
+  [drawerShowFooter]="true"
+  [drawerPrimaryLabel]="drawerEditItem ? 'Salvar alterações' : 'Criar produto'"
+  [drawerPrimaryLoading]="submitting()"
+  (drawerOpenChange)="onDrawerOpenChange($event)"
+  (drawerPrimaryAction)="submitProduto()"
+  (drawerSecondaryAction)="closeDrawer()"
   (pageChange)="page = $event; loadProdutos()"
   (create)="addProduto()"
   (edit)="openDrawer($event)"
   (remove)="onRemove($event)"
-  (submit)="onFormSubmit($event)"
-  (cancel)="closeDrawer()"
   (toggleActive)="toggleActive($event)"
-  [drawerOpen]="drawerOpen"
-  (drawerOpenChange)="drawerOpen = $event"
-  [editItem]="drawerEditItem"
 >
-</app-admin-crud>
+  <!-- Drawer Produto --------------------------------------------------- -->
+  <form slot="drawer" *ngIf="drawerOpen" [formGroup]="produtoForm" class="fx-drawer" (ngSubmit)="submitProduto()" novalidate>
+    <section class="fx-section fx-produto-detail" *ngIf="drawerEditItem?.id">
+      <header class="fx-section__head">
+        <h3>Resumo</h3>
+        <p>Dados carregados do servidor. Use o assistente para variantes, imagens, SEO e regulatório.</p>
+      </header>
 
-<!-- Remoção agora é tratada via (remove) do app-admin-crud ou via deleteProduto() direto (com confirm) -->
+      <div class="fx-produto-detail__hero">
+        <div class="fx-produto-detail__thumb">
+          <img [src]="resolveProductImage(drawerEditItem)" [alt]="'Foto de ' + (drawerEditItem!.name || 'produto')" loading="lazy" />
+        </div>
+        <div class="fx-produto-detail__intro">
+          <div class="fx-produto-detail__badges">
+            <span class="fx-item-tag" [class.ok]="isProdutoAtivo(drawerEditItem)" [class.muted]="!isProdutoAtivo(drawerEditItem)">
+              {{ isProdutoAtivo(drawerEditItem) ? 'Ativo na loja' : 'Inativo' }}
+            </span>
+            <span class="fx-item-tag muted" *ngIf="drawerEditItem!.card_layout === 'banner'">Card banner</span>
+            <span class="fx-item-tag muted" *ngIf="drawerEditItem!.promo_price != null">Promoção</span>
+          </div>
+          <div class="fx-produto-detail__price-row">
+            <span class="fx-produto-detail__price">{{ formatBRL(drawerEditItem!.price) }}</span>
+            <span class="fx-produto-detail__price-note" *ngIf="drawerEditItem!.promo_price != null">
+              Promo: {{ formatBRL(drawerEditItem!.promo_price) }}
+            </span>
+          </div>
+          <button type="button" class="fx-btn primary fx-produto-detail__wizard-btn" (click)="irParaAssistenteProduto()">
+            Editar no assistente
+          </button>
+        </div>
+      </div>
+
+      <dl class="fx-produto-detail__meta">
+        <div class="fx-produto-detail__row">
+          <dt>SKU</dt>
+          <dd>{{ textoOuTraco(drawerEditItem!.sku) }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Marca</dt>
+          <dd>{{ textoOuTraco(drawerEditItem!.marca) }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Código de barras</dt>
+          <dd>{{ textoOuTraco(drawerEditItem!.codigo_barras) }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Estoque</dt>
+          <dd>{{ drawerEditItem!.stock != null ? drawerEditItem!.stock : '—' }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Peso</dt>
+          <dd>
+            <ng-container *ngIf="drawerEditItem!.weightValue != null; else noPeso">
+              {{ drawerEditItem!.weightValue }} {{ drawerEditItem!.weightUnit || '' }}
+            </ng-container>
+            <ng-template #noPeso>—</ng-template>
+          </dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Slug</dt>
+          <dd>{{ textoOuTraco(drawerEditItem!.slug) }}</dd>
+        </div>
+        <div class="fx-produto-detail__row fx-produto-detail__row--wide">
+          <dt>Preço “de” / custo</dt>
+          <dd>
+            {{ drawerEditItem!.preco_de != null ? formatBRL(drawerEditItem!.preco_de) : '—' }}
+            <span class="fx-produto-detail__sep">·</span>
+            {{ drawerEditItem!.preco_custo != null ? formatBRL(drawerEditItem!.preco_custo) : '—' }}
+          </dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Variantes</dt>
+          <dd>{{ (drawerEditItem!.variantes?.length) || 0 }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Documentos</dt>
+          <dd>{{ (drawerEditItem!.documentos?.length) || 0 }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Criado</dt>
+          <dd>{{ formatDatePt(drawerEditItem!.created_at) }}</dd>
+        </div>
+        <div class="fx-produto-detail__row">
+          <dt>Atualizado</dt>
+          <dd>{{ formatDatePt(drawerEditItem!.updated_at) }}</dd>
+        </div>
+      </dl>
+
+      <div class="fx-produto-detail__tags" *ngIf="produtoTagsList(drawerEditItem).length">
+        <span class="fx-produto-detail__tags-label">Tags</span>
+        <div class="fx-chip-group">
+          <span class="fx-produto-detail__chip" *ngFor="let t of produtoTagsList(drawerEditItem)">{{ t }}</span>
+        </div>
+      </div>
+
+      <p class="fx-produto-detail__desc" *ngIf="drawerEditItem!.description?.trim()">
+        {{ drawerEditItem!.description }}
+      </p>
+    </section>
+
+    <section class="fx-section">
+      <header class="fx-section__head fx-section__head--actions">
+        <div>
+          <h3>{{ drawerEditItem?.id ? 'Edição rápida' : 'Dados do produto' }}</h3>
+          <p *ngIf="!drawerEditItem?.id">Informações exibidas na vitrine e usadas no carrinho.</p>
+          <p *ngIf="drawerEditItem?.id">Ajuste nome, preço e texto sem sair da lista — ou abra o assistente acima.</p>
+        </div>
+        <div class="fx-section__actions" *ngIf="drawerEditItem">
+          <button type="button" class="fx-btn danger small" (click)="removerEditando()">Remover</button>
+        </div>
+      </header>
+
+      <div class="fx-grid">
+        <div class="fx-field fx-col-2">
+          <label>Nome <span class="req">*</span></label>
+          <input type="text" formControlName="name" placeholder="Ex.: Shampoo antisséptico 200ml" />
+        </div>
+
+        <div class="fx-field">
+          <label>Preço (R$) <span class="req">*</span></label>
+          <input type="number" step="0.01" min="0" formControlName="price" />
+        </div>
+
+        <div class="fx-field">
+          <label>Categoria</label>
+          <input type="text" formControlName="category" placeholder="Ex.: Banho e tosa" />
+        </div>
+
+        <div class="fx-field fx-col-2">
+          <label>Tags</label>
+          <input type="text" formControlName="tags" placeholder="Ex.: cachorro, gato, hipoalergênico" />
+          <small class="fx-hint">Separe as tags por vírgula.</small>
+        </div>
+
+        <div class="fx-field fx-col-2">
+          <label>Descrição</label>
+          <textarea rows="4" formControlName="description" placeholder="Descrição exibida na página do produto."></textarea>
+        </div>
+
+        <div class="fx-field fx-inline fx-col-2">
+          <input id="produto-ativo" type="checkbox" formControlName="active" />
+          <label for="produto-ativo">Produto ativo</label>
+        </div>
+      </div>
+    </section>
+  </form>
+</app-admin-crud>

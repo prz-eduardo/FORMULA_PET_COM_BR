@@ -1,7 +1,7 @@
 // firebase-config.ts
-import { initializeApp } from 'firebase/app';
-import { getAnalytics } from "firebase/analytics";
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -11,13 +11,19 @@ const firebaseConfig = {
   storageBucket: "formulapet-com-br.firebasestorage.app",
   messagingSenderId: "814626284746",
   appId: "1:814626284746:web:552698e044e1845f028033",
-  measurementId: "G-5V2ZJ16LX6"
+  measurementId: "G-5V2ZJ16LX6",
+  /** Realtime Database — URL exata no console Firebase (Realtime DB). */
+  databaseURL: "https://formulapet-com-br-default-rtdb.firebaseio.com"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
-
-// Exporta a instância de auth
+// Aplicação principal (Auth, Firestore)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+/** Aplicação secundária: Auth + RTDB do suporte (custom token), sem substituir a sessão principal. */
+const supportApp = getApps().find((a) => a.name === "supportChat")
+  ? getApp("supportChat")
+  : initializeApp(firebaseConfig, "supportChat");
+export const supportAuth = getAuth(supportApp);
+export const supportRtdb = getDatabase(supportApp);

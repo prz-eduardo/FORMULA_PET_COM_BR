@@ -1,0 +1,29 @@
+/* Banner form — estilos específicos.
+   Visual compartilhado (`fx-*`) vem de `app/shared/styles/_admin-drawer.scss`. */
+
+:host { display: block; }
+
+.bf-editors { margin-top: 6px; }
+
+.bf-editor-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--admin-muted, rgba(229, 236, 245, .55));
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* Submit escondido usado pelo admin-drawer para disparar o submit padrão. */
+.fx-hidden-submit {
+  width: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  left: -9999px;
+}

@@ -1,0 +1,58 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="admin-form">
+  <ng-container *ngIf="schema?.sections?.length; else flatFields">
+    <ng-container *ngFor="let s of schema?.sections || []">
+      <div class="form-section">
+        <h4 *ngIf="s.title">{{ s.title }}</h4>
+        <div class="form-grid" [ngClass]="{ 'two-up': s.twoUp }">
+          <ng-container *ngFor="let f of s.fields">
+            <ng-container *ngTemplateOutlet="fieldTpl; context: { $implicit: f }"></ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #flatFields>
+    <div class="form-grid">
+      <ng-container *ngFor="let f of schema?.fields || []">
+        <ng-container *ngTemplateOutlet="fieldTpl; context: { $implicit: f }"></ng-container>
+      </ng-container>
+    </div>
+  </ng-template>
+
+  <div class="drawer-actions actions" *ngIf="showActions">
+    <button class="admin-btn secondary" type="button" (click)="onCancel()">{{ cancelLabel }}</button>
+    <button class="admin-btn" type="submit">{{ submitLabel }}</button>
+  </div>
+</form>
+
+<ng-template #fieldTpl let-f>
+  <div class="field" [style.width]="f.width || 'auto'">
+    <label *ngIf="f.type !== 'hidden'">{{ f.label || f.key }}</label>
+    <div class="control">
+      <ng-container [ngSwitch]="f.type">
+        <input *ngSwitchCase="'text'" type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+        <app-cpf-input *ngSwitchCase="'cpf'" [formControlName]="f.key" [placeholder]="f.placeholder || ''"></app-cpf-input>
+        <input *ngSwitchCase="'email'" type="email" [formControlName]="f.key" [placeholder]="f.placeholder" />
+        <input *ngSwitchCase="'number'" type="number" [formControlName]="f.key" [placeholder]="f.placeholder" />
+        <input *ngSwitchCase="'date'" type="date" [formControlName]="f.key" />
+        <input *ngSwitchCase="'datetime'" type="datetime-local" [formControlName]="f.key" />
+        <textarea *ngSwitchCase="'textarea'" [formControlName]="f.key" [placeholder]="f.placeholder"></textarea>
+        <select *ngSwitchCase="'select'" [formControlName]="f.key">
+          <option *ngFor="let o of f.options" [ngValue]="o.value">{{ o.label }}</option>
+        </select>
+        <app-entity-lookup *ngSwitchCase="'multi-suggest'"
+          [selectedIds]="form.get(f.key)?.value || []"
+          (selectedIdsChange)="form.get(f.key)?.setValue($event)"
+          [selectedItems]="getSelectedItems(f.key)"
+          (selectedItemsChange)="onSelectedItemsChange($event, f.key)"
+          [form]="form"
+          [searchFn]="f.searchFn"
+          [placeholder]="f.placeholder || 'Buscar...'"></app-entity-lookup>
+        <input *ngSwitchCase="'checkbox'" type="checkbox" [formControlName]="f.key" />
+        <input *ngSwitchCase="'hidden'" type="hidden" [formControlName]="f.key" />
+        <input *ngSwitchDefault type="text" [formControlName]="f.key" [placeholder]="f.placeholder" />
+      </ng-container>
+    </div>
+  </div>
+</ng-template>

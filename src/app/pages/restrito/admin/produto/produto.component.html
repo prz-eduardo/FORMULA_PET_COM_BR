@@ -1,97 +1,208 @@
-<div class="produto-container" [formGroup]="form">
-  <div class="header">
-    <h2>{{ form.value.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
-    <div class="header-actions">
-      <div class="stepper">
-        <button type="button" *ngFor="let s of steps; let i = index"
-                [class.active]="step() === i" [class.done]="i < step()"
-                [attr.data-step]="i+1"
-                (click)="goToStep(i)">{{ s.label }}</button>
-      </div>
-      <button *ngIf="embedded" type="button" class="btn-close" (click)="onCloseClick()">Fechar</button>
+<div class="wizard" [formGroup]="form" [class.embedded]="embedded">
+  <!-- Header: título + stepper -->
+  <header class="wizard-header">
+    <div class="wizard-title">
+      <h2>{{ form.value.id ? 'Editar Produto' : 'Cadastrar Produto' }}</h2>
+      <p class="wizard-subtitle">Passo {{ step() + 1 }} de {{ steps.length }} — {{ steps[step()].label }}</p>
     </div>
-  </div>
-  <!-- STEP 0: Imagem (obrigatória) -->
-  <section *ngIf="step()===0" class="step step-imagem">
-    <div class="imagem-card">
-      <div class="image-upload">
-        <div class="img-stack" (dragenter)="onDragEnter($event)" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)" [class.drag-over]="isDragOver">
-          <div *ngFor="let img of form.value.images; let i = index" 
-               class="img-preview-stack" 
-               [ngClass]="{'hovered': hoveredImg === i}"
-               (mouseenter)="hoveredImg = i" (mouseleave)="hoveredImg = null">
-            <img [src]="img" alt="Imagem {{i+1}} do produto">
-            <button type="button" class="remove-img-btn" (click)="removeImageAt(i)" [attr.aria-label]="'Remover imagem ' + (i+1)">&times;</button>
-          </div>
-          <label *ngIf="form.value.images.length < 3" class="img-add-btn" [class.full]="form.value.images.length === 0" role="button" tabindex="0">
-            <div class="img-add-content">
-              <span class="plus-icon">+</span>
-              <span *ngIf="form.value.images.length === 0" class="img-placeholder-text">Adicionar imagens<br><small>Arraste ou clique para selecionar</small></span>
+
+    <button *ngIf="embedded" type="button" class="btn btn-ghost btn-close-embed" (click)="onCloseClick()" aria-label="Fechar">
+      <span aria-hidden="true">×</span>
+    </button>
+  </header>
+
+  <!-- Stepper -->
+  <nav class="stepper" aria-label="Etapas de cadastro">
+    <ol class="stepper-list">
+      <li *ngFor="let s of steps; let i = index"
+          class="stepper-item"
+          [class.active]="step() === i"
+          [class.done]="i < step()">
+        <button type="button"
+                class="stepper-btn"
+                (click)="goToStep(i)"
+                [attr.aria-current]="step() === i ? 'step' : null">
+          <span class="stepper-bubble">
+            <span *ngIf="i >= step()" class="stepper-num">{{ i + 1 }}</span>
+            <span *ngIf="i < step()" class="stepper-check" aria-hidden="true">✓</span>
+          </span>
+          <span class="stepper-label">{{ s.label }}</span>
+        </button>
+      </li>
+    </ol>
+    <div class="stepper-progress" aria-hidden="true">
+      <div class="stepper-progress-bar" [style.width.%]="(step() / (steps.length - 1)) * 100"></div>
+    </div>
+  </nav>
+
+  <!-- Conteúdo -->
+  <main class="wizard-main">
+
+    <!-- ============================================================= -->
+    <!-- STEP 0 :: MÍDIA ============================================== -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===0" class="step step-midia" aria-labelledby="step-midia-title">
+      <div class="wizard-card">
+        <header class="card-header">
+          <h3 id="step-midia-title">Imagens do produto</h3>
+          <p class="card-subtitle">Adicione até {{ MAX_IMAGES }} imagens. JPG, PNG ou WEBP, até 3MB cada.</p>
+        </header>
+
+        <div class="image-dropzone"
+             [class.drag-over]="isDragOver"
+             [class.empty]="imagesFA.length === 0"
+             (dragenter)="onDragEnter($event)"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDrop($event)">
+
+          <ng-container *ngIf="imagesFA.length > 0">
+            <div class="image-grid">
+              <div *ngFor="let img of form.value.images; let i = index"
+                   class="image-tile"
+                   [class.principal]="imagemPrincipal === img"
+                   (mouseenter)="hoveredImg = i"
+                   (mouseleave)="hoveredImg = null">
+                <img [src]="img" [alt]="'Imagem ' + (i + 1) + ' do produto'">
+                <div class="image-actions">
+                  <button *ngIf="imagemPrincipal !== img" type="button" class="chip chip-main" (click)="imagemPrincipal = img" aria-label="Definir como principal">Principal</button>
+                  <span *ngIf="imagemPrincipal === img" class="chip chip-active">Principal</span>
+                  <button type="button" class="chip chip-danger" (click)="removeImageAt(i)" [attr.aria-label]="'Remover imagem ' + (i+1)">Remover</button>
+                </div>
+              </div>
+
+              <label *ngIf="imagesFA.length < MAX_IMAGES" class="image-tile image-add">
+                <div class="image-add-content">
+                  <span class="plus-icon" aria-hidden="true">+</span>
+                  <span class="image-add-label">Adicionar</span>
+                </div>
+                <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onImagesSelected($event)" hidden>
+              </label>
             </div>
-            <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onImagesSelected($event)" style="display:none">
+          </ng-container>
+
+          <label *ngIf="imagesFA.length === 0" class="image-empty">
+            <div class="image-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-4 4-3-3-6 6"/></svg>
+            </div>
+            <div class="image-empty-title">Arraste e solte imagens aqui</div>
+            <div class="image-empty-sub">ou clique para selecionar do seu dispositivo</div>
+            <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onImagesSelected($event)" hidden>
           </label>
         </div>
-        <div class="hint">
-          <div class="image-counter">{{ (form.value.images?.length || 0) }}/3 imagens</div>
-          <div *ngIf="imageMessage()" class="image-feedback">{{ imageMessage() }}</div>
-          <div>Adicione até 3 imagens do produto.</div>
+
+        <div class="image-meta">
+          <span class="image-counter">{{ imagesFA.length }}/{{ MAX_IMAGES }} imagens</span>
+          <span *ngIf="imageMessage()" class="image-feedback">{{ imageMessage() }}</span>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- STEP 1: Fórmula (opcional) -->
-  <section *ngIf="step()===1" class="step step-formula">
-    <div class="formula-card">
-      <div class="formula-grid">
-        <div class="formula-right">
-          <label for="nomeProduto" class="basico-label">Nome do Produto</label>
-          <input id="nomeProduto" type="text" formControlName="name" placeholder="Digite o nome do produto" class="basico-input product-artistic" aria-label="Nome do Produto">
-          <label for="descricaoProduto" class="basico-label" style="margin-top:12px;">Descrição</label>
-          <textarea id="descricaoProduto" formControlName="description" rows="4" placeholder="Descreva o produto (opcional)" class="basico-input"></textarea>
+    <!-- ============================================================= -->
+    <!-- STEP 1 :: IDENTIFICAÇÃO ====================================== -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===1" class="step step-identificacao" aria-labelledby="step-id-title">
+      <div class="wizard-grid two-cols">
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3 id="step-id-title">Informações básicas</h3>
+            <p class="card-subtitle">Como o produto aparecerá para o cliente.</p>
+          </header>
+
+          <div class="field">
+            <label for="nomeProduto" class="field-label">Nome do produto <span class="req">*</span></label>
+            <input id="nomeProduto" type="text" formControlName="name"
+                   placeholder="Ex.: Shampoo Dermatológico para Cães"
+                   class="input input-hero"
+                   [attr.aria-invalid]="form.get('name')?.touched && form.get('name')?.invalid ? 'true' : null">
+            <small class="field-error" *ngIf="form.get('name')?.touched && form.get('name')?.invalid">Informe um nome.</small>
+          </div>
+
+          <div class="field">
+            <label for="descricaoProduto" class="field-label">Descrição <span class="req">*</span></label>
+            <textarea id="descricaoProduto" formControlName="description" rows="5"
+                      placeholder="Descreva o produto, indicações e modo de uso"
+                      class="input"
+                      [attr.aria-invalid]="form.get('description')?.touched && form.get('description')?.invalid ? 'true' : null"></textarea>
+            <small class="field-error" *ngIf="form.get('description')?.touched && form.get('description')?.invalid">Informe uma descrição.</small>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="skuProduto" class="field-label">SKU</label>
+              <input id="skuProduto" type="text" formControlName="sku" placeholder="Ex.: PET-001" class="input">
+            </div>
+            <div class="field">
+              <label for="marcaProduto" class="field-label">Marca / Fabricante</label>
+              <input id="marcaProduto" type="text" formControlName="marca" placeholder="Ex.: PetLife" class="input">
+            </div>
+            <div class="field">
+              <label for="barrasProduto" class="field-label">Código de barras</label>
+              <input id="barrasProduto" type="text" formControlName="codigoBarras" placeholder="EAN/GTIN" class="input">
+            </div>
+          </div>
         </div>
-                  <div class="form-group full-width formula-search-group">
-            <label>Este produto usa uma fórmula?</label>
-            <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
-              <button type="button"
-                class="toggle-btn"
-                [class.active]="!!form.get('manipulado')?.value"
-                (click)="form.patchValue({ manipulado: !form.get('manipulado')?.value })"
-                [attr.aria-pressed]="!!form.get('manipulado')?.value">
-                <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
-                <span class="toggle-label">Manipulado</span>
-              </button>
-            </div>
-              <div class="formula-header" style="display:flex; align-items:center; gap:1rem;">
-              <button type="button"
-                class="toggle-btn"
-                [class.active]="formulaEnabled"
-                (click)="toggleFormulaEnabled()"
-                [attr.aria-pressed]="formulaEnabled">
-                <span class="toggle-bg"><span class="toggle-circle"><i class="fa fa-flask"></i></span></span>
-                <span class="toggle-label">Usa Fórmula</span>
-              </button>
+
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Tipo de produto</h3>
+            <p class="card-subtitle">Defina se é um produto pronto ou manipulado com fórmula.</p>
+          </header>
+
+          <div class="toggles-row">
+            <button type="button"
+                    class="switch"
+                    [class.on]="!!form.get('manipulado')?.value"
+                    (click)="form.patchValue({ manipulado: !form.get('manipulado')?.value })"
+                    [attr.aria-pressed]="!!form.get('manipulado')?.value">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-text">
+                <span class="switch-title">Manipulado</span>
+                <span class="switch-help">Produto preparado sob medida</span>
+              </span>
+            </button>
+
+            <button type="button"
+                    class="switch"
+                    [class.on]="formulaEnabled"
+                    (click)="toggleFormulaEnabled()"
+                    [attr.aria-pressed]="formulaEnabled">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-text">
+                <span class="switch-title">Usa fórmula</span>
+                <span class="switch-help">Vincular a uma fórmula cadastrada</span>
+              </span>
+            </button>
+          </div>
+
+          <div *ngIf="formulaEnabled" class="field formula-search-group">
+            <label class="field-label" for="formulaInput">Fórmula</label>
+            <div class="search-box">
+              <span class="search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input type="text" id="formulaInput"
+                     placeholder="Buscar fórmula (nome ou forma)"
+                     [value]="form.get('formulaId')?.value ? formulaNameById(form.get('formulaId')?.value) : formulaQuery()"
+                     (input)="form.get('formulaId')?.value ? selectFormula(null) : null; onFormulaQueryInput($any($event.target).value)"
+                     (keydown)="onFormulaKeydown($event)"
+                     aria-autocomplete="list"
+                     [attr.aria-expanded]="(formulasFiltered.length || 0) > 0"
+                     aria-controls="formula-list">
+              <button *ngIf="formulaQuery() || form.get('formulaId')?.value"
+                      type="button" class="clear-btn"
+                      (click)="form.get('formulaId')?.value ? selectFormula(null) : onFormulaQueryInput('')"
+                      aria-label="Limpar">✕</button>
             </div>
 
-
-            <div *ngIf="formulaEnabled" class="search-box" style="margin-top:0.75rem;">
-              <input type="text" placeholder="Buscar fórmula (nome ou forma)"
-                [value]="form.get('formulaId')?.value ? formulaNameById(form.get('formulaId')?.value) : formulaQuery()"
-                (input)="form.get('formulaId')?.value ? selectFormula(null) : null; onFormulaQueryInput($any($event.target).value)"
-                (keydown)="onFormulaKeydown($event)"
-                aria-autocomplete="list"
-                [attr.aria-expanded]="(formulasFiltered.length || 0) > 0"
-                aria-controls="formula-list"
-                id="formulaInput"
-              />
-              <button *ngIf="formulaQuery() || form.get('formulaId')?.value" type="button" class="clear-btn" (click)="form.get('formulaId')?.value ? selectFormula(null) : onFormulaQueryInput('')">✕</button>
-            </div>
-
-            <div class="sugestoes" *ngIf="formulaEnabled && (formulasFiltered.length || 0) > 0">
+            <div class="sugestoes" *ngIf="(formulasFiltered.length || 0) > 0">
               <div id="formula-list" role="listbox" class="sugestao-list">
-                <div class="sugestao none" role="option" (click)="selectFormula(null)" [class.focused]="selectedFormulaIndex===-1" (mouseenter)="setFormulaIndex(-1)">
-                  <strong>Produto pronto</strong>
-                  <div class="muted">Sem fórmula</div>
+                <div class="sugestao-item none" role="option"
+                     [class.focused]="selectedFormulaIndex===-1"
+                     (click)="selectFormula(null)"
+                     (mouseenter)="setFormulaIndex(-1)">
+                  <div class="sugestao-main">Produto pronto</div>
+                  <div class="sugestao-sub">Sem fórmula</div>
                 </div>
                 <div class="sugestao-item" *ngFor="let f of formulasFiltered; let i = index" role="option"
                      [attr.aria-selected]="selectedFormulaIndex===i"
@@ -104,445 +215,855 @@
               </div>
             </div>
           </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STEP 1: Detalhes (Básico + Fórmula) moved into formula card above -->
-
-  <!-- STEP 2: Preço/Estoque e Campanha -->
-  <section *ngIf="step()===2" class="step step-preco">
-    <div class="preco-peso-bloco">
-      <div class="preco-card">
-        <label for="precoProduto" class="preco-label">Preço</label>
-        <div class="preco-input-wrapper"
-          tabindex="0"
-          (keydown)="onPrecoKeydown($event)"
-          (paste)="$event.preventDefault()"
-          role="textbox"
-          aria-label="Preço"
-          (click)="enablePrecoEdit()"
-        >
-          <span class="preco-cifrao">R$</span>
-          <span class="preco-mascara preco-hover">
-            <span class="preco-int">{{ priceMasked?.int || '0' }}</span><span class="preco-dec">,{{ priceMasked?.dec || '00' }}</span>
-            <span *ngIf="editingPreco" class="preco-cursor">|</span>
-          </span>
         </div>
-        
-        <ng-container *ngIf="discountedPriceValue() !== null">
-          <div class="preco-desconto" style="margin-top:8px;">
-            <div class="muted">Preço com desconto</div>
-            <div style="display:flex; gap:0.75rem; align-items:baseline;">
-              <div class="preco-orig" style="color:rgba(255,255,255,0.5); text-decoration:line-through;">
-                {{ form.value.price | currency:'BRL':'symbol-narrow' }}
-              </div>
-              <div class="preco-final" style="color:#27EF9F; font-weight:700;">
-                {{ discountedPriceValue() | currency:'BRL':'symbol-narrow' }}
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- STEP 2 :: COMERCIAL ========================================== -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===2" class="step step-comercial" aria-labelledby="step-com-title">
+      <div class="wizard-grid two-cols">
+        <!-- Preço -->
+        <div class="wizard-card price-card">
+          <header class="card-header">
+            <h3 id="step-com-title">Preço</h3>
+            <p class="card-subtitle">Valor de venda em reais.</p>
+          </header>
+
+          <div class="price-input"
+               tabindex="0"
+               role="textbox"
+               aria-label="Preço do produto"
+               [class.editing]="editingPreco"
+               (keydown)="onPrecoKeydown($event)"
+               (paste)="$event.preventDefault()"
+               (click)="enablePrecoEdit()"
+               (blur)="disablePrecoEdit()">
+            <span class="price-currency">R$</span>
+            <span class="price-value">
+              <span class="price-int">{{ priceMasked?.int || '0' }}</span><span class="price-dec">,{{ priceMasked?.dec || '00' }}</span>
+              <span *ngIf="editingPreco" class="price-cursor" aria-hidden="true">|</span>
+            </span>
+          </div>
+
+          <div class="price-discount" *ngIf="discountedPriceValue() !== null">
+            <span class="price-old">{{ form.value.price | currency:'BRL':'symbol-narrow' }}</span>
+            <span class="price-new">{{ discountedPriceValue() | currency:'BRL':'symbol-narrow' }}</span>
+            <span class="price-badge" *ngIf="promocaoSelecionada">{{ promoLabel() }}</span>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Preço de (antes)</label>
+              <input type="number" min="0" step="0.01" formControlName="precoDe" class="input" placeholder="Ex.: 99.90">
+            </div>
+            <div class="field">
+              <label class="field-label">Preço de custo</label>
+              <input type="number" min="0" step="0.01" formControlName="precoCusto" class="input" placeholder="Custo">
+            </div>
+            <div class="field">
+              <label class="field-label">Parcelas máx.</label>
+              <input type="number" min="1" max="12" formControlName="parcelasMax" class="input" placeholder="Ex.: 6">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Vídeo (URL)</label>
+            <input type="url" formControlName="videoUrl" class="input" placeholder="https://youtube.com/...">
+          </div>
+        </div>
+
+        <!-- Peso / Volume -->
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Peso, volume ou unidade</h3>
+            <p class="card-subtitle">Opcional — informe quantidade do produto.</p>
+          </header>
+
+          <div class="field">
+            <div class="peso-row">
+              <input type="text" formControlName="weightValue"
+                     placeholder="Ex.: 250"
+                     class="input peso-input"
+                     inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+              <div class="unit-group" role="group" aria-label="Unidade">
+                <button type="button"
+                        *ngFor="let unit of ['mg','g','kg','ml','un']"
+                        class="unit-btn"
+                        [class.active]="form.get('weightUnit')?.value === unit"
+                        (click)="setWeightUnit(unit)"
+                        [attr.aria-pressed]="form.get('weightUnit')?.value === unit">
+                  {{ unit }}
+                </button>
               </div>
             </div>
-            <div class="muted" *ngIf="promocaoSelecionada">Aplicado: {{ promoLabel() }}</div>
-            <div class="muted" *ngIf="!promocaoSelecionada && form.value.discount">Aplicado: {{ form.value.discount }}{{ form.value.discount <= 100 ? '%' : '' }}</div>
           </div>
-        </ng-container>
-
-            <div class="form-group full-width campanha-bloco promotion-info">
-      <ng-container *ngIf="promocaoSelecionada; else noPromo">
-        <div class="promo-card">
-          <div class="promo-header">
-            <span class="badge" [class.active]="promocaoSelecionada.ui?.status==='active'" [class.upcoming]="promocaoSelecionada.ui?.status==='upcoming'" [class.expired]="promocaoSelecionada.ui?.status==='expired'" [class.inactive]="promocaoSelecionada.ui?.status==='inactive'">{{ promoStatusLabel(promocaoSelecionada?.ui?.status) }}</span>
-            <strong>{{ promocaoSelecionada.nome }}</strong>
-            <span class="valor">{{ promoLabel() }}</span>
-          </div>
-          <div class="promo-meta">
-            <div *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</div>
-            <div>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</div>
-          </div>
-          <div class="promo-actions">
-            <button type="button" (click)="$event.stopPropagation(); openPromoModal()">Trocar campanha</button>
-            <button type="button" class="link" (click)="promocaoSelecionada=null">Remover</button>
-          </div>
-        </div>
-      </ng-container>
-      <ng-template #noPromo>
-        <div class="empty">
-          <button type="button" (click)="$event.stopPropagation(); openPromoModal()">+ Aplicar campanha</button>
-        </div>
-      </ng-template>
-    </div>
-      </div>
-      <div class="peso-card destaque">
-        <label class="peso-label">Peso / Volume / Unidade</label>
-        <div class="peso-input-wrapper">
-          <span class="peso-icon">⚖️</span>
-          <input type="text" formControlName="weightValue" placeholder="Digite o valor" class="peso-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" [value]="form.value.weightValue ? form.value.weightValue : ''" />
-        </div>
-        <div class="peso-toggle-list">
-          <button type="button" *ngFor="let unit of ['mg','g','kg','ml','un']"
-            class="peso-toggle-btn"
-            [class.active]="form.get('weightUnit')?.value === unit"
-            (click)="setWeightUnit(unit)"
-            [attr.aria-pressed]="form.get('weightUnit')?.value === unit">
-            {{unit}}
-          </button>
-        </div>
-          <div class="estoque-card destaque">
-          <label for="estoqueProduto" class="estoque-label">Quantidade em Estoque</label>
-          <input id="estoqueProduto" type="number" min="0" formControlName="stock" placeholder="Digite a quantidade disponível" class="basico-input estoque-input" />
         </div>
 
-          <div class="embalagem-select">
-            <label>Tipo de Embalagem</label>
-            <div class="formula-search-group" style="margin-top:0.5rem;">
+        <!-- Estoque -->
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Estoque</h3>
+            <p class="card-subtitle">Quantidade disponível para venda.</p>
+          </header>
+          <div class="field">
+            <input id="estoqueProduto" type="number" min="0" formControlName="stock"
+                   placeholder="Ex.: 100" class="input">
+          </div>
+        </div>
+
+        <!-- Embalagem -->
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Embalagem</h3>
+            <p class="card-subtitle">Formatos disponíveis para este produto.</p>
+          </header>
+
+          <div class="field formula-search-group">
+            <div class="search-with-add">
               <div class="search-box">
-                <input type="text" autocomplete="off" placeholder="Buscar embalagem" [value]="packagingQuery()" (input)="onPackagingQueryInput($any($event.target).value)" (keydown)="onPackagingKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(packagingFiltered.length || 0) > 0" aria-controls="pack-list" id="packInput" />
-                <button *ngIf="packagingQuery()" type="button" class="clear-btn" (click)="onPackagingQueryInput('')">✕</button>
+                <span class="search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input type="text" autocomplete="off" id="packInput"
+                       placeholder="Buscar embalagem"
+                       [value]="packagingQuery()"
+                       (input)="onPackagingQueryInput($any($event.target).value)"
+                       (keydown)="onPackagingKeydown($event)"
+                       aria-autocomplete="list"
+                       [attr.aria-expanded]="(packagingFiltered.length || 0) > 0"
+                       aria-controls="pack-list">
+                <button *ngIf="packagingQuery()" type="button" class="clear-btn"
+                        (click)="onPackagingQueryInput('')" aria-label="Limpar">✕</button>
               </div>
-              <button type="button" class="open-modal-btn" title="Abrir modal de embalagens" (click)="$event.stopPropagation(); openPackagingModal($event)">+</button>
-              <div class="sugestao-list" *ngIf="(packagingFiltered.length || 0) > 0">
-                <div id="pack-list" role="listbox">
-                  <div class="sugestao-item" *ngFor="let p of packagingFiltered; let i=index" role="option" [class.focused]="selectedPackagingIndex===i" (click)="pickPackaging(p.name)" (mouseenter)="setPackagingIndex(i)">
-                    <div class="sugestao-main">{{ p.name }}</div>
-                  </div>
+              <button type="button" class="btn btn-ghost btn-square"
+                      title="Abrir modal de embalagens"
+                      (click)="$event.stopPropagation(); openPackagingModal($event)"
+                      aria-label="Abrir modal de embalagens">+</button>
+            </div>
+
+            <div class="sugestoes" *ngIf="(packagingFiltered.length || 0) > 0">
+              <div id="pack-list" role="listbox" class="sugestao-list">
+                <div class="sugestao-item" *ngFor="let p of packagingFiltered; let i=index" role="option"
+                     [class.focused]="selectedPackagingIndex===i"
+                     (click)="pickPackaging(p.name)"
+                     (mouseenter)="setPackagingIndex(i)">
+                  <div class="sugestao-main">{{ p.name }}</div>
                 </div>
               </div>
             </div>
-            <div class="packaging-list">
-              <span class="badge" *ngFor="let p of packagingFA.value; let i = index">{{ p }} <span class="badge-remove" (click)="removePackagingAt(i)">-</span></span>
-            </div>
           </div>
-        <!-- Taxonomias (Categoria + Tags) movidas para cá para ficarem próximas ao Preço/Estoque) -->
-        <div class="taxonomia-card" style="margin-top:12px;">
-          <div class="form-group">
-            <label>Categoria</label>
-            <div class="formula-search-group">
+
+          <div class="chips-list" *ngIf="packagingFA.value?.length">
+            <span class="chip chip-selected" *ngFor="let p of packagingFA.value; let i = index">
+              {{ p }}
+              <button type="button" class="chip-remove" (click)="removePackagingAt(i)" aria-label="Remover">×</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- STEP 3 :: CLASSIFICAÇÃO ====================================== -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===1" class="step step-classificacao" aria-labelledby="step-cls-title">
+      <div class="wizard-grid two-cols">
+        <!-- Categoria -->
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3 id="step-cls-title">Categoria <span class="req">*</span></h3>
+            <p class="card-subtitle">Escolha a categoria que melhor representa o produto.</p>
+          </header>
+
+          <div class="field formula-search-group">
+            <div class="search-with-add">
               <div class="search-box">
-                <input type="text" autocomplete="off" placeholder="Buscar categoria" [value]="categoryQuery()" (input)="onCategoryQueryInput($any($event.target).value)" (keydown)="onCategoryKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(categoriesFiltered.length || 0) > 0" aria-controls="category-list" id="categoryInput" />
-                <button *ngIf="categoryQuery()" type="button" class="clear-btn" (click)="onCategoryQueryInput('')">✕</button>
+                <span class="search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input type="text" autocomplete="off" id="categoryInput"
+                       placeholder="Buscar categoria"
+                       [value]="categoryQuery()"
+                       (input)="onCategoryQueryInput($any($event.target).value)"
+                       (keydown)="onCategoryKeydown($event)"
+                       aria-autocomplete="list"
+                       [attr.aria-expanded]="(categoriesFiltered.length || 0) > 0"
+                       aria-controls="category-list"
+                       [attr.aria-invalid]="form.get('categoryId')?.touched && form.get('categoryId')?.invalid ? 'true' : null">
+                <button *ngIf="categoryQuery()" type="button" class="clear-btn"
+                        (click)="onCategoryQueryInput('')" aria-label="Limpar">✕</button>
               </div>
-              <button type="button" class="open-modal-btn" title="Abrir modal de categorias" (click)="$event.stopPropagation(); openCategoryModal($event)">+</button>
-              <div class="sugestao-list" *ngIf="(categoriesFiltered.length || 0) > 0">
-                <div id="category-list" role="listbox">
-                  <div class="sugestao none" role="option" (click)="selectCategoryById(null)" [class.focused]="selectedCategoryIndex===-1" (mouseenter)="setCategoryIndex(-1)">
-                    <strong>Sem categoria</strong>
-                    <div class="muted">Remover seleção</div>
-                  </div>
-                  <div class="sugestao-item" *ngFor="let c of categoriesFiltered; let i = index" role="option" [attr.aria-selected]="selectedCategoryIndex===i" [class.focused]="selectedCategoryIndex===i" (click)="selectCategoryById(c.id)" (mouseenter)="setCategoryIndex(i)">
-                    <div class="sugestao-main">{{ c.name }}</div>
-                  </div>
+              <button type="button" class="btn btn-ghost btn-square"
+                      title="Abrir modal de categorias"
+                      (click)="$event.stopPropagation(); openCategoryModal($event)"
+                      aria-label="Abrir modal de categorias">+</button>
+            </div>
+
+            <div class="sugestoes" *ngIf="(categoriesFiltered.length || 0) > 0">
+              <div id="category-list" role="listbox" class="sugestao-list">
+                <div class="sugestao-item none" role="option"
+                     [class.focused]="selectedCategoryIndex===-1"
+                     (click)="selectCategoryById(null)"
+                     (mouseenter)="setCategoryIndex(-1)">
+                  <div class="sugestao-main">Sem categoria</div>
+                  <div class="sugestao-sub">Remover seleção</div>
+                </div>
+                <div class="sugestao-item" *ngFor="let c of categoriesFiltered; let i = index" role="option"
+                     [attr.aria-selected]="selectedCategoryIndex===i"
+                     [class.focused]="selectedCategoryIndex===i"
+                     (click)="selectCategoryById(c.id)"
+                     (mouseenter)="setCategoryIndex(i)">
+                  <div class="sugestao-main">{{ c.name }}</div>
                 </div>
               </div>
             </div>
-            <div *ngIf="form.value.categoryId" style="margin-top:8px;">
-              <span class="badge selected">{{ categoryNameById(form.value.categoryId) }}
-                <button type="button" class="link small" (click)="selectCategoryById(null)">✕</button>
+          </div>
+
+          <div class="chips-list" *ngIf="form.value.categoryId">
+            <span class="chip chip-selected">
+              {{ categoryNameById(form.value.categoryId) }}
+              <button type="button" class="chip-remove" (click)="selectCategoryById(null)" aria-label="Remover">×</button>
+            </span>
+          </div>
+
+          <small class="field-error" *ngIf="form.get('categoryId')?.touched && form.get('categoryId')?.invalid">Selecione uma categoria.</small>
+        </div>
+
+        <!-- Tags -->
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Tags</h3>
+            <p class="card-subtitle">Palavras-chave para ajudar na busca.</p>
+          </header>
+
+          <div class="field formula-search-group">
+            <div class="search-with-add">
+              <div class="search-box">
+                <span class="search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input type="text" autocomplete="off" id="tagInput"
+                       placeholder="Buscar ou adicionar tag"
+                       [value]="tagQuery()"
+                       (input)="onTagQueryInput($any($event.target).value)"
+                       (keydown)="onTagKeydown($event)"
+                       aria-autocomplete="list"
+                       [attr.aria-expanded]="(tagsFiltered.length || 0) > 0"
+                       aria-controls="tag-list">
+                <button *ngIf="tagQuery()" type="button" class="clear-btn"
+                        (click)="onTagQueryInput('')" aria-label="Limpar">✕</button>
+              </div>
+              <button type="button" class="btn btn-ghost btn-square"
+                      title="Abrir modal de tags"
+                      (click)="$event.stopPropagation(); openTagModal($event)"
+                      aria-label="Abrir modal de tags">+</button>
+            </div>
+
+            <div class="sugestoes" *ngIf="(tagsFiltered.length || 0) > 0">
+              <div id="tag-list" role="listbox" class="sugestao-list">
+                <div class="sugestao-item" *ngFor="let t of tagsFiltered; let i=index" role="option"
+                     [class.focused]="selectedTagIndex===i"
+                     (click)="pickTag(t.name)"
+                     (mouseenter)="setTagIndex(i)">
+                  <div class="sugestao-main">{{ t.name }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chips-list" *ngIf="tagsFA.value?.length">
+            <span class="chip chip-selected" *ngFor="let t of tagsFA.value; let i=index">
+              {{ t }}
+              <button type="button" class="chip-remove" (click)="removeTagAt(i)" aria-label="Remover">×</button>
+            </span>
+          </div>
+        </div>
+
+        <!-- Campanha -->
+        <div class="wizard-card full-span">
+          <header class="card-header">
+            <h3>Campanha promocional</h3>
+            <p class="card-subtitle">Vincule o produto a uma campanha ativa (opcional).</p>
+          </header>
+
+          <ng-container *ngIf="promocaoSelecionada; else noPromo">
+            <div class="promo-applied">
+              <div class="promo-applied-head">
+                <span class="status-badge"
+                      [class.success]="promocaoSelecionada.ui?.status==='active'"
+                      [class.warning]="promocaoSelecionada.ui?.status==='upcoming'"
+                      [class.danger]="promocaoSelecionada.ui?.status==='expired'"
+                      [class.muted]="promocaoSelecionada.ui?.status==='inactive'">
+                  {{ promoStatusLabel(promocaoSelecionada.ui?.status) }}
+                </span>
+                <strong>{{ promocaoSelecionada.nome }}</strong>
+                <span class="promo-value">{{ promoLabel() }}</span>
+              </div>
+              <div class="promo-applied-meta" *ngIf="promocaoSelecionada.ui?.start?.human || promocaoSelecionada.ui?.end?.human">
+                <span *ngIf="promocaoSelecionada.ui?.start?.human">Início: {{ promocaoSelecionada.ui?.start?.human }}</span>
+                <span>Fim: {{ promocaoSelecionada.ui?.end?.human || 'sem validade' }}</span>
+              </div>
+              <div class="promo-applied-actions">
+                <button type="button" class="btn btn-ghost" (click)="$event.stopPropagation(); openPromoModal()">Trocar campanha</button>
+                <button type="button" class="btn btn-link" (click)="promocaoSelecionada=null">Remover</button>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #noPromo>
+            <button type="button" class="btn btn-primary-outline promo-add" (click)="$event.stopPropagation(); openPromoModal()">
+              <span aria-hidden="true">+</span> Aplicar campanha
+            </button>
+          </ng-template>
+        </div>
+
+        <!-- Visibilidade -->
+        <div class="wizard-card full-span">
+          <header class="card-header">
+            <h3>Visibilidade</h3>
+            <p class="card-subtitle">Controle onde e como o produto aparece na loja.</p>
+          </header>
+
+          <div class="toggles-row">
+            <button type="button"
+                    class="switch"
+                    [class.on]="form.value.active === 1"
+                    (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})"
+                    [attr.aria-pressed]="form.value.active === 1">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-text">
+                <span class="switch-title">Ativo na loja</span>
+                <span class="switch-help">Visível para clientes</span>
               </span>
-            </div>
+            </button>
+
+            <button type="button"
+                    class="switch"
+                    [class.on]="destaqueHome"
+                    (click)="destaqueHome = !destaqueHome"
+                    [attr.aria-pressed]="destaqueHome">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-text">
+                <span class="switch-title">Destaque na home</span>
+                <span class="switch-help">Exibir na página inicial</span>
+              </span>
+            </button>
           </div>
-          <div class="form-group">
-            <label>Tags</label>
-            <div class="formula-search-group">
-              <div class="search-box">
-                <input type="text" autocomplete="off" placeholder="Buscar ou adicionar tag" [value]="tagQuery()" (input)="onTagQueryInput($any($event.target).value)" (keydown)="onTagKeydown($event)" aria-autocomplete="list" [attr.aria-expanded]="(tagsFiltered.length || 0) > 0" aria-controls="tag-list" id="tagInput" />
-                <button *ngIf="tagQuery()" type="button" class="clear-btn" (click)="onTagQueryInput('')">✕</button>
-              </div>
-              <button type="button" class="open-modal-btn" title="Abrir modal de tags" (click)="$event.stopPropagation(); openTagModal($event)">+</button>
-              <div class="sugestao-list" *ngIf="(tagsFiltered.length || 0) > 0">
-                <div id="tag-list" role="listbox">
-                  <div class="sugestao-item" *ngFor="let t of tagsFiltered; let i=index" role="option" [class.focused]="selectedTagIndex===i" (click)="pickTag(t.name)" (mouseenter)="setTagIndex(i)">
-                    <div class="sugestao-main">{{ t.name }}</div>
-                  </div>
-                </div>
-              </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- STEP 3 :: TÉCNICO ============================================ -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===3" class="step step-tecnico">
+      <div class="wizard-grid two-cols">
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Composição</h3>
+            <p class="card-subtitle">Descreva os ingredientes ou princípios ativos.</p>
+          </header>
+          <div class="field">
+            <textarea formControlName="composicao" rows="5" class="input" placeholder="Ex.: Clorexidina 2%, Piroctona olamina..."></textarea>
+          </div>
+        </div>
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Modo de uso</h3>
+            <p class="card-subtitle">Instruções de aplicação/posologia.</p>
+          </header>
+          <div class="field">
+            <textarea formControlName="modoUso" rows="5" class="input" placeholder="Ex.: Aplicar 2 vezes ao dia..."></textarea>
+          </div>
+        </div>
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Indicações</h3>
+          </header>
+          <div class="field">
+            <textarea formControlName="indicacoes" rows="4" class="input" placeholder="Quando usar"></textarea>
+          </div>
+        </div>
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Contraindicações</h3>
+          </header>
+          <div class="field">
+            <textarea formControlName="contraindicacoes" rows="4" class="input" placeholder="Quando NÃO usar"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- STEP 4 :: REGULATÓRIO ======================================== -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===4" class="step step-regulatorio">
+      <div class="wizard-grid two-cols">
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Requisitos</h3>
+          </header>
+          <div class="toggles-row">
+            <button type="button" class="switch"
+                    [class.on]="!!form.get('exigeReceita')?.value"
+                    (click)="form.patchValue({ exigeReceita: !form.get('exigeReceita')?.value })"
+                    [attr.aria-pressed]="!!form.get('exigeReceita')?.value">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-text">
+                <span class="switch-title">Exige receita</span>
+                <span class="switch-help">Produto controlado / com retenção</span>
+              </span>
+            </button>
+          </div>
+          <div class="field">
+            <label class="field-label">Registro MAPA</label>
+            <input type="text" formControlName="registroMapa" placeholder="Ex.: SP-000000-0" class="input">
+          </div>
+        </div>
+        <div class="wizard-card">
+          <header class="card-header">
+            <h3>Validade & Armazenamento</h3>
+          </header>
+          <div class="field">
+            <label class="field-label">Validade (meses)</label>
+            <input type="number" min="0" formControlName="validadeMeses" placeholder="Ex.: 24" class="input">
+          </div>
+          <div class="field">
+            <label class="field-label">Armazenamento</label>
+            <textarea formControlName="armazenamento" rows="3" class="input" placeholder="Ex.: conservar em local seco, temperatura ambiente..."></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- STEP 5 :: VARIANTES ========================================== -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===5" class="step step-variantes">
+      <div class="wizard-card full-span">
+        <header class="card-header">
+          <h3>Variantes</h3>
+          <p class="card-subtitle">Cadastre variações do produto (tamanho, sabor, volume...) com preço e estoque próprios.</p>
+        </header>
+
+        <div class="variantes-table" *ngIf="variantesFA.length; else semVariantes">
+          <div class="variante-row" *ngFor="let v of variantesFA.controls; let i = index" [formGroup]="$any(v)">
+            <div class="field"><input type="text" formControlName="nome" placeholder="Nome (ex.: 250ml)" class="input"></div>
+            <div class="field"><input type="text" formControlName="sku" placeholder="SKU" class="input"></div>
+            <div class="field"><input type="number" min="0" step="0.01" formControlName="preco" placeholder="Preço" class="input"></div>
+            <div class="field"><input type="number" min="0" step="0.01" formControlName="preco_de" placeholder="Preço de" class="input"></div>
+            <div class="field"><input type="number" min="0" formControlName="estoque" placeholder="Estoque" class="input"></div>
+            <div class="field"><input type="number" min="0" step="0.01" formControlName="peso_g" placeholder="Peso (g)" class="input"></div>
+            <button type="button" class="btn btn-link" (click)="removeVariante(i)" aria-label="Remover variante">Remover</button>
+          </div>
+        </div>
+        <ng-template #semVariantes>
+          <p class="muted">Nenhuma variante cadastrada.</p>
+        </ng-template>
+
+        <button type="button" class="btn btn-primary-outline" (click)="addVariante()">+ Adicionar variante</button>
+      </div>
+
+      <div class="wizard-card full-span">
+        <header class="card-header">
+          <h3>Documentos anexos</h3>
+          <p class="card-subtitle">Ficha técnica, bula, certificados.</p>
+        </header>
+        <div class="variantes-table" *ngIf="documentosFA.length; else semDocs">
+          <div class="variante-row" *ngFor="let d of documentosFA.controls; let i = index" [formGroup]="$any(d)">
+            <div class="field"><input type="text" formControlName="nome" placeholder="Nome do documento" class="input"></div>
+            <div class="field"><input type="url" formControlName="url" placeholder="URL" class="input"></div>
+            <div class="field">
+              <select formControlName="tipo" class="input">
+                <option value="ficha_tecnica">Ficha técnica</option>
+                <option value="bula">Bula</option>
+                <option value="certificado">Certificado</option>
+                <option value="outro">Outro</option>
+              </select>
             </div>
-            <div class="tags" style="margin-top:8px;">
-              <span class="badge" *ngFor="let t of tagsFA.value; let i=index">{{ t }} <button type="button" class="badge-remove" (click)="removeTagAt(i)">×</button></span>
+            <button type="button" class="btn btn-link" (click)="removeDocumento(i)" aria-label="Remover documento">Remover</button>
+          </div>
+        </div>
+        <ng-template #semDocs>
+          <p class="muted">Nenhum documento anexado.</p>
+        </ng-template>
+        <button type="button" class="btn btn-primary-outline" (click)="addDocumento()">+ Adicionar documento</button>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- STEP 6 :: SEO ================================================ -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===6" class="step step-seo">
+      <div class="wizard-grid two-cols">
+        <div class="wizard-card full-span">
+          <header class="card-header">
+            <h3>SEO</h3>
+            <p class="card-subtitle">Como o produto aparecerá em buscadores e compartilhamentos.</p>
+          </header>
+          <div class="field">
+            <label class="field-label">Slug</label>
+            <input type="text" formControlName="slug" placeholder="gerado automaticamente a partir do nome" class="input">
+          </div>
+          <div class="field">
+            <label class="field-label">Meta title</label>
+            <input type="text" maxlength="160" formControlName="metaTitle" placeholder="Título para Google/Bing" class="input">
+          </div>
+          <div class="field">
+            <label class="field-label">Meta description</label>
+            <textarea maxlength="320" rows="3" formControlName="metaDescription" placeholder="Descrição curta (até 320 caracteres)" class="input"></textarea>
+          </div>
+          <div class="field">
+            <label class="field-label">Imagem para compartilhamento (OG)</label>
+            <input type="url" formControlName="ogImageUrl" placeholder="URL da imagem" class="input">
+          </div>
+
+          <div class="field vitrine-layout">
+            <label class="field-label">Layout na loja</label>
+            <p class="field-hint">Card de vendas (padrão) ou faixa grande em duas colunas no grid da vitrine.</p>
+            <div class="radio-row">
+              <label class="radio-pill">
+                <input type="radio" formControlName="cardLayout" value="sales" />
+                <span>Card de vendas</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" formControlName="cardLayout" value="banner" />
+                <span>Banner (2 colunas)</span>
+              </label>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-  </section>
+    <!-- ============================================================= -->
+    <!-- STEP 7 :: REVISÃO ============================================ -->
+    <!-- ============================================================= -->
+    <section *ngIf="step()===7" class="step step-revisao" aria-labelledby="step-rev-title">
+      <div class="review-layout">
+        <div class="review-left">
+          <div class="wizard-card">
+            <header class="card-header">
+              <h3 id="step-rev-title">Identificação</h3>
+            </header>
+            <dl class="review-list">
+              <div class="review-row"><dt>Tipo</dt><dd>{{ form.value.formulaId ? 'Manipulado' : (form.value.manipulado ? 'Manipulado' : 'Pronto') }}</dd></div>
+              <div class="review-row" *ngIf="form.value.formulaId"><dt>Fórmula</dt><dd>{{ formulaNameById(form.value.formulaId) }}</dd></div>
+              <div class="review-row"><dt>Nome</dt><dd>{{ form.value.name || '—' }}</dd></div>
+              <div class="review-row"><dt>Descrição</dt><dd class="review-desc">{{ form.value.description || '—' }}</dd></div>
+            </dl>
+          </div>
 
+          <div class="wizard-card">
+            <header class="card-header">
+              <h3>Comercial</h3>
+            </header>
+            <dl class="review-list">
+              <div class="review-row"><dt>Preço</dt><dd>{{ form.value.price | currency:'BRL':'symbol-narrow' }}</dd></div>
+              <div class="review-row"><dt>Unidade</dt><dd>{{ form.value.weightValue ? (form.value.weightValue + ' ' + (form.value.weightUnit || 'g')) : '—' }}</dd></div>
+              <div class="review-row"><dt>Estoque</dt><dd>{{ form.value.stock ?? '—' }}</dd></div>
+              <div class="review-row"><dt>Embalagem</dt><dd>
+                <ng-container *ngIf="packagingFA.value?.length; else noPack">
+                  <span class="review-tag" *ngFor="let p of packagingFA.value">{{ p }}</span>
+                </ng-container>
+                <ng-template #noPack>—</ng-template>
+              </dd></div>
+            </dl>
+          </div>
 
-
-  <!-- STEP: Revisão e Envio (último passo) -->
-  <section *ngIf="step()===steps.length-1" class="step step-revisao">
-    <div class="review-v2">
-      <div class="review-v2-header">
-        <h3>Revisão do Produto</h3>
-      </div>
-
-      <div class="review-v2-body">
-        <div class="review-layout">
-          <div class="review-left">
-            <div class="review-card" aria-labelledby="basic-title">
-              <h4 id="basic-title">Básico</h4>
-              <div class="review-row"><div class="review-label">Tipo</div><div class="review-value">{{ form.value.formulaId ? 'Manipulado' : 'Pronto' }}</div></div>
-              <div class="review-row" *ngIf="form.value.formulaId"><div class="review-label">Fórmula</div><div class="review-value">{{ formulaNameById(form.value.formulaId) }}</div></div>
-              <div class="review-row"><div class="review-label">Nome</div><div class="review-value">{{ form.value.name || '—' }}</div></div>
-              <div class="review-row"><div class="review-label">Descrição</div><div class="review-value">{{ form.value.description || '—' }}</div></div>
-            </div>
-
-            <div class="review-card" aria-labelledby="price-title">
-              <h4 id="price-title">Preço & Estoque</h4>
-              <div class="review-row"><div class="review-label">Preço</div><div class="review-value">{{ form.value.price | currency:'BRL':'symbol-narrow' }}</div></div>
-              <div class="review-row"><div class="review-label">Unidade</div><div class="review-value">{{ form.value.weightValue ? (form.value.weightValue + ' ' + (form.value.weightUnit || 'g')) : '—' }}</div></div>
-              <div class="review-row"><div class="review-label">Estoque</div><div class="review-value">{{ form.value.stock ?? '—' }}</div></div>
-            </div>
-
-            <div class="review-card" aria-labelledby="category-title">
-              <h4 id="category-title">Categoria & Tags</h4>
-              <div class="review-row"><div class="review-label">Categoria</div><div class="review-value">{{ categoryNameById(form.value.categoryId) || '—' }}</div></div>
-              <div class="review-row"><div class="review-label">Tags</div><div class="review-value">
+          <div class="wizard-card">
+            <header class="card-header">
+              <h3>Classificação</h3>
+            </header>
+            <dl class="review-list">
+              <div class="review-row"><dt>Categoria</dt><dd>{{ categoryNameById(form.value.categoryId) || '—' }}</dd></div>
+              <div class="review-row"><dt>Tags</dt><dd>
                 <ng-container *ngIf="(form.value.tags || []).length; else noTagsV3">
                   <span class="review-tag" *ngFor="let t of form.value.tags">{{ t }}</span>
                 </ng-container>
                 <ng-template #noTagsV3>—</ng-template>
-              </div></div>
+              </dd></div>
+              <div class="review-row"><dt>Campanha</dt><dd>{{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</dd></div>
+              <div class="review-row"><dt>Ativo</dt><dd>{{ form.value.active === 1 ? 'Sim' : 'Não' }}</dd></div>
+              <div class="review-row"><dt>Destaque</dt><dd>{{ destaqueHome ? 'Sim' : 'Não' }}</dd></div>
+            </dl>
+
+            <div *ngIf="promocaoSelecionada && (promocaoSelecionada.ui?.status === 'expired' || promocaoSelecionada.ui?.status === 'inactive')" class="promo-alert">
+              <strong>Atenção:</strong>
+              <span *ngIf="promocaoSelecionada.ui?.status === 'expired'"> campanha expirada{{ promocaoSelecionada.ui?.end?.human ? ' (' + promocaoSelecionada.ui?.end?.human + ')' : '' }}.</span>
+              <span *ngIf="promocaoSelecionada.ui?.status === 'inactive'"> campanha inválida.</span>
             </div>
-
-            <div class="review-card" aria-labelledby="promo-title">
-              <h4 id="promo-title">Campanha & Visibilidade</h4>
-              <div *ngIf="promocaoSelecionada && (promocaoSelecionada.ui?.status === 'expired' || promocaoSelecionada.ui?.status === 'inactive')" class="promo-alert">
-                <strong>Atenção:</strong>
-                <span *ngIf="promocaoSelecionada.ui?.status === 'expired'"> campanha expirada{{ promocaoSelecionada.ui?.end?.human ? ' (' + promocaoSelecionada.ui?.end?.human + ')' : '' }}.</span>
-                <span *ngIf="promocaoSelecionada.ui?.status === 'inactive'"> campanha inválida.</span>
-              </div>
-
-              <div class="review-row"><div class="review-label">Campanha</div><div class="review-value">{{ promocaoSelecionada ? (promocaoSelecionada.nome + ' • ' + (promocaoSelecionada.ui?.valor_label || '')) : '—' }}</div></div>
-
-              <div class="review-row" *ngIf="promocaoSelecionada?.descricao"><div class="review-label">Descrição</div><div class="review-value">{{ promocaoSelecionada?.descricao }}</div></div>
-              <div class="review-row" *ngIf="promocaoSelecionada?.tipo"><div class="review-label">Tipo</div><div class="review-value">{{ promocaoSelecionada?.tipo }} {{ promocaoSelecionada?.ui?.tipo_simbolo ? ('(' + promocaoSelecionada?.ui?.tipo_simbolo + ')') : '' }}</div></div>
-              <div class="review-row" *ngIf="promocaoSelecionada?.ui?.start?.human"><div class="review-label">Início</div><div class="review-value">{{ promocaoSelecionada?.ui?.start?.human }}</div></div>
-              <div class="review-row"><div class="review-label">Fim</div><div class="review-value">{{ promocaoSelecionada?.ui?.end?.human || 'sem validade' }}</div></div>
-              <div class="review-row" *ngIf="promocaoSelecionada?.produtos?.length"><div class="review-label">Produtos vinculados</div><div class="review-value">{{ promocaoSelecionada?.produtos?.length }} produto(s)</div></div>
-
-              <div class="review-row"><div class="review-label">Ativo</div><div class="review-value"><button type="button" class="toggle-btn" [class.active]="form.value.active === 1" (click)="form.patchValue({active: form.value.active === 1 ? 0 : 1})" [attr.aria-pressed]="form.value.active === 1" title="Ativar / Desativar"><span class="toggle-label">{{ form.value.active === 1 ? 'Sim' : 'Não' }}</span></button></div></div>
-              <div class="review-row"><div class="review-label">Destaque</div><div class="review-value"><button type="button" class="toggle-btn" [class.active]="destaqueHome" (click)="destaqueHome = !destaqueHome"><span class="toggle-label">{{ destaqueHome ? 'Sim' : 'Não' }}</span></button></div></div>
-
-              <div class="review-row" *ngIf="promocaoSelecionada?.id"><div class="review-label"></div><div class="review-value"><button type="button" class="link" (click)="openPromoDetail(promocaoSelecionada!.id)">Ver detalhes da campanha</button></div></div>
-            </div>
-
           </div>
+        </div>
 
-          <aside class="review-right">
-            <!-- Preview do card da loja (simulação) - mostrar os dois tipos usados na loja -->
-            <div class="preview-wrapper">
+        <aside class="review-right">
+          <div class="wizard-card preview-card">
+            <header class="card-header">
+              <h3>Pré-visualização</h3>
+              <p class="card-subtitle">Como o produto aparecerá na loja.</p>
+            </header>
 
-              <!-- D-card (banner style) - versão não clicável com botão de adicionar visual -->
-              <div class="d-card banner mobile-feature admin-preview-card" [attr.aria-label]="form.value.name || 'Preview'" style="width:100%" [style.max-width]="defaultCardWidth">
-                <img class="d-img" [src]="imagemPrincipal || (imagesFA?.controls?.length ? imagesFA.controls[0].value : '/imagens/placeholder.png')" loading="lazy" decoding="async" [alt]="form.value.name || 'Preview'" />
-                <div class="d-overlay">
-                  <div class="d-topline">
-                    <span class="d-badge" *ngIf="promocaoSelecionada || (form.value.discount && form.value.discount > 0)">{{ promocaoSelecionada ? (promocaoSelecionada.ui?.valor_label || promocaoSelecionada.nome) : ('-' + (form.value.discount | number:'1.0-0') + '%') }}</span>
-                    <span class="d-type" *ngIf="form.value.formulaId">Manipulado</span>
-                  </div>
-                  <h3 class="d-title">{{ form.value.name || 'Nome do produto' }}</h3>
-                  <div class="d-price">
-                    <span class="new">{{ (discountedPriceValue() ?? form.value.price) | currency:'BRL' }}</span>
-                    <span class="old" *ngIf="form.value.discount && form.value.discount > 0">{{ form.value.price | currency:'BRL' }}</span>
-                  </div>
-                  <div class="d-actions">
-                    <button type="button" class="btn add" (click)="$event.stopPropagation();" aria-label="Adicionar ao carrinho"><img src="/icones/carrinho.png" class="icones-carrinho" width="30" height="30" alt="Carrinho"></button>
-                  </div>
+            <div class="preview-wrapper preview-dual">
+              <div class="preview-col" *ngIf="form.value.cardLayout === 'banner'">
+                <p class="preview-label">Banner (vitrine)</p>
+                <div class="preview-banner-wrap">
+                  <app-product-card-banner [product]="previewProduct" [themeConfig]="previewThemeConfig" [supportsFavorites]="false" [disableLink]="true" [cardWidth]="'100%'"></app-product-card-banner>
                 </div>
               </div>
-
-              <!-- Product card V2 (componente real da loja) com link bloqueado no admin preview -->
-              <div style="display:inline-block; position:relative; width:100%;" [style.max-width]="defaultCardWidth">
-                <app-product-card-v2 [product]="previewProduct" [supportsFavorites]="false" [supportsRatings]="true" [favoriteActive]="false" [disableLink]="true" [cardWidth]="defaultCardWidth" [extraClass]="'review-preview'"></app-product-card-v2>
-              </div>
-            </div>
-            <div class="main-image" *ngIf="imagemPrincipal; else noMainV2">
-              <img [src]="imagemPrincipal" alt="Imagem principal">
-            </div>
-            <ng-template #noMainV2>
-              <div class="main-image empty">Sem imagem principal</div>
-            </ng-template>
-
-            <div class="thumbs-row">
-              <div class="thumb" *ngFor="let img of imagesFA.controls; let i = index" [class.selected]="imagemPrincipal === img.value" (click)="imagemPrincipal = img.value; $event.stopPropagation()">
-                <img [src]="img.value" alt="thumb {{i+1}}">
-                <div *ngIf="imagemPrincipal === img.value" class="main-label">Principal</div>
+              <div class="preview-col">
+                <p class="preview-label">{{ form.value.cardLayout === 'banner' ? 'Card de vendas (referência)' : 'Card de vendas' }}</p>
+                <div class="preview-v2" [style.max-width]="defaultCardWidth">
+                  <app-product-card-sales [product]="previewProduct" [themeConfig]="previewThemeConfig" [supportsFavorites]="false" [supportsRatings]="true" [favoriteActive]="false" [disableLink]="true" [cardWidth]="defaultCardWidth" [extraClass]="'review-preview'"></app-product-card-sales>
+                </div>
               </div>
             </div>
 
-            <div class="submit-row">
-              <button type="button" class="btn-sec" (click)="goToStep(0)">Editar imagens</button>
+            <div class="thumbs-row" *ngIf="imagesFA.controls.length">
+              <button type="button" class="thumb" *ngFor="let img of imagesFA.controls; let i = index"
+                      [class.selected]="imagemPrincipal === img.value"
+                      (click)="imagemPrincipal = img.value; $event.stopPropagation()"
+                      [attr.aria-label]="'Definir imagem ' + (i+1) + ' como principal'">
+                <img [src]="img.value" [alt]="'Miniatura ' + (i+1)">
+              </button>
             </div>
-          </aside>
 
-        </div>
-      </div>
-    </div>
-
-
-
-
-  <!-- Sticky footer actions -->
-  <div class="footer-actions">
-    <button type="button" class="btn-reset" (click)="prevStep()" [disabled]="step()===0">Voltar</button>
-    <div class="spacer"></div>
-  <button type="button" class="btn-next" *ngIf="step()<steps.length-1" (click)="nextStep()">{{ nextLabel() }}</button>
-    <button type="button" class="btn-submit" *ngIf="step()===steps.length-1" (click)="submit()">{{ form.value.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</button>
-  </div>
-
-
-  <!-- Modais Taxonomias -->
-  <div class="modal" *ngIf="showDosageModal">
-    <div class="modal-content">
-      <h4>Adicionar Dosagem</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-  <span *ngFor="let d of dosagesList" class="badge" [class.selected]="hasDosage(d.name)" (click)="toggleDosageVal(d.name)">
-         {{ d.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('dosages', d); $event.stopPropagation()">-</span>
-        </span>
-      </div>
-      <hr>
-      <input #dosInput type="text" placeholder="Ex: 25mg">
-      <button (click)="addDosage(dosInput.value); dosInput.value=''">Adicionar</button>
-      <button (click)="showDosageModal=false">Cancelar</button>
-    </div>
-  </div>
-  
-
-  <div class="modal" *ngIf="success()">
-    <div class="modal-content">
-      <h4>{{ success() }}</h4>
-      <button (click)="success.set(null); router.navigate(['/restrito/admin'])">OK</button>
-    </div>
-  </div>
-
-  <!-- Simples modais inline para taxonomias (implementação reduzida) -->
-  <div class="modal" *ngIf="showPackagingModal" (click)="showPackagingModal=false">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <h4>Embalagens</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let p of embalagensList" class="badge" [class.selected]="hasPackaging(p.name)" (click)="pickPackaging(p.name)">
-          {{ p.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('embalagens', p); $event.stopPropagation()">-</span>
-        </span>
-      </div>
-      <hr>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input #packInput type="text" placeholder="Ex: Frasco" />
-        <button type="button" (click)="addPackaging(packInput.value); packInput.value=''">Adicionar</button>
-      </div>
-      <div style="margin-top:12px; display:flex; justify-content:flex-end;">
-        <button type="button" (click)="showPackagingModal=false">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" *ngIf="showTagModal" (click)="showTagModal=false">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <h4>Tags</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let t of tagsList" class="badge" [class.selected]="hasTag(t.name)" (click)="pickTag(t.name)">
-          {{ t.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('tags', t); $event.stopPropagation()">-</span>
-        </span>
-      </div>
-      <hr>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input #tagInput type="text" placeholder="Ex: dermatológico" />
-        <button type="button" (click)="addTag(tagInput.value); tagInput.value=''">Adicionar</button>
-      </div>
-      <div style="margin-top:12px; display:flex; justify-content:flex-end;">
-        <button type="button" (click)="showTagModal=false">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" *ngIf="showCategoryModal" (click)="showCategoryModal=false">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <h4>Categorias</h4>
-      <div class="existing-items" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
-        <span *ngFor="let c of categoriasList" class="badge" [class.selected]="form.value.categoryId === c.id" (click)="selectCategoryModal(c.id)">
-          {{ c.name }}
-          <span class="badge-remove" (click)="deleteTaxonomia('categorias', c); $event.stopPropagation()">-</span>
-        </span>
-      </div>
-      <hr>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input #catInput type="text" placeholder="Ex: Suplementos" />
-        <button type="button" (click)="createTaxonomia('categorias', catInput.value); catInput.value=''">Adicionar</button>
-      </div>
-      <div style="margin-top:12px; display:flex; justify-content:flex-end;">
-        <button type="button" (click)="showCategoryModal=false">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Selecionar Promoção -->
-  <div class="modal modal-campanha" *ngIf="showPromoModal">
-    <div class="modal-content campanha-modal-content">
-      <h2 class="modal-title">Selecionar Campanha</h2>
-      <div class="promo-list" *ngIf="promocoes.length; else promoEmpty">
-        <div class="promo-item" *ngFor="let pr of promocoes" (click)="promocaoSelecionada=pr; showPromoModal=false">
-          <div class="promo-item-header">
-            <span class="badge" [class.active]="pr.ui?.status==='active'" [class.upcoming]="pr.ui?.status==='upcoming'" [class.expired]="pr.ui?.status==='expired'" [class.inactive]="pr.ui?.status==='inactive'">{{ promoStatusLabel(pr.ui?.status) }}</span>
-            <strong class="name">{{ pr.nome }}</strong>
-            <span class="valor">{{ pr.ui?.valor_label }}</span>
+            <div class="review-actions">
+              <button type="button" class="btn btn-ghost" (click)="goToStep(0)">Editar imagens</button>
+              <button type="button" class="btn btn-ghost" (click)="openPreviewPage()">Abrir pré-visualização</button>
+            </div>
           </div>
+        </aside>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer sticky -->
+  <footer class="wizard-footer">
+    <div class="wizard-footer-inner">
+      <button type="button" class="btn btn-ghost" (click)="prevStep()" [disabled]="step()===0">Voltar</button>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-primary" *ngIf="step() < steps.length - 1" (click)="nextStep()">{{ nextLabel() }}</button>
+      <button type="button" class="btn btn-primary" *ngIf="step() === steps.length - 1" (click)="submit()" [disabled]="saving()">
+        <span *ngIf="!saving()">{{ form.value.id ? 'Atualizar Produto' : 'Cadastrar Produto' }}</span>
+        <span *ngIf="saving()" class="btn-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          Salvando...
+        </span>
+      </button>
+    </div>
+    <div *ngIf="error()" class="footer-error" role="alert">{{ error() }}</div>
+  </footer>
+</div>
+
+<!-- =============================================================== -->
+<!-- MODAIS ========================================================= -->
+<!-- =============================================================== -->
+
+<!-- Dosagem -->
+<div class="wizard-modal" *ngIf="showDosageModal" (click)="showDosageModal=false" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet" (click)="$event.stopPropagation()">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-header">
+      <h4>Adicionar Dosagem</h4>
+      <button type="button" class="btn btn-ghost btn-square" (click)="showDosageModal=false" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="chips-list">
+        <span *ngFor="let d of dosagesList" class="chip"
+              [class.chip-selected]="hasDosage(d.name)"
+              (click)="toggleDosageVal(d.name)">
+          {{ d.name }}
+          <button type="button" class="chip-remove" (click)="deleteTaxonomia('dosages', d); $event.stopPropagation()" aria-label="Remover">×</button>
+        </span>
+      </div>
+      <div class="sheet-add-row">
+        <input #dosInput type="text" placeholder="Ex.: 25mg" class="input">
+        <button type="button" class="btn btn-primary" (click)="addDosage(dosInput.value); dosInput.value=''">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sucesso -->
+<div class="wizard-modal" *ngIf="success()" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet sm">
+    <div class="sheet-body">
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+      </div>
+      <h4 class="sheet-title-center">{{ success() }}</h4>
+    </div>
+    <footer class="sheet-footer">
+      <button type="button" class="btn btn-primary" (click)="success.set(null); router.navigate(['/restrito/admin'])">OK</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Embalagem -->
+<div class="wizard-modal" *ngIf="showPackagingModal" (click)="showPackagingModal=false" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet" (click)="$event.stopPropagation()">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-header">
+      <h4>Embalagens</h4>
+      <button type="button" class="btn btn-ghost btn-square" (click)="showPackagingModal=false" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="chips-list">
+        <span *ngFor="let p of embalagensList" class="chip"
+              [class.chip-selected]="hasPackaging(p.name)"
+              (click)="pickPackaging(p.name)">
+          {{ p.name }}
+          <button type="button" class="chip-remove" (click)="deleteTaxonomia('embalagens', p); $event.stopPropagation()" aria-label="Remover">×</button>
+        </span>
+      </div>
+      <div class="sheet-add-row">
+        <input #packInput type="text" placeholder="Ex.: Frasco 100ml" class="input">
+        <button type="button" class="btn btn-primary" (click)="addPackaging(packInput.value); packInput.value=''">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tags -->
+<div class="wizard-modal" *ngIf="showTagModal" (click)="showTagModal=false" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet" (click)="$event.stopPropagation()">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-header">
+      <h4>Tags</h4>
+      <button type="button" class="btn btn-ghost btn-square" (click)="showTagModal=false" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="chips-list">
+        <span *ngFor="let t of tagsList" class="chip"
+              [class.chip-selected]="hasTag(t.name)"
+              (click)="pickTag(t.name)">
+          {{ t.name }}
+          <button type="button" class="chip-remove" (click)="deleteTaxonomia('tags', t); $event.stopPropagation()" aria-label="Remover">×</button>
+        </span>
+      </div>
+      <div class="sheet-add-row">
+        <input #tagInput type="text" placeholder="Ex.: dermatológico" class="input">
+        <button type="button" class="btn btn-primary" (click)="addTag(tagInput.value); tagInput.value=''">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Categorias -->
+<div class="wizard-modal" *ngIf="showCategoryModal" (click)="showCategoryModal=false" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet" (click)="$event.stopPropagation()">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-header">
+      <h4>Categorias</h4>
+      <button type="button" class="btn btn-ghost btn-square" (click)="showCategoryModal=false" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="chips-list">
+        <span *ngFor="let c of categoriasList" class="chip"
+              [class.chip-selected]="form.value.categoryId === c.id"
+              (click)="selectCategoryModal(c.id)">
+          {{ c.name }}
+          <button type="button" class="chip-remove" (click)="deleteTaxonomia('categorias', c); $event.stopPropagation()" aria-label="Remover">×</button>
+        </span>
+      </div>
+      <div class="sheet-add-row">
+        <input #catInput type="text" placeholder="Ex.: Suplementos" class="input">
+        <button type="button" class="btn btn-primary" (click)="createTaxonomia('categorias', catInput.value); catInput.value=''">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Campanha -->
+<div class="wizard-modal" *ngIf="showPromoModal" (click)="showPromoModal=false" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet lg" (click)="$event.stopPropagation()">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-header">
+      <h4>Selecionar campanha</h4>
+      <button type="button" class="btn btn-ghost btn-square" (click)="showPromoModal=false" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="search-box sheet-search">
+        <span class="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <input type="text" placeholder="Buscar campanha..." [(ngModel)]="promoSearchQuery" [ngModelOptions]="{standalone: true}">
+        <button *ngIf="promoSearchQuery" type="button" class="clear-btn" (click)="promoSearchQuery=''" aria-label="Limpar">✕</button>
+      </div>
+
+      <div *ngIf="loadingPromos" class="empty-state">Carregando promoções...</div>
+
+      <div class="promo-list" *ngIf="!loadingPromos && promocoesFiltradas.length; else promoEmpty">
+        <div class="promo-item" *ngFor="let pr of promocoesFiltradas" (click)="pickPromo(pr)">
+          <div class="promo-item-head">
+            <span class="status-badge"
+                  [class.success]="pr.ui?.status==='active'"
+                  [class.warning]="pr.ui?.status==='upcoming'"
+                  [class.danger]="pr.ui?.status==='expired'"
+                  [class.muted]="pr.ui?.status==='inactive'">
+              {{ promoStatusLabel(pr.ui?.status) }}
+            </span>
+            <strong class="promo-item-name">{{ pr.nome }}</strong>
+            <span class="promo-item-valor">{{ pr.ui?.valor_label }}</span>
+          </div>
+          <div class="promo-item-desc" *ngIf="pr.descricao">{{ pr.descricao }}</div>
           <div class="promo-item-meta">
             <span *ngIf="pr.ui?.start?.human">Início: {{ pr.ui?.start?.human }}</span>
             <span>Fim: {{ pr.ui?.end?.human || 'sem validade' }}</span>
           </div>
           <div class="promo-item-actions">
-            <button type="button" class="btn-secundario" (click)="$event.stopPropagation(); openPromoDetail(pr.id!)">Editar promoção</button>
+            <button type="button" class="btn btn-primary btn-sm" (click)="$event.stopPropagation(); pickPromo(pr)">Aplicar</button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="$event.stopPropagation(); openPromoDetail(pr.id!)">Detalhes</button>
           </div>
         </div>
       </div>
       <ng-template #promoEmpty>
-        <div class="empty">Nenhuma promoção encontrada.</div>
+        <div *ngIf="!loadingPromos" class="empty-state">Nenhuma campanha encontrada.</div>
       </ng-template>
-      <div class="actions">
-        <button type="button" class="btn-fechar" (click)="showPromoModal=false">Fechar</button>
-      </div>
     </div>
   </div>
+</div>
 
-  <!-- Modal Detalhe da Promoção -->
-  <div class="modal" *ngIf="showPromoDetail">
-    <div class="modal-content promo-detail">
+<!-- Detalhe Campanha -->
+<div class="wizard-modal" *ngIf="showPromoDetail" (click)="showPromoDetail=false" role="dialog" aria-modal="true">
+  <div class="wizard-modal-sheet" (click)="$event.stopPropagation()">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-header">
       <h4>{{ promoDetalhe?.nome }}</h4>
-      <div class="detail-header">
-        <span class="badge" [class.active]="promoDetalhe?.ui?.status==='active'" [class.upcoming]="promoDetalhe?.ui?.status==='upcoming'" [class.expired]="promoDetalhe?.ui?.status==='expired'" [class.inactive]="promoDetalhe?.ui?.status==='inactive'">{{ promoStatusLabel(promoDetalhe?.ui?.status) }}</span>
-        <span class="valor">{{ promoDetalhe?.ui?.valor_label }}</span>
+      <button type="button" class="btn btn-ghost btn-square" (click)="showPromoDetail=false" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="promo-detail-head">
+        <span class="status-badge"
+              [class.success]="promoDetalhe?.ui?.status==='active'"
+              [class.warning]="promoDetalhe?.ui?.status==='upcoming'"
+              [class.danger]="promoDetalhe?.ui?.status==='expired'"
+              [class.muted]="promoDetalhe?.ui?.status==='inactive'">
+          {{ promoStatusLabel(promoDetalhe?.ui?.status) }}
+        </span>
+        <span class="promo-detail-valor">{{ promoDetalhe?.ui?.valor_label }}</span>
       </div>
-      <p class="descricao" *ngIf="promoDetalhe?.descricao">{{ promoDetalhe?.descricao }}</p>
-      <div class="grid">
-        <div>
-          <strong>Tipo:</strong> {{ promoDetalhe?.tipo }} ({{ promoDetalhe?.ui?.tipo_simbolo }})
-        </div>
-        <!-- taxonomy modals moved to top-level to render independently -->
-
-        <div class="modal" *ngIf="success()">
-          <strong>Início:</strong> {{ promoDetalhe?.ui?.start?.human || '—' }}
-        </div>
-        <div>
-          <strong>Fim:</strong> {{ promoDetalhe?.ui?.end?.human || 'sem validade' }}
-        </div>
-        <div>
-          <strong>Ativa agora?</strong> {{ promoDetalhe?.ui?.active_now ? 'Sim' : 'Não' }}
-        </div>
-      </div>
-      <div class="produtos" *ngIf="promoDetalhe?.produtos?.length">
+      <p class="promo-detail-desc" *ngIf="promoDetalhe?.descricao">{{ promoDetalhe?.descricao }}</p>
+      <dl class="review-list">
+        <div class="review-row"><dt>Tipo</dt><dd>{{ promoDetalhe?.tipo }} ({{ promoDetalhe?.ui?.tipo_simbolo }})</dd></div>
+        <div class="review-row"><dt>Início</dt><dd>{{ promoDetalhe?.ui?.start?.human || '—' }}</dd></div>
+        <div class="review-row"><dt>Fim</dt><dd>{{ promoDetalhe?.ui?.end?.human || 'sem validade' }}</dd></div>
+        <div class="review-row"><dt>Ativa agora?</dt><dd>{{ promoDetalhe?.ui?.active_now ? 'Sim' : 'Não' }}</dd></div>
+      </dl>
+      <div *ngIf="promoDetalhe?.produtos?.length" class="promo-detail-produtos">
         <h5>Produtos vinculados</h5>
         <ul>
           <li *ngFor="let p of promoDetalhe!.produtos">#{{ p.id }} • {{ p.nome || p.name }} — {{ (p.preco || p.price) || '' }}</li>
         </ul>
       </div>
-      <div class="actions">
-        <button type="button" (click)="promocaoSelecionada=promoDetalhe!; showPromoDetail=false">Aplicar esta campanha</button>
-        <button *ngIf="promocaoSelecionada?.id === promoDetalhe?.id" type="button" class="link" (click)="promocaoSelecionada=null; showPromoDetail=false">Remover campanha</button>
-        <button type="button" (click)="showPromoDetail=false">Fechar</button>
-      </div>
     </div>
+    <footer class="sheet-footer">
+      <button type="button" class="btn btn-ghost" (click)="showPromoDetail=false">Fechar</button>
+      <button *ngIf="promocaoSelecionada?.id === promoDetalhe?.id" type="button" class="btn btn-link" (click)="promocaoSelecionada=null; showPromoDetail=false">Remover campanha</button>
+      <button type="button" class="btn btn-primary" (click)="promocaoSelecionada=promoDetalhe!; showPromoDetail=false">Aplicar esta campanha</button>
+    </footer>
   </div>
-
-
-
+</div>

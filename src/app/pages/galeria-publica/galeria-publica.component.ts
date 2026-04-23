@@ -8,11 +8,13 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { StoreService } from '../../services/store.service';
+import { PetLightboxComponent, PetLightboxReaction } from './pet-lightbox/pet-lightbox.component';
+import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
 @Component({
   selector: 'app-galeria-publica',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavmenuComponent, FooterComponent],
+  imports: [CommonModule, RouterModule, NavmenuComponent, FooterComponent, PetLightboxComponent, BannerSlotComponent],
   templateUrl: './galeria-publica.component.html',
   styleUrls: ['./galeria-publica.component.scss']
 })
@@ -45,6 +47,10 @@ export class GaleriaPublicaComponent {
   // track when the picker should flip below the button to avoid viewport clipping
   pickerFlippedFor: number | string | null = null;
 
+  // Lightbox: currently-open pet reference (or null). We keep a direct reference so
+  // mutations made inside the lightbox (reaction/comment totals) reflect in the card.
+  lightboxPet: any = null;
+
   // available reaction types (emoji + tipo)
   reactionTypes = [
     { tipo: 'love', emoji: '❤️' },
@@ -70,6 +76,12 @@ export class GaleriaPublicaComponent {
   getReactionEmoji(tipo: string) {
     const r = this.reactionTypes.find(x => x.tipo === tipo);
     return r ? r.emoji : '❤️';
+  }
+
+  getTotalReactions(): number {
+    try {
+      return (this.pets || []).reduce((acc: number, p: any) => acc + Number(p?.likes ?? 0), 0);
+    } catch (e) { return 0; }
   }
 
   // Return the dominant reaction (tipo, emoji, count) for a pet based on
@@ -534,25 +546,47 @@ export class GaleriaPublicaComponent {
     }
   }
 
-  // When user clicks the photo: if they haven't reacted, send a 'love' reaction automatically.
-  // If they already reacted, open the reaction picker (so they can change/remove).
+  // Clicar na foto abre o lightbox com foto grande, detalhes, reações e comentários.
   onPhotoClick(pet: any, ev?: Event) {
     try {
       if (ev && (ev as Event).stopPropagation) (ev as Event).stopPropagation();
-      const __token = this.auth.getToken();
-      if (!__token) {
-        this._maybeShowLoginToast();
-        return;
-      }
-      // If user already reacted, open picker
-      if (pet.userReacted) {
-        try { this.openReactionPicker(pet, pet._uid, ev); } catch (e) {}
-        return;
-      }
-      // otherwise, submit a 'love' reaction immediately
-      try { this.selectReaction(pet, 'love'); } catch (e) { console.warn('auto-like failed', e); }
+      this.openLightbox(pet);
     } catch (e) {}
   }
+
+  // --- Lightbox control ---
+  openLightbox(pet: any) {
+    if (!pet) return;
+    // close any open reaction picker so it doesn't conflict with the modal
+    try { this.reactionPickerOpenFor = null; this._clearAllAutoTimers(); this._unfloatAllPickers(); } catch (e) {}
+    this.lightboxPet = pet;
+  }
+
+  closeLightbox() {
+    this.lightboxPet = null;
+  }
+
+  // Lightbox emits reaction selections: reuse the existing selectReaction to keep
+  // optimistic UI, auth checks and server reconciliation in one place.
+  onLightboxReaction(ev: PetLightboxReaction) {
+    if (!this.lightboxPet || !ev?.tipo) return;
+    try { this.selectReaction(this.lightboxPet, ev.tipo); } catch (e) {}
+  }
+
+  // Top N non-zero reactions (for the card reactions-summary strip)
+  getTopReactionList(pet: any, limit = 3) {
+    try {
+      const totals = pet?.reactionTotals || {};
+      const list = this.reactionTypes
+        .map(r => ({ ...r, count: Number(totals[r.tipo] ?? 0) }))
+        .filter(r => r.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit);
+      return list;
+    } catch (e) { return []; }
+  }
+
+  trackReaction = (_: number, r: any) => r?.tipo ?? _;
 
   // --- Picker position helpers (avoid clipping at top of viewport) ---
   private _boundRecalc = () => {
@@ -746,6 +780,13 @@ export class GaleriaPublicaComponent {
           sad: Number(it.total_reacao_sad ?? it.total_reacoes_sad ?? 0),
           angry: Number(it.total_reacao_angry ?? it.total_reacoes_angry ?? 0)
         },
+        // Pet extras (used by the enriched card and lightbox)
+        sexo: it.sexo ?? null,
+        pesoKg: it.pesoKg ?? it.peso_kg ?? null,
+        observacoes: it.observacoes ?? null,
+        tutor_nome: it.tutor_nome ?? null,
+        tutor_foto: it.tutor_foto ?? null,
+        total_comentarios: Number(it.total_comentarios ?? it.comentarios_count ?? 0),
         // size removed: visual sizing now handled by CSS and original image dimensions
       }));
 

@@ -6,12 +6,13 @@ import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
+import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
   // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [CommonModule, NavmenuComponent, FooterComponent, RouterModule],
+  imports: [CommonModule, NavmenuComponent, FooterComponent, RouterModule, BannerSlotComponent],
   templateUrl: './mapa.component.html',
   styleUrls: ['./mapa.component.scss']
 })
@@ -94,6 +95,76 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   getFiltersForActive(){
     return this.filtersByTab[this.active] || [];
+  }
+
+  /**
+   * Retorna o caminho de um ícone amigável para a aba, baseando-se no slug/label.
+   * Sem efeito sobre a lógica dos markers — usado apenas no template para decorar abas.
+   */
+  getTabIcon(tab: { id?: string; label?: string; icon?: string }): string {
+    try {
+      const raw = String(tab?.icon ?? tab?.id ?? tab?.label ?? '').toLowerCase();
+      const key = raw.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+      if (!key) return '/icones/paw.png';
+      if (key === 'todos' || key === 'all') return '/icones/paw.png';
+      if (/vet|clinic/.test(key)) return '/icones/clinic-icon.png';
+      if (/walker|passeio|passeador/.test(key)) return '/icones/walker-icon.png';
+      if (/petshop|pet-shop|loja|shop/.test(key)) return '/icones/loja.png';
+      if (/banho|tosa|groom/.test(key)) return '/icones/shop-icon.png';
+      if (/creche|hotel|daycare/.test(key)) return '/icones/galeria-pet.png';
+      if (/sitter|pet-sitter|petsitter/.test(key)) return '/icones/paw.png';
+      return '/icones/paw.png';
+    } catch (e) {
+      return '/icones/paw.png';
+    }
+  }
+
+  /**
+   * Label amigável para o tipo do parceiro (exibido como badge no card de resultado).
+   */
+  getPartnerTypeLabel(p: any): string {
+    try {
+      const t = p?.tipo;
+      if (!t) {
+        const firstTipo = Array.isArray(p?.tipos) ? p.tipos[0] : null;
+        if (firstTipo) return String(firstTipo.nome ?? firstTipo.label ?? firstTipo.slug ?? '').trim();
+        return '';
+      }
+      if (typeof t === 'string') return t;
+      return String(t.nome ?? t.label ?? t.slug ?? '').trim();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /**
+   * Retorna { src, isIcon } para o avatar do card de resultado.
+   * Prefere a logo do parceiro; caso contrário usa o ícone do tipo como fallback.
+   */
+  getPartnerAvatar(p: any): { src: string; isIcon: boolean } {
+    try {
+      const logo = p?.logo_url ?? p?._raw?.logo_url ?? null;
+      if (logo && typeof logo === 'string') return { src: logo, isIcon: false };
+      const tipoSlug = p?.tipo?.slug ?? (Array.isArray(p?.tipos) && p.tipos[0]?.slug) ?? p?.tipo?.nome ?? '';
+      const iconSrc = this.getTabIcon({ id: tipoSlug, label: this.getPartnerTypeLabel(p) });
+      return { src: iconSrc, isIcon: true };
+    } catch (e) {
+      return { src: '/icones/paw.png', isIcon: true };
+    }
+  }
+
+  /**
+   * Cidade/estado resumidos para exibir no card de resultado.
+   */
+  getPartnerLocation(p: any): string {
+    try {
+      const cidade = p?.cidade ?? p?._raw?.cidade ?? '';
+      const estado = p?.estado ?? p?._raw?.estado ?? '';
+      if (cidade && estado) return `${cidade} - ${estado}`;
+      return String(cidade || estado || p?.endereco || '').trim();
+    } catch (e) {
+      return '';
+    }
   }
 
   ngOnInit(): void {

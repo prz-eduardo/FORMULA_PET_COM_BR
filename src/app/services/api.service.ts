@@ -206,6 +206,7 @@ export class ApiService {
         supports?: { images?: boolean; favorites?: boolean; ratings?: boolean; categories?: boolean; tags?: boolean };
         categories?: Array<{ id: number; nome: string; produtos: number }>;
         tags?: Array<{ id: number; nome: string; produtos: number }>;
+        activeTheme?: { id: number; nome: string; slug: string; config: Record<string, unknown> } | null;
       };
     }> {
     const search = new URLSearchParams();
@@ -236,6 +237,7 @@ export class ApiService {
           supports?: { images?: boolean; favorites?: boolean; ratings?: boolean; categories?: boolean; tags?: boolean };
           categories?: Array<{ id: number; nome: string; produtos: number }>;
           tags?: Array<{ id: number; nome: string; produtos: number }>;
+          activeTheme?: { id: number; nome: string; slug: string; config: Record<string, unknown> } | null;
         };
       }>(url, { headers });
   }
@@ -459,6 +461,39 @@ export class ApiService {
     const headers = { Authorization: `Bearer ${token}` } as any;
     // some backends accept body on DELETE; HttpClient allows it via options.body
     return this.http.request<any>('delete', `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/reacoes`, { headers, body: body || undefined });
+  }
+
+  // Comentários públicos de pets
+  getPetComentarios(petId: string | number, params?: { page?: number; pageSize?: number }) {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/comentarios${qp ? `?${qp}` : ''}`;
+    return this.http.get<any>(url);
+  }
+
+  postPetComentario(petId: string | number, comentario: string, token: string) {
+    if (!token) {
+      return throwError(() => new Error('Missing auth token'));
+    }
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    return this.http.post<any>(
+      `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/comentarios`,
+      { comentario },
+      { headers }
+    );
+  }
+
+  deletePetComentario(petId: string | number, commentId: string | number, token: string) {
+    if (!token) {
+      return throwError(() => new Error('Missing auth token'));
+    }
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    return this.http.delete<any>(
+      `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/comentarios/${encodeURIComponent(String(commentId))}`,
+      { headers }
+    );
   }
 
   // Buscar cliente com pets incluídos
@@ -739,5 +774,48 @@ export class ApiService {
         return of([]);
       }) as any
     );
+  }
+
+  // =========================
+  // Notifications
+  // =========================
+  listNotifications(token: string | null | undefined, params?: { page?: number; pageSize?: number; unread?: boolean; tipo?: string }): Observable<{ data: any[]; page: number; pageSize: number; total: number; totalPages: number; unread: number }> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    if (params?.unread) search.set('unread', '1');
+    if (params?.tipo) search.set('tipo', params.tipo);
+    const qp = search.toString();
+    const url = `${this.baseUrl}/notificacoes${qp ? `?${qp}` : ''}`;
+    return this.http.get<any>(url, { headers });
+  }
+
+  getUnreadCount(token: string | null | undefined): Observable<{ unread: number }> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<{ unread: number }>(`${this.baseUrl}/notificacoes/unread-count`, { headers });
+  }
+
+  markNotificationRead(token: string | null | undefined, id: number | string): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post<any>(`${this.baseUrl}/notificacoes/${encodeURIComponent(String(id))}/lida`, {}, { headers });
+  }
+
+  markAllNotificationsRead(token: string | null | undefined): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post<any>(`${this.baseUrl}/notificacoes/marcar-todas-lidas`, {}, { headers });
+  }
+
+  deleteNotification(token: string | null | undefined, id: number | string): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.delete<any>(`${this.baseUrl}/notificacoes/${encodeURIComponent(String(id))}`, { headers });
+  }
+
+  // =========================
+  // Admin Home Overview
+  // =========================
+  getAdminHomeOverview(token: string | null | undefined): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(`${this.baseUrl}/admin/home-overview`, { headers });
   }
 }

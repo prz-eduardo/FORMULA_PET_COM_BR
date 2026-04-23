@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { RouterOutlet } from '@angular/router';
 import { AdminPaginationComponent } from '../restrito/admin/shared/admin-pagination/admin-pagination.component';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
@@ -40,9 +40,12 @@ export class MeusPedidosComponent {
   showItemsModal = false;
   modalItems: any[] = [];
   modalPedido: any = null;
+  // ID do pedido a destacar (via querystring ?highlight=ID)
+  highlightId: number | null = null;
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private api: ApiService,
     private auth: AuthService,
     private toast: ToastService,
@@ -54,6 +57,26 @@ export class MeusPedidosComponent {
   }
 
   ngOnInit(){
+    this.route.queryParams.subscribe(p => {
+      const raw = p?.['highlight'];
+      const id = raw != null ? Number(raw) : NaN;
+      this.highlightId = Number.isFinite(id) && id > 0 ? id : null;
+      if (this.highlightId != null) {
+        this.expanded[this.highlightId] = true;
+        if (isPlatformBrowser(this.platformId)) {
+          setTimeout(() => {
+            try {
+              const el = document.querySelector(`[data-pedido-id="${this.highlightId}"]`) as HTMLElement | null;
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('is-highlighted');
+                setTimeout(() => el.classList.remove('is-highlighted'), 2400);
+              }
+            } catch {}
+          }, 400);
+        }
+      }
+    });
     this.load();
   }
 

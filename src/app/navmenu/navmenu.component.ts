@@ -5,12 +5,13 @@ import { filter } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
 import { AuthService } from '../services/auth.service';
+import { NotificationsBellComponent } from '../shared/notifications-bell/notifications-bell.component';
 import { gsap } from 'gsap';
 
 @Component({
   selector: 'app-navmenu',
   standalone: true,
-  imports: [RouterLink, CommonModule], // precisa pro [routerLink] e *ngIf
+  imports: [RouterLink, CommonModule, NotificationsBellComponent], // precisa pro [routerLink] e *ngIf
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })

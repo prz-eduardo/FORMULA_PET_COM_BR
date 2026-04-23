@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, MarketplaceCategoria, MarketplaceTag, MarketplaceCustomizacoesResponse, MarketplaceCustomizacoesList } from '../../../../services/admin-api.service';
+import { AdminToolbarComponent } from '../../../../shared/admin-page';
 
 @Component({
   selector: 'app-admin-marketplace-customizacoes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonDirective, ButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, AdminToolbarComponent],
   templateUrl: './marketplace-customizacoes.component.html',
   styleUrls: ['./marketplace-customizacoes.component.scss']
 })

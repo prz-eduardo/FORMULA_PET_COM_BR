@@ -1,64 +1,75 @@
-<div class="pg-footer">
-  <footer class="footer">
-    <svg class="footer-wave-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 100" preserveAspectRatio="none">
-      <path class="footer-wave-path" d="M851.8,100c125,0,288.3-45,348.2-64V0H0v44c3.7-1,7.3-1.9,11-2.9C80.7,22,151.7,10.8,223.5,6.3C276.7,2.9,330,4,383,9.8 c52.2,5.7,103.3,16.2,153.4,32.8C623.9,71.3,726.8,100,851.8,100z"></path>
-    </svg>
+<footer class="pg-footer" role="contentinfo">
+  <svg class="footer-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path d="M851.8,100c125,0,288.3-45,348.2-64V0H0v44c3.7-1,7.3-1.9,11-2.9C80.7,22,151.7,10.8,223.5,6.3C276.7,2.9,330,4,383,9.8 c52.2,5.7,103.3,16.2,153.4,32.8C623.9,71.3,726.8,100,851.8,100z"></path>
+  </svg>
 
-    <div class="footer-container">
-      <div class="footer-grid">
-        <section class="footer-col brand">
-          <img src="/imagens/image.png" alt="Fórmula Pet Curitiba" class="brand-logo" />
-          <h2>Fórmula Pet Curitiba</h2>
-          <p class="subtitle">Farmácia de Manipulação Veterinária</p>
-          <p>Especializada em medicamentos, suplementos e cuidados para pets.</p>
-          <ul class="legal">
-            <li>CNPJ: 41.325.057/0001-48</li>
-            <li>REGISTRO MAPA Nº 002664-6</li>
-          </ul>
-        </section>
+  <div class="footer-container">
+    <div class="footer-grid">
+      <section class="footer-col brand" aria-labelledby="footer-brand-title">
+        <img [src]="company.logo" [alt]="company.name" class="brand-logo" width="120" height="120" loading="lazy" />
+        <h2 id="footer-brand-title">{{ company.name }}</h2>
+        <p class="subtitle">{{ company.tagline }}</p>
+        <p class="description">{{ company.description }}</p>
+        <ul class="legal">
+          @for (item of company.legal; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </section>
 
-        <section class="footer-col contact">
-          <h3>Contato</h3>
-          <a href="tel:+554132051910" class="contact-row" aria-label="Ligar para (41) 3205-1910">
-            <img src="/icones/telefone-pata.png" width="16" height="16" alt="Telefone" />
-            <span>(41) 3205-1910</span>
-          </a>
-          <div class="cta-row">
-            <a class="btn-ico whatsapp" target="_blank" rel="noopener" href="https://wa.me/554132051910?text=Oi%2C%20vim%20do%20site%20e%20gostaria%20de%20ajuda%20:)" aria-label="WhatsApp">
+      <section class="footer-col contact" aria-labelledby="footer-contact-title">
+        <h3 id="footer-contact-title">Contato</h3>
+
+        <a [href]="'tel:' + phone.tel" class="contact-row" [attr.aria-label]="'Ligar para ' + phone.display">
+          <img src="/icones/telefone-pata.png" width="16" height="16" alt="" aria-hidden="true" />
+          <span>{{ phone.display }}</span>
+        </a>
+
+        <nav class="cta-row" aria-label="Redes sociais">
+          @for (social of socials; track social.kind) {
+            <a class="btn-ico"
+               [class.whatsapp]="social.kind === 'whatsapp'"
+               [class.instagram]="social.kind === 'instagram'"
+               [href]="social.href"
+               [attr.aria-label]="social.label"
+               target="_blank"
+               rel="noopener noreferrer">
               <span class="ico" aria-hidden="true"></span>
             </a>
-            <a class="btn-ico instagram" target="_blank" rel="noopener" href="https://www.instagram.com/" aria-label="Instagram">
-              <span class="ico" aria-hidden="true"></span>
-            </a>
-          </div>
-          <h3>Horário</h3>
-          <p>Segunda a Sexta · 9h às 18h</p>
+          }
+        </nav>
 
-          <div class="social"></div>
-        </section>
+        <h3 class="hours-title">Horário</h3>
+        <p class="hours">{{ hours }}</p>
+      </section>
 
-        <section class="footer-col address">
-          <h3>Endereço</h3>
-          <p>Rua Treze de Maio, 506 cj 4 - Centro</p>
-          <p>CEP 80510-030</p>
-          <h4>Estacionamento conveniado</h4>
-          <p>Rua Treze de Maio, 561 - Centro</p>
-          <p>CEP 80510-030</p>
-          <a class="map-link" href="https://maps.google.com/?q=Rua%20Treze%20de%20Maio%2C%20506%2C%20Curitiba" target="_blank" rel="noopener">
-            <img src="/icones/mapa-pata.png" width="16" height="16" alt="Mapa" />
-            Ver no mapa
-          </a>
-        </section>
-      </div>
+      <section class="footer-col address" aria-labelledby="footer-address-title">
+        <h3 id="footer-address-title">Endereço</h3>
+
+        @for (block of addresses; track $index) {
+          @if (block.title) {
+            <h4>{{ block.title }}</h4>
+          }
+          <address class="address-block">
+            @for (line of block.lines; track line) {
+              <span>{{ line }}</span>
+            }
+          </address>
+        }
+
+        <a class="map-link" [href]="mapUrl" target="_blank" rel="noopener noreferrer">
+          <img src="/icones/mapa-pata.png" width="16" height="16" alt="" aria-hidden="true" />
+          Ver no mapa
+        </a>
+      </section>
     </div>
+  </div>
 
-    <div class="footer-copyright">
-      <div class="footer-copyright-wrapper">
-        <p class="footer-copyright-text">
-          <a class="footer-copyright-link" href="#" target="_self"> ©2026. | Designed By: xxprz. | All rights reserved. </a>
-        </p>
-      </div>
+  <div class="footer-copyright">
+    <div class="footer-copyright-wrapper">
+      <p class="footer-copyright-text">
+        &copy;{{ year }} {{ company.name }} · Todos os direitos reservados
+      </p>
     </div>
-  </footer>
-</div>
-  
+  </div>
+</footer>

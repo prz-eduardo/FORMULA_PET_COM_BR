@@ -1,0 +1,61 @@
+:host {
+  display: block;
+}
+
+.admin-address__title {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--admin-muted, #9fb0c3);
+}
+
+.cep-input {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cep-input input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cep-search-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border, rgba(255, 255, 255, 0.12));
+  background: var(--admin-card, rgba(255, 255, 255, 0.04));
+  color: var(--admin-text, #e5ecf5);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cep-search-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(13, 184, 222, 0.45);
+}
+
+.cep-search-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cep-field .hint {
+  font-size: 11px;
+  color: var(--admin-muted, #9fb0c3);
+  margin-top: 4px;
+}
+
+.cep-field .hint.error {
+  color: #fca5a5;
+}

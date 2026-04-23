@@ -1,6 +1,7 @@
 <div class="admin-wrapper animate-fade">
   <app-admin-header [title]="headerTitle" [isSuper]="isSuper">
-    <div header-actions>
+    <div header-actions class="admin-header-actions-slot">
+      <app-admin-notification></app-admin-notification>
       <div class="command" [class.open]="showUserMenu">
         <button class="btn-command" (click)="toggleUserMenu()" aria-haspopup="menu" [attr.aria-expanded]="showUserMenu">
           <i class="fa fa-user-circle"></i>
@@ -15,113 +16,209 @@
     </div>
   </app-admin-header>
 
-
-  <app-admin-notification></app-admin-notification>
   <router-outlet></router-outlet>
 
-  <div *ngIf="isRootView" class="admin-actions">
-    <!-- Inteligência -->
-    <section class="section-card" [class.collapsed]="isCollapsed('inteligencia')">
-      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('inteligencia')" (keydown.enter)="toggleSection('inteligencia')" (keydown.space)="toggleSection('inteligencia')" [attr.aria-expanded]="!isCollapsed('inteligencia')">
-        <h3 class="sec-title">Inteligência</h3>
-        <i class="fa fa-chevron-down chevron"></i>
-      </header>
-      <div class="items" *ngIf="!isCollapsed('inteligencia')">
-        <button class="item" (click)="goToDashboard()" tabindex="0">
-          <i class="fa fa-line-chart"></i>
-          <span>Dashboard</span>
+  <ng-container *ngIf="isRootView">
+    <!-- Welcome / Hero -->
+    <section class="hero-card">
+      <div class="hero-content">
+        <div class="hero-greeting">
+          <span class="hero-eyebrow">{{ greeting }}</span>
+          <h2 class="hero-title">Bem-vindo ao <span class="gradient-text">Painel Administrativo</span></h2>
+          <p class="hero-subtitle">Gerencie todo o ecossistema Fórmula Pet em um só lugar — catálogo, pessoas, operação e inteligência.</p>
+        </div>
+
+        <div class="hero-search">
+          <i class="fa fa-search"></i>
+          <input
+            type="text"
+            placeholder="Buscar atalho... (ex: pedidos, clientes, fórmulas)"
+            [(ngModel)]="searchTerm"
+            (keydown.escape)="searchTerm = ''"
+            aria-label="Buscar atalhos do painel"
+          />
+          <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''" aria-label="Limpar busca">
+            <i class="fa fa-times"></i>
+          </button>
+          <kbd class="hero-kbd">/</kbd>
+        </div>
+      </div>
+
+      <div class="hero-stats">
+        <button class="stat" (click)="goToDashboard()">
+          <span class="stat-icon stat-icon--blue"><i class="fa fa-line-chart"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Inteligência</span>
+            <span class="stat-value">Dashboard</span>
+          </span>
+        </button>
+        <button class="stat" (click)="goToPedidos()">
+          <span class="stat-icon stat-icon--green"><i class="fa fa-shopping-cart"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Operação</span>
+            <span class="stat-value">Pedidos</span>
+          </span>
+        </button>
+        <button class="stat" (click)="goToClientes()">
+          <span class="stat-icon stat-icon--purple"><i class="fa fa-users"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Pessoas</span>
+            <span class="stat-value">Clientes</span>
+          </span>
+        </button>
+        <button class="stat" (click)="goToLista()">
+          <span class="stat-icon stat-icon--amber"><i class="fa fa-cube"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Catálogo</span>
+            <span class="stat-value">Produtos</span>
+          </span>
         </button>
       </div>
     </section>
 
-    <!-- Catálogo -->
-    <section class="section-card" [class.collapsed]="isCollapsed('catalogo')">
-      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('catalogo')" (keydown.enter)="toggleSection('catalogo')" (keydown.space)="toggleSection('catalogo')" [attr.aria-expanded]="!isCollapsed('catalogo')">
-        <h3 class="sec-title">Catálogo</h3>
-        <i class="fa fa-chevron-down chevron"></i>
-      </header>
-      <div class="items" *ngIf="!isCollapsed('catalogo')">
-        <button class="item" (click)="goToCadastro()" tabindex="0">
-          <i class="fa fa-plus-circle"></i>
-          <span>Cadastrar Produto</span>
-        </button>
-        <button class="item" [class.disabled]="!hasProducts" (click)="goToLista()" tabindex="0">
-          <i class="fa fa-list"></i>
-          <span>Lista de Produtos</span>
-        </button>
-        <button class="item" (click)="goToAtivos()" tabindex="0">
-          <i class="fa fa-flask"></i>
-          <span>Ativos</span>
-        </button>
-        <button class="item" (click)="goToFormulas()" tabindex="0">
-          <i class="fa fa-flask"></i>
-          <span>Fórmulas</span>
-        </button>
-        <button class="item" (click)="goToMarketplaceCustomizacoes()" tabindex="0">
-          <i class="fa fa-tags"></i>
-          <span>Marketplace: Categorias & Tags</span>
-        </button>
-      </div>
-    </section>
+    <!-- Home Overview: KPIs, vendas 7d, fila de pedidos e alertas -->
+    <app-admin-home-overview></app-admin-home-overview>
 
-    <!-- Pessoas -->
-    <section class="section-card" [class.collapsed]="isCollapsed('pessoas')">
-      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('pessoas')" (keydown.enter)="toggleSection('pessoas')" (keydown.space)="toggleSection('pessoas')" [attr.aria-expanded]="!isCollapsed('pessoas')">
-        <h3 class="sec-title">Pessoas</h3>
-        <i class="fa fa-chevron-down chevron"></i>
-      </header>
-      <div class="items" *ngIf="!isCollapsed('pessoas')">
-        <button class="item" *ngIf="isSuper" (click)="goToUsuarios()" tabindex="0">
-          <i class="fa fa-cog"></i>
-          <span>Gerenciar Usuários</span>
-        </button>
-        <button class="item" (click)="goToClientes()" tabindex="0">
-          <i class="fa fa-user-circle"></i>
-          <span>Gerenciar Clientes</span>
-        </button>
-        <button class="item" (click)="goToVeterinarios()" tabindex="0">
-          <i class="fa fa-user-md"></i>
-          <span>Gerenciar Veterinários</span>
-        </button>
-        <button class="item" (click)="goToParceiros()" tabindex="0">
-          <i class="fa fa-handshake-o"></i>
-          <span>Gestão de Parceiros</span>
-        </button>
-      </div>
-    </section>
+    <!-- No-results hint -->
+    <div *ngIf="searchTerm && !hasAnyMatch()" class="empty-search" role="status">
+      <i class="fa fa-search-minus"></i>
+      <span>Nenhum atalho encontrado para <strong>"{{ searchTerm }}"</strong>.</span>
+      <button class="link-btn" (click)="searchTerm = ''">Limpar busca</button>
+    </div>
 
-    <!-- Clínico (removido) -->
+    <div class="admin-actions">
+      <!-- Inteligência -->
+      <section class="section-card section--blue" *ngIf="sectionHasMatches('inteligencia')" [class.collapsed]="isCollapsed('inteligencia')">
+        <header class="section-header" role="button" tabindex="0" (click)="toggleSection('inteligencia')" (keydown.enter)="toggleSection('inteligencia')" (keydown.space)="toggleSection('inteligencia')" [attr.aria-expanded]="!isCollapsed('inteligencia')">
+          <div class="sec-title-wrap">
+            <span class="sec-dot"></span>
+            <h3 class="sec-title">Inteligência</h3>
+            <span class="sec-count">{{ sectionCount('inteligencia') }}</span>
+          </div>
+          <i class="fa fa-chevron-down chevron"></i>
+        </header>
+        <div class="items" *ngIf="!isCollapsed('inteligencia')">
+          <button class="item" *ngIf="matches('dashboard')" (click)="goToDashboard()" tabindex="0">
+            <i class="fa fa-line-chart"></i>
+            <span>Dashboard</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+        </div>
+      </section>
 
-    <!-- Operação -->
-    <section class="section-card" [class.collapsed]="isCollapsed('operacao')">
-      <header class="section-header" role="button" tabindex="0" (click)="toggleSection('operacao')" (keydown.enter)="toggleSection('operacao')" (keydown.space)="toggleSection('operacao')" [attr.aria-expanded]="!isCollapsed('operacao')">
-        <h3 class="sec-title">Operação</h3>
-        <i class="fa fa-chevron-down chevron"></i>
-      </header>
-      <div class="items" *ngIf="!isCollapsed('operacao')">
-        <button class="item" (click)="goToBanners()" tabindex="0">
-          <i class="fa fa-picture-o"></i>
-          <span>Banners</span>
-        </button>
-        <button class="item" (click)="goToPedidos()" tabindex="0">
-          <i class="fa fa-shopping-cart"></i>
-          <span>Pedidos</span>
-        </button>
-        <button class="item" (click)="goToCupons()" tabindex="0">
-          <i class="fa fa-ticket"></i>
-          <span>Cupons</span>
-        </button>
-        <button class="item" (click)="goToPromocoes()" tabindex="0">
-          <i class="fa fa-bullhorn"></i>
-          <span>Promoções</span>
-        </button>
-        <!-- Relatórios removido daqui — será centralizado no Dashboard -->
-      </div>
-    </section>
+      <!-- Catálogo -->
+      <section class="section-card section--teal" *ngIf="sectionHasMatches('catalogo')" [class.collapsed]="isCollapsed('catalogo')">
+        <header class="section-header" role="button" tabindex="0" (click)="toggleSection('catalogo')" (keydown.enter)="toggleSection('catalogo')" (keydown.space)="toggleSection('catalogo')" [attr.aria-expanded]="!isCollapsed('catalogo')">
+          <div class="sec-title-wrap">
+            <span class="sec-dot"></span>
+            <h3 class="sec-title">Catálogo</h3>
+            <span class="sec-count">{{ sectionCount('catalogo') }}</span>
+          </div>
+          <i class="fa fa-chevron-down chevron"></i>
+        </header>
+        <div class="items" *ngIf="!isCollapsed('catalogo')">
+          <button class="item" *ngIf="matches('cadastrar produto novo')" (click)="goToCadastro()" tabindex="0">
+            <i class="fa fa-plus-circle"></i>
+            <span>Cadastrar Produto</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('lista produtos listagem')" [class.disabled]="!hasProducts" (click)="goToLista()" tabindex="0">
+            <i class="fa fa-list"></i>
+            <span>Lista de Produtos</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('ativos ingredientes')" (click)="goToAtivos()" tabindex="0">
+            <i class="fa fa-flask"></i>
+            <span>Ativos</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('formulas receitas')" (click)="goToFormulas()" tabindex="0">
+            <i class="fa fa-flask"></i>
+            <span>Fórmulas</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('marketplace categorias tags')" (click)="goToMarketplaceCustomizacoes()" tabindex="0">
+            <i class="fa fa-tags"></i>
+            <span>Marketplace: Categorias &amp; Tags</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('temas vitrine loja cores')" (click)="goToLojaTemas()" tabindex="0">
+            <i class="fa fa-paint-brush"></i>
+            <span>Temas da loja</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+        </div>
+      </section>
 
-    <!-- Atalhos removidos conforme solicitado -->
+      <!-- Pessoas -->
+      <section class="section-card section--purple" *ngIf="sectionHasMatches('pessoas')" [class.collapsed]="isCollapsed('pessoas')">
+        <header class="section-header" role="button" tabindex="0" (click)="toggleSection('pessoas')" (keydown.enter)="toggleSection('pessoas')" (keydown.space)="toggleSection('pessoas')" [attr.aria-expanded]="!isCollapsed('pessoas')">
+          <div class="sec-title-wrap">
+            <span class="sec-dot"></span>
+            <h3 class="sec-title">Pessoas</h3>
+            <span class="sec-count">{{ sectionCount('pessoas') }}</span>
+          </div>
+          <i class="fa fa-chevron-down chevron"></i>
+        </header>
+        <div class="items" *ngIf="!isCollapsed('pessoas')">
+          <button class="item" *ngIf="isSuper && matches('gerenciar usuarios admins')" (click)="goToUsuarios()" tabindex="0">
+            <i class="fa fa-cog"></i>
+            <span>Gerenciar Usuários</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('gerenciar clientes')" (click)="goToClientes()" tabindex="0">
+            <i class="fa fa-user-circle"></i>
+            <span>Gerenciar Clientes</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('veterinarios vet')" (click)="goToVeterinarios()" tabindex="0">
+            <i class="fa fa-user-md"></i>
+            <span>Gerenciar Veterinários</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('parceiros gestao')" (click)="goToParceiros()" tabindex="0">
+            <i class="fa fa-handshake-o"></i>
+            <span>Gestão de Parceiros</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+        </div>
+      </section>
 
-  </div>
+      <!-- Operação -->
+      <section class="section-card section--amber" *ngIf="sectionHasMatches('operacao')" [class.collapsed]="isCollapsed('operacao')">
+        <header class="section-header" role="button" tabindex="0" (click)="toggleSection('operacao')" (keydown.enter)="toggleSection('operacao')" (keydown.space)="toggleSection('operacao')" [attr.aria-expanded]="!isCollapsed('operacao')">
+          <div class="sec-title-wrap">
+            <span class="sec-dot"></span>
+            <h3 class="sec-title">Operação</h3>
+            <span class="sec-count">{{ sectionCount('operacao') }}</span>
+          </div>
+          <i class="fa fa-chevron-down chevron"></i>
+        </header>
+        <div class="items" *ngIf="!isCollapsed('operacao')">
+          <button class="item" *ngIf="matches('banners')" (click)="goToBanners()" tabindex="0">
+            <i class="fa fa-picture-o"></i>
+            <span>Banners</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('pedidos compras')" (click)="goToPedidos()" tabindex="0">
+            <i class="fa fa-shopping-cart"></i>
+            <span>Pedidos</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('cupons desconto')" (click)="goToCupons()" tabindex="0">
+            <i class="fa fa-ticket"></i>
+            <span>Cupons</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('promocoes ofertas')" (click)="goToPromocoes()" tabindex="0">
+            <i class="fa fa-bullhorn"></i>
+            <span>Promoções</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+        </div>
+      </section>
+    </div>
+  </ng-container>
 
   <footer class="admin-footer">
     <div class="admin-footer-inner">©2026. | Designed By: xxprz. | All rights reserved.</div>

@@ -1,75 +1,201 @@
-.promos-wrap{
-	padding:16px;
-	min-height:100vh;
-	background: linear-gradient(135deg, var(--admin-surface), var(--admin-bg));
-	color: var(--admin-text);
+/* Promoções — standardized with admin tokens. Badges now use global
+   .admin-badge tokens from shared/styles/_admin-mixins.scss. */
+
+.promos-wrap {
+  padding: 24px 16px;
+  min-height: 100vh;
+  background: var(--admin-bg-gradient);
+  color: var(--admin-text);
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
 }
-.promos-wrap h1{margin:0 0 12px;color:var(--admin-text)}
-.filters{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-.filters .spacer{flex:1}
-.table{width:100%}
-.editor{margin-top:16px;padding-top:12px;border-top:1px solid #e3e3e3}
-.editor .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.editor label{display:flex;flex-direction:column;gap:4px}
-.editor label.chk{align-items:center;flex-direction:row;gap:8px}
-.produtos{margin-top:16px}
-.promos-wrap input, .promos-wrap select, .promos-wrap textarea { background: var(--admin-card); color: var(--admin-text); border: 1px solid var(--admin-border); }
-.promos-wrap .filters { background: transparent; }
-.produtos .add{position:relative;max-width:480px}
-.produtos .sugestoes{position:absolute;z-index:5;background:var(--admin-card);border:1px solid var(--admin-border);width:100%;max-height:240px;overflow:auto;margin:0;padding:4px 0;list-style:none}
-.produtos .sugestoes li{padding:6px 8px;cursor:pointer}
-.produtos .sugestoes li:hover{background:rgba(255,255,255,0.03)}
-.selecionados{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.pill{background:var(--admin-card);border:1px solid var(--admin-border);border-radius:12px;padding:4px 8px;display:inline-flex;align-items:center;gap:6px}
-.actions{margin-top:16px;display:flex;gap:8px}
+
+.promos-wrap h1 {
+  margin: 0 0 12px;
+  color: var(--admin-text-strong);
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.filters .spacer { flex: 1; }
+
+.promos-wrap input,
+.promos-wrap select,
+.promos-wrap textarea {
+  background: var(--admin-input-bg);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.promos-wrap input:focus,
+.promos-wrap select:focus,
+.promos-wrap textarea:focus {
+  border-color: var(--admin-focus-border);
+  box-shadow: var(--admin-focus-ring);
+}
+
+/* Buttons — map local variants to admin tokens */
+.promos-wrap .btn,
+.promos-wrap button.outline,
+.promos-wrap button.primary,
+.promos-wrap button.secondary,
+.promos-wrap button.danger,
+.promos-wrap button.ok {
+  border-radius: var(--admin-radius-md);
+  padding: 8px 14px;
+  font-weight: var(--admin-font-weight-semibold);
+  cursor: pointer;
+  transition: filter .12s ease, transform .12s ease;
+}
+.promos-wrap .btn:hover:not([disabled]),
+.promos-wrap button:hover:not([disabled]) { filter: brightness(1.08); }
+
+/* Editor inline (legacy) */
+.editor {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--admin-border);
+}
+.editor .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.editor label { display: flex; flex-direction: column; gap: 4px; }
+.editor label.chk { align-items: center; flex-direction: row; gap: 8px; }
+
+.produtos { margin-top: 16px; }
+.produtos .add { position: relative; max-width: 480px; }
+.produtos .sugestoes {
+  position: absolute;
+  z-index: 5;
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border-strong);
+  width: 100%;
+  max-height: 240px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border-radius: var(--admin-radius-md);
+}
+.produtos .sugestoes li { padding: 6px 8px; cursor: pointer; }
+.produtos .sugestoes li:hover { background: rgba(255, 255, 255, 0.03); }
+
+.selecionados { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.pill {
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-pill);
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* Cards */
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
-.card{border:1px solid var(--admin-border);border-radius:12px;padding:12px;background:var(--admin-card);box-shadow:0 10px 25px rgba(2,6,23,0.35);display:flex;flex-direction:column;gap:8px;color:var(--admin-text)}
-.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.card .title{margin:0;font-size:16px}
-.badge{font-size:12px;border-radius:999px;padding:4px 8px;border:1px solid var(--admin-border);background:var(--admin-card)}
-.badge.ok{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
-.badge.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
-.badge.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
-.badge.off{background:#f1f5f9;border-color:#cbd5e1;color:#334155}
-.badge.muted{background:#f8fafc;border-color:#e5e7eb;color:#6b7280}
-.desc{color:var(--admin-muted);margin:0}
-.meta{display:flex;gap:8px;flex-wrap:wrap}
-.periodo{display:flex;gap:12px;flex-wrap:wrap;color:var(--admin-muted)}
-.card .actions{margin-top:8px}
-.card .actions .danger{background:#fee2e2;border:1px solid #fecaca}
-.pagination{display:flex;align-items:center;gap:8px;justify-content:center}
-.pagination button{padding:6px 10px;border-radius:8px;border:1px solid var(--admin-border);background:var(--admin-card);color:var(--admin-text);cursor:pointer}
-.pagination button[disabled]{opacity:.6;cursor:not-allowed}
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.card {
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-lg);
+  padding: 12px;
+  background: var(--admin-surface-2);
+  box-shadow: var(--admin-shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--admin-text);
+}
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card .title { margin: 0; font-size: 16px; color: var(--admin-text-strong); }
 
-@media (max-width: 1024px){
-	.cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.desc { color: var(--admin-muted); margin: 0; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.periodo { display: flex; gap: 12px; flex-wrap: wrap; color: var(--admin-muted); }
+.card .actions { margin-top: 8px; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
 }
-@media (max-width: 640px){
-	.cards{grid-template-columns:1fr}
-	.editor .grid{grid-template-columns:1fr}
+.pagination button {
+  padding: 6px 10px;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-card);
+  color: var(--admin-text);
+  cursor: pointer;
+}
+.pagination button[disabled] { opacity: .6; cursor: not-allowed; }
+
+@media (max-width: 1024px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .cards { grid-template-columns: 1fr; }
+  .editor .grid { grid-template-columns: 1fr; }
 }
 
-/* Modal */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:60;padding:24px 12px}
-.modal{width:min(900px,100%);background:var(--admin-surface);border-radius:16px;border:1px solid var(--admin-border);box-shadow:0 20px 60px rgba(2,6,23,0.6);padding:16px;color:var(--admin-text)}
-.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.modal form .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.modal form label{display:flex;flex-direction:column;gap:4px}
-.modal form label.chk{align-items:center;flex-direction:row;gap:8px}
-.modal .produtos{margin-top:12px}
-.modal .produtos .add{position:relative;max-width:480px}
-.modal .produtos .sugestoes{position:absolute;z-index:5;background:var(--admin-card);border:1px solid var(--admin-border);width:100%;max-height:240px;overflow:auto;margin:0;padding:4px 0;list-style:none}
-.modal .produtos .sugestoes li{padding:6px 8px;cursor:pointer}
-.modal .produtos .sugestoes li:hover{background:rgba(255,255,255,0.03)}
-.modal .selecionados{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+/* Legacy modal (kept for create/edit flows that aren't schema-driven yet) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 60;
+  padding: 24px 12px;
+}
+.modal {
+  width: min(900px, 100%);
+  background: var(--admin-surface);
+  border-radius: var(--admin-radius-xl);
+  border: 1px solid var(--admin-border-strong);
+  box-shadow: var(--admin-shadow-lg);
+  padding: 16px;
+  color: var(--admin-text);
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.modal form .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.modal form label { display: flex; flex-direction: column; gap: 4px; }
+.modal form label.chk { align-items: center; flex-direction: row; gap: 8px; }
+.modal .produtos { margin-top: 12px; }
+.modal .produtos .add { position: relative; max-width: 480px; }
+.modal .produtos .sugestoes {
+  position: absolute;
+  z-index: 5;
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border-strong);
+  width: 100%;
+  max-height: 240px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border-radius: var(--admin-radius-md);
+}
+.modal .produtos .sugestoes li { padding: 6px 8px; cursor: pointer; }
+.modal .produtos .sugestoes li:hover { background: rgba(255, 255, 255, 0.03); }
+.modal .selecionados { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.modal .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-@media (max-width: 800px){
-  .modal form .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width: 800px) {
+  .modal form .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 640px){
-  .modal{border-radius:12px;padding:12px}
-  .modal form .grid{grid-template-columns:1fr}
+@media (max-width: 640px) {
+  .modal { border-radius: var(--admin-radius-lg); padding: 12px; }
+  .modal form .grid { grid-template-columns: 1fr; }
 }
+
+/* Table status badge helpers. We keep the .badge selectors for templates
+   that still reference them, but map every variant to the shared
+   .admin-badge tokens so we have a single source of truth. */
+.promos-wrap .table td .admin-badge { font-weight: var(--admin-font-weight-semibold); }

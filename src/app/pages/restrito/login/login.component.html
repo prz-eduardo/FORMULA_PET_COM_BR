@@ -5,8 +5,56 @@
     </div>
     <div class="login-title">ADMIN PANEL</div>
 
-    <div class="login-bottom single">
+    <form class="login-form" [formGroup]="form" (ngSubmit)="loginWithPassword()" autocomplete="on">
+      <label class="field">
+        <span>E-mail</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          placeholder="voce@empresa.com"
+          [disabled]="loading" />
+        <small class="err" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+          Informe um e-mail válido.
+        </small>
+      </label>
+
+      <label class="field">
+        <span>Senha</span>
+        <div class="pwd-wrap">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="senha"
+            autocomplete="current-password"
+            placeholder="Sua senha"
+            [disabled]="loading" />
+          <button
+            type="button"
+            class="pwd-toggle"
+            (click)="togglePassword()"
+            [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Mostrar senha'">
+            <i class="fa" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+          </button>
+        </div>
+        <small class="err" *ngIf="form.get('senha')?.touched && form.get('senha')?.invalid">
+          A senha deve ter pelo menos 6 caracteres.
+        </small>
+      </label>
+
       <div class="login-error" *ngIf="error">{{ error }}</div>
+
+      <button
+        type="submit"
+        class="btn-login primary"
+        [disabled]="loading || form.invalid">
+        <span *ngIf="!loading">Entrar</span>
+        <span *ngIf="loading">Autenticando…</span>
+      </button>
+    </form>
+
+    <div class="divider"><span>ou</span></div>
+
+    <div class="login-bottom single">
       <button type="button" class="btn-login google" (click)="loginWithGoogle()" [disabled]="loading">
         <img src="imagens/google.png" alt="Google" class="g-img">
         <span *ngIf="!loading">Entrar com Google</span>
@@ -16,13 +64,13 @@
   </div>
 </div>
 
-<!-- Blocking alert overlay for auth errors -->
+<!-- Blocking alert overlay para erros inesperados -->
 <div class="alert-overlay" *ngIf="blocked">
   <div class="alert-card">
     <h3>Não foi possível entrar</h3>
     <p class="msg">{{ error }}</p>
     <p class="count">Redirecionando para a página inicial em {{ countdown }}s…</p>
-  <button class="btn-ok" (click)="goHomeNow()">Ir agora</button>
+    <button class="btn-ok" (click)="goHomeNow()">Ir agora</button>
   </div>
   <div class="alert-backdrop"></div>
-  </div>
+</div>

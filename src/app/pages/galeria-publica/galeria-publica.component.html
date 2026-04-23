@@ -1,12 +1,45 @@
 <app-navmenu></app-navmenu>
 
 <main class="galeria-container container">
-  <header class="galeria-header">
-  <h1 class="galeria-title">Galeria 🐾</h1>
-    <p class="galeria-subtitle">Uma curadoria carinhosa das melhores fotos da nossa comunidade. Veja, emocione-se e espalhe afeto.</p>
-    <div class="galeria-actions">
-      <a [routerLink]="'/meus-pets'" class="btn btn-sec btn-meus-pets" title="Ir para Meus Pets" aria-label="Meus Pets">Meus Pets</a>
+  <app-banner-slot posicao="galeria" mode="carousel" class="galeria-banner-slot"></app-banner-slot>
+
+  <!-- ========================================================= HERO -->
+  <header class="galeria-hero" role="banner">
+    <div class="hero-top">
+      <img src="/icones/paw.png" alt="" aria-hidden="true" class="hero-icon" />
+      <div class="hero-titles">
+        <h1 class="hero-title">
+          Galeria da <span class="hero-accent">comunidade pet</span>
+        </h1>
+        <p class="hero-subtitle">
+          Uma curadoria carinhosa das melhores fotos dos pets da nossa comunidade — veja, emocione-se e espalhe afeto com a Fórmula Pet.
+        </p>
+      </div>
     </div>
+
+    <div class="hero-stats" aria-label="Informações da galeria">
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ pets.length || 0 }}</strong> pets</span>
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ getTotalReactions() }}</strong> reações</span>
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span>Comunidade Fórmula Pet</span>
+    </div>
+
+    <section class="galeria-cta-card" role="region" aria-label="Compartilhe seu pet">
+      <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="galeria-cta-icon" />
+      <div class="galeria-cta-body">
+        <h2 class="galeria-cta-name">Seu pet também merece aparecer <span class="galeria-cta-tag">participe</span></h2>
+        <p class="galeria-cta-text">Cadastre seu pet, compartilhe as melhores fotos e receba reações da comunidade Fórmula Pet.</p>
+      </div>
+      <a
+        [routerLink]="'/meus-pets'"
+        class="galeria-cta-btn"
+        title="Ir para Meus Pets"
+        aria-label="Ir para Meus Pets">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 21s-7-4.35-9.33-9.03C1.27 9.47 2.6 6 5.67 6c1.77 0 3.13 1.04 3.97 2.3C10.47 7.04 11.83 6 13.6 6c3.07 0 4.4 3.47 3 5.97C19 16.65 12 21 12 21z" fill="currentColor"/>
+        </svg>
+        Meus Pets
+      </a>
+    </section>
   </header>
 
   <div *ngIf="loading" class="card">Carregando galeria...</div>
@@ -39,39 +72,78 @@
       </ng-container>
       <ng-template #regularPet>
         <!-- Regular pet card -->
-        <div class="card">
-      <div class="photo-wrap">
-  <img [src]="resolveImage(p)" alt="Foto do pet" class="pet-photo"
-  (error)="onImgError($event.target, '/imagens/image.png')" (load)="onImgLoad($event, p)" (click)="onPhotoClick(p, $event)" />
+        <div class="card pet-card">
+          <div class="photo-wrap" (click)="onPhotoClick(p, $event)">
+            <div class="photo-skeleton" *ngIf="!p._imgLoaded" aria-hidden="true"></div>
+            <img [src]="resolveImage(p)" alt="Foto de {{ p.nome || 'pet' }}" class="pet-photo"
+                 [class.loaded]="p._imgLoaded"
+                 (error)="onImgError($event.target, '/imagens/image.png')"
+                 (load)="onImgLoad($event, p)" />
             <div class="overlay">
               <div class="overlay-top">
                 <div class="pet-type" [attr.aria-label]="(p.tipo || p.especie || 'Pet')">{{ typeEmoji(p.tipo || p.especie) }}</div>
-                <div class="pet-age">{{ (p.idade || p.age) ? (p.idade || p.age) + ' anos' : '' }}</div>
+                <div class="pet-age" *ngIf="p.idade || p.age">{{ (p.idade || p.age) }} {{ (p.idade || p.age) === 1 ? 'ano' : 'anos' }}</div>
               </div>
-              <div class="overlay-bottom">
-                  <div class="pet-name" [class.shifted]="reactionPickerOpenFor === p._uid">{{ p.nome || p.name || 'Sem nome' }}</div>
-                <div class="actions">
-                  <!-- actions left intentionally empty; reaction UI moved outside photo-wrap to avoid clipping -->
+            </div>
+            <!-- reaction button stays floating on top of the photo -->
+            <div class="reaction-wrapper" [attr.data-pet-id]="p._uid" (click)="$event.stopPropagation()">
+              <button class="btn-like" [class.visualActive]="p._visualActive" (click)="openReactionPicker(p, p._uid, $event)">
+                {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : (getDominantReaction(p)?.emoji || '\u2764\ufe0f') }}
+                <div class="likes-total" [class.has-my-like]="p._visualActive">{{ p.likes ?? 0 }}</div>
+              </button>
+              <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p._uid" (click)="$event.stopPropagation()" [class.flipped]="pickerFlippedFor === p._uid">
+                <div class="reaction-row">
+                  <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'" [style.--exit-d]="(i + 1) * 100 + 'ms'" [class.active]="p.userReactionTipo === r.tipo" [class.preview]="p._pickerAutoHighlight === r.tipo" [class.confirm]="p._pickerConfirm === r.tipo" [class.exiting]="p._pickerExiting">
+                    <span class="emoji">{{ r.emoji }}</span>
+                    <span class="reaction-count" aria-hidden="true">{{ (p.reactionTotals && (p.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        <!-- place the reaction button/picker outside of the photo-wrap so it can overflow and remain visible -->
-        <div class="reaction-wrapper" [attr.data-pet-id]="p._uid">
-          <button class="btn-like" [class.visualActive]="p._visualActive" (click)="openReactionPicker(p, p._uid, $event)">
-            {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : (getDominantReaction(p)?.emoji || '\u2764\ufe0f') }}
-            <div class="likes-total" [class.has-my-like]="p._visualActive">{{ p.likes ?? 0 }}</div>
-          </button>
-          <div class="reaction-picker" *ngIf="reactionPickerOpenFor === p._uid" (click)="$event.stopPropagation()" [class.flipped]="pickerFlippedFor === p._uid">
-            <div class="reaction-row">
-              <button *ngFor="let r of reactionTypes; let i = index" class="reaction-btn" (click)="selectReaction(p, r.tipo)" [attr.aria-label]="r.tipo" [style.--d]="(i + 1) * 100 + 'ms'" [style.--exit-d]="(i + 1) * 100 + 'ms'" [class.active]="p.userReactionTipo === r.tipo" [class.preview]="p._pickerAutoHighlight === r.tipo" [class.confirm]="p._pickerConfirm === r.tipo" [class.exiting]="p._pickerExiting">
-                <span class="emoji">{{ r.emoji }}</span>
-                <span class="reaction-count" aria-hidden="true">{{ (p.reactionTotals && (p.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
+
+          <!-- Card info/footer (below the photo) -->
+          <div class="card-body">
+            <div class="card-title-row">
+              <h3 class="pet-name-card">{{ p.nome || p.name || 'Sem nome' }}</h3>
+              <div class="pet-badges">
+                <span class="badge-race" *ngIf="p.raca">{{ p.raca }}</span>
+                <span class="badge-species" *ngIf="!p.raca && p.especie">{{ p.especie }}</span>
+              </div>
+            </div>
+            <div class="card-meta">
+              <span *ngIf="p.sexo" class="meta-chip" [class.female]="(p.sexo || '').toLowerCase().startsWith('f')">
+                {{ (p.sexo || '').toLowerCase().startsWith('f') ? '♀' : '♂' }} {{ p.sexo }}
+              </span>
+              <span *ngIf="p.tutor_nome" class="meta-tutor">
+                <img *ngIf="p.tutor_foto" [src]="p.tutor_foto" alt="tutor" class="tutor-thumb" (error)="onImgError($event.target, '/imagens/image.png')" />
+                <span>por <strong>{{ p.tutor_nome }}</strong></span>
+              </span>
+            </div>
+
+            <div class="card-footer-row">
+              <button type="button" class="reactions-summary" (click)="openLightbox(p)" *ngIf="(p.likes ?? 0) > 0; else noReactions"
+                      [attr.aria-label]="(p.likes ?? 0) + ' reações'">
+                <span class="reaction-stack">
+                  <span class="stacked-emoji" *ngFor="let r of getTopReactionList(p); let i = index; trackBy: trackReaction" [style.--i]="i">
+                    {{ r.emoji }}
+                  </span>
+                </span>
+                <span class="reactions-total">{{ p.likes ?? 0 }}</span>
+              </button>
+              <ng-template #noReactions>
+                <span class="reactions-summary empty">Seja o primeiro a reagir</span>
+              </ng-template>
+
+              <button type="button" class="comments-btn" (click)="openLightbox(p)"
+                      [attr.aria-label]="(p.total_comentarios ?? 0) + ' comentários'">
+                <span class="comments-icon" aria-hidden="true">💬</span>
+                <span class="comments-count">{{ p.total_comentarios ?? 0 }}</span>
+                <span class="comments-label">{{ (p.total_comentarios ?? 0) === 1 ? 'comentário' : 'comentários' }}</span>
               </button>
             </div>
           </div>
         </div>
-      </div>
       </ng-template>
     </div>
   </div>
@@ -80,3 +152,10 @@
   <div #sentinel class="sentinel" aria-hidden="true"></div>
 
 </main>
+
+<app-pet-lightbox
+  [pet]="lightboxPet"
+  [isOpen]="!!lightboxPet"
+  (close)="closeLightbox()"
+  (reactionSelect)="onLightboxReaction($event)">
+</app-pet-lightbox>

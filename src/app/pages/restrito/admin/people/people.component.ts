@@ -4,14 +4,18 @@ import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
+import { AdminDrawerComponent } from '../shared/admin-drawer/admin-drawer.component';
 import { AdminApiService, Paged, PessoaDto, PessoaDocDto } from '../../../../services/admin-api.service';
+import { ApiService } from '../../../../services/api.service';
+import { ButtonDirective } from '../../../../shared/button';
+import { AdminAddressComponent, buildAddressGroup, flattenAddress } from '../../../../shared/admin-address';
 
 type TipoPessoa = 'cliente' | 'vet' | 'admin';
 
 @Component({
   selector: 'app-admin-people',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AdminPaginationComponent, AdminDrawerComponent, ButtonDirective, AdminAddressComponent],
   templateUrl: './people.component.html',
   styleUrls: ['./people.component.scss']
 })
@@ -38,6 +42,9 @@ export class PeopleAdminComponent implements OnInit {
   // criação
   showCreate = signal(false);
   createForm!: FormGroup;
+
+  // UI state
+  showColsMenu = signal(false);
 
   // admin-specific options
   areasList = [
@@ -73,7 +80,7 @@ export class PeopleAdminComponent implements OnInit {
     { key: 'created_at', label: 'Criado em', on: false },
   ]);
 
-  constructor(private api: AdminApiService, private route: ActivatedRoute, private fb: FormBuilder) {}
+  constructor(private api: AdminApiService, private publicApi: ApiService, private route: ActivatedRoute, private fb: FormBuilder) {}
 
   ngOnInit(): void {
     const dataTipo = this.route.snapshot.data?.['tipo'] as TipoPessoa | undefined;
@@ -137,6 +144,25 @@ export class PeopleAdminComponent implements OnInit {
     const next = this.columns().map((c, i) => i === index ? { ...c, on: !c.on } : c);
     this.columns.set(next);
   }
+  toggleColsMenu() { this.showColsMenu.set(!this.showColsMenu()); }
+
+  // file type icons for docs uploader
+  docIconFor(tipo: string): string {
+    switch (tipo) {
+      case 'rg': return 'fa fa-id-card';
+      case 'cpf': return 'fa fa-id-badge';
+      case 'crmv': return 'fa fa-stethoscope';
+      case 'comprovante': return 'fa fa-file-text-o';
+      default: return 'fa fa-file-o';
+    }
+  }
+  docsTipos: Array<{ key: PessoaDocDto['tipo']; label: string }> = [
+    { key: 'rg', label: 'RG' },
+    { key: 'cpf', label: 'CPF' },
+    { key: 'crmv', label: 'CRMV' },
+    { key: 'comprovante', label: 'Comprovante' },
+    { key: 'outro', label: 'Outro' }
+  ];
 
   // UI helpers
   idOf(u: any): string | number | null { return (u?.id ?? u?.uid) ?? null; }
@@ -174,16 +200,25 @@ export class PeopleAdminComponent implements OnInit {
     this.expandedId.set(this.idOf(u));
     this.showDocs.set(false);
     this.selectedTab.set('dados');
+    const anyU = u as any;
+    const endereco = anyU.endereco || {};
     this.form = this.fb.group({
-      name: [u.name || (u as any).nome || '', [Validators.required, Validators.minLength(2)]],
+      name: [u.name || anyU.nome || '', [Validators.required, Validators.minLength(2)]],
       email: [u.email || '', [Validators.required, Validators.email]],
-      phone: [u.phone || (u as any).telefone || ''],
-      city: [u.city || ''],
-      uf: [u.uf || ''],
+      phone: [u.phone || anyU.telefone || ''],
       cpf: [u.cpf || ''],
       crmv: [u.crmv || ''],
-      role: [(u as any).role || ''],
-      areas: [(u as any).areas || []]
+      role: [anyU.role || ''],
+      areas: [anyU.areas || []],
+      address: buildAddressGroup(this.fb, {
+        cep: anyU.cep ?? endereco.cep ?? '',
+        logradouro: anyU.logradouro ?? endereco.logradouro ?? '',
+        numero: anyU.numero ?? endereco.numero ?? '',
+        complemento: anyU.complemento ?? endereco.complemento ?? '',
+        bairro: anyU.bairro ?? endereco.bairro ?? '',
+        city: u.city ?? endereco.cidade ?? '',
+        uf: u.uf ?? endereco.estado ?? ''
+      })
     });
     const id = (u.id ?? (u as any).uid) as any;
     if (id) {
@@ -218,15 +253,16 @@ export class PeopleAdminComponent implements OnInit {
     if (!u || !this.form || this.form.invalid) { this.form?.markAllAsTouched(); return; }
     const id = (u.id ?? (u as any).uid) as any;
     const tipo = this.tipo;
-    const payload: any = { ...this.form.value };
+    const raw: any = this.form.getRawValue();
+    const flat: any = flattenAddress(raw);
     // Map aliases to backend field names
-    if ('name' in payload) { payload.nome = payload.name; delete payload.name; }
-    if ('phone' in payload) { payload.telefone = payload.phone; delete payload.phone; }
-    const update$ = this.api.updatePerson ? this.api.updatePerson(id, tipo, payload) : this.api.updateUsuario(id, payload as any);
+    if ('name' in flat) { flat.nome = flat.name; delete flat.name; }
+    if ('phone' in flat) { flat.telefone = flat.phone; delete flat.phone; }
+    const update$ = this.api.updatePerson ? this.api.updatePerson(id, tipo, flat) : this.api.updateUsuario(id, flat as any);
     update$.subscribe(() => {
-      const arr = this.items().map(x => (x.id === id || (x as any).uid === id) ? { ...x, ...this.form.value } : x);
+      const arr = this.items().map(x => (x.id === id || (x as any).uid === id) ? { ...x, ...flat } : x);
       this.items.set(arr);
-      this.selected.set({ ...(this.selected() as any), ...this.form.value });
+      this.selected.set({ ...(this.selected() as any), ...flat });
     });
   }
   cancelarEdicao() { this.selected() && this.view(this.selected()!); }

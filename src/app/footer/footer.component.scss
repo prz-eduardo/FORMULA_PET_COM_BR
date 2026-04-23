@@ -1,80 +1,294 @@
-/* Scoped, modern footer styles (keeps brand colors) */
-:host { display: block; }
+/* ==========================================================================
+   Footer – Fórmula Pet Curitiba
+   Design tokens use globais --brand-* definidos em styles.scss
+   ========================================================================== */
 
-.pg-footer { font-family: 'Inter', Arial, sans-serif; }
-
-.footer { background-color: #f3f7b0; color: #333; }
-
-.footer-wave-svg {
-  background-color: transparent;
+:host {
   display: block;
+  --fp-footer-bg: var(--brand-50, #f3f7b0);
+  --fp-footer-ink: var(--brand-ink, #222100);
+  --fp-footer-ink-soft: #3a3a0f;
+  --fp-footer-accent: var(--brand-yellow, #c4d600);
+  --fp-footer-accent-strong: var(--brand-yellow-700, #9bb300);
+  --fp-footer-border: rgba(34, 33, 0, 0.12);
+  --fp-footer-radius: 14px;
+  --fp-footer-gap: clamp(20px, 4vw, 32px);
+}
+
+.pg-footer {
+  font-family: 'Inter', Arial, sans-serif;
+  background-color: var(--fp-footer-bg);
+  color: var(--fp-footer-ink);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Wave ------------------------------------------------------------------- */
+.footer-wave {
+  display: block;
+  width: 100%;
   height: 36px;
   position: relative;
   top: -1px;
-  width: 100%;
+
+  path { fill: #f6f6f6; }
 }
-.footer-wave-path { fill: #f6f6f6; }
 
-.footer-container { max-width: 1200px; margin: 0 auto; padding: 20px 16px 28px; }
+/* Layout ----------------------------------------------------------------- */
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 40px) clamp(16px, 4vw, 28px);
+}
 
-.footer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--fp-footer-gap);
+  align-items: start;
+}
 
-.footer-col { font-size: 0.95rem; line-height: 1.6; }
-.footer-col h2 { font-size: 1.15rem; margin: 0 0 6px; font-weight: 700; }
-.footer-col h3 { font-size: 1rem; margin: 10px 0 6px; font-weight: 700; }
-.footer-col h4 { font-size: 0.95rem; margin: 8px 0 4px; font-weight: 600; }
-.footer-col p { margin: 0 0 4px; }
+.footer-col {
+  font-size: 0.95rem;
+  line-height: 1.6;
 
-/* equal columns for visual balance */
-.brand, .contact, .address { grid-column: auto; }
+  h2 {
+    font-size: 1.2rem;
+    margin: 0 0 6px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
 
-.brand-logo { width: 120px; height: auto; display: block; margin-bottom: 8px; }
-.subtitle { color: #2a2a2a; font-weight: 600; margin-bottom: 2px; }
-.legal { list-style: none; padding: 0; margin: 8px 0 0; opacity: .9; }
-.legal li { margin: 2px 0; }
+  h3 {
+    font-size: 1rem;
+    margin: 0 0 8px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    position: relative;
+    padding-bottom: 6px;
 
-.contact-row { display: inline-flex; gap: 8px; align-items: center; color: #333; text-decoration: none; margin: 2px 0 10px; }
-.contact-row:hover { text-decoration: underline; }
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--fp-footer-accent);
+    }
+  }
 
-.btn-cta { display: inline-flex; align-items: center; gap: 8px; background-color: #c4d600; color: #333; border-radius: 999px; padding: 10px 16px; font-size: .9rem; font-weight: 700; letter-spacing: .02em; text-decoration: none; transition: filter .2s ease; margin: 4px 0 12px; }
-.btn-cta:hover { filter: brightness(0.95); }
+  h4 {
+    font-size: 0.9rem;
+    margin: 12px 0 4px;
+    font-weight: 600;
+    color: var(--fp-footer-ink-soft);
+  }
 
-/* New icon-only CTA buttons */
-.cta-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 12px; }
-.btn-ico { width: 40px; height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); border: 1px solid rgba(0,0,0,.06); }
-.btn-ico .ico { width: 20px; height: 20px; display: block; background-size: contain; background-repeat: no-repeat; background-position: center; }
-.btn-ico.whatsapp { background: #22c55e; }
-.btn-ico.whatsapp .ico { background-image: url('/imagens/whatsapp-xxl.png'); }
-.btn-ico.instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
-.btn-ico.instagram .ico { background-image: url('/imagens/icons8-instagram-500.png'); filter: brightness(0) invert(1); }
+  p { margin: 0 0 4px; }
+}
 
-.map-link { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; color: #333; text-decoration: none; }
-.map-link:hover { text-decoration: underline; }
+/* Brand column ----------------------------------------------------------- */
+.brand-logo {
+  width: 96px;
+  height: auto;
+  display: block;
+  margin-bottom: 10px;
+}
 
-.social { display: flex; gap: 10px; margin-top: 8px; }
-.social a { display: inline-flex; }
-.social img { width: 24px; height: 24px; object-fit: contain; }
+.subtitle {
+  font-weight: 600;
+  color: var(--fp-footer-ink);
+  margin-bottom: 6px;
+}
 
+.description {
+  color: var(--fp-footer-ink-soft);
+  max-width: 32ch;
+}
+
+.legal {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+  color: var(--fp-footer-ink-soft);
+
+  li {
+    margin: 3px 0;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Contact column --------------------------------------------------------- */
+.contact-row {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  margin: 2px 0 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+
+  &:hover,
+  &:focus-visible { color: var(--fp-footer-accent-strong); }
+}
+
+.cta-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 4px 0 18px;
+}
+
+.btn-ico {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  }
+
+  .ico {
+    width: 20px;
+    height: 20px;
+    display: block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  &.whatsapp {
+    background: #22c55e;
+    .ico { background-image: url('/imagens/whatsapp-xxl.png'); }
+  }
+
+  &.instagram {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    .ico {
+      background-image: url('/imagens/icons8-instagram-500.png');
+      filter: brightness(0) invert(1);
+    }
+  }
+}
+
+.hours-title { margin-top: 6px; }
+.hours { color: var(--fp-footer-ink-soft); }
+
+/* Address column --------------------------------------------------------- */
+.address-block {
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--fp-footer-ink-soft);
+  margin: 0 0 4px;
+}
+
+.map-link {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(196, 214, 0, 0.18);
+  border: 1px solid rgba(196, 214, 0, 0.45);
+  color: var(--fp-footer-ink);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(196, 214, 0, 0.35);
+    transform: translateY(-1px);
+  }
+}
+
+/* Global link reset inside the footer ----------------------------------- */
+.pg-footer a {
+  color: inherit;
+  &:focus-visible {
+    outline: 2px solid var(--fp-footer-accent-strong);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+/* Bottom bar ------------------------------------------------------------- */
+.footer-copyright {
+  background-color: #d9ea24;
+  color: var(--fp-footer-ink);
+  padding: 14px 20px;
+  text-align: center;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.footer-copyright-wrapper {
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.footer-copyright-text {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive ------------------------------------------------------------- */
 @media (max-width: 960px) {
-  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .brand, .contact, .address { grid-column: auto; }
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .brand { grid-column: 1 / -1; }
 }
 
 @media (max-width: 560px) {
-  .footer-container { padding: 18px 14px 22px; }
-  .footer-grid { grid-template-columns: 1fr; gap: 14px; }
-  .brand, .contact, .address { text-align: center; }
-  .brand-logo { margin: 0 auto 8px; width: 90px; }
-  .btn-cta { width: 100%; justify-content: center; padding: 12px 14px; font-size: 0.95rem; box-shadow: 0 2px 0 rgba(0,0,0,.06); }
-  .contact-row { justify-content: center; }
+  .footer-container { padding: 22px 18px 26px; }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .footer-col {
+    text-align: center;
+
+    h3::after {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  .brand-logo { margin: 0 auto 10px; width: 88px; }
+  .description { margin-inline: auto; }
+
+  .contact-row,
+  .cta-row,
   .map-link { justify-content: center; }
-  .cta-row { justify-content: center; }
+
+  .address-block { align-items: center; }
+
+  /* Subtle divider between stacked sections on mobile */
+  .footer-col + .footer-col {
+    padding-top: 22px;
+    border-top: 1px solid var(--fp-footer-border);
+  }
 }
-
-.footer a { color: #333; }
-
-/* Bottom bar */
-.footer-copyright { background-color: #d9ea24; color: #333; padding: 12px 20px; text-align: center; }
-.footer-copyright-wrapper { margin: 0 auto; max-width: 1200px; }
-.footer-copyright-text { color: #333; font-size: 13px; font-weight: 500; margin: 0; }
-.footer-copyright-link { color: #333; text-decoration: none; }

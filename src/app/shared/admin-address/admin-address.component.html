@@ -1,0 +1,55 @@
+<div class="admin-address" [formGroup]="group">
+  <h4 *ngIf="showHeading && title" class="admin-address__title">{{ title }}</h4>
+
+  <div class="fx-grid">
+    <div class="fx-field fx-col-2 cep-field">
+      <label>CEP</label>
+      <div class="cep-input">
+        <input
+          type="text"
+          formControlName="cep"
+          inputmode="numeric"
+          maxlength="9"
+          placeholder="00000-000"
+          (input)="onCepInput($event)"
+          (blur)="buscar()"
+        />
+        <button type="button" class="cep-search-btn" (click)="buscar()" [disabled]="loading()" aria-label="Buscar CEP">
+          <i class="fa fa-search"></i>
+        </button>
+      </div>
+      <span class="hint error" *ngIf="error()">{{ error() }}</span>
+      <span class="hint" *ngIf="loading()">Buscando…</span>
+    </div>
+
+    <div class="fx-field fx-col-2">
+      <label>Logradouro</label>
+      <input type="text" formControlName="logradouro" placeholder="Rua, Avenida…" />
+    </div>
+
+    <div class="fx-field">
+      <label>Número</label>
+      <input type="text" formControlName="numero" placeholder="123" />
+    </div>
+
+    <div class="fx-field">
+      <label>Complemento</label>
+      <input type="text" formControlName="complemento" placeholder="Apto, Bloco…" />
+    </div>
+
+    <div class="fx-field fx-col-2">
+      <label>Bairro</label>
+      <input type="text" formControlName="bairro" />
+    </div>
+
+    <div class="fx-field">
+      <label>Cidade</label>
+      <input type="text" formControlName="city" />
+    </div>
+
+    <div class="fx-field">
+      <label>UF</label>
+      <input type="text" formControlName="uf" maxlength="2" (input)="onUfInput($event)" />
+    </div>
+  </div>
+</div>

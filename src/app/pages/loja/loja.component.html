@@ -1,14 +1,16 @@
 <div class="loja-wrap loja-container">
   <app-navmenu></app-navmenu>
-  <!-- Hero/Banner -->
-  <section class="hero">
-  <!-- <img class="hero-img" src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=1600&auto=format&fit=crop" alt="Pets felizes" loading="lazy" decoding="async" /> -->
-    <img src="imagens/banner.jpg"  alt="Pets felizes" loading="lazy" decoding="async">
-    <div class="hero-overlay">
-      <h1 class="titulo">Formula Pet</h1>
-      <p class="subtitle">Do focinho ao rabinho a dose certa de carinho!💓</p>
-    </div>
-  </section>
+  <!-- Hero/Banner: usa banner dinâmico (posicao loja_hero) quando houver,
+       caindo para o banner estático como fallback. -->
+  <app-banner-slot posicao="loja_hero" mode="carousel">
+    <section class="hero">
+      <img src="imagens/banner.jpg" alt="Pets felizes" loading="lazy" decoding="async">
+      <div class="hero-overlay">
+        <h1 class="titulo">Formula Pet</h1>
+        <p class="subtitle">Do focinho ao rabinho a dose certa de carinho!💓</p>
+      </div>
+    </section>
+  </app-banner-slot>
 
   <div class="filtros card" [class.search-active]="filtro && filtro.trim().length > 0">
       <button class="btn light icon filter" (click)="openFilters()" aria-haspopup="dialog" aria-label="Filtros" title="Filtros">
@@ -79,6 +81,12 @@
     </div>
   </section>
 
+  <!-- Banner específico da categoria selecionada -->
+  <app-banner-slot *ngIf="categoria" posicao="categoria" mode="single" class="loja-banner-categoria"></app-banner-slot>
+
+  <!-- Banner inline da loja: exibido apenas quando houver banner cadastrado -->
+  <app-banner-slot posicao="loja_inline" mode="single" class="loja-banner-inline"></app-banner-slot>
+
   <section class="catalogo">
     <h2 class="sec-title">{{ onlyFavorites ? 'Favoritos' : 'Produtos' }}</h2>
   <!-- Lista intercalada com banner por paginação (mobile e desktop) -->
@@ -131,15 +139,30 @@
               </div>
             </div>
           </a>
-          <app-product-card-v2 *ngSwitchCase="'product'"
-            [product]="it.product"
-            [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
-            [supportsRatings]="storeMeta?.supports?.ratings ?? true"
-            [favoriteActive]="isFav(it.product)"
-            (toggleFav)="toggleFav(it.product)"
-            (add)="onAddToCart(it.product, $event)"
-            [cardWidth]="defaultCardWidth"
-          ></app-product-card-v2>
+          <ng-container *ngSwitchCase="'product'">
+            <div class="pcb-span-2" *ngIf="it.product.cardLayout === 'banner'">
+              <app-product-card-banner
+                [product]="it.product"
+                [themeConfig]="storeMeta?.activeTheme?.config ?? null"
+                [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+                [favoriteActive]="isFav(it.product)"
+                (toggleFav)="toggleFav(it.product)"
+                (add)="onAddToCart(it.product, $event)"
+                [cardWidth]="defaultCardWidth"
+              ></app-product-card-banner>
+            </div>
+            <app-product-card-sales
+              *ngIf="it.product.cardLayout !== 'banner'"
+              [product]="it.product"
+              [themeConfig]="storeMeta?.activeTheme?.config ?? null"
+              [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+              [supportsRatings]="storeMeta?.supports?.ratings ?? true"
+              [favoriteActive]="isFav(it.product)"
+              (toggleFav)="toggleFav(it.product)"
+              (add)="onAddToCart(it.product, $event)"
+              [cardWidth]="defaultCardWidth"
+            ></app-product-card-sales>
+          </ng-container>
         </ng-container>
       </ng-container>
       <div #infiniteAnchor class="infinite-anchor" aria-hidden="true"></div>

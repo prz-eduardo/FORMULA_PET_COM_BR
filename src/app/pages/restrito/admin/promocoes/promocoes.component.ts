@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
-import { FormSchema } from '../../../../shared/admin-crud/form-schema';
+import { Component, OnInit, computed, signal } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { map } from 'rxjs/operators';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
-import { AdminApiService, PromocaoDto, ProdutoDto } from '../../../../services/admin-api.service';
+import { AdminApiService, PromocaoDto } from '../../../../services/admin-api.service';
 import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
 import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-lookup.component';
 
@@ -18,7 +17,6 @@ import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-l
   styleUrls: ['./promocoes.component.scss']
 })
 export class AdminPromocoesComponent implements OnInit {
-
   // listagem
   q = signal('');
   page = signal(1);
@@ -28,34 +26,54 @@ export class AdminPromocoesComponent implements OnInit {
   list = signal<PromocaoDto[]>([]);
   total = signal(0);
 
-  // edição/criação
+  // edição / criação
   editingId = signal<number | null>(null);
   showCreateModal = signal(false);
-  // seleção de produtos vinculados (IDs)
-  produtosVinculados = signal<number[]>([]);
-  // schema-driven form config
-  promocoesFormSchema: FormSchema | null = null;
-  // object passed to admin-crud as editItem
-  editingItem: any | null = null;
+  submitting = signal(false);
 
-  constructor(private api: AdminApiService) {}
+  // produtos vinculados (para o entity-lookup)
+  selectedProdutoIds = signal<number[]>([]);
+  selectedProdutos = signal<Array<{ id: number; name?: string; price?: number }>>([]);
+
+  promoForm!: FormGroup;
+  drawerOpen = computed(() => this.showCreateModal() || !!this.editingId());
+
+  searchProdutosFn = (q: string) => this.api.listProdutos({ q, page: 1, pageSize: 10, active: 1 }).pipe(
+    map((res: any) => (res.data || []).map((p: any) => ({
+      id: Number(p.id),
+      name: p.nome ?? p.name ?? '',
+      price: Number(p.preco ?? p.price ?? 0)
+    })))
+  );
+
+  constructor(private api: AdminApiService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
+    this.resetPromoForm();
     this.loadList();
-    this.promocoesFormSchema = {
-      title: 'Promoção',
-      submitLabel: 'Salvar',
-      fields: [
-        { key: 'nome', label: 'Nome', type: 'text', required: true },
-        { key: 'descricao', label: 'Descrição', type: 'textarea' },
-        { key: 'tipo', label: 'Tipo', type: 'select', options: [{ value: 'percentual', label: 'Percentual' }, { value: 'valor', label: 'Valor' }], default: 'percentual' },
-        { key: 'valor', label: 'Valor', type: 'number', required: true, default: 0 },
-        { key: 'inicio', label: 'Início', type: 'datetime' },
-        { key: 'fim', label: 'Fim', type: 'datetime' },
-        { key: 'ativo', label: 'Ativa', type: 'checkbox', default: true },
-        { key: 'produtos', label: 'Produtos vinculados', type: 'multi-suggest', placeholder: 'Buscar produtos pelo nome', searchFn: this.searchProdutos.bind(this) }
-      ]
-    };
+  }
+
+  resetPromoForm(det?: PromocaoDto | null) {
+    const d: any = det || {};
+    this.promoForm = this.fb.group({
+      nome: [d.nome || '', [Validators.required, Validators.minLength(2)]],
+      descricao: [d.descricao || ''],
+      tipo: [d.tipo || 'percentual', Validators.required],
+      valor: [d.valor ?? 0, [Validators.required]],
+      inicio: [this.toInputDT(d.inicio)],
+      fim: [this.toInputDT(d.fim)],
+      ativo: [!!(d.ativo ?? true)]
+    });
+  }
+
+  private toInputDT(iso: any): string {
+    if (!iso) return '';
+    try {
+      const d = iso instanceof Date ? iso : new Date(String(iso));
+      if (isNaN(d.getTime())) return '';
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch { return ''; }
   }
 
   loadList() {
@@ -82,7 +100,6 @@ export class AdminPromocoesComponent implements OnInit {
   prevPage() { if (this.canPrev()) { this.page.set(this.page() - 1); this.loadList(); } }
   nextPage() { if (this.canNext()) { this.page.set(this.page() + 1); this.loadList(); } }
 
-  // Helpers de exibição
   formatValor(p: PromocaoDto): string {
     const v = Number((p.valor as any) ?? 0);
     if ((p.tipo || 'percentual') === 'percentual') return `${v}%`;
@@ -112,8 +129,9 @@ export class AdminPromocoesComponent implements OnInit {
 
   resetEditor() {
     this.editingId.set(null);
-    this.editingItem = null;
-    this.produtosVinculados.set([]);
+    this.selectedProdutoIds.set([]);
+    this.selectedProdutos.set([]);
+    this.resetPromoForm();
   }
 
   novaPromocao() {
@@ -124,33 +142,29 @@ export class AdminPromocoesComponent implements OnInit {
   editarPromocao(p: PromocaoDto) {
     if (!p.id) return;
     this.editingId.set(p.id);
+    this.showCreateModal.set(true);
     this.api.getPromocao(p.id).subscribe((det: PromocaoDto) => {
       const produtosArr = (det.produtos ?? []).map((x: any) => ({
         id: Number(x.id),
         name: x.nome ?? x.name ?? '',
         price: Number(x.preco ?? x.price ?? 0)
       }));
-      const ids = produtosArr.map((it: any) => Number(it.id));
-      this.produtosVinculados.set(ids);
-      this.editingItem = {
-        id: det.id,
-        nome: det.nome,
-        descricao: det.descricao ?? '',
-        tipo: det.tipo ?? 'percentual',
-        valor: det.valor ?? 0,
-        inicio: det.inicio ?? '',
-        fim: det.fim ?? '',
-        ativo: !!(det.ativo ?? true),
-        produtos: produtosArr
-      };
-      // Open the drawer with the loaded promotion data
-      this.showCreateModal.set(true);
+      this.selectedProdutoIds.set(produtosArr.map(p => p.id));
+      this.selectedProdutos.set(produtosArr);
+      this.resetPromoForm(det);
     });
   }
 
-  onSchemaSubmit(ev: { id?: any; values: any }) {
-    const id = ev.id;
-    const values = ev.values || {};
+  onProdutoIdsChange(ids: number[]) {
+    this.selectedProdutoIds.set(Array.isArray(ids) ? ids.map(x => Number(x)) : []);
+  }
+  onProdutosChange(items: Array<{ id: number; name?: string; price?: number }> | undefined) {
+    this.selectedProdutos.set(items || []);
+  }
+
+  submitPromo() {
+    if (this.promoForm.invalid) { this.promoForm.markAllAsTouched(); return; }
+    const values = this.promoForm.value;
     const body: PromocaoDto = {
       nome: values.nome,
       descricao: values.descricao || undefined,
@@ -161,24 +175,25 @@ export class AdminPromocoesComponent implements OnInit {
       ativo: !!values.ativo
     } as any;
 
-    const productIds: number[] = Array.isArray(values.produtos) ? values.produtos.map((x: any) => Number(x)) : [];
+    const id = this.editingId();
+    const productIds = this.selectedProdutoIds();
+    this.submitting.set(true);
 
     const afterSave = (saved: PromocaoDto) => {
-      if (productIds.length) {
-        this.api.setPromocaoProdutos(saved.id!, productIds).subscribe(() => {
-          this.resetEditor();
-          this.showCreateModal.set(false);
-          this.loadList();
-        });
-      } else {
-        this.resetEditor();
-        this.showCreateModal.set(false);
+      const done = () => {
+        this.submitting.set(false);
+        this.closeCreateModal();
         this.loadList();
+      };
+      if (productIds.length) {
+        this.api.setPromocaoProdutos(saved.id!, productIds).subscribe({ next: done, error: done });
+      } else {
+        done();
       }
     };
 
-    if (id) this.api.updatePromocao(id, body).subscribe(afterSave);
-    else this.api.createPromocao(body).subscribe(afterSave);
+    if (id) this.api.updatePromocao(id, body).subscribe({ next: afterSave, error: () => this.submitting.set(false) });
+    else this.api.createPromocao(body).subscribe({ next: afterSave, error: () => this.submitting.set(false) });
   }
 
   remover(p: PromocaoDto) {
@@ -188,20 +203,13 @@ export class AdminPromocoesComponent implements OnInit {
     }
   }
 
-  // Produtos - busca e seleção
-  buscarProdutos() {
-    // This method is no longer needed as product search is handled by EntityLookup
+  removerEditando() {
+    const id = this.editingId();
+    if (!id) return;
+    if (!confirm('Remover esta promoção?')) return;
+    this.api.deletePromocao(id).subscribe(() => { this.closeCreateModal(); this.loadList(); });
   }
 
-  // New helper to provide a search function to the EntityLookup component
-  searchProdutos(q: string) {
-    return this.api.listProdutos({ q, page: 1, pageSize: 10, active: 1 }).pipe(
-      map((res: any) => (res.data || []).map((p: any) => ({ id: Number(p.id), name: p.nome ?? p.name ?? '', price: Number(p.preco ?? p.price ?? 0) })))
-    );
-  }
-  // addProduto/removeProduto removed: EntityLookup now manages selection
-
-  // Filtros
   onQInput(ev: Event) {
     const value = (ev.target as HTMLInputElement).value;
     this.q.set(value);
@@ -214,13 +222,9 @@ export class AdminPromocoesComponent implements OnInit {
   }
 
   onDrawerOpenChange(open: boolean) {
-    // Keep parent state in sync with the drawer's internal state. When the drawer
-    // is closed via backdrop/ESC the SideDrawer emits openChange(false) but the
-    // component-level `showCreateModal` could still be true — leaving the parent
-    // thinking the drawer is open. Sync the signal and reset editor when closed.
     this.showCreateModal.set(open);
     if (!open) this.resetEditor();
   }
 
-  closeCreateModal(){ this.resetEditor(); this.showCreateModal.set(false); }
+  closeCreateModal() { this.resetEditor(); this.showCreateModal.set(false); }
 }

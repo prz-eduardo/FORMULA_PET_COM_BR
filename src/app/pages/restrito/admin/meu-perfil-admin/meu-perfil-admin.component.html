@@ -6,18 +6,137 @@
     </div>
   </header>
 
-  <div class="card-body" *ngIf="user; else noUser">
+  <!-- Dados do usuário -->
+  <section class="card-body" *ngIf="user; else noUser">
     <dl class="perfil-list">
       <div class="row"><dt>Nome</dt><dd>{{ user.nome || user.name || user.displayName || '-' }}</dd></div>
       <div class="row"><dt>Email</dt><dd>{{ user.email || user.mail || '-' }}</dd></div>
       <div class="row" *ngIf="user.telefone"><dt>Telefone</dt><dd>{{ user.telefone }}</dd></div>
-      <div class="row" *ngIf="user.cpf"><dt>CPF</dt><dd>{{ user.cpf }}</dd></div>
       <div class="row" *ngIf="user.tipo"><dt>Tipo</dt><dd>{{ user.tipo }}</dd></div>
-      <div class="row" *ngIf="user.is_super !== undefined"><dt>Super</dt><dd>{{ user.is_super ? 'Sim' : 'Não' }}</dd></div>
+      <div class="row" *ngIf="user.is_super !== undefined">
+        <dt>Super</dt><dd>{{ user.is_super ? 'Sim' : 'Não' }}</dd>
+      </div>
     </dl>
-  </div>
+  </section>
 
   <ng-template #noUser>
     <div class="card-body">Nenhum usuário autenticado.</div>
   </ng-template>
+
+  <!-- Trocar a própria senha (só super-admin pode, por enquanto) -->
+  <section class="pwd-section" *ngIf="isSuper">
+    <h3>🔐 Definir / alterar minha senha</h3>
+    <p class="hint">
+      Depois de salvar, você poderá entrar em <code>/restrito/login</code>
+      usando o e-mail <b>{{ user?.email }}</b> e a senha definida aqui.
+    </p>
+
+    <form [formGroup]="minhaSenhaForm" (ngSubmit)="salvarMinhaSenha()" class="pwd-form" novalidate>
+      <div class="field">
+        <label>Nova senha</label>
+        <div class="pwd-wrap">
+          <input [type]="showP1 ? 'text' : 'password'" formControlName="senha"
+                 autocomplete="new-password" placeholder="Mín. 8 caracteres, com letras e números" />
+          <button type="button" class="pwd-toggle" (click)="showP1 = !showP1">
+            {{ showP1 ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        <small class="err" *ngIf="hasErr(minhaSenhaForm,'senha','required')">Informe uma senha.</small>
+        <small class="err" *ngIf="hasErr(minhaSenhaForm,'senha','minLength')">Mínimo 8 caracteres.</small>
+        <small class="err" *ngIf="hasErr(minhaSenhaForm,'senha','needLetter')">Precisa conter letras.</small>
+        <small class="err" *ngIf="hasErr(minhaSenhaForm,'senha','needDigit')">Precisa conter números.</small>
+      </div>
+
+      <div class="field">
+        <label>Confirmar senha</label>
+        <div class="pwd-wrap">
+          <input [type]="showP2 ? 'text' : 'password'" formControlName="confirma"
+                 autocomplete="new-password" />
+          <button type="button" class="pwd-toggle" (click)="showP2 = !showP2">
+            {{ showP2 ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        <small class="err" *ngIf="hasErr(minhaSenhaForm,'confirma','required')">Confirme a senha.</small>
+        <small class="err" *ngIf="hasMismatch(minhaSenhaForm)">As senhas não conferem.</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="savingMinha">
+          <span *ngIf="!savingMinha">Salvar minha senha</span>
+          <span *ngIf="savingMinha">Salvando…</span>
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Aviso para admins comuns -->
+  <section class="pwd-section notice" *ngIf="user && !isSuper">
+    <h3>🔐 Senha de acesso</h3>
+    <p>
+      Apenas super-administradores podem definir senhas. Peça para um super-admin
+      gerar a sua em <i>"Senha de outro admin"</i>.
+    </p>
+  </section>
+
+  <!-- Definir senha de OUTROS admins (só super) -->
+  <section class="pwd-section" *ngIf="isSuper">
+    <h3>👥 Definir senha de outro admin</h3>
+    <p class="hint">
+      Use este formulário para liberar o acesso por senha a outros administradores.
+      Eles poderão entrar em <code>/restrito/login</code> com o e-mail deles.
+    </p>
+
+    <form [formGroup]="outroAdminForm" (ngSubmit)="salvarSenhaOutro()" class="pwd-form" novalidate>
+      <div class="field">
+        <label>Administrador</label>
+        <select formControlName="admin_id">
+          <option value="">-- selecione --</option>
+          <option *ngFor="let a of admins" [value]="a.id">
+            {{ a.nome }} — {{ a.email }}{{ a.is_super ? ' ⭐' : '' }}
+          </option>
+        </select>
+        <small class="err" *ngIf="hasErr(outroAdminForm,'admin_id','required')">Selecione um admin.</small>
+        <small class="hint" *ngIf="loadingAdmins">Carregando lista…</small>
+        <small class="hint" *ngIf="!loadingAdmins && admins.length === 0">
+          Nenhum outro admin cadastrado.
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Nova senha</label>
+        <div class="pwd-wrap">
+          <input [type]="showQ1 ? 'text' : 'password'" formControlName="senha"
+                 autocomplete="new-password" placeholder="Mín. 8 caracteres" />
+          <button type="button" class="pwd-toggle" (click)="showQ1 = !showQ1">
+            {{ showQ1 ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        <small class="err" *ngIf="hasErr(outroAdminForm,'senha','required')">Informe uma senha.</small>
+        <small class="err" *ngIf="hasErr(outroAdminForm,'senha','minLength')">Mínimo 8 caracteres.</small>
+        <small class="err" *ngIf="hasErr(outroAdminForm,'senha','needLetter')">Precisa conter letras.</small>
+        <small class="err" *ngIf="hasErr(outroAdminForm,'senha','needDigit')">Precisa conter números.</small>
+      </div>
+
+      <div class="field field--full">
+        <label>Confirmar senha</label>
+        <div class="pwd-wrap">
+          <input [type]="showQ2 ? 'text' : 'password'" formControlName="confirma"
+                 autocomplete="new-password" />
+          <button type="button" class="pwd-toggle" (click)="showQ2 = !showQ2">
+            {{ showQ2 ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        <small class="err" *ngIf="hasErr(outroAdminForm,'confirma','required')">Confirme a senha.</small>
+        <small class="err" *ngIf="hasMismatch(outroAdminForm)">As senhas não conferem.</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary"
+                [disabled]="savingOutro || admins.length === 0">
+          <span *ngIf="!savingOutro">Salvar senha do admin</span>
+          <span *ngIf="savingOutro">Salvando…</span>
+        </button>
+      </div>
+    </form>
+  </section>
 </div>

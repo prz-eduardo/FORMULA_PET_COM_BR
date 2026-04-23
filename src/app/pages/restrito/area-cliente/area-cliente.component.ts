@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NavmenuComponent } from '../../../navmenu/navmenu.component';
 import { LoginClienteComponent } from './login-cliente/login-cliente.component';
 import { CrieSuaContaClienteComponent } from './crie-sua-conta-cliente/crie-sua-conta-cliente.component';
+import { NotificationsBellComponent } from '../../../shared/notifications-bell/notifications-bell.component';
 import { ToastService } from '../../../services/toast.service';
 import { AuthService } from '../../../services/auth.service';
 import { ApiService } from '../../../services/api.service';
@@ -21,7 +22,7 @@ interface Pet {
 @Component({
   selector: 'app-area-cliente',
   standalone: true, // <-- importante
-  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, LoginClienteComponent, CrieSuaContaClienteComponent], // <-- importa o que usa no template
+  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, LoginClienteComponent, CrieSuaContaClienteComponent, NotificationsBellComponent], // <-- importa o que usa no template
   templateUrl: './area-cliente.component.html',
   styleUrls: ['./area-cliente.component.scss']
 })
@@ -187,6 +188,18 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
   private get isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
 
+  /**
+   * Considera a conta desativada APENAS quando o backend devolve explicitamente
+   * `ativo === 0` (ou `false`). Valores `undefined`/`null` (ausência do campo
+   * em respostas legadas) são tratados como ATIVO para não bloquear o cliente
+   * indevidamente.
+   */
+  get isContaDesativada(): boolean {
+    if (!this.clienteData) return false;
+    const a = this.clienteData.ativo;
+    return a === 0 || a === false || a === '0';
+  }
+
   private getStoredUserType(): string | null {
     if (!this.isBrowser) return null;
     return localStorage.getItem('userType') || sessionStorage.getItem('userType');
@@ -267,6 +280,16 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
 
   abrirCadastroPet() {
     this.toast.info('Abrir modal de cadastro de pet');
+  }
+
+  /** Extrai iniciais (máx. 2) a partir do nome para uso no avatar */
+  getInitials(nome?: string | null): string {
+    if (!nome) return '?';
+    const parts = String(nome).trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    const first = parts[0].charAt(0) || '';
+    const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+    return (first + last).toUpperCase();
   }
 
   verDetalhesPet(pet: Pet) {

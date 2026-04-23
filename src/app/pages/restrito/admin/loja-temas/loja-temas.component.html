@@ -1,0 +1,116 @@
+<div class="lt-wrapper admin-page-wrap">
+  <app-admin-toolbar>
+    <div slot="title">
+      <h2>Temas da loja</h2>
+      <p class="sub">Cores e opções de cards da vitrine. O tema marcado como <strong>ativo na loja</strong> é o que os clientes veem após recarregar a página.</p>
+    </div>
+    <div slot="actions">
+      <button class="admin-btn ghost" type="button" (click)="load()" [disabled]="loading()">
+        {{ loading() ? 'Atualizando…' : 'Atualizar' }}
+      </button>
+      <button class="admin-btn ok" type="button" (click)="openCreate()">+ Novo tema</button>
+    </div>
+  </app-admin-toolbar>
+
+  <div class="lt-toast" *ngIf="toast() as t" [class.lt-toast--ok]="t.kind === 'ok'" [class.lt-toast--err]="t.kind === 'error'">
+    {{ t.message }}
+  </div>
+
+  <div class="lt-empty" *ngIf="!loading() && !items().length">Nenhum tema cadastrado.</div>
+
+  <div class="lt-grid" *ngIf="items().length">
+    <article class="lt-card" *ngFor="let tema of items(); trackBy: trackById">
+      <header class="lt-card-head">
+        <h3>{{ tema.nome }}</h3>
+        <div class="lt-badges">
+          <span class="lt-badge lt-badge--preset" *ngIf="tema.is_preset">Preset</span>
+          <span class="lt-badge lt-badge--live" *ngIf="isLive(tema)">Ativo na loja</span>
+          <span class="lt-badge lt-badge--off" *ngIf="!tema.ativo">Desligado</span>
+        </div>
+      </header>
+      <p class="lt-slug" *ngIf="tema.slug"><code>{{ tema.slug }}</code></p>
+
+      <div class="lt-preview" [ngStyle]="previewVars(tema)">
+        <div class="lt-preview-grid">
+          <app-product-card-sales
+            class="lt-pc"
+            [product]="mockSales"
+            [themeConfig]="tema.config || null"
+            [disableLink]="true"
+            [supportsFavorites]="false"
+            [supportsRatings]="true"
+          />
+          <div class="lt-preview-banner">
+            <app-product-card-banner
+              [product]="mockBanner"
+              [themeConfig]="tema.config || null"
+              [disableLink]="true"
+              [supportsFavorites]="false"
+            />
+          </div>
+        </div>
+      </div>
+
+      <footer class="lt-actions">
+        <button class="admin-btn small ok" type="button" (click)="activate(tema)" [disabled]="!tema.ativo">
+          Definir como ativo na loja
+        </button>
+        <button class="admin-btn small secondary" type="button" (click)="openEdit(tema)">Editar</button>
+        <button class="admin-btn small ghost" type="button" (click)="duplicate(tema)">Duplicar</button>
+        <button
+          class="admin-btn small danger"
+          type="button"
+          (click)="remove(tema)"
+          *ngIf="!tema.is_preset"
+        >
+          Excluir
+        </button>
+      </footer>
+    </article>
+  </div>
+</div>
+
+<div class="lt-drawer-backdrop" *ngIf="drawerMode() !== 'closed'" (click)="closeDrawer()"></div>
+<aside class="lt-drawer" *ngIf="drawerMode() !== 'closed'" role="dialog" aria-labelledby="lt-drawer-title">
+  <h2 id="lt-drawer-title">{{ drawerMode() === 'create' ? 'Novo tema' : 'Editar tema' }}</h2>
+
+  <label class="lt-field">
+    <span>Nome</span>
+    <input type="text" [(ngModel)]="draftNome" name="lt-nome" autocomplete="off" />
+  </label>
+  <label class="lt-field">
+    <span>Slug (opcional)</span>
+    <input type="text" [(ngModel)]="draftSlug" name="lt-slug" autocomplete="off" />
+  </label>
+  <label class="lt-check">
+    <input type="checkbox" [(ngModel)]="draftAtivo" name="lt-ativo" />
+    <span>Tema habilitado (obrigatório para publicar na vitrine)</span>
+  </label>
+
+  <div class="lt-colors">
+    <label class="lt-field lt-color">
+      <span>Cor primária</span>
+      <input type="color" [(ngModel)]="draftPrimary" name="lt-c1" />
+    </label>
+    <label class="lt-field lt-color">
+      <span>Destaque</span>
+      <input type="color" [(ngModel)]="draftAccent" name="lt-c2" />
+    </label>
+    <label class="lt-field lt-color">
+      <span>Superfície</span>
+      <input type="color" [(ngModel)]="draftSurface" name="lt-c3" />
+    </label>
+  </div>
+
+  <label class="lt-field lt-json">
+    <span>Configuração JSON (avançado)</span>
+    <textarea [(ngModel)]="draftJson" name="lt-json" rows="14" spellcheck="false"></textarea>
+  </label>
+
+  <div class="lt-drawer-actions">
+    <button class="admin-btn ghost" type="button" (click)="closeDrawer()" [disabled]="saving()">Cancelar</button>
+    <button class="admin-btn ok" type="button" (click)="save()" [disabled]="saving()">
+      {{ saving() ? 'Salvando…' : 'Salvar' }}
+    </button>
+  </div>
+</aside>

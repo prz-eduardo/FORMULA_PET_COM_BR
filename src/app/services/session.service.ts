@@ -34,6 +34,17 @@ export class SessionService {
     });
   }
 
+  /**
+   * Admin login using email + password against backend (/auth/admin/login).
+   * Returns the same SessionResponse shape as exchangeIdToken.
+   */
+  adminLoginPassword(email: string, senha: string) {
+    return this.http.post<SessionResponse>(`${this.baseUrl}/auth/admin/login`, {
+      email: (email || '').trim().toLowerCase(),
+      senha
+    });
+  }
+
   /** Returns the backend JWT from storage, if any. */
   getBackendToken(): string | null {
     return this.auth.getToken();
