@@ -1190,7 +1190,66 @@ export class AdminApiService {
   vetAuditLogs(id: string | number): Observable<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>> {
     return this.http.get<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>>(`${this.baseUrl}/vets/${id}/audit-logs`, { headers: this.headers() });
   }
-  
+
+  /** Rastreio de atividade da loja (/admin/rastreio) */
+  rastreioTimeline(
+    clienteId: string | number,
+    params?: { cursor?: string | number; limit?: number; tipos?: string }
+  ): Observable<{
+    items: Array<{
+      id: number;
+      visitante_id: string | null;
+      cliente_id: number | null;
+      tipo: string;
+      path: string | null;
+      route_id: string | null;
+      meta: unknown;
+      user_agent: string | null;
+      session_id: string | null;
+      created_at: string;
+    }>;
+    nextCursor: number | null;
+  }> {
+    let httpParams = new HttpParams();
+    if (params?.cursor != null) httpParams = httpParams.set('cursor', String(params.cursor));
+    if (params?.limit) httpParams = httpParams.set('limit', String(params.limit));
+    if (params?.tipos) httpParams = httpParams.set('tipos', params.tipos);
+    return this.http.get(`${this.baseUrl}/rastreio/clientes/${clienteId}/timeline`, {
+      headers: this.headers(),
+      params: httpParams,
+    }) as any;
+  }
+
+  rastreioFeed(params?: {
+    from?: string;
+    to?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+    tipo?: string;
+  }): Observable<{ items: any[]; total: number; page: number; pageSize: number }> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.from) httpParams = httpParams.set('from', params.from);
+      if (params.to) httpParams = httpParams.set('to', params.to);
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+      if (params.tipo) httpParams = httpParams.set('tipo', params.tipo);
+    }
+    return this.http.get<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `${this.baseUrl}/rastreio/feed`,
+      { headers: this.headers(), params: httpParams }
+    );
+  }
+
+  rastreioResumo(visitanteId: string): Observable<{
+    visitante: Record<string, unknown>;
+    eventos: Array<{ id: number; tipo: string; path: string | null; route_id: string | null; meta: unknown; created_at: string }>;
+  }> {
+    return this.http.get(`${this.baseUrl}/rastreio/resumo/${encodeURIComponent(visitanteId)}`, { headers: this.headers() }) as any;
+  }
+
   // Banners (admin)
   listBanners(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1; posicao?: string }): Observable<Paged<BannerDto>> {
     let httpParams = new HttpParams();

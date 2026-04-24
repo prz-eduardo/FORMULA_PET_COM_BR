@@ -8,6 +8,7 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { RastreioLojaService } from '../../services/rastreio-loja.service';
 import { ProductCardRendererComponent } from '../../product-cards/product-card-renderer.component';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../constants/card.constants';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
@@ -167,7 +168,16 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   private lastFetchKey: string | null = null;
   private initializedFromParams = false;
 
-  constructor(private store: StoreService, private toast: ToastService, private renderer: Renderer2, private api: ApiService, private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
+  constructor(
+    private store: StoreService,
+    private toast: ToastService,
+    private renderer: Renderer2,
+    private api: ApiService,
+    private auth: AuthService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private rastreio: RastreioLojaService
+  ) {}
  
 
   ngAfterViewInit(): void {
@@ -812,10 +822,14 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async doLogin() {
     try {
-      const resp = await this.api.loginCliente({ email: this.email, senha: this.senha }).toPromise();
+      const vid = this.rastreio.getVisitanteId();
+      const resp = await this.api.loginCliente({ email: this.email, senha: this.senha, visitanteId: vid }).toPromise();
       if (resp?.token) {
         // Broadcast login to the whole app
         this.auth.login(resp.token, true);
+        try {
+          this.rastreio.afterClienteLogin();
+        } catch { /* */ }
         localStorage.setItem('userType', 'cliente');
         this.toast.success('Login realizado com sucesso');
         this.showLogin = false;
@@ -870,10 +884,13 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
       // Realiza login no Firebase para obter idToken e trocar no backend
       const res = await this.auth.loginGoogle();
       const idToken = await res.user.getIdToken();
-      const resp = await this.api.loginCliente({ idToken }).toPromise();
+      const resp = await this.api.loginCliente({ idToken, visitanteId: this.rastreio.getVisitanteId() }).toPromise();
       if (resp?.token) {
         // Broadcast login to the whole app
         this.auth.login(resp.token, true);
+        try {
+          this.rastreio.afterClienteLogin();
+        } catch { /* */ }
         localStorage.setItem('userType', 'cliente');
         this.toast.success('Login com Google realizado');
         this.showLogin = false;

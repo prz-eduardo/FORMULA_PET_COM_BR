@@ -37,7 +37,18 @@ export class PeopleAdminComponent implements OnInit {
   showDocs = signal(false);
   docs = signal<PessoaDocDto[]>([]);
   logs = signal<Array<{ id: number; action: string; reason?: string; created_at: string; admin_id?: number }>>([]);
-  selectedTab = signal<'dados'|'docs'|'audit'>('dados');
+  selectedTab = signal<'dados'|'docs'|'audit'|'atividade'>('dados');
+  rastreioItems = signal<
+    Array<{
+      id: number;
+      tipo: string;
+      path: string | null;
+      meta: unknown;
+      created_at: string;
+    }>
+  >([]);
+  rastreioCursor = signal<string | number | null>(null);
+  rastreioLoading = signal(false);
 
   // criação
   showCreate = signal(false);
@@ -200,6 +211,8 @@ export class PeopleAdminComponent implements OnInit {
     this.expandedId.set(this.idOf(u));
     this.showDocs.set(false);
     this.selectedTab.set('dados');
+    this.rastreioItems.set([]);
+    this.rastreioCursor.set(null);
     const anyU = u as any;
     const endereco = anyU.endereco || {};
     this.form = this.fb.group({
@@ -237,7 +250,40 @@ export class PeopleAdminComponent implements OnInit {
   closeDetail() { this.selected.set(null); this.expandedId.set(null); }
   isExpanded(u: any): boolean { const id = this.idOf(u); return id != null && id === this.expandedId(); }
   toggleExpand(u: any) { if (this.isExpanded(u)) { this.closeDetail(); } else { this.view(u as any); } }
-  selectTab(tab: 'dados'|'docs'|'audit') { this.selectedTab.set(tab); }
+  selectTab(tab: 'dados' | 'docs' | 'audit' | 'atividade') {
+    this.selectedTab.set(tab);
+    if (tab === 'atividade' && this.tipo === 'cliente') {
+      this.rastreioItems.set([]);
+      this.rastreioCursor.set(null);
+      this.loadRastreio();
+    }
+  }
+
+  loadRastreio(append = false) {
+    if (this.tipo !== 'cliente') return;
+    const u = this.selected();
+    if (!u) return;
+    const id = (u as any).id ?? (u as any).uid;
+    if (id == null) return;
+    this.rastreioLoading.set(true);
+    const cursor = append ? this.rastreioCursor() : null;
+    this.api.rastreioTimeline(id, { cursor: cursor != null ? String(cursor) : undefined, limit: 50 }).subscribe({
+      next: (r) => {
+        const items = r.items || [];
+        if (append) this.rastreioItems.update((arr) => [...arr, ...items]);
+        else this.rastreioItems.set(items);
+        this.rastreioCursor.set(r.nextCursor);
+      },
+      error: () => {
+        if (!append) this.rastreioItems.set([]);
+      },
+      complete: () => this.rastreioLoading.set(false)
+    });
+  }
+
+  loadMoreRastreio() {
+    if (this.rastreioCursor() != null) this.loadRastreio(true);
+  }
 
   ativar(u: any) {
     const id = u.id || u.uid; const tipo = this.tipo; const body: any = { tipo, ativo: 1 };

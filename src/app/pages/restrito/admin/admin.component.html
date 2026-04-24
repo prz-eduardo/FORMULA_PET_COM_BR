@@ -189,6 +189,11 @@
             <span>Gerenciar Clientes</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
+          <button class="item" *ngIf="matches('rastreio atividade loja tráfego visitas')" (click)="goToRastreioClientes()" tabindex="0">
+            <i class="fa fa-street-view"></i>
+            <span>Rastreio / atividade</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
           <button class="item" *ngIf="matches('veterinarios vet')" (click)="goToVeterinarios()" tabindex="0">
             <i class="fa fa-user-md"></i>
             <span>Gerenciar Veterinários</span>

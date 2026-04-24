@@ -58,6 +58,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     pessoas: [
       'gerenciar usuarios admins',
       'gerenciar clientes',
+      'rastreio atividade loja tráfego visitas',
       'veterinarios vet',
       'parceiros gestao',
       'pets galeria moderação tutor fotos',
@@ -186,6 +187,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   goToDashboard() { this.router.navigate(['/restrito/admin/dashboard']); }
   goToEstoque() { this.router.navigate(['/restrito/admin/estoque']); }
   goToClientes() { this.router.navigate(['/restrito/admin/clientes']); }
+  goToRastreioClientes() { this.router.navigate(['/restrito/admin/rastreio-clientes']); }
   goToVeterinarios() { this.router.navigate(['/restrito/admin/veterinarios']); }
   goToBanners() { this.router.navigate(['/restrito/admin/banners']); }
   goToPedidos() { this.router.navigate(['/restrito/admin/pedidos']); }

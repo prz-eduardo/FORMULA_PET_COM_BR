@@ -121,6 +121,7 @@
             <button type="button" class="fx-tab" [class.active]="selectedTab()==='dados'" (click)="selectTab('dados')">Dados</button>
             <button type="button" class="fx-tab" [class.active]="selectedTab()==='docs'" (click)="selectTab('docs')">Documentos</button>
             <button type="button" class="fx-tab" *ngIf="tipo==='vet'" [class.active]="selectedTab()==='audit'" (click)="selectTab('audit')">Auditoria</button>
+            <button type="button" class="fx-tab" *ngIf="tipo==='cliente'" [class.active]="selectedTab()==='atividade'" (click)="selectTab('atividade')">Atividade</button>
           </nav>
 
           <div class="tab-body">
@@ -236,6 +237,30 @@
                   <div class="fx-items-empty">
                     <div class="fx-items-empty__title">Sem documentos enviados.</div>
                     <div class="fx-items-empty__desc">Use os cartões acima para anexar arquivos.</div>
+                  </div>
+                </ng-template>
+              </section>
+            </div>
+
+            <!-- ATIVIDADE (RASTREIO) -------------------------------- -->
+            <div class="pane" *ngIf="selectedTab()==='atividade' && tipo==='cliente'">
+              <section class="fx-section">
+                <header class="fx-section__head">
+                  <h3>Atividade na loja</h3>
+                  <p>Eventos de navegação, carrinho, login (após o cliente ser identificado ou fundido a este registo).</p>
+                </header>
+                <p class="muted" *ngIf="rastreioLoading() && !rastreioItems().length">Carregando…</p>
+                <div class="audit" *ngIf="rastreioItems().length; else emptyRastreio">
+                  <div class="log" *ngFor="let ev of rastreioItems()">
+                    <div class="when">{{ ev.created_at | date:'short' }}</div>
+                    <div class="what"><span class="chip tipo">{{ ev.tipo }}</span> {{ ev.path || '' }}</div>
+                    <div class="reason" *ngIf="ev.meta != null"><code>{{ ev.meta | json }}</code></div>
+                  </div>
+                  <button *ngIf="rastreioCursor() != null" type="button" appBtn class="ghost" (click)="loadMoreRastreio()" [disabled]="rastreioLoading()">Carregar mais</button>
+                </div>
+                <ng-template #emptyRastreio>
+                  <div class="fx-items-empty" *ngIf="!rastreioLoading()">
+                    <div class="fx-items-empty__title">Sem atividade registada ainda.</div>
                   </div>
                 </ng-template>
               </section>

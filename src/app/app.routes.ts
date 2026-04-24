@@ -76,6 +76,13 @@ export const routes: Routes = [
       { path: 'clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente', title: 'Gerenciar Clientes' }, canActivate: [authGuard] },
       { path: 'veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet', title: 'Gerenciar Veterinários' }, canActivate: [authGuard] },
       {
+        path: 'rastreio-clientes',
+        loadComponent: () =>
+          import('./pages/restrito/admin/rastreio-clientes/rastreio-clientes.component').then((m) => m.RastreioClientesAdminComponent),
+        canActivate: [authGuard],
+        data: { title: 'Rastreio de clientes' },
+      },
+      {
         path: 'pets-galeria',
         loadComponent: () =>
           import('./pages/restrito/admin/pets-galeria/pets-galeria.component').then((m) => m.PetsGaleriaAdminComponent),

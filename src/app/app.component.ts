@@ -12,6 +12,7 @@ import { ProductPreviewComponent } from './product-preview/product-preview.compo
 import { ToastContainerComponent } from './shared/toast/toast-container.component';
 import { LoginClienteComponent } from './pages/restrito/area-cliente/login-cliente/login-cliente.component';
 import { StoreService } from './services/store.service';
+import { RastreioLojaService } from './services/rastreio-loja.service';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -41,7 +42,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     @Inject(PLATFORM_ID) private platformId: any,
     private zone: NgZone,
     private router: Router,
-    private store: StoreService
+    private store: StoreService,
+    private rastreio: RastreioLojaService
   ) {
     register(); // Swiper
   }
@@ -66,6 +68,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showFooter = !hideNow;
         this.showNav = !hideNow;
       });
+    } catch (e) {}
+    try {
+      this.rastreio.start();
     } catch (e) {}
     // Global listener for programmatic login requests (from other components)
     if (typeof window !== 'undefined') {

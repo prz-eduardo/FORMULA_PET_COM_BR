@@ -5,6 +5,7 @@ import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { AuthService } from '../../../../services/auth.service';
 import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../services/toast.service';
+import { RastreioLojaService } from '../../../../services/rastreio-loja.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -32,8 +33,9 @@ export class CrieSuaContaClienteComponent {
 
   constructor(
     private authService: AuthService,
-    private apiService: ApiService
-    , private toastService: ToastService
+    private apiService: ApiService,
+    private toastService: ToastService,
+    private rastreio: RastreioLojaService
   ) {}
 
   abrir() { this.aberto = true; }
@@ -96,6 +98,9 @@ export class CrieSuaContaClienteComponent {
     this.authService.login(data.token, true);
     localStorage.setItem('userType', data.tipo);
     if (data.token) localStorage.setItem('token', data.token);
+    try {
+      this.rastreio.afterClienteLogin();
+    } catch { /* */ }
     this.toastService.success('Conta criada com sucesso!', 'Sucesso');
     this.loggedIn.emit();
     this.close.emit();
@@ -137,6 +142,9 @@ export class CrieSuaContaClienteComponent {
           this.authService.login(data.token, true);
           localStorage.setItem('userType', data.tipo);
           if (data.token) localStorage.setItem('token', data.token);
+          try {
+            this.rastreio.afterClienteLogin();
+          } catch { /* */ }
           this.toastService.success('Conta criada com sucesso via Google!', 'Sucesso');
           this.loggedIn.emit();
           this.close.emit();
@@ -144,10 +152,13 @@ export class CrieSuaContaClienteComponent {
         const msgInner = this.parseError(err);
         if (msgInner === 'Vet já cadastrado!' || msgInner === 'Cliente já cadastrado!') {
           const loginData = await firstValueFrom(
-            this.apiService.loginCliente({ email, idToken })
+            this.apiService.loginCliente({ email, idToken, visitanteId: this.rastreio.getVisitanteId() })
           );
           // Auto-login for existing client detected via Google
           this.authService.login(loginData.token, true);
+          try {
+            this.rastreio.afterClienteLogin();
+          } catch { /* */ }
           localStorage.setItem('userType', loginData.tipo);
           if (loginData.token) localStorage.setItem('token', loginData.token);
           this.toastService.success('Login via Google realizado com sucesso!', 'Sucesso');

@@ -330,7 +330,7 @@ export class ApiService {
   }
 
   // Login cliente
-  loginCliente(payload: { email?: string; senha?: string; idToken?: string }): Observable<AuthResponse> {
+  loginCliente(payload: { email?: string; senha?: string; idToken?: string; visitanteId?: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/clientes/login-cliente`, payload);
   }
 

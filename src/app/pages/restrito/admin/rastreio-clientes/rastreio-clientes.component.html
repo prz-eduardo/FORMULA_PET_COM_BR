@@ -1,0 +1,63 @@
+<div class="rastreio-page">
+  <header class="head">
+    <h2>Rastreio e atividade</h2>
+    <p class="muted">Eventos de navegação, carrinho e login capturados na loja (incl. antes do login, por visitante).</p>
+  </header>
+
+  <form [formGroup]="form" class="filters" (ngSubmit)="applyFilters()">
+    <input type="search" formControlName="q" placeholder="Nome, e-mail, path, id evento" />
+    <input type="text" formControlName="tipo" placeholder="Tipo (ex. page_view)" list="tipos-rastreio" />
+    <datalist id="tipos-rastreio">
+      <option value="page_view"></option>
+      <option value="login"></option>
+      <option value="cart_snapshot"></option>
+      <option value="identify"></option>
+    </datalist>
+    <input type="date" formControlName="from" />
+    <input type="date" formControlName="to" />
+    <button type="submit" appBtn class="primary">Filtrar</button>
+  </form>
+
+  <div class="table-wrap" *ngIf="!loading(); else loadingTpl">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Path</th>
+          <th>Cliente</th>
+          <th>Meta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of items()">
+          <td>{{ e.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td><span class="chip">{{ e.tipo }}</span></td>
+          <td class="path">{{ e.path || '—' }}</td>
+          <td>
+            <ng-container *ngIf="e.cliente_id; else noCliente">
+              <button type="button" class="link" (click)="goCliente(e.cliente_id)">
+                {{ e.cliente_nome || e.cliente_id }}<span *ngIf="e.cliente_email" class="muted"> · {{ e.cliente_email }}</span>
+              </button>
+            </ng-container>
+            <ng-template #noCliente>—</ng-template>
+          </td>
+          <td class="meta" [title]="formatMeta(e.meta)">{{ formatMeta(e.meta) }}</td>
+        </tr>
+        <tr *ngIf="!items().length">
+          <td colspan="5" class="empty">Nenhum evento com os filtros atuais.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <ng-template #loadingTpl>
+    <p class="muted">Carregando…</p>
+  </ng-template>
+
+  <div class="pagination" *ngIf="total() > pageSize()">
+    <span>{{ (page() - 1) * pageSize() + 1 }}–{{ (page() * pageSize() > total() ? total() : page() * pageSize()) }} de {{ total() }}</span>
+    <button type="button" appBtn (click)="prev()" [disabled]="page() <= 1">Anterior</button>
+    <span class="muted">Página {{ page() }} / {{ totalPages() }}</span>
+    <button type="button" appBtn (click)="next()" [disabled]="page() >= totalPages()">Próxima</button>
+  </div>
+</div>

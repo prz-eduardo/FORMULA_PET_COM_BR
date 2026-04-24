@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService } from '../../../../services/auth.service';
 import { ApiService } from '../../../../services/api.service';
+import { RastreioLojaService } from '../../../../services/rastreio-loja.service';
 import { ToastService } from '../../../../services/toast.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -25,8 +26,9 @@ export class LoginClienteComponent {
 
   constructor(
     private authService: AuthService,
-    private apiService: ApiService
-    , private toastService: ToastService
+    private apiService: ApiService,
+    private toastService: ToastService,
+    private rastreio: RastreioLojaService
   ) {}
 
   async loginEmail(form: NgForm) {
@@ -41,11 +43,14 @@ export class LoginClienteComponent {
 
       // Envia pro backend email + senha (cliente)
       const data = await firstValueFrom(
-        this.apiService.loginCliente({ email, senha })
+        this.apiService.loginCliente({ email, senha, visitanteId: this.rastreio.getVisitanteId() })
       );
 
       // AuthService.login cuidará de persistência (localStorage vs sessionStorage)
       this.authService.login(data.token, this.manterLogin);
+      try {
+        this.rastreio.afterClienteLogin();
+      } catch { /* */ }
       // Guardar tipo de usuário em storage persistente (localStorage) se o usuário optar por manter o login,
       // caso contrário armazenamos em sessionStorage para a sessão atual.
       if (this.manterLogin) {
@@ -102,10 +107,17 @@ export class LoginClienteComponent {
         return;
       }
       const data = await firstValueFrom(
-        this.apiService.loginCliente({ email: currentUser?.email, idToken })
+        this.apiService.loginCliente({
+          email: currentUser?.email,
+          idToken,
+          visitanteId: this.rastreio.getVisitanteId()
+        })
       );
 
       this.authService.login(data.token, this.manterLogin);
+      try {
+        this.rastreio.afterClienteLogin();
+      } catch { /* */ }
       if (this.manterLogin) {
         localStorage.setItem('userType', data.tipo);
       } else {
