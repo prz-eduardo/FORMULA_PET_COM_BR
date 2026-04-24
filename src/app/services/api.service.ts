@@ -1,4 +1,4 @@
-import { environment } from '../../enviroments/environment';
+import { environment } from '../../environments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError, throwError } from 'rxjs';
@@ -362,9 +362,25 @@ export class ApiService {
   criarPedido(token: string, body: any) {
     return this.http.post<any>(`${this.baseUrl}/pedidos`, body, { headers: { Authorization: `Bearer ${token}` } });
   }
-  atualizarPedido(token: string, codigoOuId: string | number, body: any) {
-    return this.http.put<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(codigoOuId))}`, body, { headers: { Authorization: `Bearer ${token}` } });
+  atualizarPedido(token: string | null | undefined, codigoOuId: string | number, body: any) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.put<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(codigoOuId))}`, body, { headers });
   }
+
+  /** Inicia cobrança no gateway (Preference ou PIX). */
+  iniciarPagamentoCheckout(
+    token: string | null | undefined,
+    pedidoId: string | number,
+    body?: { flow?: 'pix' | 'preference'; metodo?: string }
+  ) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post<any>(
+      `${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoId))}/pagamento/iniciar`,
+      body || {},
+      { headers }
+    );
+  }
+
   criarPagamento(token: string, pedidoCodigo: string | number, body: any) {
     return this.http.post<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoCodigo))}/pagamentos`, body, { headers: { Authorization: `Bearer ${token}` } });
   }
@@ -531,6 +547,55 @@ export class ApiService {
     return this.http.get<{ data: any[]; page: number; pageSize: number; total: number; totalPages: number }>(url, {
       headers: { Authorization: `Bearer ${token}` }
     });
+  }
+
+  listMyOrderSolicitacoes(token: string, pedidoId: number | string): Observable<any[]> {
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    return this.http.get<any[]>(
+      `${this.baseUrl}/clientes/me/pedidos/${encodeURIComponent(String(pedidoId))}/solicitacoes`,
+      { headers }
+    );
+  }
+
+  createMyOrderSolicitacao(
+    token: string,
+    pedidoId: number | string,
+    body: { tipo: string; mensagem: string }
+  ): Observable<any> {
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    return this.http.post<any>(
+      `${this.baseUrl}/clientes/me/pedidos/${encodeURIComponent(String(pedidoId))}/solicitacoes`,
+      body,
+      { headers }
+    );
+  }
+
+  getAdminPedidoSolicitacoes(
+    token: string | null | undefined,
+    params?: { page?: number; pageSize?: number; status?: string; tipo?: string }
+  ): Observable<{ data: any[]; page: number; pageSize: number; total: number; totalPages: number }> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    if (params?.status) search.set('status', params.status);
+    if (params?.tipo) search.set('tipo', params.tipo);
+    const qp = search.toString();
+    const url = `${this.baseUrl}/admin/pedidos/solicitacoes${qp ? `?${qp}` : ''}`;
+    return this.http.get<any>(url, { headers });
+  }
+
+  patchAdminPedidoSolicitacao(
+    token: string | null | undefined,
+    id: number | string,
+    body: { status?: string; admin_notas?: string | null }
+  ): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.patch<any>(
+      `${this.baseUrl}/admin/pedidos/solicitacoes/${encodeURIComponent(String(id))}`,
+      body,
+      { headers }
+    );
   }
 
   // Lista predefinida de alergias

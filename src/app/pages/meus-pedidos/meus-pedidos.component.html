@@ -138,6 +138,35 @@
               </div>
             </div>
           </div>
+
+          <div class="card pos-venda" (click)="$event.stopPropagation()">
+            <div class="card-head">
+              <div class="tt">Ajuda com o pedido</div>
+            </div>
+            <p class="pv-note" *ngIf="isConcluido(p) && pvTemManipulado(p)">
+              Este pedido inclui produtos manipulados ou personalizados. Em regra, o direito de arrependimento do art. 49 do CDC não se aplica a esse tipo de produto.
+              Se houver erro na fórmula, produto diferente do pedido ou problema de qualidade, use «Problema com produto».
+            </p>
+            <p class="pv-note" *ngIf="isConcluido(p) && !pvTemManipulado(p) && !pvPodeArrependimento(p)">
+              O prazo de 7 dias para arrependimento (quando aplicável) já encerrou para este pedido. Ainda pode relatar problemas com «Reportar algo» ou «Problema com produto», se for o caso.
+            </p>
+            <div class="pv-actions">
+              <button type="button" class="btn btn-ghost pv-btn" *ngIf="pvPodeRelato(p)" (click)="openPosVendaModal(p, 'relato')">Reportar algo</button>
+              <button type="button" class="btn btn-ghost pv-btn" *ngIf="pvPodeDefeito(p)" (click)="openPosVendaModal(p, 'defeito_qualidade')">Problema com produto</button>
+              <button type="button" class="btn btn-ghost pv-btn accent" *ngIf="pvPodeArrependimento(p)" (click)="openPosVendaModal(p, 'arrependimento')">Arrependimento (7 dias)</button>
+              <button type="button" class="btn btn-ghost pv-btn warn" *ngIf="pvPodeCancelPre(p)" (click)="openPosVendaModal(p, 'cancelamento_pre_envio')">Solicitar cancelamento</button>
+            </div>
+            <div class="pv-solicitacoes" *ngIf="solicitacoesCache[p.id]?.length">
+              <div class="pv-sol-h">Suas solicitações</div>
+              <ul class="pv-sol-list">
+                <li *ngFor="let s of solicitacoesCache[p.id]">
+                  <span class="pv-sol-tipo">{{ labelTipoSolicitacao(s.tipo) }}</span>
+                  <span class="pv-sol-st">{{ labelStatusSolicitacao(s.status) }}</span>
+                  <span class="pv-sol-dt">{{ s.created_at | date:'short' }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </section>
       </article>
     </section>
@@ -177,5 +206,33 @@
     <ng-template #vazioModal>
       <div class="vazio">Nenhum item encontrado para este pedido.</div>
     </ng-template>
+  </div>
+</div>
+
+<!-- Modal pós-venda -->
+<div class="overlay" *ngIf="posVendaModal" (click)="closePosVendaModal()" aria-hidden="true"></div>
+<div class="pv-modal" *ngIf="posVendaModal" role="dialog" [attr.aria-label]="posVendaModal.titulo" (click)="$event.stopPropagation()">
+  <header>
+    <h3>{{ posVendaModal.titulo }}</h3>
+    <button type="button" class="close" (click)="closePosVendaModal()" aria-label="Fechar">×</button>
+  </header>
+  <div class="body">
+    <p class="pv-modal-intro" *ngIf="posVendaModal.tipo === 'arrependimento'">
+      Compra pela internet: em situações em que o CDC permite, você pode desistir em até 7 dias corridos após a conclusão do pedido.
+      Confirme abaixo que leu e compreende que esta via refere-se a esse direito, quando cabível.
+    </p>
+    <p class="pv-modal-intro" *ngIf="posVendaModal.tipo === 'defeito_qualidade'">
+      Use este formulário para relatar vício, divergência em relação ao pedido ou falha de qualidade. Nossa equipe analisará o caso.
+    </p>
+    <label class="pv-label">Descrição</label>
+    <textarea class="pv-textarea" rows="5" [(ngModel)]="posVendaTexto" placeholder="Descreva o ocorrido com o máximo de detalhes possível."></textarea>
+    <label class="pv-check" *ngIf="posVendaModal.requireCheckbox">
+      <input type="checkbox" [(ngModel)]="posVendaCheckbox" />
+      <span>Confirmo que li as informações acima e que estou exercendo o direito de arrependimento dentro do prazo, quando aplicável à minha compra.</span>
+    </label>
+    <div class="pv-modal-actions">
+      <button type="button" class="btn btn-sec" (click)="closePosVendaModal()" [disabled]="posVendaSubmitting">Cancelar</button>
+      <button type="button" class="btn" (click)="submitPosVendaModal()" [disabled]="posVendaSubmitting">Enviar</button>
+    </div>
   </div>
 </div>

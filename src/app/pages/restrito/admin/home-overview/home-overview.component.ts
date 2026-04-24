@@ -9,7 +9,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../../../services/api.service';
 import { AuthService } from '../../../../services/auth.service';
@@ -27,7 +27,7 @@ const ADMIN_HOME_OVERVIEW_EXPANDED_KEY = 'admin_home_overview_expanded';
 @Component({
   selector: 'app-admin-home-overview',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './home-overview.component.html',
   styleUrls: ['./home-overview.component.scss'],
 })
@@ -78,7 +78,14 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
     if (this.isBrowser) {
       this.refreshHandle = setInterval(() => this.load(true), 30_000);
 
-      const reactive = ['order:created', 'order:status_changed', 'order:payment_received', 'order:canceled', 'notification:new'];
+      const reactive = [
+        'order:created',
+        'order:status_changed',
+        'order:payment_received',
+        'order:canceled',
+        'order:pos_venda_new',
+        'notification:new',
+      ];
       for (const ev of reactive) {
         this.subs.push(this.realtime.on(ev).subscribe(() => this.load(true)));
       }
@@ -181,6 +188,9 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
   // ---------- Helpers usados pelo template ----------
 
   get kpis() { return this.data?.kpis || { receita_hoje: 0, pedidos_hoje: 0, ticket_medio_hoje: 0, aguardando_pagamento: 0 }; }
+  get posVenda() {
+    return this.data?.pos_venda || { total_abertos: 0, arrependimento_abertos: 0, outros_abertos: 0 };
+  }
   /** Sempre 7 colunas, com «Pronto para envio» entre preparo e enviado (não depender de API desatualizada). */
   get statuses(): string[] { return [...ADMIN_QUEUE_STATUSES]; }
   ordersOf(status: string): any[] { return this.data?.queue?.orders?.[status] || []; }
@@ -260,6 +270,7 @@ export class AdminHomeOverviewComponent implements OnInit, OnDestroy, AfterViewI
       'coupon.expiring': 'fa-solid fa-ticket',
       'review.new': 'fa-solid fa-star',
       'error.critical': 'fa-solid fa-triangle-exclamation',
+      'order.pos_venda': 'fa-solid fa-headset',
     };
     return map[tipo] || 'fa-solid fa-bell';
   }

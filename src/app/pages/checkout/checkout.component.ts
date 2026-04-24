@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { StoreService } from '../../services/store.service';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
@@ -17,7 +18,7 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.scss']
 })
-export class CheckoutComponent implements OnInit {
+export class CheckoutComponent implements OnInit, OnDestroy {
   carregando = false;
   pedidoCodigo?: string | number; // código/ID do pedido criado
   pagamentoStatus?: 'pendente'|'pago'|'falhou'|'aguardando';
@@ -113,7 +114,11 @@ export class CheckoutComponent implements OnInit {
   animacaoValor: ''|'gain'|'lose' = '';
   showPixModal = false;
   showCardModal = false;
-  pixMock: { copiaCola: string; qrDataUrl: string } | null = null;
+  /** Dados PIX retornados pelo Mercado Pago após POST pagamento/iniciar */
+  pixCheckout: { qrCode: string | null; qrCodeBase64: string | null; ticketUrl?: string | null; expiration?: string | null } | null = null;
+  carregandoPix = false;
+  pixIniciarErro: string | null = null;
+  private pixPollTimer: ReturnType<typeof setInterval> | null = null;
   // Saved card selection
   savedCards: any[] = [];
   selectedCardId: string | number | null = null;
@@ -224,6 +229,15 @@ export class CheckoutComponent implements OnInit {
     return Number(this.resumo.pix) || 0;
   }
 
+  /** Data URL da imagem do QR (PNG base64 do MP). */
+  get pixQrSrc(): string {
+    const b64 = this.pixCheckout?.qrCodeBase64;
+    if (!b64) return '';
+    const s = String(b64).trim();
+    if (s.startsWith('data:')) return s;
+    return `data:image/png;base64,${s}`;
+  }
+
   private scheduleSyncPagamentoForma(): void {
     if (this.syncPagamentoTimer) clearTimeout(this.syncPagamentoTimer);
     this.syncPagamentoTimer = setTimeout(() => {
@@ -297,9 +311,8 @@ export class CheckoutComponent implements OnInit {
       this.toast.info('Crie o pedido primeiro.');
       return;
     }
-    // Fluxo simulado com modais: abre a UI específica e só confirma depois
     if (this.pagamentoMetodo === 'pix') {
-      this.openPixModal();
+      await this.openPixModal();
       return;
     }
     if (this.pagamentoMetodo === 'cartao') {
@@ -315,20 +328,16 @@ export class CheckoutComponent implements OnInit {
     try {
       this.carregando = true;
       const token = this.auth.getToken() || '';
-      // Exemplo de pagamento simples à vista; adapte conforme o gateway.
-      const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
+      const full = await this.api.criarPagamento(token, this.pedidoCodigo, {
         metodo: this.pagamentoMetodo || 'pix',
         valor: this.resumo.total,
       }).toPromise();
-
-      // Atualiza status do pedido como "pago" (ou aguarda confirmação assíncrona)
-      await this.api.atualizarPedido(token, this.pedidoCodigo, { status: 'pago', pagamento }).toPromise();
-      this.pagamentoStatus = 'pago';
-      this.toast.success('Pagamento confirmado!');
-      // Esvazia carrinho e redireciona para pedidos
-      this.store.clearCart();
-      this.store.setCreatedOrder(null);
-      this.router.navigate(['/meus-pedidos']);
+      if (full && String(full.status || '').toLowerCase() === 'pago') {
+        this.onPagamentoConfirmado(full);
+        return;
+      }
+      this.toast.info('Aguardando confirmação do pagamento…');
+      await this.pollPedidoAtePago();
     } catch (e) {
       this.pagamentoStatus = 'falhou';
       this.toast.error('Falha ao processar o pagamento.');
@@ -379,29 +388,45 @@ export class CheckoutComponent implements OnInit {
     this.router.navigate(['/carrinho']);
   }
 
-  // ===== Mock/UX helpers =====
-  private buildPixMock(): { copiaCola: string; qrDataUrl: string } {
-    const id = String(this.pedidoCodigo || '0000');
-    const valor = (this.resumo.total || 0).toFixed(2);
-    const copiaCola = `00020126360014BR.GOV.BCB.PIX0114+554199999999520400005303986540${valor}5802BR5920FORMULA PET LTDA6009CURITIBA62140510PED-${id}6304ABCD`;
-    // SVG simples como placeholder do QR (não é um QR real, apenas visual)
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'>
-      <rect width='100%' height='100%' fill='#fff'/>
-      <rect x='10' y='10' width='60' height='60' fill='#000'/>
-      <rect x='190' y='10' width='60' height='60' fill='#000'/>
-      <rect x='10' y='190' width='60' height='60' fill='#000'/>
-      <rect x='190' y='190' width='60' height='60' fill='#000'/>
-      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='18' fill='#111'>PIX SIMULADO</text>
-    </svg>`;
-    const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-    return { copiaCola, qrDataUrl: dataUrl };
+  async openPixModal() {
+    this.pixIniciarErro = null;
+    this.pixCheckout = null;
+    this.showPixModal = true;
+    this.carregandoPix = true;
+    const token = this.auth.getToken() || undefined;
+    try {
+      const res = await firstValueFrom(
+        this.api.iniciarPagamentoCheckout(token, this.pedidoCodigo!, { flow: 'pix' })
+      );
+      if (res?.status === 'failed' || res?.errorMessage) {
+        this.pixIniciarErro = res?.errorMessage || 'Não foi possível iniciar o PIX.';
+        return;
+      }
+      const pix = res?.pix;
+      this.pixCheckout = pix
+        ? {
+            qrCode: pix.qrCode ?? null,
+            qrCodeBase64: pix.qrCodeBase64 ?? null,
+            ticketUrl: pix.ticketUrl ?? null,
+            expiration: pix.expiration ?? null,
+          }
+        : null;
+      if (!this.pixCheckout?.qrCode && !this.pixCheckout?.qrCodeBase64) {
+        this.pixIniciarErro = 'Resposta do gateway sem QR Code ou código PIX. Tente novamente.';
+      }
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.error?.message || e?.message || 'Erro ao iniciar PIX.';
+      this.pixIniciarErro = String(msg);
+    } finally {
+      this.carregandoPix = false;
+    }
   }
 
-  openPixModal() {
-    this.pixMock = this.buildPixMock();
-    this.showPixModal = true;
+  closePixModal() {
+    this.stopPixPolling();
+    this.showPixModal = false;
+    this.pixIniciarErro = null;
   }
-  closePixModal() { this.showPixModal = false; }
 
   openCardModal() { this.showCardModal = true; }
   closeCardModal() { this.showCardModal = false; }
@@ -409,20 +434,64 @@ export class CheckoutComponent implements OnInit {
   async copiar(str: string) {
     try {
       await navigator.clipboard.writeText(str);
-      this.toast.success('Pix copia e cola copiado (simulado)');
+      this.toast.success('Código PIX copiado.');
     } catch {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = str; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); this.toast.success('Pix copia e cola copiado (simulado)'); } catch {}
+      try { document.execCommand('copy'); this.toast.success('Código PIX copiado.'); } catch {}
       document.body.removeChild(ta);
     }
   }
 
-  // Confirmar nos modais (simulado) -> chama o backend real para registrar pagamento
+  /** Consulta o pedido até o webhook confirmar pagamento (status pago). */
   async confirmarPixPago() {
+    this.toast.info('Verificando pagamento…');
+    await this.pollPedidoAtePago();
+  }
+
+  private stopPixPolling() {
+    if (this.pixPollTimer) {
+      clearInterval(this.pixPollTimer);
+      this.pixPollTimer = null;
+    }
+  }
+
+  private onPagamentoConfirmado(up: any): void {
+    this.pedido = up;
+    this.store.setCreatedOrder(up);
+    this.pagamentoStatus = 'pago';
+    this.toast.success('Pagamento confirmado!');
     this.closePixModal();
-    await this.pagarReal('pix');
+    this.store.clearCart();
+    this.store.setCreatedOrder(null);
+    this.router.navigate(['/meus-pedidos']);
+  }
+
+  private async pollPedidoAtePago(): Promise<void> {
+    this.stopPixPolling();
+    const token = this.auth.getToken() || undefined;
+    const id = String(this.pedidoCodigo || '');
+    if (!id) return;
+
+    const tick = async () => {
+      try {
+        const up = await firstValueFrom(this.api.atualizarPedido(token, id, {}));
+        if (up && String(up.status || '').toLowerCase() === 'pago') {
+          this.stopPixPolling();
+          this.onPagamentoConfirmado(up);
+        }
+      } catch {
+        /* continua tentando */
+      }
+    };
+
+    await tick();
+    this.pixPollTimer = setInterval(() => void tick(), 2500);
+    setTimeout(() => {
+      if (!this.pixPollTimer) return;
+      this.stopPixPolling();
+      this.toast.info('Ainda aguardando confirmação do pagamento. Você pode fechar e acompanhar em Meus pedidos.');
+    }, 120000);
   }
   async confirmarCartaoPago() {
     this.closeCardModal();
@@ -434,18 +503,17 @@ export class CheckoutComponent implements OnInit {
     try {
       this.carregando = true;
       const token = this.auth.getToken() || '';
-      const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
+      const full = await this.api.criarPagamento(token, this.pedidoCodigo, {
         metodo: 'cartao',
         valor: this.resumo.total,
         payment_method_id: this.selectedCardId,
       }).toPromise();
-
-      await this.api.atualizarPedido(token, this.pedidoCodigo, { status: 'pago', pagamento }).toPromise();
-      this.pagamentoStatus = 'pago';
-      this.toast.success('Pagamento confirmado!');
-      this.store.clearCart();
-      this.store.setCreatedOrder(null);
-      this.router.navigate(['/meus-pedidos']);
+      if (full && String(full.status || '').toLowerCase() === 'pago') {
+        this.onPagamentoConfirmado(full);
+        return;
+      }
+      this.toast.info('Aguardando confirmação do pagamento…');
+      await this.pollPedidoAtePago();
     } catch (e) {
       this.pagamentoStatus = 'falhou';
       this.toast.error('Falha ao processar o pagamento.');
@@ -463,22 +531,26 @@ export class CheckoutComponent implements OnInit {
     try {
       this.carregando = true;
       const token = this.auth.getToken() || '';
-      const pagamento = await this.api.criarPagamento(token, this.pedidoCodigo, {
+      const full = await this.api.criarPagamento(token, this.pedidoCodigo, {
         metodo,
         valor: this.resumo.total,
         mock: true,
       }).toPromise();
-      await this.api.atualizarPedido(token, this.pedidoCodigo, { status: 'pago', pagamento }).toPromise();
-      this.pagamentoStatus = 'pago';
-      this.toast.success('Pagamento confirmado!');
-      this.store.clearCart();
-      this.store.setCreatedOrder(null);
-      this.router.navigate(['/meus-pedidos']);
+      if (full && String(full.status || '').toLowerCase() === 'pago') {
+        this.onPagamentoConfirmado(full);
+        return;
+      }
+      this.toast.info('Aguardando confirmação…');
+      await this.pollPedidoAtePago();
     } catch (e) {
       this.pagamentoStatus = 'falhou';
       this.toast.error('Falha ao processar o pagamento.');
     } finally {
       this.carregando = false;
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPixPolling();
   }
 }

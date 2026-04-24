@@ -35,8 +35,30 @@
                 <a href="https://wa.me/4132051910?text=Olá!%20Preciso%20de%20uma%20fórmula%20para%20meu%20pet" target="_blank" rel="noopener" class="btn whatsapp"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
               </div>
             </div>
-            <div class="banner-illustration" aria-hidden="true">
-              <img src="/imagens/image.png" alt="Mascote Fórmula Pet" loading="eager" decoding="async" />
+            <div
+              class="banner-illustration"
+              [class.banner-illustration--reduced-motion]="prefersReducedMotion"
+              aria-hidden="true"
+            >
+              <video
+                #heroVideo
+                class="banner-hero-media"
+                src="/videos/institucional.mp4"
+                poster="/imagens/image.png"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+              ></video>
+              <img
+                *ngIf="prefersReducedMotion"
+                class="banner-hero-media banner-hero-poster-fallback"
+                src="/imagens/image.png"
+                alt=""
+                loading="eager"
+                decoding="async"
+              />
             </div>
           </div>
         </div>
@@ -54,13 +76,14 @@
             A Fórmula Pet é uma farmácia de manipulação dedicada exclusivamente à saúde animal. Oferecemos soluções personalizadas para cães, gatos e pets exóticos, com fórmulas adaptadas às necessidades de cada paciente.
           </p>
           <a
-            href="https://wa.me/4132051910?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20as%20fórmulas%20personalizadas%20para%20meu%20pet." 
+            href="https://wa.me/4132051910?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20as%20fórmulas%20personalizadas%20para%20meu%20pet."
             target="_blank"
             rel="noopener"
             class="cta-whatsapp-btn"
-            title="Fale pelo WhatsApp"
-            Fale pelo WhatsApp>
-            <i class="fa-brands fa-whatsapp"></i>
+            aria-label="Fale pelo WhatsApp sobre fórmulas personalizadas"
+          >
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+            <span>Fale pelo WhatsApp</span>
           </a>
 
         </div>
@@ -82,109 +105,6 @@
       </div>
     </div>
   </section>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
-  </style>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
-    .info-section {
-      width: 100%;
-      box-sizing: border-box;
-      padding-left: 6vw;
-      padding-right: 6vw;
-      margin: 48px 0;
-      font-family: 'Montserrat', Arial, sans-serif;
-      background: #f8fafc;
-    }
-    .info-content {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    .info-title {
-      font-size: 2.3rem;
-      margin-bottom: 2rem;
-      text-align: left;
-      font-weight: 700;
-      color: #2d3a4a;
-      letter-spacing: 1px;
-    }
-    .info-cards {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-    .info-card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
-      padding: 2rem 1.5rem;
-      flex: 1 1 260px;
-      min-width: 260px;
-      max-width: 320px;
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .card-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #3b5d50;
-      margin-bottom: 0.7rem;
-    }
-    .card-text {
-      font-size: 1.05rem;
-      line-height: 1.7;
-      color: #444;
-      font-weight: 400;
-    }
-    .cta-whatsapp-btn:hover {
-      background: #128c7e;
-    }
-    @media (max-width: 900px) {
-      .info-section {
-        padding-left: 5vw;
-        padding-right: 5vw;
-      }
-      .info-cards {
-        flex-direction: column;
-        gap: 1.2rem;
-        align-items: center;
-      }
-      .info-card {
-        max-width: 100%;
-        align-items: center;
-      }
-    }
-    @media (max-width: 600px) {
-      .info-section {
-        padding-left: 2vw;
-        padding-right: 2vw;
-      }
-      .info-title {
-        font-size: 1.5rem;
-      }
-      .card-title {
-        font-size: 1rem;
-      }
-      .card-text {
-        font-size: 0.98rem;
-      }
-      .info-cards {
-        align-items: center;
-      }
-      .info-card {
-        padding: 1.2rem 1rem;
-        max-width: 100%;
-        align-items: center;
-      }
-      .cta-whatsapp-btn {
-        font-size: 1rem;
-        padding: 0.7rem 1.5rem;
-      }
-    }
-  </style>
 
     <!-- Seção de Produtos em Destaque (Home) -->
 <section id="products-highlight" class="home-products" *ngIf="produtos?.length">
@@ -246,7 +166,7 @@
 
   <!-- about -->
   <div class="about">
-  <a class="bg_links social whatsapp" href="wa.me/message/GLVXCNM7IBKUI1" target="_blank" title="WhatsApp">
+  <a class="bg_links social whatsapp" href="https://wa.me/message/GLVXCNM7IBKUI1" target="_blank" rel="noopener noreferrer" title="WhatsApp">
       <span class="icon"></span>
     </a>
   <a class="bg_links social Instagram" rel="noopener noreferrer" href="https://www.instagram.com/farmaformulapet/" target="_blank" title="Instagram">
@@ -257,12 +177,4 @@
   </div>
   <!-- end about -->
 
-<style>
-  .spacer-1vh { height: clamp(24px, 8vh, 120px); }
-  .intro-top { display:flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem; }
-  .title-splash { text-align: center; font-family: 'Pacifico', cursive, 'Montserrat', Arial, sans-serif; font-size: 2.8rem; }
-  .info-card-center { max-width: 600px; margin: 0 auto; align-items: center; }
-  .text-center { text-align: center; }
-</style>
-
-<!-- Removed inline styles for .home-products and card elements to avoid conflicts with SCSS -->
+<!-- Estilos da home: home.component.scss -->

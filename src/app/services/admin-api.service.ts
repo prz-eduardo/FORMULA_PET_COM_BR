@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
-import { environment } from '../../enviroments/environment';
+import { environment } from '../../environments/environment';
 import { SessionService } from './session.service';
 import { BannerPosition } from '../shared/banner/banner-positions';
 

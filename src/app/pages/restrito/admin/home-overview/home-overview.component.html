@@ -63,6 +63,30 @@
       </div>
     </div>
 
+    <div class="kpis kpis--posvenda" *ngIf="data">
+      <a routerLink="/restrito/admin/pedidos-pos-venda" class="kpi kpi--link">
+        <div class="kpi-icon pv"><i class="fa-solid fa-rotate-left"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Pós-venda aberta</div>
+          <div class="kpi-value">{{ posVenda.total_abertos }}</div>
+        </div>
+      </a>
+      <a routerLink="/restrito/admin/pedidos-pos-venda" [queryParams]="{ tipo: 'arrependimento' }" class="kpi kpi--link">
+        <div class="kpi-icon pv2"><i class="fa-solid fa-file-contract"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Arrependimento (abertos)</div>
+          <div class="kpi-value">{{ posVenda.arrependimento_abertos }}</div>
+        </div>
+      </a>
+      <a routerLink="/restrito/admin/pedidos-pos-venda" class="kpi kpi--link">
+        <div class="kpi-icon pv3"><i class="fa-solid fa-circle-exclamation"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Outras solicitações abertas</div>
+          <div class="kpi-value">{{ posVenda.outros_abertos }}</div>
+        </div>
+      </a>
+    </div>
+
     <!-- Gráfico 7 dias + Alertas -->
     <div class="row two-cols">
       <div class="card chart-card">

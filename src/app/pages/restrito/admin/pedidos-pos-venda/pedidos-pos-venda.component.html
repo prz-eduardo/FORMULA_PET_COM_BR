@@ -1,0 +1,78 @@
+<div class="pos-venda-admin">
+  <header class="head">
+    <div>
+      <h1>Pós-venda e cancelamentos</h1>
+      <p class="sub">Solicitações dos clientes (relato, arrependimento, defeito, cancelamento pré-conclusão).</p>
+    </div>
+    <a routerLink="/restrito/admin" class="link-back">← Painel admin</a>
+  </header>
+
+  <section class="filters">
+    <div class="row">
+      <div class="field">
+        <label>Status</label>
+        <select [(ngModel)]="filtroStatus" (change)="aplicarFiltros()">
+          <option *ngFor="let o of statusOptions" [ngValue]="o.v">{{ o.l }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tipo</label>
+        <select [(ngModel)]="filtroTipo" (change)="aplicarFiltros()">
+          <option *ngFor="let o of tipoOptions" [ngValue]="o.v">{{ o.l }}</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading && !items.length">Carregando…</div>
+
+  <div class="table-wrap" *ngIf="items.length">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Pedido</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Criado</th>
+          <th>Mensagem</th>
+          <th>Notas internas</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of items" [attr.data-solicitacao-id]="r.id" [class.is-hi]="highlightId === r.id">
+          <td>{{ r.id }}</td>
+          <td>
+            <button type="button" class="linkish" (click)="irPedido(r.pedido_id)">#{{ r.pedido_id }}</button>
+            <div><small class="muted">{{ r.pedido_status }}</small></div>
+          </td>
+          <td>
+            <div>{{ r.cliente_nome || '—' }}</div>
+            <small class="muted">{{ r.cliente_email || '' }}</small>
+          </td>
+          <td>{{ labelTipo(r.tipo) }}</td>
+          <td>{{ labelStatus(r.status) }}</td>
+          <td>{{ r.created_at | date:'short' }}</td>
+          <td class="msg">{{ r.mensagem | slice:0:120 }}<span *ngIf="(r.mensagem || '').length > 120">…</span></td>
+          <td class="notas">
+            <textarea rows="2" #ta [value]="r.admin_notas || ''" placeholder="Visível só no admin"></textarea>
+            <button type="button" class="btn sm" (click)="salvarNotas(r, ta.value)">Salvar</button>
+          </td>
+          <td class="acts">
+            <button type="button" class="btn sm" *ngIf="r.status === 'aberto'" (click)="patchStatus(r, 'em_analise')">Em análise</button>
+            <button type="button" class="btn sm ok" *ngIf="r.status !== 'resolvido'" (click)="patchStatus(r, 'resolvido')">Resolver</button>
+            <button type="button" class="btn sm danger" *ngIf="r.status !== 'recusado'" (click)="patchStatus(r, 'recusado')">Recusar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="vazio" *ngIf="!loading && !items.length">Nenhuma solicitação neste filtro.</div>
+
+  <div class="paginacao" *ngIf="total > pageSize">
+    <admin-pagination [page]="page" [total]="total" [pageSize]="pageSize" (pageChange)="page = $event; load()"></admin-pagination>
+  </div>
+</div>

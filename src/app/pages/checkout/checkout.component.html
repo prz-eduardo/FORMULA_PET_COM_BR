@@ -148,9 +148,8 @@
               {{ pagamentoMetodo==='pix' ? 'Pagar com Pix' : (pagamentoMetodo==='cartao' ? 'Pagar com Cartão' : 'Continuar') }}
             </button>
           </div>
-        <div class="hint" *ngIf="pagamentoMetodo==='pix'">Pix confirma rapidinho. Você verá um QR Code e o código copia e cola. Fluxo de pagamento simulado.</div>
-  <div class="hint" *ngIf="pagamentoMetodo==='cartao'">Pagamento no cartão é simulado. Informe dados fictícios para concluir.</div>
-        <div class="alert-simulado">Ambiente de teste: pagamentos e comprovantes são apenas simulações.</div>
+        <div class="hint" *ngIf="pagamentoMetodo==='pix'">Pix pelo Mercado Pago: ao pagar, você verá o QR Code e o código copia e cola. A confirmação chega em instantes após o banco.</div>
+        <div class="hint" *ngIf="pagamentoMetodo==='cartao'">Use um cartão salvo em Meus cartões para pagar com segurança.</div>
       </div>
     </section>
 
@@ -180,22 +179,31 @@
   </div>
   </main>
 
-  <!-- Modal PIX (simulado) -->
+  <!-- Modal PIX (Mercado Pago) -->
   <div class="overlay" *ngIf="showPixModal" (click)="closePixModal()"></div>
   <div class="modal pix" *ngIf="showPixModal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-    <h3>Pagamento via PIX (simulado)</h3>
-    <p>Escaneie o QR Code abaixo no aplicativo do seu banco ou use o botão de copiar para pagar por Pix copia e cola.</p>
-  <div class="qr"><img [src]="pixMock?.qrDataUrl" alt="QR Code PIX simulado"/></div>
-  <div class="pix-powered"><img src="imagens/logo-pix.png" alt="Pix"/></div>
-    <div class="copy">
-      <input [value]="pixMock?.copiaCola" readonly />
-      <button class="btn" (click)="copiar(pixMock?.copiaCola || '')">Copiar código</button>
-    </div>
+    <h3>Pagamento via PIX</h3>
+    <p *ngIf="!carregandoPix && !pixIniciarErro">Escaneie o QR Code no app do banco ou copie o código abaixo. O pedido será confirmado automaticamente após o pagamento.</p>
+    <div class="pix-loading" *ngIf="carregandoPix">Gerando PIX…</div>
+    <div class="msg erro" *ngIf="pixIniciarErro">{{ pixIniciarErro }}</div>
+    <ng-container *ngIf="pixCheckout && !carregandoPix && !pixIniciarErro">
+      <div class="qr" *ngIf="pixQrSrc; else pixSemImagem">
+        <img [src]="pixQrSrc" alt="QR Code PIX"/>
+      </div>
+      <ng-template #pixSemImagem>
+        <div class="qr qr-fallback muted">Use o código copia e cola abaixo no app do seu banco.</div>
+      </ng-template>
+      <div class="pix-powered"><img src="imagens/logo-pix.png" alt="Pix"/></div>
+      <div class="copy" *ngIf="pixCheckout.qrCode">
+        <input [value]="pixCheckout.qrCode" readonly />
+        <button class="btn" type="button" (click)="copiar(pixCheckout.qrCode || '')">Copiar código</button>
+      </div>
+      <p class="muted small" *ngIf="pixCheckout.expiration">Expira em: {{ pixCheckout.expiration }}</p>
+    </ng-container>
     <div class="acoes">
-      <button class="btn light" (click)="closePixModal()">Fechar</button>
-      <button class="btn success" (click)="confirmarPixPago()">Já paguei</button>
+      <button class="btn light" type="button" (click)="closePixModal()">Fechar</button>
+      <button class="btn success" type="button" [disabled]="!pixCheckout?.qrCode && !pixCheckout?.qrCodeBase64 || carregandoPix || !!pixIniciarErro" (click)="confirmarPixPago()">Já paguei</button>
     </div>
-    <div class="simulado">Transação simulada - nenhum valor será cobrado.</div>
   </div>
 
   <!-- Barra fixa mobile -->

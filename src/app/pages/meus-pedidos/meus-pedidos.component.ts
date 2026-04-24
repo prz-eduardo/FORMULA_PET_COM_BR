@@ -10,6 +10,13 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { isPlatformBrowser } from '@angular/common';
 import { STATUS_ORDER, statusLabel as statusLabelConst } from '../../constants/order-status.constants';
+import {
+  pedidoTemManipulado,
+  podeArrependimentoArt49,
+  podeDefeitoQualidade,
+  podeCancelamentoPreEnvio,
+  podeRelato,
+} from '../../utils/order-post-sale.helpers';
 
 @Component({
   selector: 'app-meus-pedidos',
@@ -43,6 +50,13 @@ export class MeusPedidosComponent {
   // ID do pedido a destacar (via querystring ?highlight=ID)
   highlightId: number | null = null;
 
+  solicitacoesCache: Record<number, any[]> = {};
+  private solicitacoesLoading: Record<number, boolean> = {};
+  posVendaModal: null | { tipo: string; titulo: string; pedido: any; requireCheckbox: boolean } = null;
+  posVendaTexto = '';
+  posVendaCheckbox = false;
+  posVendaSubmitting = false;
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -63,6 +77,7 @@ export class MeusPedidosComponent {
       this.highlightId = Number.isFinite(id) && id > 0 ? id : null;
       if (this.highlightId != null) {
         this.expanded[this.highlightId] = true;
+        this.ensureSolicitacoesForPedido(this.highlightId);
         if (isPlatformBrowser(this.platformId)) {
           setTimeout(() => {
             try {
@@ -145,7 +160,123 @@ export class MeusPedidosComponent {
     // Se abrimos, recentra timeline no status ativo
     if (this.expanded[id]) {
       setTimeout(() => this.scrollTimelineIntoView(id), 0);
+      this.ensureSolicitacoesForPedido(id);
     }
+  }
+
+  pvTemManipulado(p: any): boolean {
+    return pedidoTemManipulado(p);
+  }
+  pvPodeArrependimento(p: any): boolean {
+    return podeArrependimentoArt49(p);
+  }
+  pvPodeDefeito(p: any): boolean {
+    return podeDefeitoQualidade(p);
+  }
+  pvPodeCancelPre(p: any): boolean {
+    return podeCancelamentoPreEnvio(p);
+  }
+  pvPodeRelato(p: any): boolean {
+    return podeRelato(p);
+  }
+
+  private ensureSolicitacoesForPedido(pedidoId: number) {
+    const t = this.token;
+    if (!t || this.solicitacoesLoading[pedidoId] || Object.prototype.hasOwnProperty.call(this.solicitacoesCache, pedidoId)) {
+      return;
+    }
+    this.solicitacoesLoading = { ...this.solicitacoesLoading, [pedidoId]: true };
+    this.api.listMyOrderSolicitacoes(t, pedidoId).subscribe({
+      next: (rows) => {
+        this.solicitacoesCache = { ...this.solicitacoesCache, [pedidoId]: Array.isArray(rows) ? rows : [] };
+        const rest = { ...this.solicitacoesLoading };
+        delete rest[pedidoId];
+        this.solicitacoesLoading = rest;
+      },
+      error: () => {
+        const rest = { ...this.solicitacoesLoading };
+        delete rest[pedidoId];
+        this.solicitacoesLoading = rest;
+      },
+    });
+  }
+
+  openPosVendaModal(p: any, tipo: 'relato' | 'defeito_qualidade' | 'arrependimento' | 'cancelamento_pre_envio') {
+    const titulos: Record<string, string> = {
+      relato: 'Reportar algo no pedido',
+      defeito_qualidade: 'Problema com produto (qualidade, divergência ou erro)',
+      arrependimento: 'Arrependimento da compra (CDC art. 49)',
+      cancelamento_pre_envio: 'Solicitar cancelamento do pedido',
+    };
+    this.posVendaModal = {
+      tipo,
+      titulo: titulos[tipo] || tipo,
+      pedido: p,
+      requireCheckbox: tipo === 'arrependimento',
+    };
+    this.posVendaTexto = '';
+    this.posVendaCheckbox = false;
+  }
+
+  closePosVendaModal() {
+    this.posVendaModal = null;
+    this.posVendaTexto = '';
+    this.posVendaCheckbox = false;
+    this.posVendaSubmitting = false;
+  }
+
+  labelTipoSolicitacao(tipo: string): string {
+    const m: Record<string, string> = {
+      relato: 'Relato',
+      arrependimento: 'Arrependimento (CDC)',
+      defeito_qualidade: 'Defeito / qualidade',
+      cancelamento_pre_envio: 'Cancelamento',
+    };
+    return m[tipo] || tipo;
+  }
+
+  labelStatusSolicitacao(st: string): string {
+    const m: Record<string, string> = {
+      aberto: 'Aberto',
+      em_analise: 'Em análise',
+      resolvido: 'Resolvido',
+      recusado: 'Recusado',
+    };
+    return m[st] || st;
+  }
+
+  submitPosVendaModal() {
+    const m = this.posVendaModal;
+    const t = this.token;
+    if (!m || !t) return;
+    const msg = (this.posVendaTexto || '').trim();
+    if (msg.length < 10) {
+      this.toast.info('Descreva com pelo menos 10 caracteres.');
+      return;
+    }
+    if (m.requireCheckbox && !this.posVendaCheckbox) {
+      this.toast.info('Confirme que leu as informações sobre o direito de arrependimento.');
+      return;
+    }
+    this.posVendaSubmitting = true;
+    this.api.createMyOrderSolicitacao(t, m.pedido.id, { tipo: m.tipo, mensagem: msg }).subscribe({
+      next: () => {
+        this.toast.success('Solicitação enviada. Nossa equipe vai analisar.');
+        this.closePosVendaModal();
+        const c = { ...this.solicitacoesCache };
+        delete c[m.pedido.id];
+        this.solicitacoesCache = c;
+        const l = { ...this.solicitacoesLoading };
+        delete l[m.pedido.id];
+        this.solicitacoesLoading = l;
+        this.ensureSolicitacoesForPedido(m.pedido.id);
+      },
+      error: (err) => {
+        this.posVendaSubmitting = false;
+        const msgErr = err?.error?.error || err?.message || 'Não foi possível enviar.';
+        this.toast.error(msgErr);
+      },
+    });
   }
   isConcluido(p: any){ return (p?.status || '').toLowerCase() === 'concluido'; }
   isCancelado(p: any){ return (p?.status || '').toLowerCase() === 'cancelado'; }

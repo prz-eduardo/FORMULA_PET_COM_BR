@@ -2,7 +2,7 @@ import { Injectable, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
-import { environment } from '../../enviroments/environment';
+import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })

@@ -1,6 +1,44 @@
 <div class="meus-cartoes" [class.is-modal]="modal">
   <h2 *ngIf="!modal" class="page-title">Meus cartões</h2>
 
+  <div *ngIf="isMpSandboxPublicKey && hasMpKey && !modal" class="mp-sandbox-banner">
+    <button type="button" class="mp-sandbox-toggle" (click)="toggleSandboxHelp()">
+      {{ sandboxHelpOpen ? 'Ocultar' : 'Mostrar' }} dicas de teste (sandbox Mercado Pago)
+    </button>
+    <div *ngIf="sandboxHelpOpen" class="mp-sandbox-body">
+      <p class="mp-sandbox-lead">
+        Use a <strong>mesma aplicação</strong> no painel MP: Public Key <code>TEST-…</code> no front e
+        <code>MERCADOPAGO_ACCESS_TOKEN_TEST</code> no backend. CPF de teste comum: <strong>12345678909</strong>.
+      </p>
+      <p>
+        <a [href]="mpTestCardsDocUrl" target="_blank" rel="noopener noreferrer">Cartões e titular de teste (doc oficial)</a>
+        ·
+        <a [href]="mpCheckoutProTestUrl" target="_blank" rel="noopener noreferrer">Testar compras Checkout Pro</a>
+      </p>
+      <p class="mp-sandbox-note">
+        A tabela abaixo simula <strong>resultado do pagamento</strong> ao pagar com cartão de teste (tela do Mercado Pago no Checkout Pro ou dados do titular na cobrança). Salvar só o cartão na conta costuma aprovar o token; rejeições específicas aparecem ao <strong>processar um pagamento</strong>.
+      </p>
+      <table class="mp-sandbox-table">
+        <thead>
+          <tr><th>Status</th><th>Nome do titular</th><th>Documento</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Aprovado</td><td><code>APRO</code></td><td>CPF 12345678909</td></tr>
+          <tr><td>Recusado (geral)</td><td><code>OTHE</code></td><td>CPF 12345678909</td></tr>
+          <tr><td>Pendente</td><td><code>CONT</code></td><td>—</td></tr>
+          <tr><td>Validação / autorizar</td><td><code>CALL</code></td><td>—</td></tr>
+          <tr><td>Saldo insuficiente</td><td><code>FUND</code></td><td>—</td></tr>
+          <tr><td>CVV inválido</td><td><code>SECU</code></td><td>—</td></tr>
+          <tr><td>Validade</td><td><code>EXPI</code></td><td>—</td></tr>
+          <tr><td>Formulário</td><td><code>FORM</code></td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p class="mp-sandbox-cards">
+        Ex.: Mastercard teste <code>5031 4332 1540 6351</code>, CVV <code>123</code>, validade <code>11/30</code> (ver doc para outras bandeiras).
+      </p>
+    </div>
+  </div>
+
   <div *ngIf="loading" class="state-msg">Carregando cartões…</div>
   <div *ngIf="!loading && cards.length === 0" class="state-msg state-msg--empty">Nenhum cartão salvo.</div>
 
@@ -11,8 +49,8 @@
         <div class="card-meta">Validade: {{ c.exp_month }}/{{ c.exp_year }} • Titular: {{ c.holder_name || '—' }}</div>
       </div>
       <div class="card-actions">
-        <button (click)="setDefault(c)" class="btn small">Definir Padrão</button>
-        <button (click)="remove(c)" class="btn danger small">Excluir</button>
+        <button type="button" (click)="setDefault(c)" class="btn small">Definir Padrão</button>
+        <button type="button" (click)="remove(c)" class="btn danger small">Excluir</button>
       </div>
     </li>
   </ul>
@@ -20,37 +58,41 @@
   <div class="section-divider" *ngIf="!loading" aria-hidden="true"></div>
 
   <h3 class="section-title">Adicionar cartão</h3>
-  <form (submit)="onAdd($event)" class="add-form">
+  <p class="mp-hint" *ngIf="hasMpKey">Número, validade e CVV são digitados em campos protegidos (iframes PCI), alinhados ao layout da página.</p>
+  <p class="mp-hint mp-hint--warn" *ngIf="!hasMpKey">Cadastro de cartão requer a chave pública do gateway no ambiente.</p>
+  <form (submit)="onAdd($event)" class="add-form" novalidate>
     <div class="row">
       <label>Nome no cartão
         <input name="holder_name" [(ngModel)]="newCard.holder_name" (input)="onHolderNameInput($event)" autocomplete="cc-name" />
       </label>
-      <label>Número do cartão
-        <input name="numero" [(ngModel)]="newCard.numero" (input)="onCardNumberInput($event)" placeholder="4111 1111 1111 1111" inputmode="numeric" pattern="[0-9 ]*" autocomplete="cc-number" maxlength="19" />
+      <label>CPF do titular
+        <input
+          id="meus-cartoes-cpf"
+          name="cpf"
+          (input)="onCpfInput($event)"
+          placeholder="000.000.000-00"
+          inputmode="numeric"
+          maxlength="14"
+          autocomplete="off"
+        />
       </label>
     </div>
-    <div class="row">
-      <label>Validade (MM)
-        <input name="exp_month" [(ngModel)]="newCard.exp_month" (input)="onExpMonthInput($event)" placeholder="MM" inputmode="numeric" maxlength="2" autocomplete="cc-exp-month" />
-      </label>
-      <label>Validade (YYYY)
-        <input name="exp_year" [(ngModel)]="newCard.exp_year" (input)="onExpYearInput($event)" placeholder="YYYY" inputmode="numeric" maxlength="4" autocomplete="cc-exp-year" />
-      </label>
-      <label>CVV
-        <input name="cvv" [(ngModel)]="newCard.cvv" (input)="onCvvInput($event)" placeholder="123" inputmode="numeric" maxlength="4" autocomplete="cc-csc" />
-      </label>
-    </div>
-    <!-- Brand and last4 are detected automatically; keep hidden fields for submission -->
-    <div style="display:none;">
-      <input type="hidden" name="brand" [(ngModel)]="newCard.brand" />
-      <input type="hidden" name="last4" [(ngModel)]="newCard.last4" maxlength="4" />
-    </div>
-    <!-- provider_token kept as fallback if backend expects pre-generated token -->
-    <div style="display:none;">
-      <input name="provider_token" [(ngModel)]="newCard.provider_token" />
+    <div class="mp-secure-wrap" *ngIf="hasMpKey">
+      <div class="mp-secure-loading" *ngIf="mpInitializing && !mpReady" aria-live="polite">Preparando campos seguros…</div>
+      <div class="row mp-secure-row">
+        <label class="mp-field-label">Número do cartão
+          <div id="mp-secure-card-number" class="mp-field-host" role="presentation"></div>
+        </label>
+        <label class="mp-field-label">Validade
+          <div id="mp-secure-expiration" class="mp-field-host" role="presentation"></div>
+        </label>
+        <label class="mp-field-label">CVV
+          <div id="mp-secure-cvv" class="mp-field-host" role="presentation"></div>
+        </label>
+      </div>
     </div>
     <div class="actions">
-      <button type="submit" class="btn primary" [disabled]="tokenizing">{{ tokenizing ? 'Tokenizando...' : 'Gerar token e adicionar' }}</button>
+      <button type="submit" class="btn primary" [disabled]="tokenizing || !mpReady">{{ tokenizing ? 'Salvando…' : 'Adicionar cartão' }}</button>
     </div>
   </form>
 </div>

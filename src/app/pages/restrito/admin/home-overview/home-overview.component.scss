@@ -197,6 +197,32 @@
   color: #f1f5f9;
 }
 
+.kpis--posvenda {
+  margin-top: 2px;
+}
+
+.kpi--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  &:hover {
+    border-color: var(--border-strong);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.kpi-icon.pv {
+  background: linear-gradient(135deg, #f97316, #c2410c);
+}
+.kpi-icon.pv2 {
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+}
+.kpi-icon.pv3 {
+  background: linear-gradient(135deg, #eab308, #a16207);
+}
+
 // --------- Cards internos ---------
 .card {
   background: rgba(255, 255, 255, 0.03);

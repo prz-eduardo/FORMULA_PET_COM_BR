@@ -1,15 +1,17 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  Inject,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  ViewChild,
+} from '@angular/core';
+import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { StoreService, ShopProduct } from '../../services/store.service';
 import { Router, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
-
-// import { HeroComponent } from '../hero/hero.component';
-// import { ProductPreviewComponent } from '../product-preview/product-preview.component';
-// import { TestimonialsComponent } from '../testimonials/testimonials.component';
-// import { AboutComponent } from '../about/about.component';
-// import { ContactComponent } from '../contact/contact.component';
 
 @Component({
   selector: 'app-home',
@@ -23,17 +25,26 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('heroVideo') heroVideoRef?: ElementRef<HTMLVideoElement>;
+
   produtos: ShopProduct[] = [];
   loading = false;
-  constructor(public store: StoreService, private router: Router) {}
+  prefersReducedMotion = false;
+
+  private motionMql?: MediaQueryList;
+  private onMotionChange?: (e: MediaQueryListEvent) => void;
+
+  constructor(
+    public store: StoreService,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: object,
+  ) {}
 
   async ngOnInit() {
     const loadHighlights = async () => {
       try {
         this.loading = true;
-        // Prefer the dedicated highlights endpoint for Home so we display the
-        // curated items the backend provides (fall back to empty array).
         const items = await this.store.loadHomeHighlights();
         this.produtos = Array.isArray(items) ? (items.slice(0, 8) as ShopProduct[]) : [];
       } catch {
@@ -43,12 +54,45 @@ export class HomeComponent implements OnInit {
       }
     };
 
-    // Avoid running data fetches on the server to keep SSR fast.
     if (typeof window !== 'undefined') {
       if ('requestIdleCallback' in window) {
         (window as any).requestIdleCallback(() => void loadHighlights());
       } else {
         setTimeout(() => void loadHighlights(), 50);
+      }
+    }
+  }
+
+  ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined' || !window.matchMedia) {
+      return;
+    }
+    this.motionMql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.applyReducedMotion(this.motionMql.matches);
+    this.onMotionChange = (e: MediaQueryListEvent) => this.applyReducedMotion(e.matches);
+    this.motionMql.addEventListener('change', this.onMotionChange);
+  }
+
+  ngOnDestroy(): void {
+    if (this.motionMql && this.onMotionChange) {
+      this.motionMql.removeEventListener('change', this.onMotionChange);
+    }
+  }
+
+  private applyReducedMotion(reduce: boolean): void {
+    const on = !!reduce;
+    this.prefersReducedMotion = on;
+    const el = this.heroVideoRef?.nativeElement;
+    if (el) {
+      if (on) {
+        el.pause();
+        el.removeAttribute('autoplay');
+      } else {
+        el.setAttribute('muted', '');
+        const p = el.play();
+        if (p && typeof (p as Promise<void>).catch === 'function') {
+          (p as Promise<void>).catch(() => {});
+        }
       }
     }
   }

@@ -56,6 +56,13 @@ export const routes: Routes = [
       { path: 'fornecedores', loadComponent: async () => (await import('./pages/restrito/admin/fornecedores/fornecedores.component')).FornecedoresAdminComponent, canActivate: [authGuard], data: { title: 'Gerenciar Fornecedores' } },
       { path: 'lista-produtos', component: ListaProdutosComponent, canActivate: [authGuard], data: { title: 'Lista de produtos' } },
       { path: 'parceiros', loadComponent: async () => (await import('./pages/restrito/admin/parceiros/parceiros.component')).ParceirosAdminComponent, canActivate: [authGuard], data: { title: 'Gerenciar Parceiros' } },
+      {
+        path: 'pedidos-pos-venda',
+        loadComponent: () =>
+          import('./pages/restrito/admin/pedidos-pos-venda/pedidos-pos-venda.component').then((m) => m.AdminPedidosPosVendaComponent),
+        canActivate: [authGuard],
+        data: { title: 'Pós-venda / cancelamentos' },
+      },
       { path: 'pedidos', component: AdminPedidosComponent, canActivate: [authGuard], data: { title: 'Pedidos' } },
       {
         path: 'atendimento',

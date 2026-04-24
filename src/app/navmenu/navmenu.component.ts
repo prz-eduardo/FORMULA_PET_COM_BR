@@ -46,6 +46,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   showFullMenu = true;
   showClienteModal = false;
   clienteLoading = false;
+  /** True while this modal applied overflow lock on html/body (see releaseClienteModalScrollLock). */
+  private clienteModalScrollLockActive = false;
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   private idleTimer: any = null;
@@ -201,8 +203,29 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showFullMenu = this.showSlideMenu;
   }
 
+  private applyClienteModalScrollLock(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      this.clienteModalScrollLockActive = true;
+    } catch {}
+  }
+
+  private releaseClienteModalScrollLock(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.clienteModalScrollLockActive) return;
+    this.clienteModalScrollLockActive = false;
+    if (this.menuOpen) return;
+    try {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    } catch {}
+  }
+
   async abrirClienteModal() {
     this.showClienteModal = true;
+    this.applyClienteModalScrollLock();
     this.clienteLoading = true;
     // Prepare animation origin based on user button position
     requestAnimationFrame(() => {
@@ -258,6 +281,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           this.showClienteModal = false;
           this.clienteLoading = false;
           try { this.clienteHost?.clear(); } catch {}
+          this.releaseClienteModalScrollLock();
         }, 320);
         return;
       }
@@ -265,10 +289,12 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showClienteModal = false;
     this.clienteLoading = false;
     try { this.clienteHost?.clear(); } catch {}
+    this.releaseClienteModalScrollLock();
   }
 
   ngOnDestroy(): void {
     if (this.idleTimer) clearTimeout(this.idleTimer);
+    this.releaseClienteModalScrollLock();
   }
 
   private resetIdleTimer(): void {

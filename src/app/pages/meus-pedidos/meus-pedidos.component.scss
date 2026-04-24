@@ -669,3 +669,155 @@ button.btn-sec:hover {
 .erro {
   color: #ffb3b3;
 }
+
+/* Pós-venda no card (fundo claro dentro de .order-body) */
+.card.pos-venda {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+.card.pos-venda .card-head .tt {
+  color: #0f172a;
+}
+.pv-note {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+.pv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pv-btn {
+  font-size: 13px;
+  border: 1px solid #e5e7eb !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.pv-btn.accent {
+  border-color: #a3b800 !important;
+  background: #f7fce8 !important;
+}
+.pv-btn.warn {
+  border-color: #fcd34d !important;
+  background: #fffbeb !important;
+}
+.pv-solicitacoes {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+.pv-sol-h {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+.pv-sol-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pv-sol-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.pv-sol-list li:last-child {
+  border-bottom: none;
+}
+.pv-sol-tipo {
+  font-weight: 600;
+  color: #0f172a;
+}
+.pv-sol-st {
+  color: #3f6212;
+}
+.pv-sol-dt {
+  color: #64748b;
+  margin-left: auto;
+}
+
+.pv-modal {
+  position: fixed;
+  z-index: 1200;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 24px));
+  max-height: min(86vh, 640px);
+  overflow: auto;
+  background: linear-gradient(180deg, #121820, #0d1118);
+  border: 1px solid var(--ac-border);
+  border-radius: var(--ac-radius);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  color: var(--ac-text);
+}
+.pv-modal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ac-border);
+}
+.pv-modal header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.pv-modal header .close {
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ac-text);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.pv-modal .body {
+  padding: 14px;
+}
+.pv-modal-intro {
+  font-size: 13px;
+  color: var(--ac-text-dim);
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+.pv-label {
+  display: block;
+  font-size: 12px;
+  color: var(--ac-text-dim);
+  margin-bottom: 6px;
+}
+.pv-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ac-border);
+  background: rgba(10, 16, 24, 0.55);
+  color: var(--ac-text);
+  margin-bottom: 12px;
+  resize: vertical;
+}
+.pv-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--ac-text-dim);
+  margin-bottom: 14px;
+}
+.pv-check input {
+  margin-top: 3px;
+}
+.pv-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

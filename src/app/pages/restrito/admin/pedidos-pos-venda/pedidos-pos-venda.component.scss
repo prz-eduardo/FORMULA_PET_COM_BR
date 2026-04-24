@@ -1,0 +1,159 @@
+.pos-venda-admin {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  color: #e5ecf5;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.head h1 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.sub {
+  margin: 0;
+  color: rgba(229, 236, 245, 0.65);
+  font-size: 0.9rem;
+}
+
+.link-back {
+  color: #93c5fd;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.link-back:hover {
+  text-decoration: underline;
+}
+
+.filters .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  color: rgba(229, 236, 245, 0.65);
+  margin-bottom: 4px;
+}
+
+.field select {
+  min-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5ecf5;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tbl th,
+.tbl td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: top;
+}
+
+.tbl th {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+}
+
+tr.is-hi {
+  outline: 2px solid rgba(196, 214, 0, 0.55);
+}
+
+.muted {
+  color: rgba(229, 236, 245, 0.55);
+}
+
+.msg {
+  max-width: 220px;
+  word-break: break-word;
+}
+
+.notas textarea {
+  width: 100%;
+  min-width: 160px;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 16, 24, 0.6);
+  color: #e5ecf5;
+  resize: vertical;
+}
+
+.acts {
+  white-space: nowrap;
+}
+.acts .btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e5ecf5;
+  cursor: pointer;
+}
+.btn.sm {
+  font-size: 12px;
+}
+.btn.ok {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.15);
+}
+.btn.danger {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.linkish {
+  background: none;
+  border: none;
+  color: #93c5fd;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 600;
+}
+.linkish:hover {
+  text-decoration: underline;
+}
+
+.loading,
+.vazio {
+  padding: 24px;
+  text-align: center;
+  color: rgba(229, 236, 245, 0.6);
+}
+
+.paginacao {
+  margin-top: 16px;
+}

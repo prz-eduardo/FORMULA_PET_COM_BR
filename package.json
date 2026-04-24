@@ -21,6 +21,7 @@
     "@angular/platform-server": "^18.2.0",
     "@angular/router": "^18.2.0",
     "@angular/ssr": "^18.2.12",
+    "@mercadopago/sdk-js": "^0.0.3",
     "axios": "^1.12.2",
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.5.1",
