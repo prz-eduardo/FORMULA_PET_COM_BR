@@ -42,6 +42,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
+    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined' && window.matchMedia) {
+      this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
     const loadHighlights = async () => {
       try {
         this.loading = true;
@@ -82,8 +86,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private applyReducedMotion(reduce: boolean): void {
     const on = !!reduce;
     this.prefersReducedMotion = on;
-    const el = this.heroVideoRef?.nativeElement;
-    if (el) {
+
+    const syncVideo = (): void => {
+      const el = this.heroVideoRef?.nativeElement;
+      if (!el) {
+        return;
+      }
       if (on) {
         el.pause();
         el.removeAttribute('autoplay');
@@ -94,6 +102,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           (p as Promise<void>).catch(() => {});
         }
       }
+    };
+
+    if (!on && isPlatformBrowser(this.platformId)) {
+      setTimeout(() => syncVideo(), 0);
+    } else {
+      syncVideo();
     }
   }
 

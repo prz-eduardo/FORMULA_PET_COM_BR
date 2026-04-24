@@ -25,7 +25,9 @@ export class SupportChatIdentityService {
     }
     const expectedUid = this.getExpectedChatUid();
     const existing = supportAuth.currentUser?.uid;
-    if (existing && (!expectedUid || existing === expectedUid)) {
+    // Só reutilizar quando o JWT permite derivar o UID e coincide — evita manter sessão
+    // de suporte "fantasma" se expectedUid for desconhecido (JWT estranho) ou trocou de perfil.
+    if (existing && expectedUid && existing === expectedUid) {
       this.debug('reuse_current_user', { existing, expectedUid });
       return existing;
     }

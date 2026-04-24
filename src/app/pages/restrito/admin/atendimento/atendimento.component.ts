@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { SupportTicketFacadeService } from '../../../../features/support-chat/support-ticket-facade.service';
 import { SupportChatIdentityService } from '../../../../features/support-chat/support-chat-identity.service';
-import { AdminQueueRow, SupportMeta } from '../../../../features/support-chat/support.models';
+import { AdminQueueRow, SupportMeta, SupportRtdbSubscriptionError } from '../../../../features/support-chat/support.models';
 import { ChatThreadComponent } from '../../../../features/support-chat/chat-thread/chat-thread.component';
 
 @Component({
@@ -170,13 +170,27 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
   }
 
   private describeWorkloadError(error: unknown): string {
-    const code = ((error as any)?.code || '').toString().toLowerCase();
-    const msg = ((error as any)?.message || '').toString();
+    const stream =
+      error instanceof SupportRtdbSubscriptionError ? error.stream : null;
+    const inner =
+      error instanceof SupportRtdbSubscriptionError && error.cause != null
+        ? error.cause
+        : error;
+    const code = ((inner as any)?.code || '').toString().toLowerCase();
+    const msg = ((inner as any)?.message || '').toString();
+    const where =
+      stream === 'queue'
+        ? 'a fila global (support/queue)'
+        : stream === 'admin_active'
+          ? 'os atendimentos ativos (support/admin_active)'
+          : 'a fila de atendimento';
     if (code.includes('permission') || msg.toLowerCase().includes('permission_denied')) {
-      return 'Sem permissão para ler a fila do chat. Faça login novamente e confirme perfil admin.';
+      return `Sem permissão de leitura em ${where} no Realtime Database. Publique as regras (database.rules.json) no projeto Firebase, confirme FIREBASE_* no backend e o mesmo projectId do app, ou faça login de novo como admin.`;
     }
     if (msg) {
-      return `Falha ao carregar fila em tempo real: ${msg}`;
+      return stream
+        ? `Falha em ${where}: ${msg}`
+        : `Falha ao carregar fila em tempo real: ${msg}`;
     }
     return 'Falha ao carregar fila em tempo real.';
   }

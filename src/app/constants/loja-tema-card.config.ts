@@ -23,6 +23,7 @@ export interface LojaTemaCardSalesConfig {
   showMarca: boolean;
   showSku: boolean;
   variant: LojaTemaCardVariant;
+  fallbackImageUrl?: string;
 }
 export type LojaTemaCardVariant = 'legacy' | 'variant1' | 'variant2' | 'variant3' | 'variant4';
 
@@ -113,10 +114,11 @@ export function normalizeThemeConfig(raw: unknown): LojaTemaConfigNormalized {
     },
     catalog: normalizeCatalogConfig(cfg['catalog']),
     cardSales: {
-      imageRatio: normalizeImageRatio(sales['imageRatio'], '4/5'),
+      imageRatio: '1/1',
       showMarca: sales['showMarca'] !== false,
       showSku: !!sales['showSku'],
       variant: CARD_VARIANT_ALIASES[normKey(String(sales['variant'] ?? 'variant1'))] ?? 'variant1',
+      fallbackImageUrl: String(sales['fallbackImageUrl'] || '').trim() || undefined,
     },
   };
 }

@@ -32,8 +32,9 @@ export abstract class ProductCardBase {
 
   get displayImage(): string {
     const fromGallery = this.product.images?.[0]?.url;
+    const fallbackFromTheme = String((this.themeConfig as any)?.cardSales?.fallbackImageUrl || '').trim();
     const u = (this.product.image || this.product.imageUrl || fromGallery || '').toString().trim();
-    return u || '/imagens/image.png';
+    return u || fallbackFromTheme || '/imagens/image.png';
   }
 
   get priceNow(): number {
@@ -62,7 +63,7 @@ export abstract class ProductCardBase {
   }
 
   get imageAspect() {
-    return normalizeImageRatio((this.themeConfig as any)?.cardSales?.imageRatio, '4/5');
+    return normalizeImageRatio((this.themeConfig as any)?.cardSales?.imageRatio, '1/1');
   }
 
   get ratingValue(): number {

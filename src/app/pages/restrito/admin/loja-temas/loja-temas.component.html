@@ -44,6 +44,73 @@
     </label>
   </section>
 
+  <section class="lt-editor" *ngIf="drawerMode() !== 'closed'" aria-labelledby="lt-editor-title">
+  <h2 id="lt-editor-title">{{ drawerMode() === 'create' ? 'Novo tema' : 'Editar tema' }}</h2>
+
+  <label class="lt-field">
+    <span>Nome</span>
+    <input type="text" [(ngModel)]="draftNome" name="lt-nome" autocomplete="off" />
+  </label>
+  <label class="lt-field">
+    <span>Slug (opcional)</span>
+    <input type="text" [(ngModel)]="draftSlug" name="lt-slug" autocomplete="off" />
+  </label>
+  <label class="lt-check">
+    <input type="checkbox" [(ngModel)]="draftAtivo" name="lt-ativo" />
+    <span>Tema habilitado (obrigatório para publicar na vitrine)</span>
+  </label>
+
+  <div class="lt-grid-controls">
+    <label class="lt-field">
+      <span>Preview mobile (colunas)</span>
+      <select [ngModel]="draftCatalogMobile" (ngModelChange)="updateDraftCatalogColumns('mobile', $event)" name="lt-cols-mobile">
+        <option *ngFor="let c of mobileColumnsOptions" [ngValue]="c">{{ c }} x {{ c }}</option>
+      </select>
+    </label>
+    <label class="lt-field">
+      <span>Preview desktop (colunas)</span>
+      <select [ngModel]="draftCatalogDesktop" (ngModelChange)="updateDraftCatalogColumns('desktop', $event)" name="lt-cols-desktop">
+        <option *ngFor="let c of desktopColumnsOptions" [ngValue]="c">{{ c }} x {{ c }}</option>
+      </select>
+    </label>
+  </div>
+
+  <label class="lt-field">
+    <span>Variação visual do card</span>
+    <select [ngModel]="draftCardVariant" (ngModelChange)="updateDraftVariant($event)" name="lt-card-variant">
+      <option *ngFor="let v of variantOptions" [ngValue]="v.id">{{ v.label }}</option>
+    </select>
+  </label>
+
+  <label class="lt-field">
+    <span>Imagem padrão do card (fallback)</span>
+    <input type="url" [(ngModel)]="draftFallbackImageUrl" name="lt-fallback-image" placeholder="https://.../imagem-quadrada.jpg" />
+    <small class="lt-help">Padrão fixo de imagem: 1:1 (quadrada) para cards da loja e preview.</small>
+  </label>
+
+  <div class="lt-colors">
+    <label class="lt-field lt-color">
+      <span>Cor primária</span>
+      <input type="color" [(ngModel)]="draftPrimary" name="lt-c1" />
+    </label>
+    <label class="lt-field lt-color">
+      <span>Destaque</span>
+      <input type="color" [(ngModel)]="draftAccent" name="lt-c2" />
+    </label>
+    <label class="lt-field lt-color">
+      <span>Superfície</span>
+      <input type="color" [(ngModel)]="draftSurface" name="lt-c3" />
+    </label>
+  </div>
+
+  <div class="lt-editor-actions">
+    <button class="admin-btn ghost" type="button" (click)="closeDrawer()" [disabled]="saving()">Cancelar</button>
+    <button class="admin-btn ok" type="button" (click)="save()" [disabled]="saving()">
+      {{ saving() ? 'Salvando…' : 'Salvar' }}
+    </button>
+  </div>
+  </section>
+
   <article class="lt-focus-card" *ngIf="selectedTheme as tema">
     <header class="lt-card-head">
       <h3>{{ tema.nome }}</h3>
@@ -96,7 +163,6 @@
       <button class="admin-btn small ok" type="button" (click)="activate(tema)" [disabled]="!tema.ativo">
         Definir como ativo na loja
       </button>
-      <button class="admin-btn small secondary" type="button" (click)="openEdit(tema)">Editar</button>
       <button class="admin-btn small ghost" type="button" (click)="duplicate(tema)">Duplicar</button>
       <button
         class="admin-btn small danger"
@@ -109,74 +175,3 @@
     </footer>
   </article>
 </div>
-
-<div class="lt-drawer-backdrop" *ngIf="drawerMode() !== 'closed'" (click)="closeDrawer()"></div>
-<aside class="lt-drawer" *ngIf="drawerMode() !== 'closed'" role="dialog" aria-labelledby="lt-drawer-title">
-  <h2 id="lt-drawer-title">{{ drawerMode() === 'create' ? 'Novo tema' : 'Editar tema' }}</h2>
-
-  <label class="lt-field">
-    <span>Nome</span>
-    <input type="text" [(ngModel)]="draftNome" name="lt-nome" autocomplete="off" />
-  </label>
-  <label class="lt-field">
-    <span>Slug (opcional)</span>
-    <input type="text" [(ngModel)]="draftSlug" name="lt-slug" autocomplete="off" />
-  </label>
-  <label class="lt-check">
-    <input type="checkbox" [(ngModel)]="draftAtivo" name="lt-ativo" />
-    <span>Tema habilitado (obrigatório para publicar na vitrine)</span>
-  </label>
-
-  <div class="lt-grid-controls">
-    <label class="lt-field">
-      <span>Preview mobile (colunas)</span>
-      <select [ngModel]="draftCatalogMobile" (ngModelChange)="updateDraftCatalogColumns('mobile', $event)" name="lt-cols-mobile">
-        <option *ngFor="let c of mobileColumnsOptions" [ngValue]="c">{{ c }} x {{ c }}</option>
-      </select>
-    </label>
-    <label class="lt-field">
-      <span>Preview desktop (colunas)</span>
-      <select [ngModel]="draftCatalogDesktop" (ngModelChange)="updateDraftCatalogColumns('desktop', $event)" name="lt-cols-desktop">
-        <option *ngFor="let c of desktopColumnsOptions" [ngValue]="c">{{ c }} x {{ c }}</option>
-      </select>
-    </label>
-  </div>
-
-  <label class="lt-field">
-    <span>Variação visual do card</span>
-    <select [ngModel]="draftCardVariant" (ngModelChange)="updateDraftVariant($event)" name="lt-card-variant">
-      <option *ngFor="let v of variantOptions" [ngValue]="v.id">{{ v.label }}</option>
-    </select>
-  </label>
-
-  <div class="lt-colors">
-    <label class="lt-field lt-color">
-      <span>Cor primária</span>
-      <input type="color" [(ngModel)]="draftPrimary" name="lt-c1" />
-    </label>
-    <label class="lt-field lt-color">
-      <span>Destaque</span>
-      <input type="color" [(ngModel)]="draftAccent" name="lt-c2" />
-    </label>
-    <label class="lt-field lt-color">
-      <span>Superfície</span>
-      <input type="color" [(ngModel)]="draftSurface" name="lt-c3" />
-    </label>
-  </div>
-
-  <label class="lt-field lt-json">
-    <span>Configuração JSON (avançado)</span>
-    <p class="lt-json-hint">
-      Use <code>catalog.columnsMobile</code> (1-4) e <code>catalog.columnsDesktop</code> (4-6) para controlar a grelha.
-      A vitrine agora usa apenas um tipo de card de produto, sem mistura de estruturas.
-    </p>
-    <textarea [(ngModel)]="draftJson" name="lt-json" rows="14" spellcheck="false"></textarea>
-  </label>
-
-  <div class="lt-drawer-actions">
-    <button class="admin-btn ghost" type="button" (click)="closeDrawer()" [disabled]="saving()">Cancelar</button>
-    <button class="admin-btn ok" type="button" (click)="save()" [disabled]="saving()">
-      {{ saving() ? 'Salvando…' : 'Salvar' }}
-    </button>
-  </div>
-</aside>

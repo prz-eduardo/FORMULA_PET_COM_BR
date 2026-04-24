@@ -8,6 +8,7 @@ import {
   SupportMessage,
   SupportMeta,
   SupportChatMode,
+  SupportRtdbSubscriptionError,
   SupportTicketStatus,
 } from './support.models';
 import * as P from './support-paths';
@@ -174,8 +175,9 @@ export class SupportTicketFacadeService {
         flush();
       },
       (error) => {
-        this.logSubscriptionError('queue', error);
-        onError?.(error);
+        const e = this.asError(error);
+        this.logSubscriptionError('queue', e);
+        onError?.(new SupportRtdbSubscriptionError('queue', e.message, { cause: e }));
       }
     );
 
@@ -186,8 +188,9 @@ export class SupportTicketFacadeService {
         flush();
       },
       (error) => {
-        this.logSubscriptionError('admin_active', error);
-        onError?.(error);
+        const e = this.asError(error);
+        this.logSubscriptionError('admin_active', e);
+        onError?.(new SupportRtdbSubscriptionError('admin_active', e.message, { cause: e }));
       }
     );
 
@@ -208,8 +211,12 @@ export class SupportTicketFacadeService {
     };
   }
 
-  private logSubscriptionError(stream: 'queue' | 'admin_active', error: unknown) {
-    const msg = (error as any)?.message || String(error || 'erro desconhecido');
+  private asError(u: unknown): Error {
+    return u instanceof Error ? u : new Error(String(u ?? 'erro desconhecido'));
+  }
+
+  private logSubscriptionError(stream: 'queue' | 'admin_active', error: Error) {
+    const msg = error?.message || String(error || 'erro desconhecido');
     console.error(`[support-chat] falha na assinatura ${stream}:`, msg);
   }
 

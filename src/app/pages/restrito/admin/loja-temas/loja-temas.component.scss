@@ -184,31 +184,19 @@
   padding-top: 4px;
 }
 
-.lt-drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  z-index: 1000;
-}
-
-.lt-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: min(520px, 100vw);
-  height: 100vh;
-  overflow: auto;
-  z-index: 1001;
+.lt-editor {
+  margin-top: 14px;
   background: var(--admin-surface-2);
-  border-left: 1px solid var(--admin-border-strong);
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12);
-  padding: 20px 18px 28px;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.lt-drawer h2 {
+.lt-editor h2 {
   margin: 0 0 4px;
   font-size: 1.15rem;
   color: var(--admin-text-strong);
@@ -222,6 +210,7 @@
   color: var(--admin-text-strong);
 }
 .lt-field input[type='text'],
+.lt-field input[type='url'],
 .lt-field textarea,
 .lt-field select {
   font: inherit;
@@ -230,6 +219,11 @@
   border: 1px solid var(--admin-border-strong);
   background: var(--admin-surface);
   color: var(--admin-text);
+}
+
+.lt-help {
+  font-size: 12px;
+  color: var(--admin-muted-2);
 }
 .lt-field textarea {
   font-family: ui-monospace, monospace;
@@ -281,7 +275,7 @@
   margin-top: 3px;
 }
 
-.lt-drawer-actions {
+.lt-editor-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;

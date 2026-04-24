@@ -16,7 +16,24 @@
     <!-- Banner da Home: usa app-banner-slot (posicao home_hero); se não houver
          banners cadastrados/ativos, cai para o conteúdo estático original. -->
     <app-banner-slot posicao="home_hero" mode="carousel">
-      <section class="home-hero-banner" aria-label="Farmácia de manipulação veterinária">
+      <section
+        class="home-hero-banner"
+        [class.home-hero-banner--static-bg]="prefersReducedMotion"
+        aria-label="Farmácia de manipulação veterinária"
+      >
+        <div *ngIf="!prefersReducedMotion" class="banner-bg-video-wrap" aria-hidden="true">
+          <video
+            #heroVideo
+            class="banner-bg-video"
+            src="/videos/institucional.mp4"
+            poster="/imagens/fmanip.webp"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+          ></video>
+        </div>
         <div class="banner-overlay" aria-hidden="true"></div>
         <div class="banner-content">
           <div class="banner-inner">
@@ -34,31 +51,6 @@
                 <a routerLink="/loja" class="btn">Ver produtos</a>
                 <a href="https://wa.me/4132051910?text=Olá!%20Preciso%20de%20uma%20fórmula%20para%20meu%20pet" target="_blank" rel="noopener" class="btn whatsapp"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
               </div>
-            </div>
-            <div
-              class="banner-illustration"
-              [class.banner-illustration--reduced-motion]="prefersReducedMotion"
-              aria-hidden="true"
-            >
-              <video
-                #heroVideo
-                class="banner-hero-media"
-                src="/videos/institucional.mp4"
-                poster="/imagens/image.png"
-                autoplay
-                muted
-                loop
-                playsinline
-                preload="metadata"
-              ></video>
-              <img
-                *ngIf="prefersReducedMotion"
-                class="banner-hero-media banner-hero-poster-fallback"
-                src="/imagens/image.png"
-                alt=""
-                loading="eager"
-                decoding="async"
-              />
             </div>
           </div>
         </div>

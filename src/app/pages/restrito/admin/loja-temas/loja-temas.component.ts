@@ -11,7 +11,7 @@ const DEFAULT_CONFIG: Record<string, unknown> = {
   version: 2,
   colors: { primary: '#b45309', accent: '#f5a700', surface: '#ffffff' },
   cardSales: {
-    imageRatio: '4/5',
+    imageRatio: '1/1',
     showMarca: true,
     showSku: true,
     variant: 'variant1',
@@ -79,6 +79,7 @@ export class LojaTemasAdminComponent implements OnInit {
   draftPrimary = '#b45309';
   draftAccent = '#f5a700';
   draftSurface = '#ffffff';
+  draftFallbackImageUrl = '';
   draftAtivo = true;
   draftJson = '';
   searchQuery = '';
@@ -99,6 +100,11 @@ export class LojaTemasAdminComponent implements OnInit {
         if (picked == null || !(res.data || []).some((t) => t.id === picked)) {
           const fallback = (res.data || []).find((t) => t.id === res.activeThemeId) || (res.data || [])[0] || null;
           this.selectedThemeId.set(fallback?.id ?? null);
+        }
+        if ((res.data || []).length) {
+          this.startEditSelectedTheme();
+        } else {
+          this.drawerMode.set('closed');
         }
         this.loading.set(false);
       },
@@ -160,6 +166,7 @@ export class LojaTemasAdminComponent implements OnInit {
     const id = Number(rawId);
     if (!Number.isFinite(id)) return;
     this.selectedThemeId.set(id);
+    this.startEditSelectedTheme();
   }
 
   previewDesktopItems(t: LojaTemaDto | null): ShopProduct[] {
@@ -192,6 +199,8 @@ export class LojaTemasAdminComponent implements OnInit {
     this.draftPrimary = col['primary'] || '#b45309';
     this.draftAccent = col['accent'] || '#f5a700';
     this.draftSurface = col['surface'] || '#ffffff';
+    const sales = (cfg['cardSales'] as Record<string, unknown> | undefined) || {};
+    this.draftFallbackImageUrl = String(sales['fallbackImageUrl'] ?? '');
     this.draftAtivo = true;
     this.drawerMode.set('create');
   }
@@ -208,12 +217,24 @@ export class LojaTemasAdminComponent implements OnInit {
     this.draftPrimary = String(col['primary'] ?? '#b45309');
     this.draftAccent = String(col['accent'] ?? '#f5a700');
     this.draftSurface = String(col['surface'] ?? '#ffffff');
+    const sales = (cfg['cardSales'] as Record<string, unknown> | undefined) || {};
+    this.draftFallbackImageUrl = String(sales['fallbackImageUrl'] ?? '');
     this.drawerMode.set('edit');
   }
 
   closeDrawer(): void {
+    if (this.selectedTheme) {
+      this.openEdit(this.selectedTheme);
+      return;
+    }
     this.drawerMode.set('closed');
     this.editingId.set(null);
+  }
+
+  private startEditSelectedTheme(): void {
+    const t = this.selectedTheme;
+    if (!t || t.id == null) return;
+    this.openEdit(t);
   }
 
   private buildConfig(): Record<string, unknown> {
@@ -243,8 +264,12 @@ export class LojaTemasAdminComponent implements OnInit {
     const sales = (typeof salesRaw === 'object' && salesRaw && !Array.isArray(salesRaw))
       ? { ...(salesRaw as Record<string, unknown>) }
       : {};
+    sales['imageRatio'] = '1/1';
     const variant = String(sales['variant'] || 'variant1');
     sales['variant'] = ['legacy', 'variant1', 'variant2', 'variant3', 'variant4'].includes(variant) ? variant : 'variant1';
+    const fallbackImageUrl = this.draftFallbackImageUrl.trim();
+    if (fallbackImageUrl) sales['fallbackImageUrl'] = fallbackImageUrl;
+    else delete sales['fallbackImageUrl'];
     cfg['cardSales'] = sales;
     return cfg;
   }

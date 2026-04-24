@@ -4,7 +4,7 @@
       <h1 class="title">Atendimento</h1>
       <p class="lead">Fila em tempo real e conversas que você já assumiu. Selecione um cliente à esquerda para abrir o chat.</p>
     </div>
-    <div class="overview" *ngIf="!loading && !initErr">
+    <div class="overview" *ngIf="!loading && !initErr && !workloadErr">
       <div class="metric">
         <span class="metric-label">Total</span>
         <strong>{{ totalRows }}</strong>

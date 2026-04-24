@@ -75,7 +75,7 @@ export class ProductCardSalesComponent {
   }
 
   get imageAspect() {
-    return normalizeImageRatio((this.themeConfig as any)?.cardSales?.imageRatio, '4/5');
+    return normalizeImageRatio((this.themeConfig as any)?.cardSales?.imageRatio, '1/1');
   }
 
   get ratingValue(): number {

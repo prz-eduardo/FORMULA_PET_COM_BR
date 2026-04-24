@@ -495,7 +495,7 @@ export class ProdutoComponent implements OnInit {
   get previewThemeConfig(): Record<string, unknown> {
     return {
       version: 2,
-      cardSales: { imageRatio: '4/5', showMarca: true, showSku: true },
+      cardSales: { imageRatio: '1/1', showMarca: true, showSku: true },
       catalog: { columnsMobile: 2, columnsDesktop: 4 },
     };
   }
