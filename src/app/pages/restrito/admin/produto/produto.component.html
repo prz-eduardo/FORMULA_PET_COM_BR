@@ -726,17 +726,7 @@
 
           <div class="field vitrine-layout">
             <label class="field-label">Layout na loja</label>
-            <p class="field-hint">Card de vendas (padrão) ou faixa grande em duas colunas no grid da vitrine.</p>
-            <div class="radio-row">
-              <label class="radio-pill">
-                <input type="radio" formControlName="cardLayout" value="sales" />
-                <span>Card de vendas</span>
-              </label>
-              <label class="radio-pill">
-                <input type="radio" formControlName="cardLayout" value="banner" />
-                <span>Banner (2 colunas)</span>
-              </label>
-            </div>
+            <p class="field-hint">A vitrine usa layout unificado em grelha. Todos os produtos são exibidos como card de vendas.</p>
           </div>
         </div>
       </div>
@@ -810,14 +800,8 @@
             </header>
 
             <div class="preview-wrapper preview-dual">
-              <div class="preview-col" *ngIf="form.value.cardLayout === 'banner'">
-                <p class="preview-label">Banner (vitrine)</p>
-                <div class="preview-banner-wrap">
-                  <app-product-card-banner [product]="previewProduct" [themeConfig]="previewThemeConfig" [supportsFavorites]="false" [disableLink]="true" [cardWidth]="'100%'"></app-product-card-banner>
-                </div>
-              </div>
               <div class="preview-col">
-                <p class="preview-label">{{ form.value.cardLayout === 'banner' ? 'Card de vendas (referência)' : 'Card de vendas' }}</p>
+                <p class="preview-label">Card de vendas</p>
                 <div class="preview-v2" [style.max-width]="defaultCardWidth">
                   <app-product-card-sales [product]="previewProduct" [themeConfig]="previewThemeConfig" [supportsFavorites]="false" [supportsRatings]="true" [favoriteActive]="false" [disableLink]="true" [cardWidth]="defaultCardWidth" [extraClass]="'review-preview'"></app-product-card-sales>
                 </div>

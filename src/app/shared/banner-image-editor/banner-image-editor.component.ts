@@ -81,7 +81,7 @@ import { CommonModule } from '@angular/common';
       const rect = this.frameRef?.nativeElement?.getBoundingClientRect();
       if (!rect) return;
       const fw = rect.width || 300;
-      this.frameHeight = Math.max(24, Math.round(fw / Math.max(0.0001, this.expectedRatio)));
+      this.frameHeight = Math.max(24, Math.round(fw / this.safeRatio()));
       if (this.naturalW && this.naturalH) this.fitImageToFrame();
     }
 
@@ -137,7 +137,8 @@ import { CommonModule } from '@angular/common';
     async setImage(dataUrl: string): Promise<void> {
       this.imageSrc = dataUrl;
       this._setWarning(null);
-      this.previewData = null; this.previewChange.emit(null);
+    // Evita estado transitório (null) durante a mesma detecção de mudanças no pai.
+    this.previewData = null;
       const img = await this._loadImageElement(dataUrl);
       if (!img) { this._setWarning('Falha ao carregar imagem.'); return; }
       this.naturalW = img.naturalWidth || img.width;
@@ -155,7 +156,7 @@ import { CommonModule } from '@angular/common';
     private fitImageToFrame() {
       const rect = this.frameRef.nativeElement.getBoundingClientRect();
       const fw = rect.width || 300;
-      const fh = this.frameHeight || Math.round(fw / Math.max(0.0001, this.expectedRatio));
+      const fh = this.frameHeight || Math.round(fw / this.safeRatio());
       const initScale = Math.max(fw / Math.max(1, this.naturalW), fh / Math.max(1, this.naturalH));
       this.minScale = initScale;
       this.maxScale = Math.max(initScale * 4, initScale + 0.1);
@@ -170,7 +171,7 @@ import { CommonModule } from '@angular/common';
     private _clampPosition() {
       const rect = this.frameRef.nativeElement.getBoundingClientRect();
       const fw = rect.width || 300;
-      const fh = this.frameHeight || Math.round(fw / Math.max(0.0001, this.expectedRatio));
+      const fh = this.frameHeight || Math.round(fw / this.safeRatio());
       if (this.displayW > fw) {
         const minX = fw - this.displayW;
         this.posX = Math.min(Math.max(this.posX, minX), 0);
@@ -243,7 +244,7 @@ import { CommonModule } from '@angular/common';
       if (visibleDisplayW <= 0 || visibleDisplayH <= 0) { this.previewData = null; this.previewChange.emit(null); return; }
       const startXdisplay = intersectionLeft - imgLeft; const startYdisplay = intersectionTop - imgTop;
       const srcX = startXdisplay / this.scale; const srcY = startYdisplay / this.scale; const srcW = visibleDisplayW / this.scale; const srcH = visibleDisplayH / this.scale;
-      const destW = 320; const destH = Math.max(1, Math.round(destW / Math.max(0.0001, this.expectedRatio)));
+      const destW = 320; const destH = Math.max(1, Math.round(destW / this.safeRatio()));
       const canvas = document.createElement('canvas'); canvas.width = destW; canvas.height = destH; const ctx = canvas.getContext('2d'); if (!ctx) { this.previewData = null; this.previewChange.emit(null); return; }
       const draw = () => {
         try {
@@ -272,8 +273,8 @@ import { CommonModule } from '@angular/common';
       if (srcW <= 0 || srcH <= 0) return null;
       let destW: number; let destH: number;
       if (outW && outH) { destW = outW; destH = outH; }
-      else if (outW) { destW = outW; destH = Math.round(outW / Math.max(0.0001, this.expectedRatio)); }
-      else { destW = 1600; destH = Math.max(1, Math.round(destW / Math.max(0.0001, this.expectedRatio))); }
+      else if (outW) { destW = outW; destH = Math.round(outW / this.safeRatio()); }
+      else { destW = 1600; destH = Math.max(1, Math.round(destW / this.safeRatio())); }
       const canvas = document.createElement('canvas'); canvas.width = Math.max(1, destW); canvas.height = Math.max(1, destH); const ctx = canvas.getContext('2d'); if (!ctx) return null;
       const imgEl = this.imgRef?.nativeElement;
       if (imgEl && imgEl.complete && imgEl.naturalWidth) {
@@ -284,6 +285,7 @@ import { CommonModule } from '@angular/common';
     }
 
     private _setWarning(msg: string | null) { this.warning = msg; this.warnChange.emit(msg); }
+    private safeRatio(): number { return Number.isFinite(this.expectedRatio) && this.expectedRatio > 0 ? this.expectedRatio : (16 / 9); }
 
     private _loadImageElement(src: string | null): Promise<HTMLImageElement | null> {
       return new Promise((resolve) => {

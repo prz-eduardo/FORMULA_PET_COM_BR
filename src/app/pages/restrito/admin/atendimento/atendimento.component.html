@@ -1,21 +1,92 @@
 <div class="page">
   <header class="page-head">
-    <h1 class="title">Atendimento</h1>
-    <p class="lead">Fila em tempo real e conversas que você já assumiu. Selecione um cliente à esquerda para abrir o chat.</p>
+    <div>
+      <h1 class="title">Atendimento</h1>
+      <p class="lead">Fila em tempo real e conversas que você já assumiu. Selecione um cliente à esquerda para abrir o chat.</p>
+    </div>
+    <div class="overview" *ngIf="!loading && !initErr">
+      <div class="metric">
+        <span class="metric-label">Total</span>
+        <strong>{{ totalRows }}</strong>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Com você</span>
+        <strong>{{ activeRows.length }}</strong>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Aguardando</span>
+        <strong>{{ queuedRows.length }}</strong>
+      </div>
+    </div>
   </header>
 
   <p class="err" *ngIf="err" role="alert">{{ err }}</p>
   <p class="err" *ngIf="initErr" role="alert">{{ initErr }}</p>
+  <p class="err" *ngIf="workloadErr" role="alert">{{ workloadErr }}</p>
 
   <div class="grid" *ngIf="!loading && !initErr">
     <aside class="queue" aria-label="Fila de atendimento">
       <div class="queue-head">
         <h2>Fila</h2>
-        <span class="queue-count" *ngIf="workload.length">{{ workload.length }}</span>
+        <span class="queue-count" *ngIf="totalRows">{{ totalRows }}</span>
       </div>
-      <p *ngIf="!workload.length" class="empty">Ninguém na fila e nenhum atendimento ativo seu.</p>
-      <ol *ngIf="workload.length" class="list">
-        <li *ngFor="let row of workload">
+      <label class="search-wrap" *ngIf="totalRows">
+        <span class="search-label">Buscar cliente</span>
+        <input
+          class="search"
+          type="search"
+          [value]="query"
+          (input)="setQuery(($any($event.target).value || '')); err = ''"
+          placeholder="Nome do cliente"
+          aria-label="Buscar cliente na fila"
+        />
+      </label>
+      <p *ngIf="!totalRows && !workloadErr" class="empty">Ninguém na fila e nenhum atendimento ativo seu.</p>
+      <p *ngIf="!totalRows && workloadErr" class="empty">Não foi possível carregar a fila em tempo real.</p>
+      <p *ngIf="totalRows && !hasFilteredRows" class="empty">Nenhum atendimento encontrado para a busca informada.</p>
+
+      <section *ngIf="activeRows.length" class="list-block" aria-label="Atendimentos ativos">
+        <h3 class="list-title">Com você</h3>
+        <ol class="list">
+          <li *ngFor="let row of activeRows">
+            <button
+              type="button"
+              class="qbtn"
+              [class.qbtn--on]="selectedId === row.ticketId"
+              (click)="select(row.ticketId); err = ''"
+            >
+              <span class="qbtn-top">
+                <span class="label">{{ row.clienteLabel }}</span>
+                <span class="pill" [class.pill--active]="row.lane === 'active'">{{ laneLabel(row.lane) }}</span>
+              </span>
+              <span class="t">Atendimento iniciado</span>
+            </button>
+          </li>
+        </ol>
+      </section>
+
+      <section *ngIf="queuedRows.length" class="list-block" aria-label="Fila aguardando atendimento">
+        <h3 class="list-title">Aguardando</h3>
+        <ol class="list">
+          <li *ngFor="let row of queuedRows">
+            <button
+              type="button"
+              class="qbtn"
+              [class.qbtn--on]="selectedId === row.ticketId"
+              (click)="select(row.ticketId); err = ''"
+            >
+              <span class="qbtn-top">
+                <span class="label">{{ row.clienteLabel }}</span>
+                <span class="pill" [class.pill--active]="row.lane === 'active'">{{ laneLabel(row.lane) }}</span>
+              </span>
+              <span class="t">Entrou: {{ row.enqueuedAt | date : 'short' }}</span>
+            </button>
+          </li>
+        </ol>
+      </section>
+
+      <ol *ngIf="hasFilteredRows && !activeRows.length && !queuedRows.length" class="list">
+        <li *ngFor="let row of filteredRows">
           <button
             type="button"
             class="qbtn"

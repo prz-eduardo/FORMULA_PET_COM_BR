@@ -8,15 +8,15 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { ProductCardSalesComponent } from '../../product-card-sales/product-card-sales.component';
-import { ProductCardBannerComponent } from '../../product-card-banner/product-card-banner.component';
+import { ProductCardRendererComponent } from '../../product-cards/product-card-renderer.component';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../constants/card.constants';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { normalizeCatalogConfig } from '../../constants/loja-tema-card.config';
 
 @Component({
   selector: 'app-loja',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NavmenuComponent, FooterComponent, ProductCardSalesComponent, ProductCardBannerComponent, BannerSlotComponent],
+  imports: [CommonModule, FormsModule, RouterLink, NavmenuComponent, FooterComponent, ProductCardRendererComponent, BannerSlotComponent],
   templateUrl: './loja.component.html',
   styleUrls: ['./loja.component.scss']
 })
@@ -26,10 +26,8 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   produtos: ShopProduct[] = [];
   // Infinite scroll accumulation
   private accum: ShopProduct[] = [];
-  private chunks: Array<{ items: ShopProduct[]; banners?: ShopProduct[] }> = [];
-  private usedFeatured = new Set<number>();
   // Memoized render lists to avoid recomputation on every change detection
-  interleavedList: Array<{ type: 'product'|'banner'; product: ShopProduct }> = [];
+  interleavedList: ShopProduct[] = [];
   featuredTopList: ShopProduct[] = [];
   featuredRowList: ShopProduct[] = [];
   storeMeta: StoreMeta | null = null;
@@ -74,6 +72,14 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
   mobileView = false;
   private resizeListener?: () => void;
   private openLoginListener?: EventListenerOrEventListenerObject;
+
+  get catalogColsMobile(): number {
+    return normalizeCatalogConfig((this.storeMeta?.activeTheme?.config as any)?.catalog).columnsMobile;
+  }
+
+  get catalogColsDesktop(): number {
+    return normalizeCatalogConfig((this.storeMeta?.activeTheme?.config as any)?.catalog).columnsDesktop;
+  }
 
   @ViewChild('cartBtn', { static: true }) cartBtn?: ElementRef<HTMLButtonElement>;
 
@@ -221,49 +227,27 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Rebuild memoized lists when data or filters change
   private rebuildInterleavedAndFeatured() {
-    // Interleaved list from chunks
-    const out: Array<{ type: 'product'|'banner'; product: ShopProduct }> = [];
-    for (const ch of this.chunks) {
-      const items = [...ch.items];
-      const banners = ch.banners || [];
-      if (!items.length && banners.length) {
-        for (const b of banners) out.push({ type: 'banner', product: b });
-        continue;
-      }
-      const insertIndex = Math.max(1, Math.floor(items.length / 2));
-      const before = items.slice(0, insertIndex);
-      const after = items.slice(insertIndex);
-      for (const p of before) out.push({ type: 'product', product: p });
-      for (const b of banners) out.push({ type: 'banner', product: b });
-      for (const p of after) out.push({ type: 'product', product: p });
-    }
-    this.interleavedList = out;
-
-    // Featured lists
-    const feats = this.baseList().filter(p => (p as any).featured && this.passesLocalFilters(p));
+    // Destaques e catálogo usam o mesmo card, sem misturar estruturas.
+    const filtered = this.filtered;
+    const feats = filtered.filter((p) => !!(p as any).featured);
     const sorted = feats.length ? [...feats].sort((a, b) => (b.discount || 0) - (a.discount || 0)) : [];
-    this.featuredTopList = sorted.slice(0, 5);
-    this.featuredRowList = this.featuredTopList.slice(0, 3);
+    this.featuredTopList = sorted.slice(0, 6);
+    this.featuredRowList = this.featuredTopList.slice(0, 6);
+    this.interleavedList = filtered;
   }
 
   // trackBy helpers to avoid DOM re-creation and image flicker
-  trackInterleaved = (_: number, it: { type: 'product'|'banner'; product: ShopProduct }) => `${it.type}:${it.product.id}`;
+  trackInterleaved = (_: number, p: ShopProduct) => p.id;
   trackProduct = (_: number, p: ShopProduct) => p.id;
   trackCategory = (_: number, c: StoreCategory) => c.id ?? c.nome;
   trackFilter = (_: number, f: { key: string; label: string }) => f.key;
 
-  // Mantém interleaved/chunks/accum apontando para os objetos de produto mais recentes vindos da Store
+  // Mantém listas apontando para os objetos de produto mais recentes vindos da Store
   private refreshProductRefs() {
     if (!this.produtos || this.produtos.length === 0) return;
     const map = new Map<number, ShopProduct>(this.produtos.map(p => [p.id, p]));
     if (this.accum && this.accum.length) {
       this.accum = this.accum.map(p => map.get(p.id) || p);
-    }
-    if (this.chunks && this.chunks.length) {
-      this.chunks = this.chunks.map(ch => ({
-        items: (ch.items || []).map(p => map.get(p.id) || p),
-        banners: (ch.banners || []).map(b => map.get(b.id) || b)
-      }));
     }
     // Reconstroi listas de renderização para refletir counts/flags atualizados
     this.rebuildInterleavedAndFeatured();
@@ -768,8 +752,6 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loading = true;
       if (reset) {
         this.accum = [];
-        this.chunks = [];
-        this.usedFeatured.clear();
         this.page = 1;
       }
       const useFavs = this.onlyFavorites ? true : undefined;
@@ -796,11 +778,7 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
       // Append to accumulation (dedupe by id)
       const seen = new Set(this.accum.map(p => p.id));
       for (const p of current) { if (!seen.has(p.id)) { this.accum.push(p); seen.add(p.id); } }
-      // Build chunk: normal products (non-featured) with local filters applied
-  const items = current.filter(p => !((p as any).featured) && this.passesLocalFilters(p));
-  const banners = this.pickBanners(current);
-  this.chunks.push({ items, banners });
-      // Rebuild memoized lists after mutating chunks/accum
+      // Rebuild memoized lists after mutating accum
       this.rebuildInterleavedAndFeatured();
     } finally {
       this.loading = false;
@@ -830,21 +808,6 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.inStockOnly && !(p.stock != null && p.stock > 0)) return false;
     if (this.onlyFavorites && !this.isFav(p)) return false;
     return true;
-  }
-
-  private pickBanners(pageItems: ShopProduct[]): ShopProduct[] {
-    // Prefer ALL featured in this page that pass local filters and are not used yet, sorted by higher discount
-    const candidates = pageItems.filter(p => (p as any).featured && this.passesLocalFilters(p) && !this.usedFeatured.has(p.id));
-    const sorted = candidates.sort((a, b) => (b.discount || 0) - (a.discount || 0));
-    if (sorted.length) {
-      for (const p of sorted) this.usedFeatured.add(p.id);
-      return sorted;
-    }
-    // Fallback: pull from global accumulation if none in current page
-    const global = this.accum.filter(p => (p as any).featured && this.passesLocalFilters(p) && !this.usedFeatured.has(p.id));
-    const sortedGlobal = global.sort((a, b) => (b.discount || 0) - (a.discount || 0));
-    for (const p of sortedGlobal) this.usedFeatured.add(p.id);
-    return sortedGlobal;
   }
 
   async doLogin() {

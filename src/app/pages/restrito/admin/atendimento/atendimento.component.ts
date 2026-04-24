@@ -16,8 +16,10 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
   workload: AdminQueueRow[] = [];
   selectedId: string | null = null;
   meta: SupportMeta | null = null;
+  query = '';
   loading = true;
   initErr = '';
+  workloadErr = '';
   err = '';
   busy = false;
   offQueue: (() => void) | null = null;
@@ -34,10 +36,17 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
     this.initErr = '';
     try {
       await this.identity.ensureFirebaseForChat();
-      this.offQueue = this.facade.subscribeAdminWorkload((rows) => {
-        this.workload = rows;
-        this.cdr.markForCheck();
-      });
+      this.offQueue = this.facade.subscribeAdminWorkload(
+        (rows) => {
+          this.workload = rows;
+          this.workloadErr = '';
+          this.cdr.markForCheck();
+        },
+        (error) => {
+          this.workloadErr = this.describeWorkloadError(error);
+          this.cdr.markForCheck();
+        }
+      );
     } catch (e: any) {
       this.initErr = e?.message || 'Não foi possível iniciar o atendimento';
     } finally {
@@ -58,10 +67,17 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
   select(ticketId: string) {
     this.clearMeta();
     this.selectedId = ticketId;
-    this.offMeta = this.facade.subscribeMeta(ticketId, (m) => {
-      this.meta = m;
-      this.cdr.markForCheck();
-    });
+    this.offMeta = this.facade.subscribeMeta(
+      ticketId,
+      (m) => {
+        this.meta = m;
+        this.cdr.markForCheck();
+      },
+      (error) => {
+        this.err = this.describeWorkloadError(error);
+        this.cdr.markForCheck();
+      }
+    );
   }
 
   private clearMeta() {
@@ -106,6 +122,34 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
     return lane === 'queued' ? 'Aguardando' : 'Com você';
   }
 
+  setQuery(value: string) {
+    this.query = value ?? '';
+  }
+
+  get activeRows(): AdminQueueRow[] {
+    return this.filteredRows.filter((row) => row.lane === 'active');
+  }
+
+  get queuedRows(): AdminQueueRow[] {
+    return this.filteredRows.filter((row) => row.lane === 'queued');
+  }
+
+  get totalRows(): number {
+    return this.workload.length;
+  }
+
+  get filteredRows(): AdminQueueRow[] {
+    const term = this.query.trim().toLowerCase();
+    if (!term) {
+      return this.workload;
+    }
+    return this.workload.filter((row) => row.clienteLabel.toLowerCase().includes(term));
+  }
+
+  get hasFilteredRows(): boolean {
+    return this.filteredRows.length > 0;
+  }
+
   async finalizar() {
     if (!this.selectedId || !this.meta) {
       return;
@@ -123,5 +167,17 @@ export class AtendimentoAdminComponent implements OnInit, OnDestroy {
       this.busy = false;
       this.cdr.markForCheck();
     }
+  }
+
+  private describeWorkloadError(error: unknown): string {
+    const code = ((error as any)?.code || '').toString().toLowerCase();
+    const msg = ((error as any)?.message || '').toString();
+    if (code.includes('permission') || msg.toLowerCase().includes('permission_denied')) {
+      return 'Sem permissão para ler a fila do chat. Faça login novamente e confirme perfil admin.';
+    }
+    if (msg) {
+      return `Falha ao carregar fila em tempo real: ${msg}`;
+    }
+    return 'Falha ao carregar fila em tempo real.';
   }
 }

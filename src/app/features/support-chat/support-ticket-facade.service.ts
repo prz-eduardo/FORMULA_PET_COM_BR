@@ -62,33 +62,55 @@ export class SupportTicketFacadeService {
     return (s.val() as SupportMeta) || null;
   }
 
-  subscribeMeta(ticketId: string, onNext: (m: SupportMeta | null) => void): () => void {
-    return onValue(ref(supportRtdb, P.pathTicketMeta(ticketId)), (snap) => {
-      onNext((snap.val() as SupportMeta) || null);
-    });
+  subscribeMeta(
+    ticketId: string,
+    onNext: (m: SupportMeta | null) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    return onValue(
+      ref(supportRtdb, P.pathTicketMeta(ticketId)),
+      (snap) => {
+        onNext((snap.val() as SupportMeta) || null);
+      },
+      (error) => {
+        onError?.(error);
+      }
+    );
   }
 
-  subscribeQueueOrdered(onNext: (rows: { ticketId: string; enqueuedAt: number }[]) => void): () => void {
+  subscribeQueueOrdered(
+    onNext: (rows: { ticketId: string; enqueuedAt: number }[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
     const r = ref(supportRtdb, P.pathQueue());
     const q = query(r, orderByValue());
-    return onValue(q, (snap) => {
-      const val = snap.val() as Record<string, number> | null;
-      if (!val) {
-        onNext([]);
-        return;
+    return onValue(
+      q,
+      (snap) => {
+        const val = snap.val() as Record<string, number> | null;
+        if (!val) {
+          onNext([]);
+          return;
+        }
+        const rows = Object.keys(val)
+          .map((ticketId) => ({ ticketId, enqueuedAt: val[ticketId] || 0 }))
+          .sort((a, b) => a.enqueuedAt - b.enqueuedAt);
+        onNext(rows);
+      },
+      (error) => {
+        onError?.(error);
       }
-      const rows = Object.keys(val)
-        .map((ticketId) => ({ ticketId, enqueuedAt: val[ticketId] || 0 }))
-        .sort((a, b) => a.enqueuedAt - b.enqueuedAt);
-      onNext(rows);
-    });
+    );
   }
 
   /**
    * Lista para o admin: pedidos na fila global + conversas já assumidas por este usuário
    * (permanecem visíveis após «Atender», quando saem de `queue`).
    */
-  subscribeAdminWorkload(onNext: (rows: AdminQueueRow[]) => void): () => void {
+  subscribeAdminWorkload(
+    onNext: (rows: AdminQueueRow[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
     const adminUid = this.identity.getSupportUidOrThrow();
     let queueMap: Record<string, number> = {};
     let activeMap: Record<string, number> = {};
@@ -143,18 +165,31 @@ export class SupportTicketFacadeService {
       }, 60);
     };
 
-    const offQueue = this.subscribeQueueOrdered((rows) => {
-      queueMap = {};
-      for (const r of rows) {
-        queueMap[r.ticketId] = r.enqueuedAt;
+    const offQueue = this.subscribeQueueOrdered(
+      (rows) => {
+        queueMap = {};
+        for (const r of rows) {
+          queueMap[r.ticketId] = r.enqueuedAt;
+        }
+        flush();
+      },
+      (error) => {
+        this.logSubscriptionError('queue', error);
+        onError?.(error);
       }
-      flush();
-    });
+    );
 
-    const offActive = onValue(ref(supportRtdb, P.pathAdminActive(adminUid)), (snap) => {
-      activeMap = (snap.val() as Record<string, number>) || {};
-      flush();
-    });
+    const offActive = onValue(
+      ref(supportRtdb, P.pathAdminActive(adminUid)),
+      (snap) => {
+        activeMap = (snap.val() as Record<string, number>) || {};
+        flush();
+      },
+      (error) => {
+        this.logSubscriptionError('admin_active', error);
+        onError?.(error);
+      }
+    );
 
     return () => {
       if (debounceTimer !== null) {
@@ -171,6 +206,11 @@ export class SupportTicketFacadeService {
         // ignore
       }
     };
+  }
+
+  private logSubscriptionError(stream: 'queue' | 'admin_active', error: unknown) {
+    const msg = (error as any)?.message || String(error || 'erro desconhecido');
+    console.error(`[support-chat] falha na assinatura ${stream}:`, msg);
   }
 
   /** Posição 1 = próximo a ser atendido (fila 1-based). 0 = não está na fila. */

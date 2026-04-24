@@ -19,10 +19,6 @@
         <label><input type="radio" formControlName="coupon_application_order" value="percent_first" /> Percentual primeiro (recomendado, menos agressivo)</label>
         <label><input type="radio" formControlName="coupon_application_order" value="fixed_first" /> Valor fixo primeiro (mais agressivo)</label>
       </fieldset>
-      <div class="cupons-config-panel__max">
-        <label for="max-disc-pct">Limite máximo de desconto do cupom (% do subtotal elegível)</label>
-        <input id="max-disc-pct" type="number" step="0.1" min="0" max="100" formControlName="max_discount_percent" placeholder="Vazio = sem teto" />
-      </div>
       <button type="button" class="admin-btn primary" (click)="saveCuponsConfig()" [disabled]="savingConfig()">
         {{ savingConfig() ? 'Salvando…' : 'Salvar configuração' }}
       </button>

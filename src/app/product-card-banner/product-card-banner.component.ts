@@ -64,7 +64,7 @@ export class ProductCardBannerComponent {
 
   get overlayOpacity(): number {
     const o = (this.themeConfig as any)?.cardBanner?.overlayOpacity;
-    return typeof o === 'number' && o >= 0 && o <= 1 ? o : 0.45;
+    return typeof o === 'number' && o >= 0 && o <= 1 ? o : 0.55;
   }
 
   get minHeightPx(): number {

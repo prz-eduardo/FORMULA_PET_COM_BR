@@ -445,6 +445,13 @@ export class MeusCartoesComponent implements OnInit, OnDestroy, AfterViewInit {
     if (/network|failed to fetch|networkerror|load failed|econnrefused/i.test(raw)) {
       return 'Falha de rede ao falar com o Mercado Pago. Tente novamente.';
     }
+    // SDK envia eventos para api.mercadolibre.com/tracks; bloqueadores (Opera, uBlock, etc.) costumam barrar.
+    if (/blocked_by_adblocker|adblock|blocked by ad/i.test(raw)) {
+      return (
+        'O navegador ou uma extensão bloqueou uma chamada do Mercado Pago (comum em api.mercadolibre.com). ' +
+        'Desative o bloqueador para este site ou permita Mercado Pago / Mercado Livre e tente de novo.'
+      );
+    }
     if (joined.trim()) return joined.trim();
     return 'Não foi possível tokenizar o cartão. Verifique os dados e tente novamente.';
   }

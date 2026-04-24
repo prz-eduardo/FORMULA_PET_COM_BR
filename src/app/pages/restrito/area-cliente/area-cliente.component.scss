@@ -424,19 +424,23 @@
   backdrop-filter: blur(4px) saturate(110%);
 }
 
+/* Centrar com inset + margin: auto evita conflito de transform com ancestrais
+   do modal da navbar (.cliente-modal usa transform/clip-path nas animações),
+   o que quebrava top/left + translate(-50%,-50%) em position: fixed. */
 .modal-content {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  width: min(92vw, 480px);
+  max-width: calc(100% - 24px);
+  height: fit-content;
+  max-height: min(84vh, 100dvh - 48px);
+  margin: auto;
   background: linear-gradient(180deg, rgba(18,22,32,0.92), rgba(10,14,22,0.94));
   border: 1px solid var(--ac-border);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
   backdrop-filter: blur(14px) saturate(130%);
   padding: 22px;
   border-radius: 18px;
-  width: min(92vw, 480px);
-  max-height: 84vh;
   overflow-y: auto;
   z-index: 1000;
   box-shadow: 0 30px 60px rgba(0,0,0,0.45);

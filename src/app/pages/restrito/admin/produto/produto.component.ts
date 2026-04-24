@@ -7,7 +7,6 @@ import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
 import { EMBALAGENS } from '../../../../constants/embalagens';
 import { ProductCardSalesComponent } from '../../../../product-card-sales/product-card-sales.component';
-import { ProductCardBannerComponent } from '../../../../product-card-banner/product-card-banner.component';
 import { ShopProduct } from '../../../../services/store.service';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../../../constants/card.constants';
 
@@ -16,7 +15,7 @@ interface AtivoBasic { id: number | string; nome: string; descricao?: string }
 @Component({
   selector: 'app-produto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardSalesComponent, ProductCardBannerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardSalesComponent],
   templateUrl: './produto.component.html',
   styleUrls: ['./produto.component.scss']
 })
@@ -184,7 +183,7 @@ export class ProdutoComponent implements OnInit {
       // Variantes e documentos (FormArrays dinâmicos)
       variantes: this.fb.array<FormGroup>([]),
       documentos: this.fb.array<FormGroup>([]),
-      cardLayout: ['sales' as 'sales' | 'banner'],
+      cardLayout: ['sales' as 'sales'],
     });
 
     // initialize formula toggle based on any pre-filled form value
@@ -484,7 +483,7 @@ export class ProdutoComponent implements OnInit {
       promoPrice: promo ?? null,
       inStock: fv.stock ?? null,
       images: (this.imagesFA?.controls || []).map((c: any, i: number) => ({ id: i + 1, url: c.value })),
-      cardLayout: fv.cardLayout === 'banner' ? 'banner' : 'sales',
+      cardLayout: 'sales',
       strikePrice,
       marca: fv.marca || null,
       sku: fv.sku || null,
@@ -495,9 +494,9 @@ export class ProdutoComponent implements OnInit {
   /** JSON mínimo para preview dos cards no admin (sem chamar API). */
   get previewThemeConfig(): Record<string, unknown> {
     return {
-      version: 1,
-      cardSales: { structure: 'stacked', imageRatio: '4/5', showMarca: true, showSku: true },
-      cardBanner: { structure: 'gradientBottom', overlayOpacity: 0.45, minHeightPx: 220, titleLines: 2 },
+      version: 2,
+      cardSales: { imageRatio: '4/5', showMarca: true, showSku: true },
+      catalog: { columnsMobile: 2, columnsDesktop: 4 },
     };
   }
 
@@ -641,7 +640,7 @@ export class ProdutoComponent implements OnInit {
           parcelasMax: (p as any).parcelas_max ?? null,
           // Mídia extra
           videoUrl: (p as any).video_url ?? null,
-          cardLayout: ((p as any).card_layout === 'banner' ? 'banner' : 'sales') as 'sales' | 'banner',
+          cardLayout: 'sales' as 'sales',
         });
         this.destaqueHome = p.destaque_home === 1 || (p as any).destaque_home === true;
         this.formulaEnabled = !!(this.form.get('formulaId')?.value);
@@ -1455,7 +1454,7 @@ export class ProdutoComponent implements OnInit {
       // Coleções
       variantes,
       documentos,
-      card_layout: fv.cardLayout === 'banner' ? 'banner' : 'sales',
+      card_layout: 'sales',
     };
     if (tipo === 'manipulado') body.formula_id = fv.formulaId;
     // Payload unificado em português para criação e edição (mesmo shape).

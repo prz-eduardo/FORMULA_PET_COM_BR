@@ -18,56 +18,96 @@
 
   <div class="lt-empty" *ngIf="!loading() && !items().length">Nenhum tema cadastrado.</div>
 
-  <div class="lt-grid" *ngIf="items().length">
-    <article class="lt-card" *ngFor="let tema of items(); trackBy: trackById">
-      <header class="lt-card-head">
-        <h3>{{ tema.nome }}</h3>
-        <div class="lt-badges">
-          <span class="lt-badge lt-badge--preset" *ngIf="tema.is_preset">Preset</span>
-          <span class="lt-badge lt-badge--live" *ngIf="isLive(tema)">Ativo na loja</span>
-          <span class="lt-badge lt-badge--off" *ngIf="!tema.ativo">Desligado</span>
-        </div>
-      </header>
-      <p class="lt-slug" *ngIf="tema.slug"><code>{{ tema.slug }}</code></p>
+  <section class="lt-selector" *ngIf="items().length">
+    <label class="lt-field">
+      <span>Buscar tema</span>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        name="lt-search"
+        placeholder="Digite nome ou slug"
+        autocomplete="off"
+      />
+    </label>
 
-      <div class="lt-preview" [ngStyle]="previewVars(tema)">
-        <div class="lt-preview-grid">
-          <app-product-card-sales
-            class="lt-pc"
-            [product]="mockSales"
-            [themeConfig]="tema.config || null"
-            [disableLink]="true"
-            [supportsFavorites]="false"
-            [supportsRatings]="true"
-          />
-          <div class="lt-preview-banner">
-            <app-product-card-banner
-              [product]="mockBanner"
+    <label class="lt-field">
+      <span>Selecionar tema</span>
+      <select
+        [ngModel]="selectedTheme?.id ?? null"
+        (ngModelChange)="selectThemeById($event)"
+        name="lt-theme-select"
+      >
+        <option *ngFor="let t of filteredItems; trackBy: trackById" [ngValue]="t.id">
+          {{ t.nome }}{{ t.slug ? ' (' + t.slug + ')' : '' }}
+        </option>
+      </select>
+    </label>
+  </section>
+
+  <article class="lt-focus-card" *ngIf="selectedTheme as tema">
+    <header class="lt-card-head">
+      <h3>{{ tema.nome }}</h3>
+      <div class="lt-badges">
+        <span class="lt-badge lt-badge--preset" *ngIf="tema.is_preset">Preset</span>
+        <span class="lt-badge lt-badge--live" *ngIf="isLive(tema)">Ativo na loja</span>
+        <span class="lt-badge lt-badge--off" *ngIf="!tema.ativo">Desligado</span>
+      </div>
+    </header>
+    <p class="lt-slug" *ngIf="tema.slug"><code>{{ tema.slug }}</code></p>
+
+    <div class="lt-preview" [ngStyle]="previewVars(tema)">
+      <div class="lt-preview-head">
+        <span>Desktop {{ temaCatalogConfig(tema).columnsDesktop }}x{{ temaCatalogConfig(tema).columnsDesktop }}</span>
+        <span>Mobile {{ temaCatalogConfig(tema).columnsMobile }}x{{ temaCatalogConfig(tema).columnsMobile }} • {{ temaVariant(tema) }}</span>
+      </div>
+      <div class="lt-preview-frames">
+        <div class="lt-frame lt-frame--desktop">
+          <div class="lt-preview-grid-desktop" [style.--fp-cols]="temaCatalogConfig(tema).columnsDesktop">
+            <app-product-card-renderer
+              class="lt-pc"
+              *ngFor="let p of previewDesktopItems(tema); trackBy: trackByPreviewProduct"
+              [product]="p"
               [themeConfig]="tema.config || null"
               [disableLink]="true"
               [supportsFavorites]="false"
-            />
+              [supportsRatings]="false"
+            ></app-product-card-renderer>
+          </div>
+        </div>
+        <div class="lt-frame lt-frame--mobile">
+          <div class="lt-mobile-device">
+            <div class="lt-preview-grid-mobile" [style.--fp-cols]="temaCatalogConfig(tema).columnsMobile">
+              <app-product-card-renderer
+                class="lt-pc"
+                *ngFor="let p of previewMobileItems(tema); trackBy: trackByPreviewProduct"
+                [product]="p"
+                [themeConfig]="tema.config || null"
+                [disableLink]="true"
+                [supportsFavorites]="false"
+                [supportsRatings]="false"
+              ></app-product-card-renderer>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <footer class="lt-actions">
-        <button class="admin-btn small ok" type="button" (click)="activate(tema)" [disabled]="!tema.ativo">
-          Definir como ativo na loja
-        </button>
-        <button class="admin-btn small secondary" type="button" (click)="openEdit(tema)">Editar</button>
-        <button class="admin-btn small ghost" type="button" (click)="duplicate(tema)">Duplicar</button>
-        <button
-          class="admin-btn small danger"
-          type="button"
-          (click)="remove(tema)"
-          *ngIf="!tema.is_preset"
-        >
-          Excluir
-        </button>
-      </footer>
-    </article>
-  </div>
+    <footer class="lt-actions">
+      <button class="admin-btn small ok" type="button" (click)="activate(tema)" [disabled]="!tema.ativo">
+        Definir como ativo na loja
+      </button>
+      <button class="admin-btn small secondary" type="button" (click)="openEdit(tema)">Editar</button>
+      <button class="admin-btn small ghost" type="button" (click)="duplicate(tema)">Duplicar</button>
+      <button
+        class="admin-btn small danger"
+        type="button"
+        (click)="remove(tema)"
+        *ngIf="!tema.is_preset"
+      >
+        Excluir
+      </button>
+    </footer>
+  </article>
 </div>
 
 <div class="lt-drawer-backdrop" *ngIf="drawerMode() !== 'closed'" (click)="closeDrawer()"></div>
@@ -87,6 +127,28 @@
     <span>Tema habilitado (obrigatório para publicar na vitrine)</span>
   </label>
 
+  <div class="lt-grid-controls">
+    <label class="lt-field">
+      <span>Preview mobile (colunas)</span>
+      <select [ngModel]="draftCatalogMobile" (ngModelChange)="updateDraftCatalogColumns('mobile', $event)" name="lt-cols-mobile">
+        <option *ngFor="let c of mobileColumnsOptions" [ngValue]="c">{{ c }} x {{ c }}</option>
+      </select>
+    </label>
+    <label class="lt-field">
+      <span>Preview desktop (colunas)</span>
+      <select [ngModel]="draftCatalogDesktop" (ngModelChange)="updateDraftCatalogColumns('desktop', $event)" name="lt-cols-desktop">
+        <option *ngFor="let c of desktopColumnsOptions" [ngValue]="c">{{ c }} x {{ c }}</option>
+      </select>
+    </label>
+  </div>
+
+  <label class="lt-field">
+    <span>Variação visual do card</span>
+    <select [ngModel]="draftCardVariant" (ngModelChange)="updateDraftVariant($event)" name="lt-card-variant">
+      <option *ngFor="let v of variantOptions" [ngValue]="v.id">{{ v.label }}</option>
+    </select>
+  </label>
+
   <div class="lt-colors">
     <label class="lt-field lt-color">
       <span>Cor primária</span>
@@ -104,6 +166,10 @@
 
   <label class="lt-field lt-json">
     <span>Configuração JSON (avançado)</span>
+    <p class="lt-json-hint">
+      Use <code>catalog.columnsMobile</code> (1-4) e <code>catalog.columnsDesktop</code> (4-6) para controlar a grelha.
+      A vitrine agora usa apenas um tipo de card de produto, sem mistura de estruturas.
+    </p>
     <textarea [(ngModel)]="draftJson" name="lt-json" rows="14" spellcheck="false"></textarea>
   </label>
 

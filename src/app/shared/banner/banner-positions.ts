@@ -25,9 +25,9 @@ export interface BannerPositionOption {
  */
 export const BANNER_POSITIONS: BannerPositionOption[] = [
   { value: 'home_hero',   label: 'Home — Hero',            description: 'Faixa principal da página inicial', desktopRatio: 16 / 5, mobileRatio: 4 / 5 },
-  { value: 'loja_hero',   label: 'Loja — Hero',            description: 'Topo da listagem de produtos',      desktopRatio: 16 / 5, mobileRatio: 4 / 5 },
-  { value: 'loja_inline', label: 'Loja — Entre produtos',  description: 'Cartão intercalado no grid da loja', desktopRatio: 4 / 3,  mobileRatio: 4 / 5 },
-  { value: 'categoria',   label: 'Página de Categoria',    description: 'Topo das páginas por categoria',    desktopRatio: 16 / 5, mobileRatio: 4 / 5 },
+  { value: 'loja_hero',   label: 'Loja — Hero',            description: 'Topo da listagem de produtos',      desktopRatio: 21 / 9, mobileRatio: 16 / 9 },
+  { value: 'loja_inline', label: 'Loja — Entre produtos',  description: 'Cartão intercalado no grid da loja', desktopRatio: 16 / 5, mobileRatio: 16 / 5 },
+  { value: 'categoria',   label: 'Página de Categoria',    description: 'Topo das páginas por categoria',    desktopRatio: 16 / 5, mobileRatio: 16 / 5 },
   { value: 'checkout',    label: 'Checkout',               description: 'Mensagem/aviso no processo de compra', desktopRatio: 16 / 3, mobileRatio: 3 / 2 },
   { value: 'carrinho',    label: 'Carrinho',               description: 'Dentro da página do carrinho',      desktopRatio: 16 / 3, mobileRatio: 3 / 2 },
   { value: 'galeria',     label: 'Galeria pública',        description: 'Área da galeria de fotos de pets',  desktopRatio: 16 / 5, mobileRatio: 4 / 5 },

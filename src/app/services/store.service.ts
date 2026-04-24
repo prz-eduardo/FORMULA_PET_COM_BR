@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
 import { StoreThemeService, LojaThemeActive } from './store-theme.service';
+import { normalizeThemeConfig } from '../constants/loja-tema-card.config';
 
 /** Alinhado a cards e admin: dosagem, embalagem, opcionais de vitrine. */
 export interface ShopProductCustomizations {
@@ -437,6 +438,13 @@ export class StoreService {
       }
 
       // Meta and categories/tags support
+      const rawActiveTheme = (res && !Array.isArray(res) && res.meta?.activeTheme)
+        ? (res.meta.activeTheme as LojaThemeActive)
+        : null;
+      const activeTheme: LojaThemeActive | null = rawActiveTheme
+        ? { ...rawActiveTheme, config: normalizeThemeConfig(rawActiveTheme.config) as unknown as Record<string, unknown> }
+        : null;
+
       const meta: StoreMeta | undefined = (res && !Array.isArray(res) && res.meta) ? {
         loggedIn: res.meta.loggedIn,
         userType: res.meta.userType,
@@ -444,7 +452,7 @@ export class StoreService {
         supports: res.meta.supports,
         categories: res.meta.categories,
         tags: res.meta.tags,
-        activeTheme: res.meta.activeTheme ?? null,
+        activeTheme,
       } : undefined;
       this.metaSubject.next(meta || null);
       try {

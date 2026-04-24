@@ -15,13 +15,6 @@ import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-l
 type LookupItem = { id: number; name: string };
 type PessoaVinc = { pessoa_tipo: 'cliente' | 'vet' | 'admin'; pessoa_id: number; nome?: string | null; email?: string | null };
 
-function parseOptionalMaxDiscountPercent(raw: unknown): number | null {
-  if (raw == null) return null;
-  if (typeof raw === 'string' && raw.trim() === '') return null;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
-}
-
 @Component({
   selector: 'app-admin-cupons',
   standalone: true,
@@ -77,7 +70,6 @@ export class CuponsAdminComponent implements OnInit {
       allow_with_promotions: [false],
       apply_on_promotional_price: [false],
       coupon_application_order: ['percent_first' as CupomApplicationOrder, Validators.required],
-      max_discount_percent: [null as number | null],
     });
     this.loadCuponsConfig();
     this.api.produtosMeta().subscribe({
@@ -245,7 +237,6 @@ export class CuponsAdminComponent implements OnInit {
           allow_with_promotions: cfg.allow_with_promotions === true || Number(cfg.allow_with_promotions) === 1,
           apply_on_promotional_price: cfg.apply_on_promotional_price === true || Number(cfg.apply_on_promotional_price) === 1,
           coupon_application_order: (cfg.coupon_application_order === 'fixed_first' ? 'fixed_first' : 'percent_first') as CupomApplicationOrder,
-          max_discount_percent: parseOptionalMaxDiscountPercent(cfg.max_discount_percent),
         });
         this.loadingConfig.set(false);
       },
@@ -261,8 +252,7 @@ export class CuponsAdminComponent implements OnInit {
       allow_with_promotions: v.allow_with_promotions ? 1 : 0,
       apply_on_promotional_price: v.apply_on_promotional_price ? 1 : 0,
       coupon_application_order: v.coupon_application_order,
-      max_discount_percent: parseOptionalMaxDiscountPercent(v.max_discount_percent),
-    } as any).subscribe({
+    }).subscribe({
       next: () => this.savingConfig.set(false),
       error: () => this.savingConfig.set(false)
     });

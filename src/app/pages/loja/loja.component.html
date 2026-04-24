@@ -2,7 +2,7 @@
   <app-navmenu></app-navmenu>
   <!-- Hero/Banner: usa banner dinâmico (posicao loja_hero) quando houver,
        caindo para o banner estático como fallback. -->
-  <app-banner-slot posicao="loja_hero" mode="carousel">
+  <app-banner-slot posicao="loja_hero" mode="carousel" class="loja-hero-slot">
     <section class="hero">
       <img src="imagens/banner.jpg" alt="Pets felizes" loading="lazy" decoding="async">
       <div class="hero-overlay">
@@ -58,7 +58,7 @@
   <section class="destaques desktop-only" *ngIf="featuredTopList.length > 0">
     <h2 class="sec-title">Destaques</h2>
     <div class="destaque-row">
-      <app-product-card-banner
+      <app-product-card-renderer
         *ngFor="let p of featuredRowList; trackBy: trackProduct"
         [product]="p"
         [themeConfig]="storeMeta?.activeTheme?.config ?? null"
@@ -66,8 +66,9 @@
         [favoriteActive]="isFav(p)"
         (toggleFav)="toggleFav(p)"
         (add)="onAddToCart(p, $event)"
+        [supportsRatings]="storeMeta?.supports?.ratings ?? true"
         [cardWidth]="defaultCardWidth"
-      ></app-product-card-banner>
+      ></app-product-card-renderer>
     </div>
   </section>
 
@@ -79,8 +80,13 @@
 
   <section class="catalogo">
     <h2 class="sec-title">{{ onlyFavorites ? 'Favoritos' : 'Produtos' }}</h2>
-  <!-- Lista intercalada com banner por paginação (mobile e desktop) -->
-  <div class="grid" [class.loading]="loading">
+  <!-- Lista intercalada: produtos + no máx. 1 faixa de destaque por página (não é banner CMS) -->
+  <div
+    class="grid"
+    [class.loading]="loading"
+    [style.--fp-catalog-cols-mobile]="catalogColsMobile"
+    [style.--fp-catalog-cols-desktop]="catalogColsDesktop"
+  >
   <ng-container *ngIf="!loading && onlyFavorites && filtered.length === 0">
         <div class="empty-state">
           <div class="icon">❤</div>
@@ -92,59 +98,17 @@
       <div class="grid-loader" *ngIf="loading">
         <div class="skeleton-card" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
       </div>
-      <!-- Mobile: destaque do primeiro produto (only on mobileView) -->
-      <ng-container *ngIf="interleavedList.length > 0 && interleavedList[0].type === 'product' && mobileView">
-        <div class="loja-mobile-hero">
-          <app-product-card-banner
-            [product]="interleavedList[0].product"
-            [themeConfig]="storeMeta?.activeTheme?.config ?? null"
-            [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
-            [favoriteActive]="isFav(interleavedList[0].product)"
-            (toggleFav)="toggleFav(interleavedList[0].product)"
-            (add)="onAddToCart(interleavedList[0].product, $event)"
-            [cardWidth]="defaultCardWidth"
-          ></app-product-card-banner>
-        </div>
-      </ng-container>
-      <ng-container *ngFor="let it of interleavedList; let i = index; trackBy: trackInterleaved">
-        <ng-container *ngIf="!(i === 0 && it.type === 'product' && mobileView)" [ngSwitch]="it.type">
-          <div *ngSwitchCase="'banner'" class="pcb-span-2 loja-banner-cell">
-            <app-product-card-banner
-              [product]="it.product"
-              [themeConfig]="storeMeta?.activeTheme?.config ?? null"
-              [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
-              [favoriteActive]="isFav(it.product)"
-              (toggleFav)="toggleFav(it.product)"
-              (add)="onAddToCart(it.product, $event)"
-              [cardWidth]="defaultCardWidth"
-            ></app-product-card-banner>
-          </div>
-          <ng-container *ngSwitchCase="'product'">
-            <div class="pcb-span-2" *ngIf="it.product.cardLayout === 'banner'">
-              <app-product-card-banner
-                [product]="it.product"
-                [themeConfig]="storeMeta?.activeTheme?.config ?? null"
-                [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
-                [favoriteActive]="isFav(it.product)"
-                (toggleFav)="toggleFav(it.product)"
-                (add)="onAddToCart(it.product, $event)"
-                [cardWidth]="defaultCardWidth"
-              ></app-product-card-banner>
-            </div>
-            <app-product-card-sales
-              *ngIf="it.product.cardLayout !== 'banner'"
-              [product]="it.product"
-              [themeConfig]="storeMeta?.activeTheme?.config ?? null"
-              [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
-              [supportsRatings]="storeMeta?.supports?.ratings ?? true"
-              [favoriteActive]="isFav(it.product)"
-              (toggleFav)="toggleFav(it.product)"
-              (add)="onAddToCart(it.product, $event)"
-              [cardWidth]="defaultCardWidth"
-            ></app-product-card-sales>
-          </ng-container>
-        </ng-container>
-      </ng-container>
+      <app-product-card-renderer
+        *ngFor="let p of interleavedList; trackBy: trackInterleaved"
+        [product]="p"
+        [themeConfig]="storeMeta?.activeTheme?.config ?? null"
+        [supportsFavorites]="(storeMeta?.supports?.favorites ?? true) && !!me"
+        [supportsRatings]="storeMeta?.supports?.ratings ?? true"
+        [favoriteActive]="isFav(p)"
+        (toggleFav)="toggleFav(p)"
+        (add)="onAddToCart(p, $event)"
+        [cardWidth]="defaultCardWidth"
+      ></app-product-card-renderer>
       <div #infiniteAnchor class="infinite-anchor" aria-hidden="true"></div>
     </div>
     <!-- Paginação clássica removida por conta do infinite scroll -->

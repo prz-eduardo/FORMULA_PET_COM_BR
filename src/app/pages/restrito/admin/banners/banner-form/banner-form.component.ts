@@ -173,7 +173,7 @@ export class BannerFormComponent implements OnInit, OnChanges {
   }
 
   private updateRatios(pos: BannerPosition | string | null | undefined) {
-    const meta = getBannerPosition(pos as string);
+    const meta = getBannerPosition(pos as string) ?? getBannerPosition('home_hero');
     if (!meta) return;
     this.desktopRatio = meta.desktopRatio;
     this.mobileRatio = meta.mobileRatio;

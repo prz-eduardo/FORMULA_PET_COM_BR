@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { normalizeThemeConfig } from '../constants/loja-tema-card.config';
 
 export interface LojaThemeActive {
   id: number;
@@ -13,8 +14,8 @@ export class StoreThemeService {
   applyTheme(theme: LojaThemeActive | null | undefined): void {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    const cfg = theme?.config as Record<string, any> | undefined;
-    const colors = cfg?.['colors'] as Record<string, string> | undefined;
+    const normalized = normalizeThemeConfig(theme?.config);
+    const colors = normalized.colors;
     if (colors?.['primary']) {
       root.style.setProperty('--fp-store-primary', colors['primary']);
     }
@@ -25,11 +26,14 @@ export class StoreThemeService {
     if (colors?.['surface']) {
       root.style.setProperty('--fp-store-surface', colors['surface']);
     }
+    root.style.setProperty('--fp-catalog-cols-mobile', String(normalized.catalog.columnsMobile));
+    root.style.setProperty('--fp-catalog-cols-desktop', String(normalized.catalog.columnsDesktop));
   }
 
   clearTheme(): void {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    ['--fp-store-primary', '--fp-store-accent', '--fp-store-surface'].forEach((k) => root.style.removeProperty(k));
+    ['--fp-store-primary', '--fp-store-accent', '--fp-store-surface', '--fp-catalog-cols-mobile', '--fp-catalog-cols-desktop']
+      .forEach((k) => root.style.removeProperty(k));
   }
 }

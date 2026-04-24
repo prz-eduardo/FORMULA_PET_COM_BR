@@ -1,0 +1,18 @@
+<ng-template #content>
+  <div class="thumb" [style.aspectRatio]="imageAspect">
+    <img class="thumb-img" [src]="displayImage" [alt]="product.name" loading="lazy" decoding="async" />
+    <div class="price">{{ priceNow | currency:'BRL' }}</div>
+    <button class="buy" type="button" (click)="onAddClick($event)">Comprar</button>
+  </div>
+  <figcaption class="info">
+    <h3>{{ product.name }}</h3>
+    <p>{{ product.description || 'Produto Formula Pet' }}</p>
+  </figcaption>
+</ng-template>
+
+<figure *ngIf="!disableLink" class="v1" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" [style.max-width]="cardWidth">
+  <ng-container *ngTemplateOutlet="content"></ng-container>
+</figure>
+<figure *ngIf="disableLink" class="v1" [style.max-width]="cardWidth">
+  <ng-container *ngTemplateOutlet="content"></ng-container>
+</figure>

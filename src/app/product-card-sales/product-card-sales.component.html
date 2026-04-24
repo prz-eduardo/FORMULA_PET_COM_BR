@@ -44,9 +44,9 @@
   </div>
 </ng-template>
 
-<a *ngIf="!disableLink" class="p-card" [ngClass]="[cardClass, extraClass]" [class.has-discount]="oldPriceDisplay != null || product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" style="width:100%" [style.max-width]="cardWidth">
+<a *ngIf="!disableLink" class="p-card" [ngClass]="extraClass" [class.has-discount]="oldPriceDisplay != null || product.promoPrice != null || (product.discount && product.discount > 0)" [routerLink]="['/produto', product.id]" [queryParams]="{ src: 'loja' }" style="width:100%" [style.max-width]="cardWidth">
   <ng-container *ngTemplateOutlet="inner"></ng-container>
 </a>
-<div *ngIf="disableLink" class="p-card" [ngClass]="[cardClass, extraClass]" [class.has-discount]="oldPriceDisplay != null || product.promoPrice != null || (product.discount && product.discount > 0)" style="width:100%" [style.max-width]="cardWidth">
+<div *ngIf="disableLink" class="p-card" [ngClass]="extraClass" [class.has-discount]="oldPriceDisplay != null || product.promoPrice != null || (product.discount && product.discount > 0)" style="width:100%" [style.max-width]="cardWidth">
   <ng-container *ngTemplateOutlet="inner"></ng-container>
 </div>

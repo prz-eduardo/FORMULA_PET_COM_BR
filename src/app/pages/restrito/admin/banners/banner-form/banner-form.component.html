@@ -105,7 +105,7 @@
     <div class="bf-editors">
       <div class="bf-editor" [hidden]="activeTab() !== 'desktop'">
         <div class="bf-editor-meta">
-          <span>Proporção sugerida: <strong>{{ desktopRatio | number:'1.0-2' }}:1</strong></span>
+          <span>Proporção fixa: <strong>{{ desktopRatio | number:'1.0-2' }}:1</strong></span>
           <small *ngIf="desktopWarn()" class="fx-alert fx-alert--warn">{{ desktopWarn() }}</small>
         </div>
         <app-banner-image-editor
@@ -120,7 +120,7 @@
 
       <div class="bf-editor" [hidden]="activeTab() !== 'mobile'">
         <div class="bf-editor-meta">
-          <span>Proporção sugerida: <strong>{{ mobileRatio | number:'1.0-2' }}:1</strong></span>
+          <span>Proporção fixa: <strong>{{ mobileRatio | number:'1.0-2' }}:1</strong></span>
           <small *ngIf="mobileWarn()" class="fx-alert fx-alert--warn">{{ mobileWarn() }}</small>
         </div>
         <app-banner-image-editor

@@ -1,21 +1,10 @@
-import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { ShopProduct } from '../services/store.service';
-import { DEFAULT_PRODUCT_CARD_WIDTH } from '../constants/card.constants';
-import {
-  normalizeImageRatio,
-} from '../constants/loja-tema-card.config';
+import { Directive, EventEmitter, Input, Output } from '@angular/core';
+import { ShopProduct } from '../../services/store.service';
+import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../constants/card.constants';
+import { normalizeImageRatio } from '../../constants/loja-tema-card.config';
 
-@Component({
-  selector: 'app-product-card-sales',
-  standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink],
-  templateUrl: './product-card-sales.component.html',
-  styleUrls: ['./product-card-sales.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
-})
-export class ProductCardSalesComponent {
+@Directive()
+export abstract class ProductCardBase {
   @Input() product!: ShopProduct;
   @Input() themeConfig: Record<string, unknown> | null = null;
   @Input() supportsFavorites = true;
@@ -23,10 +12,11 @@ export class ProductCardSalesComponent {
   @Input() favoriteActive?: boolean;
   @Input() disableLink = false;
   @Input() cardWidth: string = DEFAULT_PRODUCT_CARD_WIDTH;
-  @Input() extraClass = '';
 
   @Output() add = new EventEmitter<MouseEvent>();
   @Output() toggleFav = new EventEmitter<void>();
+
+  stars = [1, 2, 3, 4, 5];
 
   onFavClick(ev: MouseEvent) {
     ev.preventDefault();
@@ -49,14 +39,11 @@ export class ProductCardSalesComponent {
   get priceNow(): number {
     if (this.product.promoPrice != null) return this.product.promoPrice;
     const base = this.product.price ?? 0;
-    if (this.product.priceFinal != null && this.product.priceFinal < base - 0.009) {
-      return this.product.priceFinal;
-    }
+    if (this.product.priceFinal != null && this.product.priceFinal < base - 0.009) return this.product.priceFinal;
     const disc = this.product.discount || 0;
     return Math.max(0, base - base * disc / 100);
   }
 
-  /** Preço riscado: strike do servidor (promo ou preco_de) ou fallback promo local. */
   get oldPriceDisplay(): number | null {
     const strike = this.product.strikePrice;
     if (strike != null && Number.isFinite(strike) && strike > this.priceNow + 0.009) return strike;
@@ -83,6 +70,4 @@ export class ProductCardSalesComponent {
     if (isNaN(r)) return 0;
     return Math.max(0, Math.min(5, r));
   }
-
-  stars = [1, 2, 3, 4, 5];
 }
