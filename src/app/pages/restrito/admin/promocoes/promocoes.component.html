@@ -1,4 +1,29 @@
 <div class="promos-wrap admin-page-wrap">
+  <section class="promo-config-panel" *ngIf="configForm">
+    <div class="promo-config-panel__head">
+      <h2 class="promo-config-panel__title">Regras de conflito entre promoções</h2>
+      <p class="promo-config-panel__hint">
+        Quando o mesmo produto se enquadra em mais de uma promoção (direto no produto, por categoria ou por tag),
+        define qual critério vence no site e no checkout. O desconto extra para pagamento via PIX também é definido aqui.
+      </p>
+    </div>
+    <form [formGroup]="configForm" class="promo-config-panel__form" *ngIf="!loadingConfig(); else cfgLoading">
+      <label class="promo-config-panel__label" for="conflict-strategy">Estratégia</label>
+      <select id="conflict-strategy" formControlName="conflict_strategy">
+        <option *ngFor="let s of conflictStrategies" [value]="s.value">{{ s.label }}</option>
+      </select>
+      <label class="promo-config-panel__label" for="pix-pct">Desconto PIX (%)</label>
+      <input id="pix-pct" type="number" min="0" max="100" step="0.5" formControlName="pix_discount_percent" />
+      <p class="promo-config-panel__hint" style="margin-top: 0">
+        Percentual sobre o subtotal dos itens após o cupom. Use <strong>0</strong> para desativar (o checkout deixa de exibir a linha de desconto PIX).
+      </p>
+      <button type="button" class="admin-btn primary" (click)="savePromocoesConfig()" [disabled]="savingConfig()">
+        {{ savingConfig() ? 'Salvando…' : 'Salvar regras' }}
+      </button>
+    </form>
+    <ng-template #cfgLoading><p class="admin-empty">Carregando configuração…</p></ng-template>
+  </section>
+
   <app-admin-crud
     [items]="list()"
     [loading]="loadingList()"
@@ -127,6 +152,12 @@
           </div>
 
           <div class="fx-field">
+            <label>Prioridade</label>
+            <input type="number" step="1" formControlName="prioridade" />
+            <small class="fx-hint">Usada quando a estratégia global é “Maior prioridade”. Padrão 0.</small>
+          </div>
+
+          <div class="fx-field">
             <label>Início</label>
             <input type="datetime-local" formControlName="inicio" />
           </div>
@@ -159,6 +190,46 @@
               (selectedItemsChange)="onProdutosChange($event)"
               [searchFn]="searchProdutosFn"
               [placeholder]="'Buscar produtos pelo nome'">
+            </app-entity-lookup>
+          </div>
+        </div>
+      </section>
+
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Categorias vinculadas</h3>
+          <p>Promoção vale para todos os produtos que estiverem em alguma destas categorias.</p>
+        </header>
+        <div class="fx-grid">
+          <div class="fx-field fx-col-2">
+            <label>Categorias</label>
+            <app-entity-lookup
+              [selectedIds]="selectedCategoriaIds()"
+              (selectedIdsChange)="onCategoriaIdsChange($event)"
+              [selectedItems]="selectedCategorias()"
+              (selectedItemsChange)="onCategoriasChange($event)"
+              [searchFn]="searchCategoriasFn"
+              [placeholder]="'Buscar categorias pelo nome'">
+            </app-entity-lookup>
+          </div>
+        </div>
+      </section>
+
+      <section class="fx-section">
+        <header class="fx-section__head">
+          <h3>Tags vinculadas</h3>
+          <p>Promoção vale para todos os produtos que tiverem alguma destas tags.</p>
+        </header>
+        <div class="fx-grid">
+          <div class="fx-field fx-col-2">
+            <label>Tags</label>
+            <app-entity-lookup
+              [selectedIds]="selectedTagIds()"
+              (selectedIdsChange)="onTagIdsChange($event)"
+              [selectedItems]="selectedTags()"
+              (selectedItemsChange)="onTagsChange($event)"
+              [searchFn]="searchTagsFn"
+              [placeholder]="'Buscar tags pelo nome'">
             </app-entity-lookup>
           </div>
         </div>

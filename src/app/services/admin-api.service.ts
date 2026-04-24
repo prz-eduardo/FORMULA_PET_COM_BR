@@ -314,6 +314,21 @@ export interface PromocaoUiInfo {
   end?: { iso: string | null; human: string } | null;
   active_now?: boolean;
 }
+export type PromocaoConflictStrategy =
+  | 'highest_discount'
+  | 'lowest_discount'
+  | 'most_recent'
+  | 'priority'
+  | 'stack';
+
+export interface PromocoesConfigDto {
+  id?: number;
+  conflict_strategy: PromocaoConflictStrategy;
+  /** 0 desativa desconto PIX no checkout; máximo 100. */
+  pix_discount_percent?: number;
+  updated_at?: string | null;
+}
+
 export interface PromocaoDto {
   id?: number;
   nome: string;
@@ -323,10 +338,13 @@ export interface PromocaoDto {
   inicio?: string | null; // YYYY-MM-DD HH:mm:ss ou YYYY-MM-DDTHH:mm:ss
   fim?: string | null;
   ativo?: boolean | number;
+  prioridade?: number;
   created_at?: string;
   updated_at?: string;
   ui?: PromocaoUiInfo; // payload de UI calculado no backend
   produtos?: Array<{ id: number; nome?: string; name?: string; preco?: string | number; price?: string | number }>; // resumo
+  categorias?: Array<{ id: number; nome?: string }>;
+  tags?: Array<{ id: number; nome?: string }>;
 }
 
 export interface BannerDto {
@@ -374,6 +392,17 @@ export interface CupomDto {
 }
 
 export type CupomPayload = Omit<CupomDto, 'id' | 'created_at' | 'updated_at'>;
+
+export type CupomApplicationOrder = 'percent_first' | 'fixed_first';
+
+export interface CuponsConfigDto {
+  id?: number;
+  allow_with_promotions?: 0 | 1 | boolean;
+  apply_on_promotional_price?: 0 | 1 | boolean;
+  coupon_application_order?: CupomApplicationOrder;
+  max_discount_percent?: number | null;
+  updated_at?: string | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
@@ -881,6 +910,13 @@ export class AdminApiService {
   }
 
   // Cupons (admin)
+  getCuponsConfig(): Observable<CuponsConfigDto> {
+    return this.http.get<CuponsConfigDto>(`${this.baseUrl}/cupons/config`, { headers: this.headers() });
+  }
+  putCuponsConfig(body: Partial<CuponsConfigDto>): Observable<CuponsConfigDto> {
+    return this.http.put<CuponsConfigDto>(`${this.baseUrl}/cupons/config`, body, { headers: this.headers() });
+  }
+
   listCupons(params?: { q?: string; page?: number; pageSize?: number; active?: 0 | 1; expired?: 0 | 1 }): Observable<Paged<CupomDto>> {
     let httpParams = new HttpParams();
     if (params) {
@@ -1058,6 +1094,21 @@ export class AdminApiService {
   setPromocaoProdutos(id: number | string, produto_ids: number[]): Observable<PromocaoDto> {
     return this.http.put<PromocaoDto>(`${this.baseUrl}/promocoes/${id}/produtos`, { produto_ids }, { headers: this.headers() });
   }
+  setPromocaoTags(id: number | string, tag_ids: number[]): Observable<PromocaoDto> {
+    return this.http.put<PromocaoDto>(`${this.baseUrl}/promocoes/${id}/tags`, { tag_ids }, { headers: this.headers() });
+  }
+  setPromocaoCategorias(id: number | string, categoria_ids: number[]): Observable<PromocaoDto> {
+    return this.http.put<PromocaoDto>(`${this.baseUrl}/promocoes/${id}/categorias`, { categoria_ids }, { headers: this.headers() });
+  }
+  getPromocoesConfig(): Observable<PromocoesConfigDto> {
+    return this.http.get<PromocoesConfigDto>(`${this.baseUrl}/promocoes/config`, { headers: this.headers() });
+  }
+  putPromocoesConfig(body: {
+    conflict_strategy: PromocaoConflictStrategy;
+    pix_discount_percent?: number;
+  }): Observable<PromocoesConfigDto> {
+    return this.http.put<PromocoesConfigDto>(`${this.baseUrl}/promocoes/config`, body, { headers: this.headers() });
+  }
 
   // Usuários
   listUsuarios(params?: { q?: string; page?: number; pageSize?: number; tipo?: 'cliente' | 'vet' | 'admin'; status?: 0 | 1; verification?: 'pending' | 'approved' | 'rejected'; city?: string; uf?: string; from?: string; to?: string }): Observable<Paged<PessoaDto>> {
@@ -1202,5 +1253,25 @@ export class AdminApiService {
     return this.http.patch<AdminPetRow>(`${this.baseUrl}/pets/${encodeURIComponent(String(id))}`, body, {
       headers: this.headers(),
     });
+  }
+
+  /**
+   * Teste de envio via Resend (backend). Requer token de admin.
+   * POST /admin/email/test
+   */
+  sendTestEmail(body: {
+    para: string | string[] | Array<{ email: string; nome?: string; name?: string }>;
+    assunto: string;
+    texto?: string;
+    html?: string;
+    cc?: string | string[] | Array<{ email: string; nome?: string }>;
+    bcc?: string | string[] | Array<{ email: string; nome?: string }>;
+    replyTo?: string | string[] | Array<{ email: string; nome?: string }>;
+  }): Observable<{ ok: boolean; envio_id: number; id_provedor: string; requestId?: string | null }> {
+    return this.http.post<{ ok: boolean; envio_id: number; id_provedor: string; requestId?: string | null }>(
+      `${this.baseUrl}/email/test`,
+      body,
+      { headers: this.headers() }
+    );
   }
 }

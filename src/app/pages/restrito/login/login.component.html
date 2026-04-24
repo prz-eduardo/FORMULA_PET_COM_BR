@@ -4,6 +4,7 @@
       <i class="fa fa-key"></i>
     </div>
     <div class="login-title">ADMIN PANEL</div>
+    <p class="login-subtitle">Acesso ao painel administrativo</p>
 
     <form class="login-form" [formGroup]="form" (ngSubmit)="loginWithPassword()" autocomplete="on">
       <label class="field">
@@ -12,8 +13,7 @@
           type="email"
           formControlName="email"
           autocomplete="username"
-          placeholder="voce@empresa.com"
-          [disabled]="loading" />
+          placeholder="voce@empresa.com" />
         <small class="err" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
           Informe um e-mail válido.
         </small>
@@ -26,8 +26,7 @@
             [type]="showPassword ? 'text' : 'password'"
             formControlName="senha"
             autocomplete="current-password"
-            placeholder="Sua senha"
-            [disabled]="loading" />
+            placeholder="Sua senha" />
           <button
             type="button"
             class="pwd-toggle"
@@ -41,7 +40,13 @@
         </small>
       </label>
 
-      <div class="login-error" *ngIf="error">{{ error }}</div>
+      <div
+        class="login-error"
+        *ngIf="error"
+        role="status"
+        aria-live="polite">
+        {{ error }}
+      </div>
 
       <button
         type="submit"

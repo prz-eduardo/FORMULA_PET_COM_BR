@@ -2,10 +2,16 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
-import { AdminApiService, PromocaoDto } from '../../../../services/admin-api.service';
+import {
+  AdminApiService,
+  PromocaoConflictStrategy,
+  PromocaoDto,
+  PromocoesConfigDto,
+} from '../../../../services/admin-api.service';
 import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
 import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-lookup.component';
 
@@ -17,7 +23,6 @@ import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-l
   styleUrls: ['./promocoes.component.scss']
 })
 export class AdminPromocoesComponent implements OnInit {
-  // listagem
   q = signal('');
   page = signal(1);
   pageSize = signal(10);
@@ -26,17 +31,30 @@ export class AdminPromocoesComponent implements OnInit {
   list = signal<PromocaoDto[]>([]);
   total = signal(0);
 
-  // edição / criação
   editingId = signal<number | null>(null);
   showCreateModal = signal(false);
   submitting = signal(false);
 
-  // produtos vinculados (para o entity-lookup)
   selectedProdutoIds = signal<number[]>([]);
   selectedProdutos = signal<Array<{ id: number; name?: string; price?: number }>>([]);
+  selectedCategoriaIds = signal<number[]>([]);
+  selectedCategorias = signal<Array<{ id: number; name?: string; price?: number }>>([]);
+  selectedTagIds = signal<number[]>([]);
+  selectedTags = signal<Array<{ id: number; name?: string; price?: number }>>([]);
 
   promoForm!: FormGroup;
+  configForm!: FormGroup;
   drawerOpen = computed(() => this.showCreateModal() || !!this.editingId());
+  loadingConfig = signal(false);
+  savingConfig = signal(false);
+
+  readonly conflictStrategies: { value: PromocaoConflictStrategy; label: string }[] = [
+    { value: 'highest_discount', label: 'Maior desconto (melhor preço)' },
+    { value: 'lowest_discount', label: 'Menor desconto (pior preço)' },
+    { value: 'most_recent', label: 'Promoção mais recente' },
+    { value: 'priority', label: 'Maior prioridade (campo Prioridade)' },
+    { value: 'stack', label: 'Acumular (sequencial — avançado)' },
+  ];
 
   searchProdutosFn = (q: string) => this.api.listProdutos({ q, page: 1, pageSize: 10, active: 1 }).pipe(
     map((res: any) => (res.data || []).map((p: any) => ({
@@ -46,11 +64,68 @@ export class AdminPromocoesComponent implements OnInit {
     })))
   );
 
+  searchCategoriasFn = (q: string) => this.api.listMarketplaceCategorias().pipe(
+    map((res: any) => {
+      const list = res.data || [];
+      const qq = (q || '').toLowerCase().trim();
+      return list
+        .filter((c: any) => !qq || String(c.nome || '').toLowerCase().includes(qq))
+        .slice(0, 30)
+        .map((c: any) => ({ id: Number(c.id), name: c.nome ?? '' }));
+    })
+  );
+
+  searchTagsFn = (q: string) => this.api.listMarketplaceTags().pipe(
+    map((res: any) => {
+      const list = res.data || [];
+      const qq = (q || '').toLowerCase().trim();
+      return list
+        .filter((t: any) => !qq || String(t.nome || '').toLowerCase().includes(qq))
+        .slice(0, 30)
+        .map((t: any) => ({ id: Number(t.id), name: t.nome ?? '' }));
+    })
+  );
+
   constructor(private api: AdminApiService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.resetPromoForm();
+    this.configForm = this.fb.group({
+      conflict_strategy: ['highest_discount' as PromocaoConflictStrategy, Validators.required],
+      pix_discount_percent: [
+        10,
+        [Validators.required, Validators.min(0), Validators.max(100)],
+      ],
+    });
     this.loadList();
+    this.loadPromocoesConfig();
+  }
+
+  loadPromocoesConfig() {
+    this.loadingConfig.set(true);
+    this.api.getPromocoesConfig().subscribe({
+      next: (cfg: PromocoesConfigDto) => {
+        const s = (cfg.conflict_strategy || 'highest_discount') as PromocaoConflictStrategy;
+        const pix = cfg.pix_discount_percent != null ? Number(cfg.pix_discount_percent) : 10;
+        this.configForm.patchValue({
+          conflict_strategy: s,
+          pix_discount_percent: Number.isFinite(pix) ? Math.min(100, Math.max(0, pix)) : 10,
+        });
+        this.loadingConfig.set(false);
+      },
+      error: () => this.loadingConfig.set(false)
+    });
+  }
+
+  savePromocoesConfig() {
+    if (this.configForm.invalid) return;
+    const v = this.configForm.value.conflict_strategy as PromocaoConflictStrategy;
+    const pix = Number(this.configForm.value.pix_discount_percent);
+    this.savingConfig.set(true);
+    this.api.putPromocoesConfig({ conflict_strategy: v, pix_discount_percent: pix }).subscribe({
+      next: () => this.savingConfig.set(false),
+      error: () => this.savingConfig.set(false)
+    });
   }
 
   resetPromoForm(det?: PromocaoDto | null) {
@@ -60,6 +135,7 @@ export class AdminPromocoesComponent implements OnInit {
       descricao: [d.descricao || ''],
       tipo: [d.tipo || 'percentual', Validators.required],
       valor: [d.valor ?? 0, [Validators.required]],
+      prioridade: [d.prioridade != null ? Number(d.prioridade) : 0, [Validators.required]],
       inicio: [this.toInputDT(d.inicio)],
       fim: [this.toInputDT(d.fim)],
       ativo: [!!(d.ativo ?? true)]
@@ -131,6 +207,10 @@ export class AdminPromocoesComponent implements OnInit {
     this.editingId.set(null);
     this.selectedProdutoIds.set([]);
     this.selectedProdutos.set([]);
+    this.selectedCategoriaIds.set([]);
+    this.selectedCategorias.set([]);
+    this.selectedTagIds.set([]);
+    this.selectedTags.set([]);
     this.resetPromoForm();
   }
 
@@ -149,8 +229,20 @@ export class AdminPromocoesComponent implements OnInit {
         name: x.nome ?? x.name ?? '',
         price: Number(x.preco ?? x.price ?? 0)
       }));
-      this.selectedProdutoIds.set(produtosArr.map(p => p.id));
+      this.selectedProdutoIds.set(produtosArr.map(x => x.id));
       this.selectedProdutos.set(produtosArr);
+      const cats = (det.categorias ?? []).map((c: any) => ({
+        id: Number(c.id),
+        name: c.nome ?? ''
+      }));
+      this.selectedCategoriaIds.set(cats.map(c => c.id));
+      this.selectedCategorias.set(cats);
+      const tgs = (det.tags ?? []).map((t: any) => ({
+        id: Number(t.id),
+        name: t.nome ?? ''
+      }));
+      this.selectedTagIds.set(tgs.map(t => t.id));
+      this.selectedTags.set(tgs);
       this.resetPromoForm(det);
     });
   }
@@ -161,6 +253,18 @@ export class AdminPromocoesComponent implements OnInit {
   onProdutosChange(items: Array<{ id: number; name?: string; price?: number }> | undefined) {
     this.selectedProdutos.set(items || []);
   }
+  onCategoriaIdsChange(ids: number[]) {
+    this.selectedCategoriaIds.set(Array.isArray(ids) ? ids.map(x => Number(x)) : []);
+  }
+  onCategoriasChange(items: Array<{ id: number; name?: string; price?: number }> | undefined) {
+    this.selectedCategorias.set(items || []);
+  }
+  onTagIdsChange(ids: number[]) {
+    this.selectedTagIds.set(Array.isArray(ids) ? ids.map(x => Number(x)) : []);
+  }
+  onTagsChange(items: Array<{ id: number; name?: string; price?: number }> | undefined) {
+    this.selectedTags.set(items || []);
+  }
 
   submitPromo() {
     if (this.promoForm.invalid) { this.promoForm.markAllAsTouched(); return; }
@@ -170,6 +274,7 @@ export class AdminPromocoesComponent implements OnInit {
       descricao: values.descricao || undefined,
       tipo: values.tipo || 'percentual',
       valor: Number(values.valor || 0),
+      prioridade: Number(values.prioridade ?? 0),
       inicio: values.inicio || undefined,
       fim: values.fim || undefined,
       ativo: !!values.ativo
@@ -177,19 +282,32 @@ export class AdminPromocoesComponent implements OnInit {
 
     const id = this.editingId();
     const productIds = this.selectedProdutoIds();
+    const categoriaIds = this.selectedCategoriaIds();
+    const tagIds = this.selectedTagIds();
     this.submitting.set(true);
 
     const afterSave = (saved: PromocaoDto) => {
-      const done = () => {
+      const sid = saved.id;
+      if (sid == null) {
         this.submitting.set(false);
-        this.closeCreateModal();
-        this.loadList();
-      };
-      if (productIds.length) {
-        this.api.setPromocaoProdutos(saved.id!, productIds).subscribe({ next: done, error: done });
-      } else {
-        done();
+        return;
       }
+      forkJoin([
+        this.api.setPromocaoProdutos(sid, productIds),
+        this.api.setPromocaoCategorias(sid, categoriaIds),
+        this.api.setPromocaoTags(sid, tagIds),
+      ]).subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.closeCreateModal();
+          this.loadList();
+        },
+        error: () => {
+          this.submitting.set(false);
+          this.closeCreateModal();
+          this.loadList();
+        }
+      });
     };
 
     if (id) this.api.updatePromocao(id, body).subscribe({ next: afterSave, error: () => this.submitting.set(false) });

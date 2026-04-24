@@ -6,7 +6,7 @@ import { catchError, map } from 'rxjs/operators';
 import { forkJoin, of } from 'rxjs';
 import { AdminPaginationComponent } from '../shared/admin-pagination/admin-pagination.component';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
-import { AdminApiService, CupomDto, CupomPayload, Paged, PessoaDto, ProdutoDto } from '../../../../services/admin-api.service';
+import { AdminApiService, CupomApplicationOrder, CupomDto, CupomPayload, CuponsConfigDto, Paged, PessoaDto, ProdutoDto } from '../../../../services/admin-api.service';
 import { AdminCrudComponent } from '../../../../shared/admin-crud/admin-crud.component';
 import { AdminListingComponent } from '../../../../shared/admin-listing/admin-listing.component';
 import { SideDrawerComponent } from '../../../../shared/side-drawer/side-drawer.component';
@@ -14,6 +14,13 @@ import { EntityLookupComponent } from '../../../../shared/entity-lookup/entity-l
 
 type LookupItem = { id: number; name: string };
 type PessoaVinc = { pessoa_tipo: 'cliente' | 'vet' | 'admin'; pessoa_id: number; nome?: string | null; email?: string | null };
+
+function parseOptionalMaxDiscountPercent(raw: unknown): number | null {
+  if (raw == null) return null;
+  if (typeof raw === 'string' && raw.trim() === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
 
 @Component({
   selector: 'app-admin-cupons',
@@ -36,6 +43,9 @@ export class CuponsAdminComponent implements OnInit {
   showCreate = signal(false);
 
   cupomForm!: FormGroup;
+  configForm!: FormGroup;
+  loadingConfig = signal(false);
+  savingConfig = signal(false);
   drawerOpen = computed(() => this.selected() !== null || this.showCreate());
 
   cuponsColumns = [
@@ -63,6 +73,13 @@ export class CuponsAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.resetCupomForm();
+    this.configForm = this.fb.group({
+      allow_with_promotions: [false],
+      apply_on_promotional_price: [false],
+      coupon_application_order: ['percent_first' as CupomApplicationOrder, Validators.required],
+      max_discount_percent: [null as number | null],
+    });
+    this.loadCuponsConfig();
     this.api.produtosMeta().subscribe({
       next: m => {
         this.catMeta = (m.categorias || []).map(c => ({ id: Number(c.id), name: String(c.name || '') }));
@@ -218,6 +235,37 @@ export class CuponsAdminComponent implements OnInit {
           .filter((p: PessoaVinc) => Number.isFinite(p.pessoa_id) && p.pessoa_id > 0);
       }
     }
+  }
+
+  loadCuponsConfig() {
+    this.loadingConfig.set(true);
+    this.api.getCuponsConfig().subscribe({
+      next: (cfg: CuponsConfigDto) => {
+        this.configForm.patchValue({
+          allow_with_promotions: cfg.allow_with_promotions === true || Number(cfg.allow_with_promotions) === 1,
+          apply_on_promotional_price: cfg.apply_on_promotional_price === true || Number(cfg.apply_on_promotional_price) === 1,
+          coupon_application_order: (cfg.coupon_application_order === 'fixed_first' ? 'fixed_first' : 'percent_first') as CupomApplicationOrder,
+          max_discount_percent: parseOptionalMaxDiscountPercent(cfg.max_discount_percent),
+        });
+        this.loadingConfig.set(false);
+      },
+      error: () => this.loadingConfig.set(false)
+    });
+  }
+
+  saveCuponsConfig() {
+    if (this.configForm.invalid) return;
+    const v = this.configForm.getRawValue();
+    this.savingConfig.set(true);
+    this.api.putCuponsConfig({
+      allow_with_promotions: v.allow_with_promotions ? 1 : 0,
+      apply_on_promotional_price: v.apply_on_promotional_price ? 1 : 0,
+      coupon_application_order: v.coupon_application_order,
+      max_discount_percent: parseOptionalMaxDiscountPercent(v.max_discount_percent),
+    } as any).subscribe({
+      next: () => this.savingConfig.set(false),
+      error: () => this.savingConfig.set(false)
+    });
   }
 
   load() {

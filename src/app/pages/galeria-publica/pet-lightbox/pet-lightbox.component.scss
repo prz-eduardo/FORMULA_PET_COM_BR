@@ -177,6 +177,56 @@
 .tutor-label { color: #6b7280; }
 .tutor-name { font-weight: 700; color: #0b1621; }
 
+.lightbox-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+.lb-share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(10, 16, 24, 0.1);
+  background: #fff;
+  color: #0b1621;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.lb-share-btn:hover {
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(2, 6, 23, 0.08);
+}
+.lb-share-btn:focus-visible {
+  outline: 2px solid rgba(196, 214, 0, 0.6);
+  outline-offset: 2px;
+}
+.lb-share-btn--primary {
+  border: 0;
+  background: linear-gradient(90deg, #c4d600, #9bb300);
+  color: #111;
+  font-weight: 700;
+  padding: 0 14px;
+}
+.lb-share-btn--primary:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 4px 12px rgba(156, 179, 0, 0.3);
+}
+.lb-share-btn i {
+  font-size: 15px;
+}
+.lb-share-btn:not(.lb-share-btn--primary) {
+  min-width: 36px;
+  padding: 0 8px;
+}
+
 .pet-obs p {
   margin: 0;
   background: #fff8ea;

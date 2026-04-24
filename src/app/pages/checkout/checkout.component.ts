@@ -24,19 +24,20 @@ export class CheckoutComponent implements OnInit {
 
   // Capturas simples vindas do carrinho (poderíamos recuperar do store/cart e do localStorage)
   // Resumo calculado a partir do pedido criado (sempre retorna o mesmo shape)
-  get resumo(): { subtotal: number; frete: number; desconto: number; cupom: number; total: number; item_count: number } {
+  get resumo(): { subtotal: number; frete: number; desconto: number; cupom: number; pix: number; total: number; item_count: number } {
     // 1) Novo contrato do backend: preferir pedido.totals
     if (this.pedido && this.pedido.totals) {
       const t = this.pedido.totals;
       const cupom = Number(t.cupom_total ?? 0) || 0;
+      const pix = Number(t.pix_total ?? 0) || 0;
       const discountTotal = Number(t.discount_total ?? 0) || 0;
-      // Evita dupla contagem: "Descontos" mostra apenas o que não for cupom
-      const outrosDescontos = Math.max(discountTotal - cupom, 0);
+      const outrosDescontos = Math.max(discountTotal - cupom - pix, 0);
       return {
         subtotal: Number(t.items_total ?? t.original_subtotal ?? 0) || 0,
         frete: Number(t.frete_total ?? this.pedido?.frete_valor) || 0,
         desconto: outrosDescontos,
         cupom,
+        pix,
         total: Number(t.grand_total ?? this.pedido?.total_liquido ?? this.pedido?.total_bruto) || 0,
         item_count: Array.isArray(this.pedido.itens) ? this.pedido.itens.reduce((n: number, i: any) => n + Number(i.quantidade || 0), 0) : 0,
       };
@@ -45,13 +46,15 @@ export class CheckoutComponent implements OnInit {
     if (this.pedido && this.pedido.raw_snapshot?.input?.totais) {
       const t = this.pedido.raw_snapshot.input.totais;
       const cupom = Number(t.coupon_total ?? t.cupom_total ?? 0) || 0;
+      const pix = Number(t.pix_total ?? 0) || 0;
       const discountTotal = Number(t.discount_total ?? this.pedido?.desconto_total ?? 0) || 0;
-      const outrosDescontos = Math.max(discountTotal - cupom, 0);
+      const outrosDescontos = Math.max(discountTotal - cupom - pix, 0);
       return {
         subtotal: Number(t.items_total ?? t.subtotal ?? t.original_subtotal ?? 0) || 0,
         frete: Number(t.frete ?? t.frete_total ?? this.pedido?.frete_valor) || 0,
         desconto: outrosDescontos,
         cupom,
+        pix,
         total: Number(t.grand_total ?? t.total ?? this.pedido?.total_liquido ?? this.pedido?.total_bruto) || 0,
         item_count: Array.isArray(this.pedido.itens) ? this.pedido.itens.reduce((n: number, i: any) => n + Number(i.quantidade || 0), 0) : Number(t.item_count ?? 0) || 0,
       };
@@ -59,7 +62,6 @@ export class CheckoutComponent implements OnInit {
     // Fallback: usar campos de topo do pedido
     if (this.pedido) {
       const discountTotal = Number(this.pedido.desconto_total ?? 0) || 0;
-      // Se houver info de cupom, usar para separar descontos
       const cupom = Number(this.pedido.cupom?.desconto_aplicado ?? 0) || 0;
       const outrosDescontos = Math.max(discountTotal - cupom, 0);
       return {
@@ -67,13 +69,14 @@ export class CheckoutComponent implements OnInit {
         frete: Number(this.pedido.frete_valor) || 0,
         desconto: outrosDescontos,
         cupom,
+        pix: 0,
         total: Number(this.pedido.total_liquido ?? this.pedido.total_bruto) || 0,
         item_count: Array.isArray(this.pedido.itens) ? this.pedido.itens.reduce((n: number, i: any) => n + Number(i.quantidade || 0), 0) : 0,
       };
     }
     // Último fallback: cart snapshot local (teoricamente não usado no checkout)
     const t = this.store.getCartTotals();
-    return { subtotal: t.subtotal, frete: 0, desconto: 0, cupom: 0, total: t.total, item_count: t.count };
+    return { subtotal: t.subtotal, frete: 0, desconto: 0, cupom: 0, pix: 0, total: t.total, item_count: t.count };
   }
 
   pedido: any | null = null; // objeto retornado pelo backend na criação
@@ -92,14 +95,20 @@ export class CheckoutComponent implements OnInit {
   // Opções de pagamento retornadas pelo backend ao criar pedido
   pagamentoOpcoes: Array<{ metodo: string; label?: string; detalhes?: any }> = [];
   private _pagamentoMetodo: string = 'pix';
-  get pagamentoMetodo() { return this._pagamentoMetodo; }
+  private syncPagamentoTimer: ReturnType<typeof setTimeout> | null = null;
+  private syncingPagamento = false;
+
+  get pagamentoMetodo() {
+    return this._pagamentoMetodo;
+  }
   set pagamentoMetodo(v: string) {
     if (v === this._pagamentoMetodo) return;
     const wasPix = this._pagamentoMetodo === 'pix';
     this._pagamentoMetodo = v;
     const nowPix = v === 'pix';
-    this.animacaoValor = nowPix ? 'gain' : (wasPix ? 'lose' : '');
-    if (this.animacaoValor) setTimeout(() => this.animacaoValor = '', 450);
+    this.animacaoValor = nowPix ? 'gain' : wasPix ? 'lose' : '';
+    if (this.animacaoValor) setTimeout(() => (this.animacaoValor = ''), 450);
+    this.scheduleSyncPagamentoForma();
   }
   animacaoValor: ''|'gain'|'lose' = '';
   showPixModal = false;
@@ -182,6 +191,7 @@ export class CheckoutComponent implements OnInit {
       this.freteOrigem = rawShip?.origem || null;
       this.freteDestino = rawShip?.destino || (snapEntrega?.destino || null);
     }
+    this.scheduleSyncPagamentoForma();
   }
 
   get totalComFrete() {
@@ -190,17 +200,55 @@ export class CheckoutComponent implements OnInit {
     return base + frete;
   }
 
-  // Visual: Pix dá 10% de desconto (somente exibição)
+  /** PIX selecionado e loja com percentual > 0 (promocoes_config). */
   get temDescontoPix(): boolean {
-    return this._pagamentoMetodo === 'pix';
+    const pct = Number(this.pedido?.totals?.pix_discount_percent);
+    return this._pagamentoMetodo === 'pix' && Number.isFinite(pct) && pct > 0;
   }
+
+  get rotuloPixBadge(): string {
+    const p = Number(this.pedido?.totals?.pix_discount_percent);
+    if (!Number.isFinite(p) || p <= 0) return 'PIX';
+    const s = Number.isInteger(p) ? String(p) : String(p);
+    return `${s}% OFF no PIX`;
+  }
+
+  /** Total a pagar: usa grand_total já recalculado no backend após PATCH da forma de pagamento. */
   get totalVisual(): number {
-    const t = this.resumo.total || 0;
-    return this.temDescontoPix ? t * 0.9 : t;
+    return this.resumo.total || 0;
   }
+
+  /** Valor do desconto PIX (linha do resumo), alinhado ao backend. */
   get pixValorDesconto(): number {
-    const t = this.resumo.total || 0;
-    return this.temDescontoPix ? t * 0.1 : 0;
+    if (!this.temDescontoPix) return 0;
+    return Number(this.resumo.pix) || 0;
+  }
+
+  private scheduleSyncPagamentoForma(): void {
+    if (this.syncPagamentoTimer) clearTimeout(this.syncPagamentoTimer);
+    this.syncPagamentoTimer = setTimeout(() => {
+      this.syncPagamentoTimer = null;
+      void this.flushSyncPagamentoForma();
+    }, 300);
+  }
+
+  private async flushSyncPagamentoForma(): Promise<void> {
+    if (!this.pedidoCodigo || this.syncingPagamento) return;
+    this.syncingPagamento = true;
+    try {
+      const token = this.auth.getToken() || '';
+      const up = await this.api
+        .atualizarPedido(token, String(this.pedidoCodigo), { pagamento_forma: this._pagamentoMetodo })
+        .toPromise();
+      if (up && (up.id != null || up.codigo != null || up.numero != null)) {
+        this.pedido = up;
+        this.store.setCreatedOrder(up);
+      }
+    } catch {
+      /* silencioso: totais locais até próximo sucesso */
+    } finally {
+      this.syncingPagamento = false;
+    }
   }
 
   // Aplicar cupom: atualiza o pedido no backend e espelha no resumo local
@@ -227,6 +275,7 @@ export class CheckoutComponent implements OnInit {
         this.cupomErro = null;
         this.fireConfetti();
         this.toast.success(`Cupom ${codigo} aplicado.`);
+        this.scheduleSyncPagamentoForma();
         return;
       }
       this.cupomAplicado = { codigo: this.cupomCodigo.trim() };

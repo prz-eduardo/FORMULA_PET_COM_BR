@@ -36,6 +36,21 @@
           <span class="tutor-label">por</span>
           <span class="tutor-name">{{ pet.tutor_nome }}</span>
         </div>
+
+        <div class="lightbox-share-row" role="group" aria-label="Compartilhar na galeria">
+          <button type="button" class="lb-share-btn lb-share-btn--primary" (click)="shareThisPet()" title="Compartilhar" aria-label="Compartilhar este pet">
+            <i class="fa fa-share-alt" aria-hidden="true"></i> Compartilhar
+          </button>
+          <button type="button" class="lb-share-btn" (click)="openWhatsAppPetShare()" title="WhatsApp" aria-label="Enviar no WhatsApp">
+            <i class="fab fa-whatsapp" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="lb-share-btn" (click)="copyPetShare()" title="Copiar link" aria-label="Copiar link">
+            <i class="fa fa-link" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="lb-share-btn" (click)="openFacebookPetShare()" title="Facebook" aria-label="Compartilhar no Facebook">
+            <i class="fab fa-facebook" aria-hidden="true"></i>
+          </button>
+        </div>
       </header>
 
       <section class="pet-obs" *ngIf="pet.observacoes">

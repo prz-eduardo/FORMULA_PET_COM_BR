@@ -23,6 +23,49 @@
       <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span>Comunidade Fórmula Pet</span>
     </div>
 
+    <div class="galeria-share-row" role="group" aria-label="Compartilhar a galeria">
+      <button
+        type="button"
+        class="galeria-share-btn galeria-share-btn--primary"
+        (click)="shareGaleria()"
+        title="Compartilhar (abre o menu do sistema no celular)"
+        aria-label="Compartilhar a galeria"
+      >
+        <i class="fa fa-share-alt" aria-hidden="true"></i>
+        Compartilhar
+      </button>
+      <button
+        type="button"
+        class="galeria-share-btn galeria-share-btn--icon"
+        (click)="openWhatsAppShare()"
+        title="Enviar no WhatsApp"
+        aria-label="Compartilhar a galeria no WhatsApp"
+      >
+        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+        <span class="galeria-share-btn-label">WhatsApp</span>
+      </button>
+      <button
+        type="button"
+        class="galeria-share-btn galeria-share-btn--icon"
+        (click)="copyGaleriaLink()"
+        title="Copiar mensagem com link"
+        aria-label="Copiar link da galeria"
+      >
+        <i class="fa fa-link" aria-hidden="true"></i>
+        <span class="galeria-share-btn-label">Copiar</span>
+      </button>
+      <button
+        type="button"
+        class="galeria-share-btn galeria-share-btn--icon"
+        (click)="openFacebookShare()"
+        title="Compartilhar no Facebook"
+        aria-label="Compartilhar a galeria no Facebook"
+      >
+        <i class="fab fa-facebook" aria-hidden="true"></i>
+        <span class="galeria-share-btn-label">Facebook</span>
+      </button>
+    </div>
+
     <section class="galeria-cta-card" role="region" aria-label="Compartilhe seu pet">
       <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="galeria-cta-icon" />
       <div class="galeria-cta-body">

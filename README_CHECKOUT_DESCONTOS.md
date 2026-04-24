@@ -1,108 +1,84 @@
 # Checkout - Sistema de Descontos
 
-Este documento descreve a lógica e o fluxo implementados no backend `/checkout` para cálculo de descontos com Cupom e PIX.
+Este documento descreve a lógica e o fluxo implementados no backend `/checkout` para cálculo de descontos com **Cupom** e **PIX**, e como isso aparece na API e na loja.
 
 ## Endpoints
 
-- POST `/checkout/orders` — Cria um pedido (in-memory nesta PoC)
-- GET `/checkout/orders/:id` — Detalhes do pedido
-- PATCH `/checkout/orders/:id` — Atualiza cupom e/ou forma de pagamento
-- POST `/checkout/orders/:id/payments` — Confirma pagamento e reforça cálculos
+- POST `/checkout/pedidos` — Cria um pedido
+- PUT `/checkout/pedidos/:id` — Atualiza cupom e/ou forma de pagamento (totais recalculados)
+- POST `/checkout/pedidos/:id/pagamentos` — Registra pagamento e pode reforçar desconto PIX
+
+## Percentual PIX (configurável)
+
+- O percentual vem da tabela `promocoes_config.pix_discount_percent` (admin **Promoções** → painel de configuração global).
+- Valor entre **0** e **100** (decimais permitidos, ex.: 7,5).
+- **0** desativa o desconto PIX: o backend não aplica `desconto_pix` e o checkout não exibe a linha/badge de desconto PIX.
+- Valor por omissão após migration típica: **10** (equivalente ao comportamento antigo fixo em 10%).
 
 ## Fluxo Completo
 
-1) Criação do Pedido
-- total_bruto: soma dos subtotais dos itens
-- desconto_total = 0 inicialmente
-- total_liquido = total_bruto + frete
+1) Criação do pedido
 
-2) Aplicação de Cupom (PATCH)
-- Calcula `desconto_cupom` por tipo (percentual/valor)
-- Respeita `desconto_maximo` se houver
-- `frete_gratis`: zera `frete_valor` sem somar em `desconto_total`
-- Neste momento `desconto_total = desconto_cupom`
+- `total_bruto`: soma dos subtotais dos itens
+- `desconto_total = 0` inicialmente (sem cupom/PIX ainda, salvo fluxo específico)
+- `total_liquido = total_bruto - desconto_total + frete_valor`
 
-3) Seleção de Forma de Pagamento (PATCH)
-- Para `pagamento_forma = pix`, aplica 10% SOBRE o valor pós-cupom:
+2) Aplicação de cupom (PUT)
+
+- Calcula `desconto_cupom` com o pipeline de elegibilidade (`couponEligibilityService` + itens do pedido).
+- Respeita `desconto_maximo` do cupom e `cupons_config` (teto global, cumulatividade com promo, etc.).
+- `frete_gratis`: zera `frete_valor` sem somar em `desconto_total`.
+- Em seguida recalcula PIX se `pagamento_forma` for PIX e `pix_discount_percent > 0`.
+
+3) Forma de pagamento PIX (PUT)
+
+- Se `pagamento_forma` contém `pix` e `P = pix_discount_percent > 0`:
   - `base = total_bruto - desconto_cupom`
-  - `desconto_pix = base * 0.10`
+  - `desconto_pix = base * (P / 100)`
   - `desconto_total = desconto_cupom + desconto_pix`
-- Ao trocar de PIX para outro método, zera `desconto_pix` e mantém cupom
+- Se `P = 0`, `desconto_pix = 0` mesmo em PIX.
+- Ao sair de PIX para outro método, o recálculo remove a parte PIX e mantém só o cupom.
 
-4) Confirmação de Pagamento (POST)
-- Recalcula os totais para garantir consistência
-- Marca status como `pago`
+4) Resposta `totals` (GET pedido / PUT retorno)
+
+- `discount_total`: `desconto_total` persistido (cupom + PIX).
+- `cupom_total`: desconto do cupom **recomputado** a partir dos itens (para exibição correta).
+- `pix_total`: parte PIX (`max(0, discount_total - cupom_total)` com clamp à fórmula acima).
+- `pix_discount_percent`: valor **P** da config (para o front mostrar o rótulo).
+- `grand_total`: total a pagar (itens após descontos + frete).
 
 ## Fórmulas
 
-- `total_bruto = sum(itens[i].preco * itens[i].qtd)`
-- `frete_valor` vem de `raw_shipping` ou requisição
-- `desconto_cupom` depende de `tipo` e `valor`, com `desconto_maximo`
-- `desconto_pix = pagamento_forma == 'pix' ? (total_bruto - desconto_cupom) * 0.10 : 0`
+- `total_bruto = sum(itens[i].subtotal)` (subtotal por linha no pedido)
+- `desconto_cupom` = resultado do motor de cupons sobre os itens
+- `desconto_pix = (pagamento_forma é PIX e P > 0) ? (total_bruto - desconto_cupom) * (P/100) : 0`
 - `desconto_total = desconto_cupom + desconto_pix`
 - `total_liquido = total_bruto - desconto_total + frete_valor`
 
-> Observação: Frete grátis via cupom zera `frete_valor` e não entra em `desconto_total`.
+Frete grátis por cupom zera `frete_valor` e não entra em `desconto_total`.
 
-## Exemplos de Cálculo
+## Exemplos (com P = 10)
 
-1) Apenas Cupom
-- total_bruto: 100; frete: 10; cupom 20%
-- desconto_cupom = 20
-- desconto_pix = 0
-- desconto_total = 20
-- total_liquido = 100 - 20 + 10 = 90
+1) Apenas cupom — total_bruto 100, frete 10, cupom 20%
 
-2) Apenas PIX
-- total_bruto: 100; frete: 10; pagamento: pix
-- desconto_cupom = 0
-- desconto_pix = 100 * 0.10 = 10
-- desconto_total = 10
-- total_liquido = 100 - 10 + 10 = 100
+- desconto_cupom = 20; desconto_pix = 0; total_liquido = 90
 
-3) Cupom + PIX
-- total_bruto: 100; frete: 10; cupom 20%; pagamento: pix
-- desconto_cupom = 20
-- base = 80; desconto_pix = 8
-- desconto_total = 28
-- total_liquido = 100 - 28 + 10 = 82
+2) Apenas PIX — total_bruto 100, frete 10, PIX, P = 10
 
-4) Cupom c/ Desconto Máximo + PIX
-- total_bruto: 200; frete: 15; cupom 50% lim 30; pagamento: pix
-- desconto_cupom = min(200*0.5, 30) = 30
-- base = 170; desconto_pix = 17
-- desconto_total = 47
-- total_liquido = 200 - 47 + 15 = 168
+- desconto_cupom = 0; desconto_pix = 10; total_liquido = 100
 
-5) Cupom c/ Frete Grátis + PIX
-- total_bruto: 100; frete original: 20; cupom 15% + frete_gratis; pagamento: pix
-- desconto_cupom = 15
-- frete_valor = 0 (grátis)
-- base = 85; desconto_pix = 8.5
-- desconto_total = 23.5
-- total_liquido = 100 - 23.5 + 0 = 76.5
+3) Cupom + PIX — total_bruto 100, frete 10, cupom 20%, PIX, P = 10
 
-## Validações e Regras (a implementar com DB)
+- desconto_cupom = 20; base = 80; desconto_pix = 8; total_liquido = 82
 
-- Cupom ativo, validade, uso máximo global/por cliente
-- Valor mínimo do pedido
-- Primeira compra paga
-- Registro em `cupons_uso`
+## Frontend (checkout)
 
-Nesta PoC, o endpoint PATCH assume que o frontend envia um objeto `cupom` já validado (ou que a validação será integrada ao conectar com o banco).
+- O checkout chama PUT com `pagamento_forma` ao mudar o método, para alinhar totais ao backend.
+- O **total a pagar** usa `totals.grand_total` (sem aplicar percentual de PIX uma segunda vez no cliente).
+- A linha de PIX só aparece se o método for PIX **e** `pix_discount_percent > 0`.
 
-## Fluxo no Frontend (sugestão)
+## Validações e regras
 
-1. POST `/checkout/orders` (com itens)
-2. PATCH `/checkout/orders/:id` { "cupom": { ... } } (opcional)
-3. PATCH `/checkout/orders/:id` { "pagamento_forma": "pix" } (opcional)
-4. POST `/checkout/orders/:id/payments`
+- Cupom: ativo, validade, uso, valor mínimo, primeira compra, limites — conforme implementação em `checkoutController` / `couponEligibilityService`.
 
-UI sugerida:
-- Subtotal
-- Desconto Cupom
-- Desconto PIX (10%)
-- Frete
-- Total
-
-> O cálculo oficial acontece no backend.
+> O cálculo oficial de valores fica no backend; a configuração **P** fica em `promocoes_config`.

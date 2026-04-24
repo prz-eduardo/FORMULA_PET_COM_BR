@@ -126,6 +126,77 @@
   box-shadow: 0 0 0 3px rgba(196, 214, 0, 0.2);
 }
 
+.galeria-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  position: relative;
+  z-index: 1;
+}
+.galeria-share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--fp-border);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--fp-ink);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  cursor: pointer;
+  box-shadow: var(--fp-shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.galeria-share-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--fp-shadow-md);
+  background: #fff;
+}
+.galeria-share-btn:focus-visible {
+  outline: 3px solid rgba(15, 23, 42, 0.2);
+  outline-offset: 2px;
+}
+.galeria-share-btn--primary {
+  border: 0;
+  background: linear-gradient(90deg, var(--fp-yellow), var(--fp-yellow-700));
+  color: #111;
+  font-weight: 700;
+  padding: 9px 16px;
+  box-shadow: 0 8px 20px rgba(156, 179, 0, 0.25);
+}
+.galeria-share-btn--primary:hover {
+  filter: brightness(1.03);
+  box-shadow: 0 10px 24px rgba(156, 179, 0, 0.32);
+}
+.galeria-share-btn--icon {
+  min-width: 40px;
+}
+.galeria-share-btn--icon i {
+  font-size: 16px;
+  color: var(--fp-ink-soft);
+}
+.galeria-share-btn--primary i {
+  color: #111;
+}
+.galeria-share-btn-label {
+  @media (max-width: 520px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
 /* CTA card dentro do hero (equivalente ao farmacia-card do mapa) */
 .galeria-cta-card {
   margin-top: 22px;

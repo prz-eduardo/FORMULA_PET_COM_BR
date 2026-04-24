@@ -152,12 +152,12 @@
           </button>
           <button class="item" *ngIf="matches('marketplace categorias vitrine')" (click)="goToMarketplaceCategorias()" tabindex="0">
             <i class="fa fa-folder-open"></i>
-            <span>Marketplace: Categorias</span>
+            <span>Categorias</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
           <button class="item" *ngIf="matches('marketplace tags vitrine')" (click)="goToMarketplaceTags()" tabindex="0">
             <i class="fa fa-tags"></i>
-            <span>Marketplace: Tags</span>
+            <span>Tags</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
           <button class="item" *ngIf="matches('temas vitrine loja cores')" (click)="goToLojaTemas()" tabindex="0">
@@ -241,6 +241,11 @@
           <button class="item" *ngIf="matches('promocoes ofertas')" (click)="goToPromocoes()" tabindex="0">
             <i class="fa fa-bullhorn"></i>
             <span>Promoções</span>
+            <i class="fa fa-arrow-right item-arrow"></i>
+          </button>
+          <button class="item" *ngIf="matches('email resend teste ferramenta')" (click)="goToEmailTeste()" tabindex="0">
+            <i class="fa fa-envelope"></i>
+            <span>Teste de e-mail (Resend)</span>
             <i class="fa fa-arrow-right item-arrow"></i>
           </button>
         </div>

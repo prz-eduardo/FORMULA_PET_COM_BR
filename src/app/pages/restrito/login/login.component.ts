@@ -33,6 +33,18 @@ export class LoginComponent {
     this.showPassword = !this.showPassword;
   }
 
+  private setLoading(loading: boolean) {
+    this.loading = loading;
+    const opts = { emitEvent: false };
+    if (loading) {
+      this.form.get('email')?.disable(opts);
+      this.form.get('senha')?.disable(opts);
+    } else {
+      this.form.get('email')?.enable(opts);
+      this.form.get('senha')?.enable(opts);
+    }
+  }
+
   loginWithPassword() {
     this.error = '';
     if (this.form.invalid) {
@@ -40,14 +52,14 @@ export class LoginComponent {
       return;
     }
     const { email, senha } = this.form.value;
-    this.loading = true;
+    this.setLoading(true);
     this.session.adminLoginPassword(email, senha).subscribe({
       next: (res) => {
-        this.loading = false;
+        this.setLoading(false);
         this.handleSessionResponse(res);
       },
       error: (e) => {
-        this.loading = false;
+        this.setLoading(false);
         const msg = e?.error?.error || e?.error?.message || 'Falha ao entrar. Verifique seus dados.';
         // 401/403/429 são erros de usuário — não bloquear com overlay irritante
         this.error = msg;
@@ -57,18 +69,18 @@ export class LoginComponent {
 
   loginWithGoogle() {
     this.error = '';
-    this.loading = true;
+    this.setLoading(true);
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
       .then(async (cred) => {
         const idToken = await cred.user.getIdToken();
         this.session.exchangeIdToken(idToken, { email: cred.user.email || undefined, loginType: 'admin', provider: 'google' }).subscribe({
           next: (res) => {
-            this.loading = false;
+            this.setLoading(false);
             this.handleSessionResponse(res);
           },
           error: (e) => {
-            this.loading = false;
+            this.setLoading(false);
             console.error(e);
             const msg = e?.error?.error || e?.error?.message || e?.message || 'Falha ao validar sessão com o servidor';
             this.showBlockingError(msg);
@@ -76,7 +88,7 @@ export class LoginComponent {
         });
       })
       .catch(err => {
-        this.loading = false;
+        this.setLoading(false);
         this.showBlockingError(err?.message || 'Falha no login com Google');
       });
   }

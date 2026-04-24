@@ -1,0 +1,35 @@
+<div class="wrap">
+  <h2>Teste de e-mail (Resend)</h2>
+  <p class="hint">
+    Envia um e-mail real pelo backend (chave API só no servidor). Use um endereço seu para validar entrega e webhooks.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <label>
+      <span>Para</span>
+      <input type="email" formControlName="para" autocomplete="email" placeholder="voce@exemplo.com" />
+    </label>
+    <label>
+      <span>Assunto</span>
+      <input type="text" formControlName="assunto" />
+    </label>
+    <label>
+      <span>Texto</span>
+      <textarea formControlName="texto" rows="6"></textarea>
+    </label>
+    <button type="submit" class="btn-primary" [disabled]="sending || form.invalid">
+      {{ sending ? 'Enviando…' : 'Enviar teste' }}
+    </button>
+  </form>
+
+  <div *ngIf="lastResult" class="result" [class.ok]="lastResult.ok" [class.err]="!lastResult.ok">
+    <ng-container *ngIf="lastResult.ok">
+      <p><strong>OK</strong> — envio_id: {{ lastResult.envio_id }}, id Resend: {{ lastResult.id_provedor }}</p>
+      <p *ngIf="lastResult.requestId" class="small">requestId: {{ lastResult.requestId }}</p>
+    </ng-container>
+    <ng-container *ngIf="!lastResult.ok">
+      <p><strong>Erro:</strong> {{ lastResult.error }}</p>
+      <p *ngIf="lastResult.requestId" class="small">requestId: {{ lastResult.requestId }}</p>
+    </ng-container>
+  </div>
+</div>

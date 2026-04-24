@@ -35,6 +35,13 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', loadComponent: () => import('./pages/restrito/admin/dashboard/dashboard.component').then(m => m.DashboardAdminComponent), canActivate: [authGuard], data: { title: 'Dashboard' } },
       { path: 'meu-perfil-admin', loadComponent: () => import('./pages/restrito/admin/meu-perfil-admin/meu-perfil-admin.component').then(m => m.MeuPerfilAdminComponent), canActivate: [authGuard], data: { title: 'Meu Perfil (Admin)' } },
+      {
+        path: 'ferramentas/email-teste',
+        loadComponent: () =>
+          import('./pages/restrito/admin/admin-test-email/admin-test-email.component').then((m) => m.AdminTestEmailComponent),
+        canActivate: [authGuard],
+        data: { title: 'Teste de e-mail' },
+      },
       { path: 'guia-ativos', loadComponent: () => import('./pages/restrito/admin/guia-ativos/guia-ativos.component').then(m => m.GuiaAtivosAdminComponent), canActivate: [authGuard], data: { title: 'Guia de Ativos' } },
       { path: 'estoque', loadComponent: () => import('./pages/restrito/admin/estoque/estoque.component').then(m => m.EstoqueAdminComponent), canActivate: [authGuard], data: { title: 'Estoque de Itens (Ativos e Insumos)' } },
       { path: 'formulas', loadComponent: () => import('./pages/restrito/admin/formulas/formulas.component').then(m => m.FormulasAdminComponent), canActivate: [authGuard], data: { title: 'Fórmulas' } },

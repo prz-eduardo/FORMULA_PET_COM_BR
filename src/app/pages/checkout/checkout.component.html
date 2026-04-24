@@ -134,8 +134,8 @@
         </div>
         <div class="pix-badge" *ngIf="temDescontoPix">
           <span class="ico">💚</span>
-          <strong>10% OFF no PIX</strong>
-          <span class="muted">Desconto visual aplicado aqui, confirmado no pagamento</span>
+          <strong>{{ rotuloPixBadge }}</strong>
+          <span class="muted">O valor aparece no resumo; o total segue a configuração da loja.</span>
         </div>
         <div class="help-wa">
           <span class="wa-ico" aria-hidden="true"></span>
@@ -162,7 +162,10 @@
         <div class="line" *ngIf="resumo.desconto>0"><span>Descontos</span><strong class="neg">-{{ resumo.desconto | currency:'BRL' }}</strong></div>
         <div class="line" *ngIf="resumo.cupom>0"><span>Cupom</span><strong class="neg">-{{ resumo.cupom | currency:'BRL' }}</strong></div>
         <div class="line"><span>Frete</span><strong>{{ resumo.frete | currency:'BRL' }}</strong></div>
-        <div class="line" *ngIf="temDescontoPix"><span>PIX 10% OFF</span><strong class="neg">-{{ pixValorDesconto | currency:'BRL' }}</strong></div>
+        <div class="line" *ngIf="temDescontoPix">
+          <span>PIX ({{ pedido?.totals?.pix_discount_percent | number:'1.0-2' }}%)</span>
+          <strong class="neg">-{{ pixValorDesconto | currency:'BRL' }}</strong>
+        </div>
         <div class="total" [class.bump]="animacaoValor!==''"><span>Total a pagar</span><strong>{{ totalVisual | currency:'BRL' }}</strong></div>
       </div>
       <div class="card dicas">

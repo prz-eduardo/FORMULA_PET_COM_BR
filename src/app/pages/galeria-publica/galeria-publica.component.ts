@@ -86,6 +86,73 @@ export class GaleriaPublicaComponent {
     } catch (e) { return 0; }
   }
 
+  getGaleriaShareUrl(): string {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') return '';
+    return `${window.location.origin}/galeria`;
+  }
+
+  getGaleriaShareText(): string {
+    return 'Galeria da comunidade Fórmula Pet — veja os pets e reaja!';
+  }
+
+  getGaleriaFullShareMessage(): string {
+    const u = this.getGaleriaShareUrl();
+    return u ? `${this.getGaleriaShareText()}\n${u}` : this.getGaleriaShareText();
+  }
+
+  async copyGaleriaLink(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const text = this.getGaleriaFullShareMessage();
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch { /* empty */ }
+        document.body.removeChild(ta);
+      }
+      this.toast.success('Link copiado');
+    } catch {
+      this.toast.info('Não foi possível copiar o link');
+    }
+  }
+
+  openWhatsAppShare(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const msg = this.getGaleriaFullShareMessage();
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  openFacebookShare(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const u = this.getGaleriaShareUrl();
+    if (!u) return;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  async shareGaleria(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const title = 'Galeria Fórmula Pet';
+    const text = this.getGaleriaShareText();
+    const url = this.getGaleriaShareUrl();
+    const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }) : null;
+    if (nav?.share) {
+      try {
+        await nav.share({ title, text, url });
+        return;
+      } catch (e: unknown) {
+        const name = e && typeof e === 'object' && 'name' in e ? (e as { name?: string }).name : '';
+        if (name === 'AbortError') return;
+      }
+    }
+    await this.copyGaleriaLink();
+  }
+
   // Return the dominant reaction (tipo, emoji, count) for a pet based on
   // aggregated totals. If all counts are zero, return null.
   getDominantReaction(pet: any) {

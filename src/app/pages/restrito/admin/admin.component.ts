@@ -62,7 +62,14 @@ export class AdminComponent implements OnInit, OnDestroy {
       'parceiros gestao',
       'pets galeria moderação tutor fotos',
     ],
-    operacao: ['banners', 'pedidos compras', 'cupons desconto', 'promocoes ofertas', 'atendimento chat suporte fila'],
+    operacao: [
+      'banners',
+      'pedidos compras',
+      'cupons desconto',
+      'promocoes ofertas',
+      'atendimento chat suporte fila',
+      'email resend teste ferramenta',
+    ],
   };
 
   constructor(private router: Router, private session: SessionService) {}
@@ -196,6 +203,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   goToParceiros() { this.router.navigate(['/restrito/admin/parceiros']); }
   goToPetsGaleria() { this.router.navigate(['/restrito/admin/pets-galeria']); }
   goToAtendimento() { this.router.navigate(['/restrito/admin/atendimento']); }
+  goToEmailTeste() { this.router.navigate(['/restrito/admin/ferramentas/email-teste']); }
 
   // -------- Header user menu --------
   toggleUserMenu(force?: boolean) {

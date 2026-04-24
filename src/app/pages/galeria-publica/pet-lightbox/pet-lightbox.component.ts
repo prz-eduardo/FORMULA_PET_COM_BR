@@ -91,6 +91,74 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
     }
   }
 
+  getGaleriaShareUrl(): string {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') return '';
+    return `${window.location.origin}/galeria`;
+  }
+
+  getPetShareText(): string {
+    const nome = (this.pet?.nome || this.pet?.name || 'este pet').toString();
+    return `Conheça o ${nome} na galeria da comunidade Fórmula Pet!`;
+  }
+
+  getPetShareMessage(): string {
+    const u = this.getGaleriaShareUrl();
+    return u ? `${this.getPetShareText()}\n${u}` : this.getPetShareText();
+  }
+
+  async copyPetShare(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const text = this.getPetShareMessage();
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch { /* empty */ }
+        document.body.removeChild(ta);
+      }
+      this.toast.success('Link copiado');
+    } catch {
+      this.toast.info('Não foi possível copiar o link');
+    }
+  }
+
+  openWhatsAppPetShare(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const url = `https://wa.me/?text=${encodeURIComponent(this.getPetShareMessage())}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  openFacebookPetShare(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const u = this.getGaleriaShareUrl();
+    if (!u) return;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  async shareThisPet(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const nome = (this.pet?.nome || this.pet?.name || 'Pet').toString();
+    const title = `Fórmula Pet — ${nome}`;
+    const text = this.getPetShareText();
+    const url = this.getGaleriaShareUrl();
+    const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }) : null;
+    if (nav?.share) {
+      try {
+        await nav.share({ title, text, url });
+        return;
+      } catch (e: unknown) {
+        const name = e && typeof e === 'object' && 'name' in e ? (e as { name?: string }).name : '';
+        if (name === 'AbortError') return;
+      }
+    }
+    await this.copyPetShare();
+  }
+
   isLogged(): boolean {
     try { return !!this.auth.getToken(); } catch { return false; }
   }
