@@ -7,9 +7,9 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
-import { StoreService } from '../../services/store.service';
 import { PetLightboxComponent, PetLightboxReaction } from './pet-lightbox/pet-lightbox.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-galeria-publica',
@@ -19,10 +19,8 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
   styleUrls: ['./galeria-publica.component.scss']
 })
 export class GaleriaPublicaComponent {
+  readonly marcaNome = MARCA_NOME;
   pets: any[] = [];
-  // timers for auto preview/confirm sequence when opening picker for first-time like
-  // We store an array of timeout ids per key so we can clear them all when needed.
-  private _autoPickerTimers: Map<string | number, any[]> = new Map();
   // client-side UID counter for rendered cards to guarantee uniqueness per instance
   private _uidCounter = 1;
   loading = true; // initial load
@@ -36,18 +34,11 @@ export class GaleriaPublicaComponent {
 
   private observer?: IntersectionObserver;
   @ViewChild('sentinel', { static: false }) sentinel?: ElementRef;
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private api: ApiService, private auth: AuthService, private toast: ToastService, private store: StoreService) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private api: ApiService, private auth: AuthService, private toast: ToastService) {}
   // placeholder mode when API returns empty: show curated random pet images
   placeholderMode = false;
   placeholderImages: string[] = [];
   private placeholderPage = 0;
-
-  /** Chave do card (`_uid`) com popover de reação aberto */
-  reactionPickerOpenFor: number | string | null = null;
-  /** Referência ao pet do popover (mesmo objeto do card) */
-  pickerAnchorPet: any | null = null;
-  /** Posição em px (viewport) do popover `position: fixed` */
-  popoverPos = { left: 0, top: 0 };
 
   // Lightbox: currently-open pet reference (or null). We keep a direct reference so
   // mutations made inside the lightbox (reaction/comment totals) reflect in the card.
@@ -92,7 +83,7 @@ export class GaleriaPublicaComponent {
   }
 
   getGaleriaShareText(): string {
-    return 'Galeria da comunidade Loja Pet — veja os pets e reaja!';
+    return `Galeria da comunidade ${MARCA_NOME} — veja os pets e reaja!`;
   }
 
   getGaleriaFullShareMessage(): string {
@@ -137,7 +128,7 @@ export class GaleriaPublicaComponent {
 
   async shareGaleria(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
-    const title = 'Galeria Loja Pet';
+    const title = `Galeria ${MARCA_NOME}`;
     const text = this.getGaleriaShareText();
     const url = this.getGaleriaShareUrl();
     const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }) : null;
@@ -151,33 +142,6 @@ export class GaleriaPublicaComponent {
       }
     }
     await this.copyGaleriaLink();
-  }
-
-  // Return the dominant reaction (tipo, emoji, count) for a pet based on
-  // aggregated totals. If all counts are zero, return null.
-  getDominantReaction(pet: any) {
-    try {
-      const totals = pet?.reactionTotals || {
-        love: Number(pet?.total_reacao_love ?? pet?.total_reacoes_love ?? 0),
-        haha: Number(pet?.total_reacao_haha ?? pet?.total_reacoes_haha ?? 0),
-        sad: Number(pet?.total_reacao_sad ?? pet?.total_reacoes_sad ?? 0),
-        angry: Number(pet?.total_reacao_angry ?? pet?.total_reacoes_angry ?? 0)
-      };
-      const order = ['love', 'haha', 'sad', 'angry'];
-      let maxTipo: string | null = null;
-      let maxVal = -1;
-      for (const t of order) {
-        const v = Number(totals[t] ?? 0);
-        if (v > maxVal) {
-          maxVal = v;
-          maxTipo = t;
-        }
-      }
-      if (!maxTipo || maxVal <= 0) return null;
-      return { tipo: maxTipo, emoji: this.getReactionEmoji(maxTipo), count: maxVal };
-    } catch (e) {
-      return null;
-    }
   }
 
   ngOnInit(): void {
@@ -213,13 +177,6 @@ export class GaleriaPublicaComponent {
           this.observer.observe(this.sentinel.nativeElement);
         }
       }, 200);
-      // attach document click listener to close reaction picker when clicking outside
-      try {
-        document.addEventListener('click', this._docClickHandler as any);
-      } catch (e) {
-        // ignore in strict environments
-      }
-      // (resize/scroll listeners are attached dynamically when the picker opens)
     } catch (e) {
       // IntersectionObserver might not be available in some browsers/environments
       console.warn('IntersectionObserver not available', e);
@@ -228,234 +185,22 @@ export class GaleriaPublicaComponent {
 
   ngOnDestroy(): void {
     if (this.observer) this.observer.disconnect();
-    try {
-      if (isPlatformBrowser(this.platformId)) {
-        document.removeEventListener('click', this._docClickHandler as any);
-      }
-      this.closeReactionPopover();
-    } catch (e) {}
   }
 
-  // internal document click handler reference for add/remove
-  private _docClickHandler = (ev: any) => {
-    try {
-      // if click occurred inside a reaction-wrapper, ignore
-      const el = ev.target as HTMLElement | null;
-      if (!el) return;
-      // If suppression is active, ignore this click (used right after opening)
-      if ((this as any)._suppressDocClose) return;
-      if (
-        el.closest &&
-        (el.closest('.reaction-wrapper') ||
-          el.closest('.reaction-quick-popover') ||
-          el.closest('.reaction-quick-backdrop') ||
-          el.closest('.btn-like') ||
-          el.closest('.menu') ||
-          el.closest('.icon-menu') ||
-          el.closest('.nav-overlay'))
-      ) {
-        return;
-      }
-      this.closeReactionPopover();
-    } catch (e) {
-      this.closeReactionPopover();
-    }
-  };
-
-  private _clearAllAutoTimers() {
-    try {
-      this._autoPickerTimers.forEach((t, k) => {
-        try {
-          if (Array.isArray(t)) {
-            for (const id of t) { try { clearTimeout(id); } catch (e) {} }
-          } else {
-            try { clearTimeout(t as any); } catch (e) {}
-          }
-        } catch (e) {}
-      });
-      this._autoPickerTimers.clear();
-      // remove transient preview/confirm flags on any pets
-      try { (this.pets || []).forEach(p => { if (p && (p._pickerAutoHighlight || p._pickerConfirm)) { try { delete p._pickerAutoHighlight; } catch (e) {} try { delete p._pickerConfirm; } catch (e) {} } }); } catch (e) {}
-    } catch (e) {}
+  /** Chave estável do item do feed (foto, coleção ou anúncio) */
+  private _feedItemKey(p: any): string {
+    if (!p) return '';
+    if (p.type === 'vet_ad') return `ad-${p.vet_id || ''}-${p.nome || ''}`;
+    return String(p.feed_key ?? p.id ?? p._uid ?? '');
   }
 
-  // Reactions: basic 'love' toggle
-  async toggleLove(pet: any) {
-    // require auth
-    const token = this.auth.getToken();
-    if (!token) {
-      this._maybeShowLoginToast();
-      return;
-    }
-    const petId = pet.id;
-    try {
-      if (pet.userReacted) {
-        // optimistic UI
-        pet.userReacted = false;
-        pet.likes = Math.max(0, (pet.likes ?? pet.reacoes_count ?? 0) - 1);
-        await this.api.deletePetReaction(petId, { tipo: 'love' }, token).toPromise();
-        // clear visual highlight only after server confirms deletion
-        try { pet._visualActive = false; } catch (e) {}
-      } else {
-        pet.userReacted = true;
-        pet.likes = (pet.likes ?? pet.reacoes_count ?? 0) + 1;
-        await this.api.postPetReaction(petId, { tipo: 'love' }, token).toPromise();
-        // set visual highlight only after server confirms the reaction
-        try { pet._visualActive = true; } catch (e) {}
-      }
-    } catch (err) {
-      console.error('Erro ao reagir', err);
-      this.toast.error('Não foi possível enviar sua reação. Tente novamente.');
-      // rollback optimistic
-      if (pet.userReacted) {
-        pet.userReacted = false;
-        pet.likes = Math.max(0, (pet.likes ?? 1) - 1);
-        try { pet._visualActive = false; } catch (e) {}
-      } else {
-        pet.userReacted = true;
-        pet.likes = (pet.likes ?? 0) + 1;
-        try { pet._visualActive = true; } catch (e) {}
-      }
-    }
-  }
-
-  /** Fecha o popover de reação rápida e limpa estado auxiliar */
-  closeReactionPopover() {
-    const key = this.reactionPickerOpenFor;
-    const pet = this.pickerAnchorPet;
-    if (key != null) this._clearAutoTimerFor(key, pet || undefined);
-    this.reactionPickerOpenFor = null;
-    this.pickerAnchorPet = null;
-    (this as any)._suppressDocClose = false;
-    this._removePickerListeners();
-    try {
-      (this.pets || []).forEach((p) => {
-        if (p && (p._pickerAutoHighlight || p._pickerConfirm || p._pickerExiting)) {
-          try {
-            delete p._pickerAutoHighlight;
-            delete p._pickerConfirm;
-            delete p._pickerExiting;
-          } catch (e) {}
-        }
-      });
-    } catch (e) {}
-  }
-
-  async onPopoverSelectReaction(tipo: string) {
-    const pet = this.pickerAnchorPet;
-    if (!pet) return;
-    await this.selectReaction(pet, tipo);
-  }
-
-  /** Posiciona o popover fixo junto ao botão do card (sempre linha horizontal). */
-  private _layoutReactionPopover(key: string | number) {
-    if (!isPlatformBrowser(this.platformId)) return;
-    try {
-      const safeId = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(String(key)) : String(key);
-      const wrap = document.querySelector(`.reaction-wrapper[data-pet-id="${safeId}"]`) as HTMLElement | null;
-      const btn = wrap?.querySelector('.btn-like') as HTMLElement | null;
-      if (!btn) return;
-      const rect = btn.getBoundingClientRect();
-      const margin = 10;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      let popW = 236;
-      let popH = 56;
-      const el = document.querySelector('.reaction-quick-popover') as HTMLElement | null;
-      if (el) {
-        const pr = el.getBoundingClientRect();
-        if (pr.width > 0) popW = pr.width;
-        if (pr.height > 0) popH = pr.height;
-      }
-      let left = Math.round(rect.right - popW);
-      let top = Math.round(rect.top - popH - margin);
-      if (top < margin) top = Math.round(rect.bottom + margin);
-      if (top + popH > vh - margin) top = Math.max(margin, vh - popH - margin);
-      left = Math.max(margin, Math.min(left, vw - popW - margin));
-      top = Math.max(margin, Math.min(top, vh - popH - margin));
-      this.popoverPos = { left, top };
-    } catch (e) {
-      this.popoverPos = { left: 16, top: 16 };
-    }
-  }
-
-  private _schedulePopoverLayout(key: string | number) {
-    requestAnimationFrame(() => {
-      this._layoutReactionPopover(key);
-      requestAnimationFrame(() => this._layoutReactionPopover(key));
-    });
-  }
-
-  // Abre/fecha o popover de reações; posicionamento só via fixed + getBoundingClientRect
-  async openReactionPicker(pet: any, uid?: string, ev?: Event) {
-    try {
-      ev?.stopPropagation?.();
-    } catch (e) {}
-    try {
-      const isCliente = await this.store.isClienteLoggedSilent();
-      if (!isCliente) return;
-    } catch (e) {}
-    const key = uid ?? pet?._uid ?? pet?.id;
-
-    if (this.reactionPickerOpenFor === key) {
-      this.closeReactionPopover();
-      return;
-    }
-
-    this.reactionPickerOpenFor = key;
-    this.pickerAnchorPet = pet;
-    (this as any)._suppressDocClose = true;
-    setTimeout(() => {
-      (this as any)._suppressDocClose = false;
-    }, 150);
-
-    this._schedulePopoverLayout(key);
-    this._attachPickerListeners();
-
-    if (!pet.userReacted) {
-      this._clearAutoTimerFor(key, pet);
-      try {
-        pet._autoFlowPending = true;
-      } catch (e) {}
-      const timers: any[] = [];
-      const confirmDelay = 420;
-      const t2 = setTimeout(() => {
-        try {
-          this.selectReaction(pet, 'love');
-        } catch (e) {
-          console.warn('auto-like via sequence failed', e);
-        }
-      }, confirmDelay);
-      timers.push(t2);
-      this._autoPickerTimers.set(key, timers);
-    } else {
-      setTimeout(() => this._schedulePopoverLayout(key), 0);
-    }
-  }
-
-  private _clearAutoTimerFor(key: string | number, pet?: any) {
-    try {
-      const t = this._autoPickerTimers.get(key);
-      if (t) {
-        if (Array.isArray(t)) {
-          for (const id of t) { try { clearTimeout(id); } catch (e) {} }
-        } else {
-          try { clearTimeout(t as any); } catch (e) {}
-        }
-        this._autoPickerTimers.delete(key);
-      }
-      if (pet) {
-        try { delete pet._pickerAutoHighlight; } catch (e) {}
-        try { delete pet._pickerConfirm; } catch (e) {}
-      }
-    } catch (e) {}
-  }
-
-  // User selects a reaction from the picker
   async selectReaction(pet: any, tipo: string) {
     const token = this.auth.getToken();
     if (!token) {
       this._maybeShowLoginToast();
+      return;
+    }
+    if (pet?.kind === 'photo' || pet?.kind === 'collection') {
       return;
     }
 
@@ -465,8 +210,6 @@ export class GaleriaPublicaComponent {
 
   // ensure reactionTotals exists
     pet.reactionTotals = pet.reactionTotals || { love: 0, haha: 0, sad: 0, angry: 0 };
-  // cancel any preview timer if user interacts
-  try { this._clearAutoTimerFor(pet._uid ?? pet.id, pet); } catch (e) {}
     try {
       if (alreadySame) {
         // optimistic removal
@@ -493,7 +236,6 @@ export class GaleriaPublicaComponent {
         try {
           delete pet._autoFlowPending;
         } catch (e) {}
-        this.closeReactionPopover();
       } else {
         // optimistic change/add
         if (prevTipo) {
@@ -528,7 +270,6 @@ export class GaleriaPublicaComponent {
         try {
           delete pet._autoFlowPending;
         } catch (e) {}
-        this.closeReactionPopover();
       }
     } catch (err) {
       console.error('Erro ao enviar reação', err);
@@ -555,7 +296,7 @@ export class GaleriaPublicaComponent {
     }
   }
 
-  // Small helper: map pet type (portuguese) to emoji for MVP
+  /** Emoji da espécie (igual ao lightbox), para o mini card na grelha */
   typeEmoji(tipo?: string) {
     if (!tipo) return '🐾';
     const t = (tipo || '').toLowerCase();
@@ -589,6 +330,11 @@ export class GaleriaPublicaComponent {
   getGalleryUrls(p: any): string[] {
     try {
       if (!p || p.type === 'vet_ad') return [];
+      if (p.kind === 'photo') {
+        const u = (Array.isArray(p.galeria_urls) && p.galeria_urls[0]) || p.foto || p.photo || '';
+        const s = typeof u === 'string' ? u.trim() : '';
+        return s ? [s] : [];
+      }
       const out: string[] = [];
       const direct = p.galeria_urls;
       if (Array.isArray(direct) && direct.length) {
@@ -619,15 +365,6 @@ export class GaleriaPublicaComponent {
     }
   }
 
-  galleryIndices(p: any): number[] {
-    const n = this.getGalleryUrls(p).length;
-    return n > 1 ? Array.from({ length: n }, (_, i) => i) : [];
-  }
-
-  gallerySlideCount(p: any): number {
-    return this.getGalleryUrls(p).length;
-  }
-
   private normalizeImgUrl(raw: string): string {
     if (!raw || typeof raw !== 'string') return '/imagens/image.png';
     let url = raw.trim();
@@ -645,6 +382,12 @@ export class GaleriaPublicaComponent {
   // strings that fail to load when navigating client-side.
   resolveImage(p: any) {
     try {
+      if (p?.type === 'vet_ad') {
+        const raw = p.foto || p.photo || p.photoURL || p.url || '';
+        const s = typeof raw === 'string' ? raw.trim() : '';
+        if (!s) return '/imagens/image.png';
+        return this.normalizeImgUrl(s);
+      }
       const urls = this.getGalleryUrls(p);
       const idx = Math.min(Math.max(0, p._galIdx || 0), Math.max(0, urls.length - 1));
       const raw = urls[idx] || urls[0] || '';
@@ -655,37 +398,9 @@ export class GaleriaPublicaComponent {
     }
   }
 
-  onGalleryDotClick(p: any, idx: number, ev: Event) {
-    ev.stopPropagation();
-    p._galIdx = idx;
-  }
-
-  cycleGallery(p: any, delta: number, ev: Event) {
-    ev.stopPropagation();
-    const urls = this.getGalleryUrls(p);
-    if (urls.length < 2) return;
-    let i = (p._galIdx || 0) + delta;
-    if (i < 0) i = urls.length - 1;
-    if (i >= urls.length) i = 0;
-    p._galIdx = i;
-  }
-
-  // Clicar na foto abre o lightbox com foto grande, detalhes, reações e comentários.
-  onPhotoClick(pet: any, ev?: Event) {
-    try {
-      if (ev && (ev as Event).stopPropagation) (ev as Event).stopPropagation();
-      this.openLightbox(pet);
-    } catch (e) {}
-  }
-
   // --- Lightbox control ---
   openLightbox(pet: any) {
     if (!pet) return;
-    // close any open reaction picker so it doesn't conflict with the modal
-    try {
-      this.closeReactionPopover();
-      this._clearAllAutoTimers();
-    } catch (e) {}
     this.lightboxPet = pet;
   }
 
@@ -698,55 +413,6 @@ export class GaleriaPublicaComponent {
   onLightboxReaction(ev: PetLightboxReaction) {
     if (!this.lightboxPet || !ev?.tipo) return;
     try { this.selectReaction(this.lightboxPet, ev.tipo); } catch (e) {}
-  }
-
-  // Top N non-zero reactions (for the card reactions-summary strip)
-  getTopReactionList(pet: any, limit = 3) {
-    try {
-      const totals = pet?.reactionTotals || {};
-      const list = this.reactionTypes
-        .map(r => ({ ...r, count: Number(totals[r.tipo] ?? 0) }))
-        .filter(r => r.count > 0)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, limit);
-      return list;
-    } catch (e) { return []; }
-  }
-
-  trackReaction = (_: number, r: any) => r?.tipo ?? _;
-
-  // --- Picker position helpers (avoid clipping at top of viewport) ---
-  private _boundRecalc = () => {
-    if (this.reactionPickerOpenFor) {
-      try {
-        this._layoutReactionPopover(this.reactionPickerOpenFor);
-      } catch (e) {}
-    }
-  }
-
-  // Close picker on any page scroll; keep resize for recalculation
-  private _onScrollClose = (ev: Event) => {
-    try {
-      if (this.reactionPickerOpenFor) {
-        this.closeReactionPopover();
-      }
-    } catch (e) {}
-  }
-
-  private _attachPickerListeners() {
-    try {
-      // scroll should immediately close an open picker (user intent)
-      window.addEventListener('scroll', this._onScrollClose, true);
-      // resize needs to recalc position if picker remains open
-      window.addEventListener('resize', this._boundRecalc);
-    } catch (e) {}
-  }
-
-  private _removePickerListeners() {
-    try {
-      window.removeEventListener('scroll', this._onScrollClose, true);
-      window.removeEventListener('resize', this._boundRecalc);
-    } catch (e) {}
   }
 
   private async loadPage(pageNum: number) {
@@ -818,11 +484,11 @@ export class GaleriaPublicaComponent {
             if (existing[i]) merged.push(existing[i]);
             if (incoming[i]) {
               // try to avoid placing identical id right after the same id
-              if (merged.length > 0 && String(merged[merged.length - 1].id ?? merged[merged.length - 1]._id ?? '') === String(incoming[i].id ?? incoming[i]._id ?? '')) {
+              if (merged.length > 0 && this._feedItemKey(merged[merged.length - 1]) === this._feedItemKey(incoming[i])) {
                 // attempt to find a later incoming item with different id and swap
                 let found = -1;
                 for (let j = i + 1; j < incoming.length; j++) {
-                  if (String(incoming[j].id ?? incoming[j]._id ?? '') !== String(incoming[i].id ?? incoming[i]._id ?? '')) {
+                  if (this._feedItemKey(incoming[j]) !== this._feedItemKey(incoming[i])) {
                     found = j;
                     break;
                   }
@@ -848,11 +514,11 @@ export class GaleriaPublicaComponent {
             pos += gap;
 
             // Before pushing incoming[i], try to avoid duplicate adjacency with last merged
-            if (merged.length > 0 && String(merged[merged.length - 1].id ?? merged[merged.length - 1]._id ?? '') === String(incoming[i].id ?? incoming[i]._id ?? '')) {
+            if (merged.length > 0 && this._feedItemKey(merged[merged.length - 1]) === this._feedItemKey(incoming[i])) {
               // Find a later incoming item with different id to swap with
               let found = -1;
               for (let j = i + 1; j < incoming.length; j++) {
-                if (String(incoming[j].id ?? incoming[j]._id ?? '') !== String(incoming[i].id ?? incoming[i]._id ?? '')) {
+                if (this._feedItemKey(incoming[j]) !== this._feedItemKey(incoming[i])) {
                   found = j;
                   break;
                 }

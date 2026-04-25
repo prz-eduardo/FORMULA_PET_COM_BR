@@ -7,8 +7,8 @@
 
 .toast-root {
   position: fixed;
-  /* Acima do nav (2M) e do modal área do cliente */
-  z-index: 2500000;
+  /* Acima do header (~2.000.021) e abaixo do aviso de cookies (2.000.028) para os botões do consentimento receberem clique. */
+  z-index: 2000025;
   right: 12px;
   bottom: 12px;
   display: flex;

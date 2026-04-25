@@ -10,6 +10,7 @@ import { ButtonDirective, ButtonComponent } from '../../../shared/button';
 import { AdminNotificationComponent } from '../../../admin-notification/admin-notification.component';
 import { AdminHeaderComponent } from '../../../shared/admin-header/admin-header.component';
 import { AdminHomeOverviewComponent } from './home-overview/home-overview.component';
+import { MARCA_NOME } from '../../../constants/loja-public';
 
 type SectionKey = 'inteligencia' | 'catalogo' | 'pessoas' | 'operacao';
 
@@ -30,6 +31,7 @@ type SectionKey = 'inteligencia' | 'catalogo' | 'pessoas' | 'operacao';
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit, OnDestroy {
+  readonly marcaNome = MARCA_NOME;
   headerTitle = 'ADMIN PANEL';
   hasProducts = true;
   isAdmin = false;

@@ -121,6 +121,11 @@ export const routes: Routes = [
   { path: 'pacientes/:petId', loadComponent: () => import('./pages/restrito/area-vet/paciente-detalhe/paciente-detalhe.component').then(m => m.PacienteDetalheComponent), canActivate: [vetGuard] },
   { path: 'meus-pets', loadComponent: () => import('./pages/meus-pets/meus-pets.component').then(m => m.MeusPetsComponent)},
   { path: 'galeria', component: GaleriaPublicaComponent },
+  {
+    path: 'galeria/pet/:id',
+    loadComponent: () =>
+      import('./pages/pet-perfil-publico/pet-perfil-publico.component').then((m) => m.PetPerfilPublicoComponent)
+  },
   { path: 'meus-enderecos', loadComponent: () => import('./pages/meus-enderecos/meus-enderecos.component').then(m => m.MeusEnderecosComponent)},
   { path: 'meus-cartoes', loadComponent: () => import('./pages/restrito/area-cliente/meus-cartoes/meus-cartoes.component').then(m => m.MeusCartoesComponent)},
   { path: 'editar-perfil', loadComponent: () => import('./pages/perfil/perfil.component').then(m => m.PerfilComponent)},

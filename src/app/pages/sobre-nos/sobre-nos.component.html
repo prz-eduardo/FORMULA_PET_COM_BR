@@ -7,7 +7,7 @@
       <div class="hero-copy">
         <span class="hero-kicker">
           <i class="fa-solid fa-paw" aria-hidden="true"></i>
-          Loja Pet · Quem somos
+          {{ marcaNome }} · Quem somos
         </span>
         <h1 id="sobre-hero-title" class="hero-title">
           Cuidar de pets é <span class="hero-accent">a nossa</span><br />
@@ -39,7 +39,7 @@
         <div class="hero-blob blob-a"></div>
         <div class="hero-blob blob-b"></div>
         <div class="hero-card hero-card-main">
-          <img src="/imagens/logo-marca.svg" alt="Loja Pet" loading="eager" decoding="async" />
+          <img [src]="marcaLogoPath" [alt]="marcaNome" loading="eager" decoding="async" />
         </div>
         <div class="hero-chip chip-a">
           <i class="fa-solid fa-flask" aria-hidden="true"></i>
@@ -138,7 +138,7 @@
   <section class="sobre-diferenciais" aria-labelledby="dif-title">
     <div class="section-inner">
       <div class="section-head">
-        <span class="eyebrow">Por que a Loja Pet</span>
+        <span class="eyebrow">Por que a {{ marcaNome }}</span>
         <h2 id="dif-title" class="section-title">Feito para quem ama de verdade</h2>
         <p class="section-lead">
           Tudo pensado para que seu pet receba o tratamento certo, com

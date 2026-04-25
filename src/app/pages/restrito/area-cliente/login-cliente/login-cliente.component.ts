@@ -5,6 +5,8 @@ import { AuthService } from '../../../../services/auth.service';
 import { ApiService } from '../../../../services/api.service';
 import { RastreioLojaService } from '../../../../services/rastreio-loja.service';
 import { ToastService } from '../../../../services/toast.service';
+import { BannedUserModalService } from '../../../../services/banned-user-modal.service';
+import { isAccountBannedHttpError } from '../../../../utils/account-ban.util';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -28,7 +30,8 @@ export class LoginClienteComponent {
     private authService: AuthService,
     private apiService: ApiService,
     private toastService: ToastService,
-    private rastreio: RastreioLojaService
+    private rastreio: RastreioLojaService,
+    private bannedModal: BannedUserModalService
   ) {}
 
   async loginEmail(form: NgForm) {
@@ -61,6 +64,11 @@ export class LoginClienteComponent {
       this.loggedIn.emit();
       this.close.emit();
     } catch (err: any) {
+      if (isAccountBannedHttpError(err)) {
+        this.mensagemErro = '';
+        await this.bannedModal.presentAfterBannedLogin();
+        return;
+      }
       const parsed = this.parseErrorLocal(err) || 'Erro ao fazer login.';
       this.mensagemErro = parsed;
       const status = err?.status;
@@ -126,6 +134,11 @@ export class LoginClienteComponent {
       this.loggedIn.emit();
       this.close.emit();
     } catch (err: any) {
+      if (isAccountBannedHttpError(err)) {
+        this.mensagemErro = '';
+        await this.bannedModal.presentAfterBannedLogin();
+        return;
+      }
       const parsed = this.parseErrorLocal(err) || 'Erro ao autenticar com Google.';
       this.mensagemErro = parsed;
       const status = err?.status;

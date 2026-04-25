@@ -31,6 +31,13 @@ html, body{
     box-sizing: border-box;
 }
 
+/* Dock móvel das abas principais (institucional / área vet): evita conteúdo sob a pílula */
+@media (max-width: 767px) {
+    body:has(app-navmenu .nav-primary-tabs--mobile) .app-main:not(.no-nav) {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 /* When the global navbar is hidden (e.g., /restrito/admin), remove the nav height
    but keep device safe-area inset if present. Add after the default to override it. */
 .app-main.no-nav{
@@ -161,10 +168,13 @@ img, video, canvas, svg {
     --admin-danger: #ef4444;
     --admin-ok: #10b981;
 
-    /* Brand colors */
-    --brand-yellow: #c4d600; /* primary brand yellow (updated) */
-    --brand-yellow-700: #9bb300; /* darker variant for accents */
-    --brand-50: #fbfde6; /* very light yellow background */
+    /* Brand colors — sync hex with src/app/constants/loja-default-theme.ts (LOJA_DEFAULT_THEME_COLORS) */
+    --fp-store-primary: #b45309;
+    --fp-store-accent: #f5a700;
+    --fp-store-surface: #ffffff;
+    --brand-yellow: #f5a700; /* accent; tema ativo pode sobrescrever via JS */
+    --brand-yellow-700: #b45309; /* primary / tom mais escuro */
+    --brand-50: #fffbeb; /* fundo claro harmônico com âmbar */
     --brand-ink: #222100; /* dark ink for text on yellow */
 }
 
@@ -747,7 +757,7 @@ html.force-light, body.force-light {
     --card-bg: #edf2f7;
     --card-bg-dark: #edf2f7;
     --primary: #2b2b2b;
-    --brand-50: #fbfde6;
+    --brand-50: #fffbeb;
     --brand-ink: #222100;
     --result-bg: #ffffff;
     --result-ink: #111111;

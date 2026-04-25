@@ -47,6 +47,7 @@ export class CookieConsentComponent implements OnInit, OnDestroy {
     this.sub.add(
       this.cookie.manageOpen$.subscribe((open) => {
         this.manageSession = open;
+        this.cdr.markForCheck();
       })
     );
     this.sub.add(
@@ -137,5 +138,12 @@ export class CookieConsentComponent implements OnInit, OnDestroy {
 
   isManageText(): boolean {
     return this.manageSession && this.cookie.hasValidPreferences();
+  }
+
+  /** Clico na área do contentor (fora do cartão) = mesmo efeito do fundo, quando for permitido. */
+  onPanelShellClick(e: Event): void {
+    if (e.target === e.currentTarget && this.canCloseSheet()) {
+      this.closeWithoutChanges();
+    }
   }
 }

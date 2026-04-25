@@ -1,4 +1,4 @@
-<nav [class.hidden]="!isVisible">
+<nav class="app-navbar">
   <!-- SVG Goo filter for slime effect -->
   <svg width="0" height="0" class="sr-abs">
     <defs>
@@ -11,121 +11,77 @@
     </defs>
   </svg>
 
-
-<div class="nav-menu">
-  <!-- about -->
-  <!-- <div class="about">
-    <a class="bg_links social whatsapp" href="wa.me/message/GLVXCNM7IBKUI1" target="_blank">
-      <span class="icon"></span>
-    </a>
-    <a class="bg_links social Instagram" href="https://www.instagram.com/" target="_blank">
-      <span class="icon"></span>
-    </a>
-    <a class="bg_links social linkedin" href="https://www.linkedin.com/in/rafaelalucas/" target="_blank">
-      <span class="icon"></span>
-    </a>
-    <a class="bg_links logo"></a>
-    
-  </div> -->
-  <!-- end about -->
-  
-  
-  <nav>
-    <div *ngIf="menuOpen" class="nav-overlay" (click)="closeMenu()" aria-hidden="true"></div>
-    <div class="menubar">
-<a routerLink="/institucional" class="home">
-  <div class="logo-container">
-    <div id="wrapper" class="goo-wrapper">
-      <div id="ball" class="ball-core"></div>
-      <div class="ball-orbit ball-orbit-a"></div>
-      <div class="ball-orbit ball-orbit-b"></div>
-      <div class="ball-orbit ball-orbit-c"></div>
-      <div class="ball-orbit ball-orbit-d"></div>
-      <div class="ball-orbit ball-orbit-e"></div>
-      <div class="ball-orbit ball-orbit-f"></div>
-    </div>
-    <img src="/imagens/logo-marca.svg" alt="Loja Pet" class="imagem-navbar">
-  </div>
-</a>
-
-
-
-      <div class="icons">
-        <div class="secondary-icons">
-          <div class="icon-wrap">
-            <a [routerLink]="'/mapa'" title="Abrir Mapa" aria-label="Abrir Mapa">
-              <i class="icon-second" [class.active]="currentRoute.startsWith('/mapa')">
-                <img src="/icones/mapa-pata.png" class="icones-menu" width="24" height="24" alt="Mapa">
-              </i>
-            </a>
+  <div class="nav-menu">
+    <div class="navbar-inner">
+      <div class="menubar navbar-mainbg" [class.hidden]="!isVisible">
+        <a routerLink="/" class="navbar-brand-link" title="Ir para a loja" aria-label="Ir para a loja">
+          <div class="logo-container">
+            <div id="wrapper" class="goo-wrapper">
+              <div id="ball" class="ball-core"></div>
+              <div class="ball-orbit ball-orbit-a"></div>
+              <div class="ball-orbit ball-orbit-b"></div>
+              <div class="ball-orbit ball-orbit-c"></div>
+              <div class="ball-orbit ball-orbit-d"></div>
+              <div class="ball-orbit ball-orbit-e"></div>
+              <div class="ball-orbit ball-orbit-f"></div>
+            </div>
+            <img src="/imagens/logo-marca.svg" alt="Loja Pet" class="imagem-navbar">
           </div>
-          <div class="icon-wrap">
-            <a [routerLink]="'/galeria'" title="Galeria de pets" aria-label="Abrir Galeria de Pets">
-              <i class="icon-second" [class.active]="currentRoute.startsWith('/galeria')">
-                <img *ngIf="!useGaleriaSvg" src="/icones/galeria-pet.png" class="icones-menu" width="20" height="20" alt="Galeria" (error)="useGaleriaSvg = true">
-                <svg *ngIf="useGaleriaSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                  <path d="M12 13.5C13.933 13.5 15.5 11.933 15.5 10C15.5 8.067 13.933 6.5 12 6.5C10.067 6.5 8.5 8.067 8.5 10C8.5 11.933 10.067 13.5 12 13.5Z" fill="#111827"/>
-                  <path d="M6.5 14.5C7.328 14.5 8 15.172 8 16C8 16.828 7.328 17.5 6.5 17.5C5.672 17.5 5 16.828 5 16C5 15.172 5.672 14.5 6.5 14.5Z" fill="#111827"/>
-                  <path d="M17.5 14.5C18.328 14.5 19 15.172 19 16C19 16.828 18.328 17.5 17.5 17.5C16.672 17.5 16 16.828 16 16C16 15.172 16.672 14.5 17.5 14.5Z" fill="#111827"/>
-                  <path d="M9 18.5C9.552 19.771 10.7 20.7 12 20.7C13.3 20.7 14.448 19.771 15 18.5H9Z" fill="#111827"/>
-                </svg>
-              </i>
-            </a>
-          </div>
-          <div class="icon-wrap">
-            <a [routerLink]="'/loja'" title="Ir para a loja" aria-label="Ir para a loja">
-              <i class="icon-second" [class.active]="currentRoute.startsWith('/loja')">
-                <img src="/icones/loja.png" class="icones-menu" width="22" height="22" alt="Loja">
-              </i>
-            </a>
-          </div>
-          <div class="icon-wrap" *ngIf="isCliente">
-            <a [routerLink]="'/carrinho'" class="cart-link" title="Ir para o carrinho" aria-label="Ir para o carrinho">
-              <i class="icon-second" [class.active]="currentRoute.startsWith('/carrinho')">
-                <img src="/icones/carrinho.png" class="icones-menu" width="30" height="30" alt="Carrinho">
-              </i>
-              <span class="cart-badge" *ngIf="cartCount > 0" aria-label="Itens no carrinho">{{ cartCount }}</span>
-            </a>
+        </a>
+
+        <div class="navbar-tabs-outer" *ngIf="showFullMenu">
+          <div class="navbar-tabs-track" #desktopTabsTrack>
+            <div class="hori-selector" aria-hidden="true">
+              <div class="hori-cap hori-cap--left"></div>
+              <div class="hori-cap hori-cap--right"></div>
+            </div>
+            <ul class="navbar-nav-tabs" aria-label="Navegação principal">
+              <li class="nav-tab-item" *ngFor="let item of visibleNavItems" [class.active]="isNavActive(item)">
+                <a
+                  class="nav-tab-link"
+                  [routerLink]="item.link"
+                  [attr.title]="item.label"
+                >
+                  <i [class]="item.icon" aria-hidden="true"></i>
+                  <span class="nav-tab-label">{{ item.label }}</span>
+                  <span class="nav-tab-badge" *ngIf="item.id === 'carrinho' && cartCount > 0">{{ cartCount }}</span>
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
-  <i class="icon-menu" *ngIf="showFullMenu" [class.icon-closed]="menuOpen" (click)="toggleMenu()"><span></span></i>
-  <button *ngIf="!isAreaVetRoute" #userBtn class="user-trigger" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
-    <ng-container *ngIf="userFoto; else defaultUserIcon">
-      <img [src]="userFoto" alt="Foto do usuário" />
-    </ng-container>
-    <ng-template #defaultUserIcon>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="#111827"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="#111827"/></svg>
-    </ng-template>
-  </button>
+
+        <div class="navbar-actions">
+          <button *ngIf="!isAreaVetRoute" #userBtn class="user-trigger" type="button" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
+            <ng-container *ngIf="userFoto; else defaultUserIcon">
+              <img [src]="userFoto" alt="Foto do usuário" />
+            </ng-container>
+            <ng-template #defaultUserIcon>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="currentColor"/></svg>
+            </ng-template>
+          </button>
+        </div>
       </div>
+
+      <ul
+        *ngIf="showFullMenu"
+        class="nav-primary-tabs nav-primary-tabs--mobile"
+        aria-label="Navegação principal"
+      >
+        <li class="nav-tab-item" *ngFor="let item of visibleNavItems" [class.active]="isNavActive(item)">
+          <a
+            class="nav-tab-link"
+            [routerLink]="item.link"
+            [attr.title]="item.label"
+          >
+            <i [class]="item.icon" aria-hidden="true"></i>
+            <span class="nav-tab-label">{{ item.shortLabel || item.label }}</span>
+            <span class="nav-tab-badge" *ngIf="item.id === 'carrinho' && cartCount > 0">{{ cartCount }}</span>
+          </a>
+        </li>
+      </ul>
     </div>
-  <ul class="menu" *ngIf="showFullMenu">
-      
-    <li class="menu-link">
-      <a [routerLink]="'/institucional'" class="text-item">Institucional</a>
-    </li>
-
-      <!-- Hidden example submenu kept for reference -->
-      <li class="menu-link sub" *ngIf="false">
-        <a href="#0" class="text-item">Exemplo de Submenu<span class="icon"></span></a>
-        <ul class="submenu">
-          <li class="sub-item"><a href="#0">Item A</a></li>
-          <li class="sub-item"><a href="#0">Item B</a></li>
-          <li class="sub-item"><a href="#0">Item C</a></li>
-        </ul>
-      </li>
-      <li class="menu-link"><a [routerLink]="'/area-vet'" class="text-item">Área vet 🐾</a></li>
-      <li class="menu-link"><a [routerLink]="'/loja'" class="text-item">Loja</a></li>
-      <li class="menu-link">
-        <a href="https://www.instagram.com/" target="_blank" rel="noopener" class="text-item insta-btn" title="Instagram">
-          <img src="/imagens/icons8-instagram-500.png" alt="Instagram" width="36" height="36" />
-        </a>
-      </li>
-  <!-- Galeria moved to top bar -->
-
-    </ul>
-  </nav>
-</div>
+  </div>
 </nav>
 
 <!-- Modal de Área do Cliente (renderiza o componente como modal) -->
@@ -141,5 +97,5 @@
       <div class="edge-fade" aria-hidden="true"></div>
     </div>
   </div>
-  <button class="cliente-close" (click)="fecharClienteModal()" aria-label="Fechar">✕</button>
+  <button type="button" class="cliente-close" (click)="fecharClienteModal()" aria-label="Fechar">✕</button>
 </ng-container>

@@ -18,6 +18,7 @@ export class StoreThemeService {
     const colors = normalized.colors;
     if (colors?.['primary']) {
       root.style.setProperty('--fp-store-primary', colors['primary']);
+      root.style.setProperty('--brand-yellow-700', colors['primary']);
     }
     if (colors?.['accent']) {
       root.style.setProperty('--fp-store-accent', colors['accent']);
@@ -33,7 +34,14 @@ export class StoreThemeService {
   clearTheme(): void {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    ['--fp-store-primary', '--fp-store-accent', '--fp-store-surface', '--fp-catalog-cols-mobile', '--fp-catalog-cols-desktop']
-      .forEach((k) => root.style.removeProperty(k));
+    [
+      '--fp-store-primary',
+      '--fp-store-accent',
+      '--fp-store-surface',
+      '--brand-yellow',
+      '--brand-yellow-700',
+      '--fp-catalog-cols-mobile',
+      '--fp-catalog-cols-desktop',
+    ].forEach((k) => root.style.removeProperty(k));
   }
 }

@@ -8,11 +8,13 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  signOut,
   User
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { BehaviorSubject } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
+import { CookiePreferencesService } from './cookie-preferences.service';
 
 
 @Injectable({
@@ -29,7 +31,8 @@ export class AuthService {
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
-    private store: StoreService
+    private store: StoreService,
+    private cookiePreferences: CookiePreferencesService
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
 
@@ -64,6 +67,16 @@ export class AuthService {
     return await signInWithEmailAndPassword(auth, email, senha);
   }
 
+  /** Encerra sessão Firebase (ex.: login recusado no backend por conta banida). */
+  async signOutFirebase(): Promise<void> {
+    if (!this.isBrowser) return;
+    try {
+      await signOut(auth);
+    } catch {
+      /* */
+    }
+  }
+
   // Login com Google
   async loginGoogle() {
     const provider = new GoogleAuthProvider();
@@ -90,6 +103,11 @@ export class AuthService {
       this.loggedIn.next(true);
       this.loggedInSubject.next(true);
       try { this.store.invalidateClienteSession(); } catch { /* evita ciclo em testes */ }
+      try {
+        this.cookiePreferences.applyDefaultsIfNoConsentYet();
+      } catch {
+        /* */
+      }
     } else {
       // invalid token -> ensure logged out state
       this.loggedIn.next(false);

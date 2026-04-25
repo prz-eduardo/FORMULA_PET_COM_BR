@@ -9,6 +9,7 @@
   <div
     class="cookie-consent__panel"
     role="document"
+    (click)="onPanelShellClick($event)"
   >
     <div class="cookie-consent__inner" (click)="$event.stopPropagation()">
       <h2 id="cookie-consent-title" class="cookie-consent__title">Cookies e privacidade</h2>

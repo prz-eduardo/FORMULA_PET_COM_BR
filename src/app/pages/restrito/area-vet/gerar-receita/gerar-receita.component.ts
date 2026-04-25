@@ -13,6 +13,7 @@ import { Inject, PLATFORM_ID } from '@angular/core'
 import { ChangeDetectorRef } from '@angular/core'
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { MARCA_LOGO_PATH, MARCA_NOME } from '../../../../constants/loja-public';
 
 
 
@@ -66,6 +67,8 @@ interface Veterinario {
   styleUrls: ['./gerar-receita.component.scss']
 })
 export class GerarReceitaComponent implements OnInit, AfterViewInit {
+  readonly marcaNome = MARCA_NOME;
+  readonly marcaLogoPath = MARCA_LOGO_PATH;
   @ViewChild('pdfContent') pdfContent!: ElementRef;
   cpf = '';
   tutorEncontrado: Tutor | null = null;

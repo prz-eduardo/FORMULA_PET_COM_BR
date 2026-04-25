@@ -13,6 +13,9 @@ import { ProductCardRendererComponent } from '../../product-cards/product-card-r
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../constants/card.constants';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { normalizeCatalogConfig } from '../../constants/loja-tema-card.config';
+import { BannedUserModalService } from '../../services/banned-user-modal.service';
+import { isAccountBannedHttpError } from '../../utils/account-ban.util';
+import { MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-loja',
@@ -22,6 +25,7 @@ import { normalizeCatalogConfig } from '../../constants/loja-tema-card.config';
   styleUrls: ['./loja.component.scss']
 })
 export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly marcaNome = MARCA_NOME;
   public readonly defaultCardWidth = DEFAULT_PRODUCT_CARD_WIDTH;
   categorias: StoreCategory[] = [];
   produtos: ShopProduct[] = [];
@@ -176,7 +180,8 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
     private auth: AuthService,
     private route: ActivatedRoute,
     private router: Router,
-    private rastreio: RastreioLojaService
+    private rastreio: RastreioLojaService,
+    private bannedModal: BannedUserModalService
   ) {}
  
 
@@ -852,7 +857,11 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.toast.error('Não foi possível fazer login');
       }
     } catch (e: any) {
-      this.toast.error(e?.error?.message || 'Falha no login');
+      if (isAccountBannedHttpError(e)) {
+        await this.bannedModal.presentAfterBannedLogin();
+        return;
+      }
+      this.toast.error(e?.error?.message || e?.error?.error || 'Falha no login');
     }
   }
 
@@ -909,7 +918,11 @@ export class LojaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.toast.error('Não foi possível logar com Google');
       }
     } catch (e: any) {
-      this.toast.error(e?.error?.message || 'Falha no login com Google');
+      if (isAccountBannedHttpError(e)) {
+        await this.bannedModal.presentAfterBannedLogin();
+        return;
+      }
+      this.toast.error(e?.error?.message || e?.error?.error || 'Falha no login com Google');
     }
   }
 }

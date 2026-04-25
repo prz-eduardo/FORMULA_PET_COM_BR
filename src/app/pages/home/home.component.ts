@@ -12,6 +12,7 @@ import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { StoreService, ShopProduct } from '../../services/store.service';
 import { Router, RouterLink } from '@angular/router';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-home',
@@ -28,6 +29,7 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('heroVideo') heroVideoRef?: ElementRef<HTMLVideoElement>;
 
+  readonly marcaNome = MARCA_NOME;
   produtos: ShopProduct[] = [];
   loading = false;
   prefersReducedMotion = false;

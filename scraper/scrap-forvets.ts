@@ -6,7 +6,7 @@ const cheerio = require('cheerio');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, addDoc } = require('firebase/firestore');
 
-// Config Firebase
+// Config Firebase — IDs devem bater com o app Web no Console; migre a dupla apiKey+projectId junto.
 const firebaseConfig = {
   apiKey: "AIzaSyDpRqVdMO966X-e34c1KQJXRKlwzvzgV04",
   authDomain: "formulapet-com-br.firebaseapp.com",

@@ -8,6 +8,7 @@ import { StoreService, ShopProduct, ProductDetailsLoadError } from '../services/
 import { NavmenuComponent } from '../navmenu/navmenu.component';
 import { ApiService } from '../services/api.service';
 import { BannerSlotComponent } from '../shared/banner-slot/banner-slot.component';
+import { MARCA_NOME } from '../constants/loja-public';
 
 function youtubeVideoId(u: string): string | null {
   try {
@@ -28,6 +29,7 @@ function youtubeVideoId(u: string): string | null {
   styleUrls: ['./product-details.component.scss']
 })
 export class ProductDetailsComponent implements OnInit {
+  readonly marcaNome = MARCA_NOME;
   product: ShopProduct | null = null;
   /** Erro de carregamento (404 / 5xx) quando product é null. */
   loadError: ProductDetailsLoadError | null = null;

@@ -20,7 +20,7 @@
     <div class="hero-stats" aria-label="Informações da galeria">
       <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ pets.length || 0 }}</strong> pets</span>
       <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span><strong>{{ getTotalReactions() }}</strong> reações</span>
-      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span>Comunidade Loja Pet</span>
+      <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span>Comunidade {{ marcaNome }}</span>
     </div>
 
     <div class="galeria-share-row" role="group" aria-label="Compartilhar a galeria">
@@ -91,165 +91,87 @@
   <div class="galeria-feed">
   <div *ngFor="let p of pets" class="galeria-feed__item" [class.galeria-feed__item--ad]="p.type === 'vet_ad'">
       <ng-container *ngIf="p.type === 'vet_ad'; else regularPet">
-        <!-- Veterinarian ad: special standalone layout -->
-        <article class="vet-ad-card" role="article" aria-label="Anúncio Veterinário">
-          <div class="vet-ad-inner">
-            <div class="vet-ad-badge">ANÚNCIO VETERINÁRIO</div>
-            <div class="photo-wrap vet-photo-wrap">
-        <img [src]="resolveImage(p)" alt="Foto do veterinário {{ p.nome }}" class="vet-photo"
-          (error)="onImgError($event.target, '/imagens/image.png')" (load)="onImgLoad($event, p)" />
-            </div>
-            <div class="vet-ad-body">
-              <h3 class="vet-name">{{ p.nome || p.name || 'Veterinário' }}</h3>
-              <p class="vet-promo" *ngIf="p.promo_text">{{ p.promo_text }}</p>
-              <div class="vet-contact">
-                <a *ngIf="p.telefone" class="vet-contact-link vet-phone" href="tel:{{ p.telefone }}">📞 {{ p.telefone }}</a>
-                <a *ngIf="p.email" class="vet-contact-link vet-email" href="mailto:{{ p.email }}">✉️ {{ p.email }}</a>
-              </div>
-              <div class="vet-meta">
-                <span class="vet-plan">Plano: {{ p.plan }}</span>
-              </div>
+        <article
+          class="pet-card pet-card--compact pet-card--compact--ad"
+          role="article"
+          [attr.aria-label]="'Anúncio: ' + (p.nome || p.name || 'Veterinário')"
+        >
+          <div class="pet-card--compact__media photo-wrap">
+            <span class="pet-card--compact__ribbon" aria-hidden="true">Anúncio</span>
+            <div class="photo-skeleton" *ngIf="!p._imgLoaded" aria-hidden="true"></div>
+            <img
+              [src]="resolveImage(p)"
+              alt=""
+              class="pet-card--img"
+              [class.loaded]="p._imgLoaded"
+              (error)="onImgError($event.target, '/imagens/image.png')"
+              (load)="onImgLoad($event, p)"
+            />
+          </div>
+          <div class="pet-card--compact__footer">
+            <span class="pet-card--compact__name">{{ p.nome || p.name || 'Veterinário' }}</span>
+            <div class="pet-card--compact__end">
+              <span class="pet-card--compact__species" title="Anúncio" aria-hidden="true">🏥</span>
+              <a
+                *ngIf="p.telefone"
+                class="pet-card--compact__phone"
+                [href]="'tel:' + p.telefone"
+                [attr.aria-label]="'Ligar para ' + p.telefone"
+                (click)="$event.stopPropagation()"
+              >📞</a>
+              <span *ngIf="!p.telefone" class="pet-card--compact__hint" aria-hidden="true">Vet</span>
             </div>
           </div>
         </article>
       </ng-container>
       <ng-template #regularPet>
-        <!-- Regular pet card -->
-        <div class="card pet-card">
-          <div class="photo-wrap" (click)="onPhotoClick(p, $event)">
+        <button
+          type="button"
+          class="pet-card pet-card--compact"
+          (click)="openLightbox(p)"
+          (keydown.enter)="openLightbox(p)"
+          (keydown.space)="$event.preventDefault(); openLightbox(p)"
+          [attr.aria-label]="'Abrir em tamanho grande: ' + (p.nome || p.name || 'pet')"
+        >
+          <div class="pet-card--compact__media photo-wrap">
             <div class="photo-skeleton" *ngIf="!p._imgLoaded" aria-hidden="true"></div>
-            <img [src]="resolveImage(p)" alt="Foto de {{ p.nome || 'pet' }}" class="pet-photo"
-                 [class.loaded]="p._imgLoaded"
-                 (error)="onImgError($event.target, '/imagens/image.png')"
-                 (load)="onImgLoad($event, p)" />
-            <div class="overlay">
-              <div class="overlay-top">
-                <div class="pet-type" [attr.aria-label]="(p.tipo || p.especie || 'Pet')">{{ typeEmoji(p.tipo || p.especie) }}</div>
-                <div class="pet-age" *ngIf="p.idade || p.age">{{ (p.idade || p.age) }} {{ (p.idade || p.age) === 1 ? 'ano' : 'anos' }}</div>
-              </div>
+            <img
+              [src]="resolveImage(p)"
+              alt=""
+              class="pet-card--img"
+              [class.loaded]="p._imgLoaded"
+              (error)="onImgError($event.target, '/imagens/image.png')"
+              (load)="onImgLoad($event, p)"
+            />
+          </div>
+          <div class="pet-card--compact__footer">
+            <div class="pet-card--compact__titleblock">
+              <span class="pet-card--compact__name">{{ p.nome || p.name || 'Sem nome' }}</span>
+              <span *ngIf="p.colecao_titulo" class="pet-card--compact__colecao">{{ p.colecao_titulo }}</span>
             </div>
-            <button
-              type="button"
-              class="gallery-nav gallery-nav--prev"
-              *ngIf="gallerySlideCount(p) > 1"
-              (click)="cycleGallery(p, -1, $event)"
-              aria-label="Foto anterior"
-            >‹</button>
-            <button
-              type="button"
-              class="gallery-nav gallery-nav--next"
-              *ngIf="gallerySlideCount(p) > 1"
-              (click)="cycleGallery(p, 1, $event)"
-              aria-label="Foto seguinte"
-            >›</button>
-            <div class="gallery-dots" *ngIf="galleryIndices(p).length > 1" (click)="$event.stopPropagation()">
-              <button
-                type="button"
-                *ngFor="let i of galleryIndices(p)"
-                class="gallery-dot"
-                [class.gallery-dot--active]="(p._galIdx || 0) === i"
-                (click)="onGalleryDotClick(p, i, $event)"
-                [attr.aria-label]="'Foto ' + (i + 1)"
-              ></button>
-            </div>
-            <!-- reaction button stays floating on top of the photo -->
-            <div class="reaction-wrapper" [attr.data-pet-id]="p._uid" (click)="$event.stopPropagation()">
-              <button
-                type="button"
-                class="btn-like"
-                [class.visualActive]="p._visualActive"
-                [class.btn-like--open]="reactionPickerOpenFor === p._uid"
-                (click)="openReactionPicker(p, p._uid, $event)"
-                [attr.aria-expanded]="reactionPickerOpenFor === p._uid"
-                aria-haspopup="listbox"
+            <div class="pet-card--compact__end">
+              <span
+                class="pet-card--compact__species"
+                [attr.title]="(p.tipo || p.especie) || 'Pet'"
+                aria-hidden="true"
+              >{{ typeEmoji(p.tipo || p.especie) }}</span>
+              <span
+                class="pet-card--compact__stats"
+                *ngIf="(p.likes ?? 0) + (p.total_comentarios ?? 0) > 0"
+                aria-hidden="true"
               >
-                {{ p.userReactionTipo ? getReactionEmoji(p.userReactionTipo) : (getDominantReaction(p)?.emoji || '\u2764\ufe0f') }}
-                <div class="likes-total" [class.has-my-like]="p._visualActive">{{ p.likes ?? 0 }}</div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card info/footer (below the photo) -->
-          <div class="card-body">
-            <div class="card-title-row">
-              <h3 class="pet-name-card">{{ p.nome || p.name || 'Sem nome' }}</h3>
-              <div class="pet-badges">
-                <span class="badge-race" *ngIf="p.raca">{{ p.raca }}</span>
-                <span class="badge-species" *ngIf="!p.raca && p.especie">{{ p.especie }}</span>
-              </div>
-            </div>
-            <div class="card-meta">
-              <span *ngIf="p.sexo" class="meta-chip" [class.female]="(p.sexo || '').toLowerCase().startsWith('f')">
-                {{ (p.sexo || '').toLowerCase().startsWith('f') ? '♀' : '♂' }} {{ p.sexo }}
-              </span>
-              <span *ngIf="p.tutor_nome" class="meta-tutor">
-                <img *ngIf="p.tutor_foto" [src]="p.tutor_foto" alt="tutor" class="tutor-thumb" (error)="onImgError($event.target, '/imagens/image.png')" />
-                <span>por <strong>{{ p.tutor_nome }}</strong></span>
+                <span *ngIf="(p.likes ?? 0) > 0" class="pet-card--compact__stat">❤️ {{ p.likes }}</span>
+                <span *ngIf="(p.total_comentarios ?? 0) > 0" class="pet-card--compact__stat">💬 {{ p.total_comentarios }}</span>
               </span>
             </div>
-
-            <div class="card-footer-row">
-              <button type="button" class="reactions-summary" (click)="openLightbox(p)" *ngIf="(p.likes ?? 0) > 0; else noReactions"
-                      [attr.aria-label]="(p.likes ?? 0) + ' reações'">
-                <span class="reaction-stack">
-                  <span class="stacked-emoji" *ngFor="let r of getTopReactionList(p); let i = index; trackBy: trackReaction" [style.--i]="i">
-                    {{ r.emoji }}
-                  </span>
-                </span>
-                <span class="reactions-total">{{ p.likes ?? 0 }}</span>
-              </button>
-              <ng-template #noReactions>
-                <span class="reactions-summary empty">Seja o primeiro a reagir</span>
-              </ng-template>
-
-              <button type="button" class="comments-btn" (click)="openLightbox(p)"
-                      [attr.aria-label]="(p.total_comentarios ?? 0) + ' comentários'">
-                <span class="comments-icon" aria-hidden="true">💬</span>
-                <span class="comments-count">{{ p.total_comentarios ?? 0 }}</span>
-                <span class="comments-label">{{ (p.total_comentarios ?? 0) === 1 ? 'comentário' : 'comentários' }}</span>
-              </button>
-            </div>
           </div>
-        </div>
+        </button>
       </ng-template>
     </div>
   </div>
 
   <div class="loading-more" *ngIf="loadingMore">Carregando mais pets…</div>
   <div #sentinel class="sentinel" aria-hidden="true"></div>
-
-  <!-- Reações rápidas: popover único em position:fixed (evita clipping do card) -->
-  <div
-    class="reaction-quick-backdrop"
-    *ngIf="reactionPickerOpenFor && pickerAnchorPet"
-    (click)="closeReactionPopover()"
-    aria-hidden="true"
-  ></div>
-  <div
-    class="reaction-quick-popover"
-    *ngIf="reactionPickerOpenFor && pickerAnchorPet"
-    [style.left.px]="popoverPos.left"
-    [style.top.px]="popoverPos.top"
-    (click)="$event.stopPropagation()"
-    role="listbox"
-    [attr.aria-label]="'Reagir a ' + (pickerAnchorPet.nome || 'pet')"
-  >
-    <div class="reaction-quick-row">
-      <button
-        *ngFor="let r of reactionTypes"
-        type="button"
-        class="reaction-quick-btn"
-        [class.reaction-quick-btn--active]="pickerAnchorPet.userReactionTipo === r.tipo"
-        (click)="onPopoverSelectReaction(r.tipo)"
-        [attr.aria-label]="'Reação ' + r.tipo"
-        role="option"
-        [attr.aria-selected]="pickerAnchorPet.userReactionTipo === r.tipo"
-      >
-        <span class="reaction-quick-emoji" aria-hidden="true">{{ r.emoji }}</span>
-        <span class="reaction-quick-count">{{ (pickerAnchorPet.reactionTotals && (pickerAnchorPet.reactionTotals[r.tipo] ?? 0)) || 0 }}</span>
-      </button>
-    </div>
-  </div>
 
 </main>
 

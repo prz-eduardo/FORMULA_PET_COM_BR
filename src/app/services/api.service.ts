@@ -475,6 +475,89 @@ export class ApiService {
     return this.http.get<any>(url, { headers });
   }
 
+  getPetPerfilPublico(petId: string | number, token?: string) {
+    const url = `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/perfil-publico`;
+    const h = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(url, { headers: h });
+  }
+
+  getFotoEngajamento(imagemId: string | number, token?: string) {
+    const url = `${this.baseUrl}/pets/fotos/${encodeURIComponent(String(imagemId))}/engajamento`;
+    const h = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(url, { headers: h });
+  }
+
+  postFotoReacao(imagemId: string | number, body: { tipo?: string; comentario?: string }, token: string) {
+    return this.http.post<any>(`${this.baseUrl}/pets/fotos/${encodeURIComponent(String(imagemId))}/reacoes`, body, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  deleteFotoReacao(imagemId: string | number, body: { tipo?: string } | undefined, token: string) {
+    return this.http.request<any>(
+      'delete',
+      `${this.baseUrl}/pets/fotos/${encodeURIComponent(String(imagemId))}/reacoes`,
+      { headers: { Authorization: `Bearer ${token}` }, body: body || undefined }
+    );
+  }
+
+  getFotoComentarios(imagemId: string | number, params?: { page?: number; pageSize?: number }) {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    const qp = search.toString();
+    return this.http.get<any>(`${this.baseUrl}/pets/fotos/${encodeURIComponent(String(imagemId))}/comentarios${qp ? `?${qp}` : ''}`);
+  }
+
+  postFotoComentario(imagemId: string | number, comentario: string, token: string) {
+    return this.http.post<any>(
+      `${this.baseUrl}/pets/fotos/${encodeURIComponent(String(imagemId))}/comentarios`,
+      { comentario },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
+  deleteFotoComentario(imagemId: string | number, commentId: string | number, token: string) {
+    return this.http.delete<any>(
+      `${this.baseUrl}/pets/fotos/${encodeURIComponent(String(imagemId))}/comentarios/${encodeURIComponent(String(commentId))}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
+  listPetColecoes(petId: string | number, token: string) {
+    return this.http.get<any[]>(`${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/colecoes`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  createPetColecao(petId: string | number, body: { titulo: string }, token: string) {
+    return this.http.post<any>(`${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/colecoes`, body, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  deletePetColecao(petId: string | number, colecaoId: string | number, token: string) {
+    return this.http.delete<any>(`${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/colecoes/${encodeURIComponent(String(colecaoId))}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  patchPetColecao(petId: string | number, colecaoId: string | number, body: { titulo: string }, token: string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/colecoes/${encodeURIComponent(String(colecaoId))}`,
+      body,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
+  patchPetImagem(petId: string | number, imagemId: string | number, body: { colecao_id?: number | null; ordem?: number }, token: string) {
+    return this.http.patch<any>(
+      `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/imagens/${encodeURIComponent(String(imagemId))}`,
+      body,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
   // Reações em pets
   postPetReaction(petId: string | number, body: { tipo?: string; comentario?: string }, token?: string) {
     // Defensive: do not attempt to send reactions without an auth token

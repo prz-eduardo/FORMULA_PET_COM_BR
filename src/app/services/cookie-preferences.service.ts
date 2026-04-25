@@ -90,6 +90,16 @@ export class CookiePreferencesService {
     this.save({ analytics: true, thirdParty: true });
   }
 
+  /**
+   * Após login (cliente ou vet), se o navegador ainda não tem decisão de cookies,
+   * aplica os mesmos padrões do cadastro. Não altera preferências já salvas.
+   */
+  applyDefaultsIfNoConsentYet(): void {
+    if (!this.hasValidPreferences()) {
+      this.save({ analytics: true, thirdParty: true });
+    }
+  }
+
   save(prefs: Pick<CookiePreferences, 'analytics' | 'thirdParty'>): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;

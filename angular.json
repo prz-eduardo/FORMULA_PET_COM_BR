@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "FORMULA_PET_COM_BR": {
+    "PETSPHERE_COM_BR": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/formula-pet-com-br",
+            "outputPath": "dist/petsphere-com-br",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -70,10 +70,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "FORMULA_PET_COM_BR:build:production"
+              "buildTarget": "PETSPHERE_COM_BR:build:production"
             },
             "development": {
-              "buildTarget": "FORMULA_PET_COM_BR:build:development"
+              "buildTarget": "PETSPHERE_COM_BR:build:development"
             }
           },
           "defaultConfiguration": "development"

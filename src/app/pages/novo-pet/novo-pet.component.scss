@@ -419,3 +419,47 @@
 .novo-pet--modal .form-card {
   padding: 12px;
 }
+
+.colecao-bar {
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--np-border);
+}
+.colecao-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+.colecao-bar__input {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--np-border);
+  background: rgba(0,0,0,.2);
+  color: var(--np-text);
+}
+.g-thumb--colecao {
+  flex-direction: column;
+  align-items: stretch;
+}
+.g-colecao-select select {
+  width: 100%;
+  max-width: 200px;
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

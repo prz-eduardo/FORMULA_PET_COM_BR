@@ -24,8 +24,8 @@ export class LoginVetComponent {
 
   constructor(
     private authService: AuthService,
-    private apiService: ApiService
-    , private toastService: ToastService
+    private apiService: ApiService,
+    private toastService: ToastService
   ) {}
 
   async loginEmail(form: NgForm) {
@@ -44,7 +44,6 @@ export class LoginVetComponent {
       );
 
       localStorage.setItem('userType', data.tipo);
-  if (data.token) localStorage.setItem('token', data.token);
       this.loggedIn.emit();
       this.authService.login(data.token);
       this.close.emit();
@@ -75,7 +74,6 @@ export class LoginVetComponent {
       );
 
       localStorage.setItem('userType', data.tipo);
-    if (data.token) localStorage.setItem('token', data.token);
       this.loggedIn.emit();
       this.authService.login(data.token);
       this.close.emit();

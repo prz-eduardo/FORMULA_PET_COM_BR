@@ -296,62 +296,152 @@
 }
 
 .galeria-subtitle{ margin:0; color:#54646b; font-size:15px; line-height:1.45; font-weight:500; font-family: var(--gallery-font) }
-.cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px }
 
-/* Feed: um card por linha, largura total do conteúdo (mobile e desktop) */
+/* Feed: grelha densa; anúncio vet ocupa uma célula como os mini cards */
 .galeria-feed {
-	display: flex;
-	flex-direction: column;
-	gap: 20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+	gap: 12px;
 	width: 100%;
+	align-items: start;
+}
+@media (max-width: 480px) {
+	.galeria-feed {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 10px;
+	}
 }
 .galeria-feed__item {
-	border-radius: 14px;
+	border-radius: 12px;
 	overflow: visible;
 	position: relative;
-	transform-origin: center;
-	transition: transform .26s ease, box-shadow .26s ease;
 	width: 100%;
-	max-width: 100%;
+	min-width: 0;
 }
-
-/* ============================================================= */
-/* Pet Card (new layout: image + info footer)                     */
-/* ============================================================= */
-.pet-card{
-	background: #fff;
-	border-radius: 14px;
-	overflow: hidden;
-	box-shadow: 0 8px 24px rgba(2,6,23,0.08);
-	border: 1px solid rgba(10,16,24,0.05);
-	transition: transform .26s ease, box-shadow .26s ease;
+/* Cartão compacto: foto 1:1 + faixa de nome; clique abre o lightbox */
+.pet-card--compact {
 	display: flex;
 	flex-direction: column;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 1px solid rgba(10, 16, 24, 0.08);
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 4px 16px rgba(2, 6, 23, 0.07);
+	font: inherit;
+	text-align: left;
+	-webkit-tap-highlight-color: transparent;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	box-sizing: border-box;
 }
-.pet-card:hover{
-	transform: translateY(-4px);
-	box-shadow: 0 18px 40px rgba(2,6,23,0.14);
+button.pet-card--compact {
+	appearance: none;
+	-webkit-appearance: none;
+	cursor: pointer;
+	color: inherit;
 }
-.pet-card .photo-wrap{
-	cursor: zoom-in;
-	aspect-ratio: 4 / 5;
-	border-radius: 0;
+article.pet-card--compact {
+	cursor: default;
+}
+.pet-card--compact:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
+}
+.pet-card--compact:focus-visible {
+	outline: 3px solid rgba(196, 214, 0, 0.75);
+	outline-offset: 2px;
+}
+.pet-card--compact__media {
+	position: relative;
+	aspect-ratio: 1 / 1;
+	border-radius: 12px 12px 0 0;
+	overflow: hidden;
 	background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
 }
-.pet-card .photo-wrap .pet-photo{
+.pet-card--compact__media .pet-card--img {
 	position: absolute;
 	inset: 0;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 	opacity: 0;
-	transition: opacity .32s ease, transform .4s ease;
+	transition: opacity 0.32s ease, transform 0.35s ease;
 }
-.pet-card .photo-wrap .pet-photo.loaded{ opacity: 1; }
-.pet-card:hover .pet-photo.loaded{ transform: scale(1.04); }
+.pet-card--compact__media .pet-card--img.loaded {
+	opacity: 1;
+}
+.pet-card--compact:hover .pet-card--compact__media .pet-card--img.loaded {
+	transform: scale(1.05);
+}
+.pet-card--compact__footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	min-width: 0;
+	min-height: 38px;
+	padding: 8px 10px;
+	box-sizing: border-box;
+}
+.pet-card--compact__titleblock {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	flex: 1;
+}
+.pet-card--compact__colecao {
+	font-size: 10px;
+	font-weight: 600;
+	color: #6366f1;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.pet-card--compact__name {
+	font-size: 13px;
+	font-weight: 800;
+	color: #0b1621;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+.pet-card--compact__end {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 6px;
+	flex-shrink: 0;
+	min-height: 24px;
+	line-height: 1;
+}
+.pet-card--compact__species {
+	font-size: 16px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+}
+.pet-card--compact__stats {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	font-weight: 700;
+	color: #64748b;
+	line-height: 1;
+}
+.pet-card--compact__stat {
+	white-space: nowrap;
+}
 
 /* image skeleton shimmer while loading */
-.photo-skeleton{
+.photo-skeleton {
 	position: absolute;
 	inset: 0;
 	background: linear-gradient(110deg, #eceff3 8%, #f6f7f9 18%, #eceff3 33%);
@@ -359,400 +449,79 @@
 	animation: shimmer 1.2s linear infinite;
 }
 @keyframes shimmer {
-	0% { background-position: 200% 0 }
-	100% { background-position: -200% 0 }
+	0% { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
 }
 
-/* Card info/footer below photo */
-.card-body{
-	padding: 12px 14px 14px;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+/* Mesmo card; anunciante: faixa dourada e fundo do placeholder de vet */
+.pet-card--compact--ad .pet-card--compact__media {
+	background:
+		url('/imagens/vet-placeholder.png') center / cover no-repeat,
+		linear-gradient(135deg, #f3f4f6, #e5e7eb);
 }
-.card-title-row{
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 8px;
-	min-width: 0;
-}
-.pet-name-card{
-	margin: 0;
-	font-size: 17px;
-	font-weight: 900;
-	color: #0b1621;
-	line-height: 1.15;
-	letter-spacing: -0.2px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	min-width: 0;
-}
-.pet-badges{ display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
-.badge-race, .badge-species{
-	background: linear-gradient(90deg, #fff3d6, #ffe0b2);
-	color: #7a4a00;
-	font-size: 11px;
-	font-weight: 800;
-	padding: 2px 8px;
-	border-radius: 999px;
-	max-width: 110px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-.badge-species{ background: linear-gradient(90deg, #e0f2fe, #bae6fd); color: #075985; }
-
-.card-meta{
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	font-size: 12px;
-	color: #4b5563;
-}
-.meta-chip{
-	background: #f3f4f6;
-	color: #0b1621;
-	padding: 2px 8px;
-	border-radius: 999px;
-	font-weight: 700;
-	font-size: 11px;
-}
-.meta-chip.female{ background: #fce7f3; color: #9d174d; }
-.meta-tutor{
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	min-width: 0;
-	max-width: 100%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.meta-tutor strong{ color: #0b1621; font-weight: 700; }
-.tutor-thumb{
-	width: 20px;
-	height: 20px;
-	border-radius: 999px;
-	object-fit: cover;
-	border: 2px solid #fff;
-	box-shadow: 0 2px 5px rgba(2,6,23,0.12);
-	flex-shrink: 0;
-}
-
-/* Footer row: reactions summary + comments button */
-.card-footer-row{
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	margin-top: 4px;
-	padding-top: 8px;
-	border-top: 1px solid rgba(10,16,24,0.06);
-}
-.reactions-summary{
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	border: 0;
-	background: transparent;
-	cursor: pointer;
-	padding: 4px 6px;
-	border-radius: 8px;
-	transition: background .15s ease, transform .12s ease;
-	color: #374151;
-	font-weight: 700;
-	font-size: 13px;
-}
-.reactions-summary:hover{ background: rgba(99,102,241,0.06); transform: translateY(-1px); }
-.reactions-summary.empty{ color: #9ca3af; font-weight: 600; cursor: default; font-size: 12px; padding-left: 0; }
-.reactions-summary.empty:hover{ background: transparent; transform: none; }
-
-.reaction-stack{ display: inline-flex; align-items: center; }
-.stacked-emoji{
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	height: 22px;
-	border-radius: 999px;
-	background: #fff;
-	border: 2px solid #fff;
-	box-shadow: 0 1px 3px rgba(0,0,0,0.14);
-	font-size: 12px;
-	margin-left: calc(var(--i) * -7px);
-}
-.reactions-total{ color: #374151; font-size: 13px; font-weight: 700; }
-
-.comments-btn{
-	border: 0;
-	background: transparent;
-	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 6px 10px;
-	border-radius: 8px;
-	color: #4b5563;
-	font-weight: 700;
-	font-size: 13px;
-	transition: background .15s ease, color .15s ease, transform .12s ease;
-}
-.comments-btn:hover{ background: rgba(99,102,241,0.08); color: #4338ca; transform: translateY(-1px); }
-.comments-icon{ font-size: 16px; line-height: 1; }
-.comments-count{ font-weight: 800; color: #0b1621; }
-.comments-label{ font-size: 12px; color: #6b7280; }
-@media (max-width: 520px) {
-	.comments-label { display: none; }
-}
-/* Veterinário Ad card styles — altura da área de imagem alinhada ao card de pet (4/5) */
-.vet-ad-card {
-	border-radius: 14px;
-	overflow: hidden;
-	background: linear-gradient(180deg, #fff 0%, #f7fafc 100%);
-	border: 1px solid rgba(10, 16, 24, 0.06);
-	box-shadow: 0 12px 36px rgba(2,6,23,0.08);
-	color: #07101a;
-}
-.vet-ad-inner { display:flex; flex-direction:column; gap:10px }
-.vet-ad-badge { background:#f5a700; color:#08111a; font-weight:800; padding:6px 10px; border-radius:999px; display:inline-block; font-size:12px; margin:10px 10px 0 10px; align-self: flex-start }
-/* Mesma proporção da área de foto do card de pet (4:5) */
-.vet-ad-card .vet-photo-wrap {
-	padding: 0;
-	margin: 0;
-	border-radius: 0;
-	aspect-ratio: 4 / 5;
-	background-image: url('/imagens/vet-placeholder.png');
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-}
-.vet-ad-card .vet-photo {
+.pet-card--compact__ribbon {
 	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	display: block;
-	object-fit: cover;
-	border-radius: 0;
-}
-.vet-ad-body { padding: 6px 12px 18px }
-.vet-name { font-size:18px; margin:6px 0; font-weight:900 }
-.vet-promo { color:#334155; margin:6px 0; font-size:14px }
-.vet-contact { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
-.vet-contact-link { color:#064e3b; font-weight:700; text-decoration:none; background: rgba(6,78,59,0.06); padding:6px 10px; border-radius:8px }
-.vet-meta { margin-top:10px; color:#6b7280; font-size:13px }
-
-/* Hide reaction UI when inside vet ad card, defensive in case markup leaks */
-.vet-ad-card .actions, .vet-ad-card .reaction-wrapper, .vet-ad-card .btn-like, .vet-ad-card .reaction-picker { display: none !important }
-.photo-wrap{ position:relative; display:block; /* clip the photo itself to preserve rounded corners */ overflow: hidden; border-radius: 12px }
-
-.gallery-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
-  width: 32px;
-  height: 44px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.42);
-  color: #fff;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  opacity: 0.88;
-}
-.gallery-nav:hover { opacity: 1; }
-.gallery-nav--prev { left: 6px; }
-.gallery-nav--next { right: 6px; }
-
-.gallery-dots {
-  position: absolute;
-  bottom: 48px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  z-index: 35;
-}
-.gallery-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.45);
-  cursor: pointer;
-}
-.gallery-dot--active {
-  background: #fff;
-  transform: scale(1.2);
-}
-
-.galeria-feed__item--ad {
-	width: 100%;
-}
-.pet-photo{ width:100%; display:block; object-fit:cover; transition: transform .4s ease }
-
-/* Removed fixed-size variants; images render with natural dimensions now */
-
-.overlay{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:10px; box-sizing:border-box }
-.overlay-top{ display:flex; justify-content:space-between; color:rgba(255,255,255,0.95); font-size:12px; font-weight:700; text-shadow:0 1px 2px rgba(0,0,0,0.6) }
-.overlay-bottom{ display:flex; justify-content:space-between; align-items:center; gap:8px }
-/* top-reaction-badge removed — dominant emoji moved to the like button */
-.pet-name{ color:#fff; font-weight:900; text-shadow:0 4px 18px rgba(0,0,0,0.6); font-size:20px }
-.pet-type, .pet-age{ background:rgba(0,0,0,0.35); padding:4px 8px; border-radius:999px }
-
-.actions{ display:flex; gap:8px }
-.btn-like{ border:0; background:rgba(255,255,255,0.12); color:#fff; padding:6px 8px; border-radius:8px; cursor:pointer }
-.btn-like.active{ background: linear-gradient(90deg,#ff7aa2,#ff4d6d); box-shadow:0 6px 18px rgba(255,77,109,0.18) }
-
-/* hover lift */
-.galeria-feed__item:hover{ transform: translateY(-4px) }
-.galeria-feed__item:hover .pet-photo{ transform: scale(1.03) }
-.galeria-feed__item--ad:hover{ transform: translateY(-4px) }
-
-.pet-actions{ width:100%; display:flex; justify-content:flex-end; padding-top:8px }
-.btn-like{ border:0; background:transparent; cursor:pointer; font-size:16px; display:inline-flex; align-items:center; gap:6px; padding:6px 8px; border-radius:8px; transition:all .18s ease }
-.btn-like .likes-count{ font-weight:700 }
-.btn-like.active{ background:rgba(245,0,87,0.08); transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,0.06) }
-
-/* Botão de reação no canto da foto (popover de opções é .reaction-quick-* fora do card) */
-.reaction-wrapper {
-	position: absolute;
-	right: 10px;
-	bottom: 10px;
-	z-index: 80;
-	display: block;
-}
-.reaction-wrapper .btn-like {
-	background: rgba(255, 255, 255, 0.12);
-	color: #fff;
-	border-radius: 10px;
-	padding: 8px 10px;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-	backdrop-filter: blur(6px);
-}
-.reaction-wrapper .btn-like--open {
-	outline: 2px solid rgba(255, 255, 255, 0.65);
-	outline-offset: 2px;
-}
-.reaction-wrapper .likes-count {
-	margin-left: 6px;
-	font-weight: 700;
-}
-.likes-total {
-	display: inline-block;
-	margin-left: 6px;
+	top: 8px;
+	left: 8px;
+	z-index: 2;
+	background: #f5a700;
+	color: #08111a;
 	font-weight: 800;
-	padding: 2px 8px;
-	border-radius: 8px;
-	font-size: 13px;
-	background: rgba(0, 0, 0, 0.25);
-	transition: box-shadow 0.12s ease, transform 0.12s ease;
-}
-.reaction-wrapper .btn-like.visualActive {
-	box-shadow:
-		0 12px 32px rgba(255, 77, 109, 0.34),
-		0 0 0 4px rgba(255, 77, 109, 0.2);
-	transform: translateY(-1px);
-}
-
-/* Popover fixo: sempre linha horizontal, acima ou abaixo do botão (TS posiciona) */
-.reaction-quick-backdrop {
-	position: fixed;
-	inset: 0;
-	z-index: 10050;
-	background: rgba(15, 23, 42, 0.12);
-	backdrop-filter: blur(1px);
-	pointer-events: auto;
-}
-.reaction-quick-popover {
-	position: fixed;
-	z-index: 10051;
-	min-width: 220px;
-	padding: 8px 10px;
-	background: #fff;
+	padding: 3px 8px;
 	border-radius: 999px;
-	box-shadow:
-		0 4px 6px rgba(15, 23, 42, 0.06),
-		0 20px 40px rgba(15, 23, 42, 0.16);
-	border: 1px solid rgba(15, 23, 42, 0.08);
-	pointer-events: auto;
-	animation: reactionPopoverIn 0.18s cubic-bezier(0.2, 0.9, 0.3, 1) both;
-}
-@keyframes reactionPopoverIn {
-	from {
-		opacity: 0;
-		transform: scale(0.94);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1);
-	}
-}
-.reaction-quick-row {
-	display: flex;
-	flex-direction: row;
-	flex-wrap: nowrap;
-	align-items: center;
-	justify-content: center;
-	gap: 4px;
-}
-.reaction-quick-btn {
-	display: inline-flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-width: 48px;
-	min-height: 48px;
-	padding: 4px 6px;
-	border: 0;
-	border-radius: 14px;
-	background: transparent;
-	cursor: pointer;
-	transition: background 0.15s ease, transform 0.12s ease;
-	-webkit-tap-highlight-color: transparent;
-}
-.reaction-quick-btn:hover {
-	background: rgba(15, 23, 42, 0.06);
-	transform: scale(1.06);
-}
-.reaction-quick-btn:active {
-	transform: scale(0.96);
-}
-.reaction-quick-btn--active {
-	background: rgba(196, 214, 0, 0.22);
-	box-shadow: inset 0 0 0 1px rgba(156, 179, 0, 0.45);
-}
-.reaction-quick-emoji {
-	font-size: 22px;
-	line-height: 1;
-}
-.reaction-quick-count {
 	font-size: 10px;
-	font-weight: 800;
-	color: #64748b;
-	margin-top: 2px;
+	line-height: 1.2;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	pointer-events: none;
+}
+.pet-card--compact--ad:hover .pet-card--compact__media .pet-card--img.loaded {
+	transform: scale(1.05);
+}
+.pet-card--compact__hint {
+	font-size: 11px;
+	font-weight: 700;
+	color: #f5a700;
 	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	min-height: 24px;
+}
+.pet-card--compact__phone {
+	flex-shrink: 0;
+	font-size: 16px;
+	line-height: 1;
+	text-decoration: none;
+	border-radius: 8px;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 28px;
+	min-height: 24px;
+	transition: background 0.15s ease;
+}
+.pet-card--compact__phone:hover,
+.pet-card--compact__phone:focus-visible {
+	background: rgba(6, 78, 59, 0.08);
+	outline: none;
+}
+.pet-card--compact__phone:focus-visible {
+	box-shadow: 0 0 0 2px rgba(196, 214, 0, 0.6);
+}
+
+.pet-card--compact--ad .actions,
+.pet-card--compact--ad .reaction-wrapper,
+.pet-card--compact--ad .btn-like,
+.pet-card--compact--ad .reaction-picker {
+	display: none !important;
+}
+.photo-wrap { position: relative; display: block; overflow: hidden; border-radius: 12px; }
+
+.galeria-feed__item--ad:hover .pet-card--compact--ad {
+	transform: translateY(-3px);
+	box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
 }
 
 .loading-more{ text-align:center; padding:12px; color:#374151 }
 .sentinel{ height:1px }
-/* Mobile: mesmo feed 1 coluna; reações ajustadas */
-@media screen and (max-width: 640px) {
-	.reaction-wrapper {
-		right: 8px;
-		bottom: 8px;
-		z-index: 80;
-	}
-}

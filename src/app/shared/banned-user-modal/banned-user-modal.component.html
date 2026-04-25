@@ -1,0 +1,45 @@
+<div
+  class="banned-user-modal"
+  *ngIf="ban.visible()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="banned-user-title"
+  aria-describedby="banned-user-desc"
+>
+  <div class="banned-user-modal__overlay" (click)="close()"></div>
+  <div class="banned-user-modal__panel" (click)="$event.stopPropagation()">
+    <div class="banned-user-modal__accent" aria-hidden="true"></div>
+
+    <button type="button" class="banned-user-modal__close" (click)="close()" aria-label="Fechar diálogo">
+      <span class="banned-user-modal__close-icon" aria-hidden="true"></span>
+    </button>
+
+    <div class="banned-user-modal__body">
+      <div class="banned-user-modal__image-frame">
+        <div class="banned-user-modal__image-wrap">
+          <img
+            [src]="imageUrl"
+            alt=""
+            width="474"
+            height="711"
+            class="banned-user-modal__img"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
+
+      <p class="banned-user-modal__kicker">{{ marcaNome }}</p>
+      <h2 id="banned-user-title" class="banned-user-modal__title">você não é bem vindo aqui</h2>
+      <p id="banned-user-desc" class="banned-user-modal__desc">
+        Sua conta não tem permissão para usar a loja. Se achar que é um erro, entre em contato com o suporte.
+      </p>
+    </div>
+
+    <div class="banned-user-modal__actions">
+      <button type="button" class="banned-user-modal__btn" (click)="close()">
+        Entendi, fechar
+      </button>
+    </div>
+  </div>
+</div>

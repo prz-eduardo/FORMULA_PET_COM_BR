@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { register } from 'swiper/element/bundle';
 import Swiper from 'swiper/bundle';
 import { CommonModule } from '@angular/common';
+import { MARCA_NOME } from '../constants/loja-public';
 
 @Component({
   selector: 'app-hero',
@@ -22,7 +23,7 @@ export class HeroComponent implements OnInit {
     {
       title: '',
       subtitle: 'Excelência na manipulação veterinária',
-      text: 'Na Loja Pet, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos.',
+      text: `Na ${MARCA_NOME}, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos.`,
     },
     {
       title: '',

@@ -170,7 +170,6 @@
 .hp-title { padding: 8px 16px; font-weight: 800; color: #111827; margin: 0 0 8px; }
 .home-products .btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--primary, #2563eb); color: #fff; cursor: pointer; box-shadow: 0 3px 8px rgba(37,99,235,0.25); text-decoration: none; text-align: center; }
 .home-products .btn.light { background: #e5e7eb; color: #111827; }
-.elfsight-pad { padding-left: 2vw; padding-right: 2vw; }
 .home-products .hp-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; padding: 16px; }
 .home-products .hp-grid.upgraded{ grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: clamp(10px, 2vw, 16px); }
 .home-products .hp-card { background: #fff; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 3; border: 1px solid #eef2f7; text-decoration: none; color: inherit; }

@@ -76,7 +76,7 @@ export class SessionService {
       if (decoded.exp < nowSec) return false;
     }
     if (requireAdmin) {
-      const role = decoded.role || decoded['https://formulapet/role'] || decoded.tipo;
+      const role = decoded.role || decoded['https://petsphere/role'] || decoded.tipo;
       if (role !== 'admin') return false;
     }
     return true;
@@ -85,7 +85,7 @@ export class SessionService {
   /** Returns true if decoded role is admin. */
   isAdmin(): boolean {
     const decoded = this.decodeToken();
-    const role = decoded?.role || decoded?.['https://formulapet/role'] || decoded?.tipo;
+    const role = decoded?.role || decoded?.['https://petsphere/role'] || decoded?.tipo;
     return role === 'admin';
   }
 

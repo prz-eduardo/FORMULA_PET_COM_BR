@@ -790,6 +790,42 @@
               <span *ngIf="promocaoSelecionada.ui?.status === 'inactive'"> campanha inválida.</span>
             </div>
           </div>
+
+          <div class="wizard-card omni-card">
+            <header class="card-header">
+              <h3>Omni-channel</h3>
+              <p class="card-subtitle">Um cadastro na loja pode ser espelhado em marketplaces que aceitam inclusão de anúncio por API. Cada canal exige credenciais no servidor.</p>
+            </header>
+            <p *ngIf="!form.value.id" class="field-hint">Salve o produto para habilitar a sincronização com canais externos.</p>
+            <ng-container *ngIf="form.value.id">
+              <div *ngIf="omniMigrationsPending()" class="promo-alert" role="status">
+                A tabela de publicações ainda não existe no banco. Aplique a migração <code>2026_omni_channel_publicacoes.sql</code> (ou rode <code>node scripts/runTodayMigrations.js</code> com o ficheiro incluído).
+              </div>
+              <ul class="omni-channel-list" *ngIf="omniCanais().length">
+                <li *ngFor="let c of omniCanais()" class="omni-row">
+                  <label class="omni-pick">
+                    <input type="checkbox"
+                           [checked]="omniPick()[c.id]"
+                           (change)="toggleOmniPick(c.id, $event)"
+                           [disabled]="omniSyncing()">
+                    <span class="omni-label">{{ c.label }}</span>
+                  </label>
+                  <span class="omni-status" [attr.data-st]="omniPubPorCanal(c.id)?.status || 'none'">
+                    {{ omniStatusLabel(c.id) }}
+                    <ng-container *ngIf="omniPubPorCanal(c.id)?.id_externo as ext"> · ID {{ ext }}</ng-container>
+                  </span>
+                </li>
+              </ul>
+              <div class="omni-actions">
+                <button type="button" class="btn btn-ghost" (click)="syncOmniCanais()"
+                        [disabled]="omniSyncing() || !selectedOmniCanais().length || omniMigrationsPending()">
+                  <span *ngIf="!omniSyncing()">Sincronizar canais selecionados</span>
+                  <span *ngIf="omniSyncing()">Sincronizando…</span>
+                </button>
+              </div>
+              <p *ngIf="omniMessage()" class="field-hint omni-msg" role="status">{{ omniMessage() }}</p>
+            </ng-container>
+          </div>
         </div>
 
         <aside class="review-right">

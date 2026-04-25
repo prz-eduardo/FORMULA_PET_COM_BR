@@ -13,6 +13,7 @@ import { ApiService } from '../../../services/api.service';
 import { StoreService } from '../../../services/store.service';
 import { Subscription } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
+import { MARCA_NOME } from '../../../constants/loja-public';
 interface Pet {
   id: string;
   nome: string;
@@ -28,6 +29,7 @@ interface Pet {
   styleUrls: ['./area-cliente.component.scss']
 })
 export class AreaClienteComponent implements OnInit, OnDestroy {
+  readonly marcaNome = MARCA_NOME;
   @Input() modal: boolean = false;
   @ViewChild('internalHost', { read: ViewContainerRef }) internalHost?: ViewContainerRef;
   @ViewChild('overlayHost', { read: ViewContainerRef }) overlayHost?: ViewContainerRef;
@@ -104,7 +106,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
 
   private onDocClick = (e: MouseEvent) => {
     const el = e.target as HTMLElement | null;
-    if (el && el.closest && (el.closest('.menu') || el.closest('.icon-menu') || el.closest('.nav-overlay'))) return;
+    if (el && el.closest && (el.closest('.menu') || el.closest('.app-navbar'))) return;
     if (this.menuAberto) this.menuAberto = false;
   };
 

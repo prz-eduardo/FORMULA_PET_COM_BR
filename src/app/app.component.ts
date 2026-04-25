@@ -1,4 +1,5 @@
 import { Component, OnInit, Inject, PLATFORM_ID, NgZone, OnDestroy } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -15,6 +16,8 @@ import { StoreService } from './services/store.service';
 import { RastreioLojaService } from './services/rastreio-loja.service';
 import { CookiePreferencesService, CookiePreferences } from './services/cookie-preferences.service';
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
+import { BannedUserModalComponent } from './shared/banned-user-modal/banned-user-modal.component';
+import { MARCA_NOME } from './constants/loja-public';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -28,12 +31,13 @@ import { register } from 'swiper/element/bundle';
     FooterComponent,
     LoginClienteComponent,
     CookieConsentComponent,
+    BannedUserModalComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit, OnDestroy {
-  title = 'Loja Pet';
+  title = MARCA_NOME;
   deviceType: string = 'desktop';
   showFooter: boolean = true;
   showNav: boolean = true;
@@ -49,7 +53,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private router: Router,
     private store: StoreService,
     private rastreio: RastreioLojaService,
-    private cookiePreferences: CookiePreferencesService
+    private cookiePreferences: CookiePreferencesService,
+    private titleService: Title
   ) {
     register(); // Swiper
   }
@@ -58,8 +63,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.detectDevice();
     if (isPlatformBrowser(this.platformId)) {
       try {
+        this.titleService.setTitle(MARCA_NOME);
+      } catch (e) {}
+      try {
         document.documentElement.classList.add('force-light');
         document.body.classList.add('force-light');
+      } catch (e) {}
+      try {
+        this.syncCookieDefaultsIfLoggedInClienteOrVet();
       } catch (e) {}
     }
     // Hide global footer and nav on admin routes and product registration page
@@ -104,6 +115,23 @@ export class AppComponent implements OnInit, OnDestroy {
     try { if (this.elfsightBadgeInterval) { clearInterval(this.elfsightBadgeInterval); } } catch (e) {}
     try { if (this.openLoginHandler && typeof window !== 'undefined') window.removeEventListener('open-login', this.openLoginHandler as EventListener); } catch {}
 
+  }
+
+  /** Cliente/vet já autenticado (token em storage) mas sem decisão de cookies ainda — alinha ao pós-login/cadastro. */
+  private syncCookieDefaultsIfLoggedInClienteOrVet(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const rawType = localStorage.getItem('userType') || sessionStorage.getItem('userType');
+      const userType = (rawType || '').toLowerCase();
+      if (token && userType && (userType === 'cliente' || userType === 'vet')) {
+        this.cookiePreferences.applyDefaultsIfNoConsentYet();
+      }
+    } catch {
+      /* */
+    }
   }
 
   private applyCookiePreferences(p: CookiePreferences): void {

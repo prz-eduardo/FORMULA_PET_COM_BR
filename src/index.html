@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Loja Pet</title>
+  <!-- Sync: LOJA_IDENTIDADE.marca.nome em src/app/constants/loja-public.ts (primeiro paint) -->
+  <title>PetSphere</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -71,13 +72,51 @@
         return true;
       }
 
-      var spawnPaused = false;
+      /** While user scrolls down, spawn vertical “rain” of paws; diagonal walker resumes when idle. */
+      var scrollDescendActive = false;
+      var scrollDescendStepMs = 150;
+      var lastScrollYForPaws = 0;
+
+      function spawnOneDescendingPrint(){
+        var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+        var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
+        var cx = Math.random() * vw;
+        var cy = sy + Math.random() * vh; /* full viewport height in document space */
+        if (!canPlaceAt(cx, cy)) return;
+        var angle = 82 + (Math.random() * 16 - 8); /* mostly pointing down */
+        var alt = left ? -10 : 10;
+        left = !left;
+        var el = document.createElement('div');
+        el.className = 'paw-print paw-print--scroll-descend';
+        el.style.left = cx + 'px';
+        el.style.top = cy + 'px';
+        el.setAttribute('data-x', String(cx));
+        el.setAttribute('data-y', String(cy));
+        el.style.transform = 'translate(-50%, -50%) rotate(' + (angle + alt) + 'deg)';
+        layer.appendChild(el);
+        requestAnimationFrame(function(){ el.classList.add('show'); });
+        setTimeout(function(){
+          try{
+            el.classList.add('hide');
+            setTimeout(function(){ if (el && el.parentNode) el.parentNode.removeChild(el); }, 800);
+          }catch(e){}
+        }, lifeMs);
+        if (layer.childElementCount > 500){
+          for (var i=0;i<80;i++) if (layer.firstChild) layer.removeChild(layer.firstChild);
+        }
+      }
+
       function spawnPrint(){
         try{
-          if (spawnPaused) { setTimeout(spawnPrint, stepMs); return; }
           var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
           var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
           var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
+          if (scrollDescendActive){
+            spawnOneDescendingPrint();
+            setTimeout(spawnPrint, scrollDescendStepMs);
+            return;
+          }
           // If off screen substantially, reset
           if (state.x < -20 || state.x > 120 || state.y < -20 || state.y > 120) {
             state = pickStart();
@@ -188,24 +227,29 @@
 
       // Start when DOM ready
       document.addEventListener('DOMContentLoaded', function(){
+        lastScrollYForPaws = (window.pageYOffset || document.documentElement.scrollTop || 0);
+        try{
+          layer.style.transform = 'translateY(' + (-lastScrollYForPaws) + 'px)';
+        }catch(e){}
         prefillBelowFold(6, 16);
         spawnPrint();
       });
 
-      // As user scrolls, occasionally seed more prints just beyond view
+      // Scroll: keep layer aligned with document; while scrolling down, descending paw mode is active
       (function(){
         var scrollTimer = null;
         function onScroll(){
-          spawnPaused = true; // pause spawning while scrolling
-          // translate layer opposite to page scroll so prints appear to move with content
+          var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
+          var delta = sy - lastScrollYForPaws;
+          lastScrollYForPaws = sy;
+          if (delta > 0.5) scrollDescendActive = true;
+          if (delta < -0.5) scrollDescendActive = false;
           try{
-            var sy = (window.pageYOffset || document.documentElement.scrollTop || 0);
             layer.style.transform = 'translateY(' + (-sy) + 'px)';
           }catch(e){}
           if (scrollTimer) clearTimeout(scrollTimer);
           scrollTimer = setTimeout(function(){
-            // scrolling stopped
-            spawnPaused = false;
+            scrollDescendActive = false;
             try{ prefillBelowFold(2, 10); }catch(e){}
           }, 420);
         }

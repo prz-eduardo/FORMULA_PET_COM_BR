@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApiService } from '../../../../services/admin-api.service';
 import { ToastService } from '../../../../services/toast.service';
+import { MARCA_NOME } from '../../../../constants/loja-public';
 
 @Component({
   selector: 'app-admin-test-email',
@@ -25,7 +26,7 @@ export class AdminTestEmailComponent {
   ) {
     this.form = this.fb.group({
       para: ['', [Validators.required, Validators.email]],
-      assunto: ['Teste Loja Pet (Resend)', [Validators.required, Validators.maxLength(998)]],
+      assunto: [`Teste ${MARCA_NOME} (Resend)`, [Validators.required, Validators.maxLength(998)]],
       texto: ['Este é um e-mail de teste enviado pelo painel administrativo.', [Validators.required]],
     });
   }

@@ -1,39 +1,44 @@
 import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
 import { AuthService } from '../services/auth.service';
 import { gsap } from 'gsap';
 
+export interface NavMainItem {
+  id: string;
+  label: string;
+  /** Rótulo curto no dock móvel (opcional) */
+  shortLabel?: string;
+  link: string;
+  icon: string;
+}
+
 @Component({
   selector: 'app-navmenu',
   standalone: true,
-  imports: [RouterLink, CommonModule], // precisa pro [routerLink] e *ngIf
+  imports: [RouterLink, CommonModule],
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })
 export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
-   * Menu lateral (hambúrguer + lista): apenas institucional e área vet.
-   * Loja (incl. raiz /), mapa, galeria e demais rotas públicas usam só o ícone de perfil.
+   * Abas principais (desktop + dock móvel) em todas as páginas onde a navbar global existe.
+   * Ocultas só em rotas sem nav global (admin / cadastro produto) — alinhado ao AppComponent.showNav.
    */
   get showSlideMenu(): boolean {
     const url = this.currentRoute || '';
-    return url.includes('/institucional') || url.includes('/area-vet');
+    if (url.startsWith('/restrito/admin') || url.startsWith('/restrito/produto')) {
+      return false;
+    }
+    return true;
   }
 
   get isAreaVetRoute(): boolean {
     return (this.currentRoute || '').includes('/area-vet');
   }
-  toggleMenu(): void {
-    const menu: HTMLElement | null = document.querySelector('.menu');
-    const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
-    if (menu && iconMenu) {
-      this.openMenu(menu, iconMenu);
-    }
-  }
+
   user: any = null;
   userFoto: string | null = null;
   previousScroll: number = 0;
@@ -41,23 +46,45 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   currentRoute: string = '';
   useGaleriaSvg = false;
   cartCount = 0;
-  menuOpen = false;
   isCliente = false;
   showFullMenu = true;
+
+  /** Itens principais da barra (sem Carrinho — entra só para cliente logado). */
+  readonly mainNavItems: NavMainItem[] = [
+    { id: 'loja', label: 'Loja', link: '/', icon: 'fas fa-store' },
+    { id: 'institucional', label: 'Institucional', shortLabel: 'Instit.', link: '/institucional', icon: 'fas fa-house' },
+    { id: 'sobre', label: 'Sobre', link: '/sobre-nos', icon: 'fas fa-circle-info' },
+    { id: 'mapa', label: 'Mapa', link: '/mapa', icon: 'fas fa-map-location-dot' },
+    { id: 'galeria', label: 'Galeria', link: '/galeria', icon: 'fas fa-images' },
+  ];
+
+  private readonly carrinhoNavItem: NavMainItem = {
+    id: 'carrinho',
+    label: 'Carrinho',
+    shortLabel: 'Carrinho',
+    link: '/carrinho',
+    icon: 'fas fa-cart-shopping',
+  };
+
+  get visibleNavItems(): NavMainItem[] {
+    if (this.isCliente) {
+      return [...this.mainNavItems, this.carrinhoNavItem];
+    }
+    return this.mainNavItems;
+  }
   showClienteModal = false;
   clienteLoading = false;
   /** True while this modal applied overflow lock on html/body (see releaseClienteModalScrollLock). */
   private clienteModalScrollLockActive = false;
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
+  @ViewChild('desktopTabsTrack', { read: ElementRef }) desktopTabsTrack?: ElementRef<HTMLElement>;
   private idleTimer: any = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
-  private metaballsPaused = false;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService, private auth: AuthService) {}
 
   ngOnInit(): void {
-    // Rota atual e modo do menu devem ser definidos antes da primeira verificação de mudanças
     this.currentRoute = this.router.url;
     this.updateMenuMode();
     this.router.events
@@ -65,14 +92,14 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe((event: any) => {
         this.currentRoute = event.urlAfterRedirects;
         this.updateMenuMode();
+        this.scheduleTabPillUpdate();
       });
 
-    // Assina carrinho para badge
     this.store.cart$.subscribe(items => {
       this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
+      this.scheduleTabPillUpdate();
     });
 
-    // Detecta sessão de cliente e busca dados do usuário apenas se necessário
     this.isCliente = false;
     this.user = null;
     this.userFoto = null;
@@ -91,7 +118,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.store.isClienteLoggedSilent()
       .then(ok => {
         this.isCliente = ok;
-        // Só busca do backend se não tiver no localStorage
+        this.scheduleTabPillUpdate();
         if (ok && !localUserLoaded) {
           this.store.getClienteMe().then(u => {
             this.user = u;
@@ -109,11 +136,12 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isCliente = false;
         this.user = null;
         this.userFoto = null;
+        this.scheduleTabPillUpdate();
       });
-    // Cross-sync: atualiza ícones/estado quando login/logout ocorrer em qualquer lugar
     this.auth.isLoggedIn$.subscribe(async ok => {
       if (ok) {
         this.isCliente = await this.store.isClienteLoggedSilent().catch(() => false);
+        this.scheduleTabPillUpdate();
         let localUserLoaded = false;
         if (typeof window !== 'undefined' && window.localStorage) {
           const userStr = localStorage.getItem('cliente_me');
@@ -145,11 +173,37 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         if (typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem('cliente_me');
         }
+        this.scheduleTabPillUpdate();
       }
     });
   }
 
-  // Função para forçar atualização dos dados do cliente e localStorage
+  isNavActive(item: NavMainItem): boolean {
+    const path = (this.currentRoute || '').split('?')[0] || '';
+    switch (item.id) {
+      case 'loja':
+        return (
+          path === '/' ||
+          path.startsWith('/loja') ||
+          path.startsWith('/produto/') ||
+          path.startsWith('/favoritos') ||
+          path.startsWith('/checkout')
+        );
+      case 'institucional':
+        return path.startsWith('/institucional');
+      case 'sobre':
+        return path.startsWith('/sobre-nos');
+      case 'mapa':
+        return path.startsWith('/mapa');
+      case 'galeria':
+        return path.startsWith('/galeria');
+      case 'carrinho':
+        return path.startsWith('/carrinho');
+      default:
+        return false;
+    }
+  }
+
   async atualizarClienteMe() {
     if (this.isCliente) {
       try {
@@ -168,21 +222,9 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
-      const menu: HTMLElement | null = document.querySelector('.menu');
-      const menuLink: NodeListOf<HTMLElement> = document.querySelectorAll('.menu-link.sub');
-
-      if (iconMenu && menu) {
-        menuLink.forEach((el) => {
-          el.addEventListener('click', this.openSubmenu);
-        });
-      }
-
-      // Initialize metaballs animation behind logo (scoped to logo-container)
       this.initMetaBalls();
-
-      // Inicia o timer de inatividade (sem scroll) para auto-ocultar a navbar
       this.resetIdleTimer();
+      this.scheduleTabPillUpdate();
     }
   }
 
@@ -190,17 +232,57 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   onWindowScroll(): void {
     if (isPlatformBrowser(this.platformId)) {
       const currentScroll = window.scrollY;
-      // Mostra ao rolar para cima ou quando está no topo; esconde ao rolar para baixo
       this.isVisible = currentScroll < this.previousScroll || currentScroll <= 0;
       this.previousScroll = currentScroll;
-      // Reinicia o timer de ociosidade sempre que houver scroll
       this.resetIdleTimer();
     }
   }
 
-  private updateMenuMode() {
-    // Compat: showFullMenu = menu hambúrguer institucional/vet (a raiz '' é a loja, não o institucional)
+  @HostListener('window:resize', [])
+  onWindowResize(): void {
+    this.scheduleTabPillUpdate();
+  }
+
+  private updateMenuMode(): void {
     this.showFullMenu = this.showSlideMenu;
+    this.scheduleTabPillUpdate();
+  }
+
+  private scheduleTabPillUpdate(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const run = () => this.updateDesktopTabPill();
+    requestAnimationFrame(() => {
+      run();
+      if (this.showFullMenu) {
+        setTimeout(run, 0);
+      }
+    });
+  }
+
+  /** Indicador “hori-selector”: posição da aba ativa no desktop (sem jQuery). */
+  private updateDesktopTabPill(): void {
+    const track = this.desktopTabsTrack?.nativeElement;
+    if (!track || !this.showFullMenu) {
+      return;
+    }
+    const selector = track.querySelector('.hori-selector') as HTMLElement | null;
+    const active = track.querySelector('li.nav-tab-item.active a.nav-tab-link') as HTMLElement | null;
+    if (!selector) {
+      return;
+    }
+    if (!active) {
+      selector.style.opacity = '0';
+      return;
+    }
+    const tr = track.getBoundingClientRect();
+    const ar = active.getBoundingClientRect();
+    const left = ar.left - tr.left + track.scrollLeft;
+    const top = ar.top - tr.top + track.scrollTop;
+    selector.style.left = `${left}px`;
+    selector.style.top = `${top}px`;
+    selector.style.width = `${ar.width}px`;
+    selector.style.height = `${ar.height}px`;
+    selector.style.opacity = '1';
   }
 
   private applyClienteModalScrollLock(): void {
@@ -216,7 +298,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.clienteModalScrollLockActive) return;
     this.clienteModalScrollLockActive = false;
-    if (this.menuOpen) return;
     try {
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
@@ -227,7 +308,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showClienteModal = true;
     this.applyClienteModalScrollLock();
     this.clienteLoading = true;
-    // Prepare animation origin based on user button position
     requestAnimationFrame(() => {
       try {
         const btn = this.userBtn?.nativeElement;
@@ -235,20 +315,16 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         if (btn && modal) {
           const br = btn.getBoundingClientRect();
           const mr = modal.getBoundingClientRect();
-          // Compute relative origin inside modal box (0-1)
           const ox = (br.left + br.width / 2 - mr.left) / Math.max(mr.width, 1);
           const oy = (br.top + br.height / 2 - mr.top) / Math.max(mr.height, 1);
           modal.style.setProperty('--origin-x', `${Math.min(Math.max(ox, 0), 1)}`);
           modal.style.setProperty('--origin-y', `${Math.min(Math.max(oy, 0), 1)}`);
           modal.classList.add('anim-enter');
-          // clean-up the class after animation
           setTimeout(() => modal.classList.remove('anim-enter'), 450);
         }
       } catch {}
     });
-    // Carrega AreaCliente de forma dinâmica para evitar dependência circular
     try {
-      // Aguarda o container do modal estar na tela
       setTimeout(async () => {
         if (!this.clienteHost) return;
         this.clienteHost.clear();
@@ -259,7 +335,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           if (ref?.instance) {
             (ref.instance as any).modal = true;
           }
-          // Quando o conteúdo for resolvido/renderizado, removemos o loader em um próximo tick
           setTimeout(() => { this.clienteLoading = false; }, 0);
         }
       });
@@ -300,9 +375,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private resetIdleTimer(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     if (this.idleTimer) clearTimeout(this.idleTimer);
-    if (this.menuOpen) return; // não oculta se o menu estiver aberto
     const currentScroll = window.scrollY || 0;
-    // Nunca oculte quando estiver no topo da página
     if (currentScroll <= 0){
       this.isVisible = true;
       return;
@@ -312,47 +385,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     }, this.idleTimeoutMs);
   }
 
-  private openMenu(menu: HTMLElement, iconMenu: HTMLElement): void {
-    if (!menu) return;
-    if (menu.classList.contains('open')) {
-      menu.classList.add('close');
-      iconMenu.classList.remove('icon-closed');
-      this.menuOpen = false;
-      try { document.body.style.overflow = ''; } catch {}
-      // Resume metaballs when menu is closed
-      this.metaballsPaused = false;
-      setTimeout(() => menu.classList.remove('open'), 1300);
-    } else {
-      menu.classList.remove('close');
-      menu.classList.add('open');
-      iconMenu.classList.add('icon-closed');
-      this.menuOpen = true;
-  // Garante visibilidade enquanto o menu está aberto
-  this.isVisible = true;
-  if (this.idleTimer) clearTimeout(this.idleTimer);
-      try { document.body.style.overflow = 'hidden'; } catch {}
-      // Pause metaballs while menu is open to reduce paint/layout work
-      this.metaballsPaused = true;
-    }
-  }
-
-  closeMenu(): void {
-    const menu: HTMLElement | null = document.querySelector('.menu');
-    const iconMenu: HTMLElement | null = document.querySelector('.icon-menu');
-    if (menu && iconMenu && menu.classList.contains('open')) {
-      this.openMenu(menu, iconMenu);
-    }
-    // Reinicia o timer de ocultar após fechar o menu
-    this.menuOpen = false;
-    this.resetIdleTimer();
-  }
-
-  private openSubmenu(event: MouseEvent): void {
-    const currentTarget = event.currentTarget as HTMLElement;
-    currentTarget.classList.toggle('active');
-  }
-
-  // --- Metaballs (adapted from provided snippet) ---
   private initMetaBalls(): void {
   const wrapper = document.querySelector('.logo-container #wrapper') as HTMLElement | null;
   if (!wrapper) return;
@@ -360,9 +392,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!ball) return;
 
     let i = 0;
-    const self = this;
     const raf = () => {
-      if (!self.metaballsPaused && i % 25 === 0) createBall();
+      if (i % 25 === 0) createBall();
       i++;
       requestAnimationFrame(raf);
     };

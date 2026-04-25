@@ -305,6 +305,28 @@ export interface MarketplaceCustomizacoesList {
   embalagens?: Array<{ id?: number; nome?: string }>;
 }
 
+/** Canais externos para publicação omnichannel (admin) */
+export interface OmniChannelDefDto {
+  id: string;
+  label: string;
+  docUrl?: string;
+  apiCadastro?: boolean;
+}
+
+export type OmniPublicacaoStatus = 'draft' | 'queued' | 'syncing' | 'live' | 'error' | 'disabled';
+
+export interface ProdutoOmniPublicacaoDto {
+  id: number;
+  produto_id: number;
+  canal: string;
+  status: OmniPublicacaoStatus;
+  id_externo: string | null;
+  ultimo_erro: string | null;
+  sincronizado_em: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+}
+
 // Promoções
 export type PromocaoTipo = 'percentual' | 'valor';
 export interface PromocaoUiInfo {
@@ -1020,6 +1042,25 @@ export class AdminApiService {
   }
   getMarketplaceCustomizacoes(): Observable<MarketplaceCustomizacoesList> {
     return this.http.get<MarketplaceCustomizacoesList>(`${this.baseUrl}/marketplace/customizacoes`, { headers: this.headers() });
+  }
+
+  listOmniCanais(): Observable<{ data: OmniChannelDefDto[] }> {
+    return this.http.get<{ data: OmniChannelDefDto[] }>(`${this.baseUrl}/marketplace/omni/canais`, { headers: this.headers() });
+  }
+
+  getProdutoOmniPublicacoes(produtoId: number | string): Observable<{ data: ProdutoOmniPublicacaoDto[]; meta?: { migrationsPending?: boolean } }> {
+    return this.http.get<{ data: ProdutoOmniPublicacaoDto[]; meta?: { migrationsPending?: boolean } }>(
+      `${this.baseUrl}/marketplace/produtos/${produtoId}/omni-publicacoes`,
+      { headers: this.headers() }
+    );
+  }
+
+  syncProdutoOmniCanais(produtoId: number | string, canais: string[]): Observable<{ ok: boolean; anySuccess?: boolean; results?: Array<{ canal: string; ok?: boolean; error?: string; externalId?: string | null }> }> {
+    return this.http.post<{ ok: boolean; anySuccess?: boolean; results?: Array<{ canal: string; ok?: boolean; error?: string; externalId?: string | null }> }>(
+      `${this.baseUrl}/marketplace/produtos/${produtoId}/omni-sincronizar`,
+      { canais },
+      { headers: this.headers() }
+    );
   }
 
   listMarketplaceCategorias(): Observable<{ data: MarketplaceCategoria[] }> {

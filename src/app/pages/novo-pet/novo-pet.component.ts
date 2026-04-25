@@ -47,6 +47,10 @@ export class NovoPetComponent implements OnInit {
 
   /** URLs já salvas no servidor (edição). */
   existingGalleryUrls: string[] = [];
+  /** Itens de galeria com id (para coleções) */
+  galeriaItens: Array<{ id: number; url: string; colecao_id?: number | null }> = [];
+  colecoes: Array<{ id: number; titulo: string }> = [];
+  novoTituloColecao = '';
   /** Novos ficheiros a enviar (até 12). */
   fotoFiles: File[] = [];
   /** Previews data URL dos novos ficheiros. */
@@ -115,12 +119,23 @@ export class NovoPetComponent implements OnInit {
               this.exibirGaleriaPublica = !!(eg === 1 || eg === true || eg === '1' || String(eg).toLowerCase() === 'true');
               const gi = pet.galeria_imagens;
               if (Array.isArray(gi) && gi.length) {
-                this.existingGalleryUrls = gi.map((x: any) => x.url).filter((u: string) => u && String(u).trim());
+                this.galeriaItens = gi
+                  .map((x: any) => ({
+                    id: Number(x.id),
+                    url: x.url,
+                    colecao_id: x.colecao_id != null ? Number(x.colecao_id) : null
+                  }))
+                  .filter((x: any) => x.url && String(x.url).trim() && !isNaN(x.id));
+                this.existingGalleryUrls = this.galeriaItens.map((x) => x.url);
               } else {
+                this.galeriaItens = [];
                 this.existingGalleryUrls = [];
               }
               const cover = pet.photoURL || pet.photoUrl || pet.foto || pet.photo || pet.photo_url || null;
-              if (cover && !this.existingGalleryUrls.length) this.existingGalleryUrls = [cover];
+              if (cover && !this.existingGalleryUrls.length) {
+                this.existingGalleryUrls = [cover];
+              }
+              this.carregarColecoes();
               this.fotoFiles = [];
               this.fotoPreviews = [];
 
@@ -311,6 +326,42 @@ export class NovoPetComponent implements OnInit {
   removerTodasNovas() {
     this.fotoFiles = [];
     this.fotoPreviews = [];
+  }
+
+  carregarColecoes() {
+    const id = this.getEffectiveEditId();
+    if (!id || !this.token) return;
+    this.api.listPetColecoes(id, this.token).subscribe({
+      next: (r) => { this.colecoes = Array.isArray(r) ? r : []; },
+      error: () => { this.colecoes = []; }
+    });
+  }
+
+  criarColecao() {
+    const petId = this.getEffectiveEditId();
+    if (!petId || !this.token) return;
+    const tit = (this.novoTituloColecao || '').trim() || 'Coleção';
+    this.api.createPetColecao(petId, { titulo: tit }, this.token).subscribe({
+      next: () => {
+        this.novoTituloColecao = '';
+        this.toast.success('Coleção criada. Atribua as fotos abaixo.');
+        this.carregarColecoes();
+      },
+      error: (e: any) => this.toast.error(e?.error?.error || 'Não foi possível criar a coleção', 'Erro')
+    });
+  }
+
+  onColecaoImagemChange(g: { id: number; url: string; colecao_id?: number | null }, raw: any) {
+    const petId = this.getEffectiveEditId();
+    if (!petId || !this.token || !g?.id) return;
+    const v = raw == null || raw === '' || raw === 'null' || (typeof raw === 'string' && raw === '') ? null : Number(raw);
+    this.api.patchPetImagem(petId, g.id, { colecao_id: v as any }, this.token).subscribe({
+      next: (res) => {
+        g.colecao_id = (res as any)?.imagem?.colecao_id != null ? Number((res as any).imagem.colecao_id) : v;
+        this.toast.info('Coleção atualizada.');
+      },
+      error: (e: any) => this.toast.error(e?.error?.error || 'Falha ao mover foto', 'Erro')
+    });
   }
 
   // Mapeia nomes livres vindos do backend para a lista predefinida quando possível

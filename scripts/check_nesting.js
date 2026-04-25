@@ -1,5 +1,6 @@
 const fs = require('fs');
-const p = 'c:\\Users\\przed\\OneDrive\\Documentos\\GitHub\\FORMULA_PET_COM_BR\\src\\app\\pages\\carrinho\\carrinho.component.html';
+const path = require('path');
+const p = path.join(__dirname, '..', 'src', 'app', 'pages', 'carrinho', 'carrinho.component.html');
 const s = fs.readFileSync(p,'utf8');
 const lines = s.split(/\r?\n/);
 const re = /<\/?([a-zA-Z0-9-]+)([^>]*)>/g;

@@ -1846,3 +1846,61 @@ textarea.input {
   outline-offset: 2px;
   border-radius: 8px;
 }
+
+/* Omni-channel (revisão) */
+.omni-card .omni-channel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.omni-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--w-border);
+}
+
+.omni-row:last-child {
+  border-bottom: none;
+}
+
+.omni-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.omni-label {
+  font-weight: 500;
+}
+
+.omni-status {
+  font-size: 0.85rem;
+  color: var(--w-text-dim);
+  text-align: right;
+}
+
+.omni-status[data-st='live'] {
+  color: var(--w-success);
+}
+
+.omni-status[data-st='error'] {
+  color: var(--w-danger);
+}
+
+.omni-status[data-st='syncing'] {
+  color: var(--w-warning);
+}
+
+.omni-actions {
+  margin-top: 16px;
+}
+
+.omni-msg {
+  margin-top: 12px;
+}

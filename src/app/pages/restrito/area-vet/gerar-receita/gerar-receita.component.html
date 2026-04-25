@@ -266,7 +266,7 @@
 <div #pdfContent class="pdf-container pdf-watermark" style="position: absolute; left: -9999px; top: -9999px;">
 
   <header class="pdf-header">
-    <img src="imagens/logo-marca.svg" alt="Loja Pet" class="pdf-logo" />
+    <img [src]="marcaLogoPath" [alt]="marcaNome" class="pdf-logo" />
     <h1>Receita Veterinária</h1>
   </header>
 
@@ -351,7 +351,7 @@
 
   <footer class="pdf-footer">
     <img src="imagens/image.png" alt="" class="pdf-logo-footer">
-    <p>Documento gerado digitalmente - Loja Pet</p>
+    <p>Documento gerado digitalmente - {{ marcaNome }}</p>
   </footer>
 </div>
 

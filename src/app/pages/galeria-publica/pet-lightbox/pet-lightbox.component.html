@@ -1,12 +1,12 @@
 <div class="pet-lightbox-overlay" *ngIf="isOpen && pet" (click)="onOverlayClick($event)" role="dialog" aria-modal="true">
   <div class="pet-lightbox" [attr.aria-label]="'Foto de ' + (pet.nome || 'pet')">
-    <button class="lightbox-close" type="button" aria-label="Fechar" (click)="onClose()">×</button>
-
     <div class="lightbox-media">
-      <button type="button" class="lb-nav lb-prev" *ngIf="lbDots().length > 1" (click)="prevLb($event)" aria-label="Foto anterior">‹</button>
-      <img [src]="resolveImage()" alt="Foto de {{ pet.nome || 'pet' }}" (error)="onImgError($event)" />
-      <button type="button" class="lb-nav lb-next" *ngIf="lbDots().length > 1" (click)="nextLb($event)" aria-label="Foto seguinte">›</button>
-      <div class="lb-dots" *ngIf="lbDots().length > 1">
+      <button class="lightbox-close" type="button" aria-label="Fechar" (click)="onClose()">×</button>
+      <p *ngIf="pet.colecao_titulo" class="lightbox-colecao-tag">{{ pet.colecao_titulo }}</p>
+      <button type="button" class="lb-nav lb-prev" *ngIf="showCarouselNav()" (click)="prevLb($event)" aria-label="Foto anterior">‹</button>
+      <img class="lightbox-main-img" [src]="resolveImage()" alt="Foto de {{ pet.nome || 'pet' }}" (error)="onImgError($event)" />
+      <button type="button" class="lb-nav lb-next" *ngIf="showCarouselNav()" (click)="nextLb($event)" aria-label="Foto seguinte">›</button>
+      <div class="lb-dots" *ngIf="showCarouselNav() && lbDots().length > 1">
         <button
           type="button"
           *ngFor="let i of lbDots()"
@@ -22,7 +22,7 @@
       <header class="pet-header">
         <div class="pet-title-row">
           <h2 class="pet-name">{{ pet.nome || pet.name || 'Sem nome' }}</h2>
-          <span class="pet-species-emoji" [attr.title]="pet.especie || pet.tipo || 'Pet'">{{ typeEmoji(pet.especie || pet.tipo) }}</span>
+          <span class="pet-species-emoji" [attr.title]="pet.especie || pet.tipo || 'Pet'" aria-hidden="true">{{ typeEmoji(pet.especie || pet.tipo) }}</span>
         </div>
         <div class="pet-meta">
           <span *ngIf="pet.raca" class="chip">{{ pet.raca }}</span>
@@ -36,6 +36,13 @@
           <span class="tutor-label">por</span>
           <span class="tutor-name">{{ pet.tutor_nome }}</span>
         </div>
+
+        <a
+          *ngIf="pet.pet_id"
+          [routerLink]="getPetPerfilPath()"
+          class="lb-perfil-link"
+          (click)="$event.stopPropagation()"
+        >Perfil do pet</a>
 
         <div class="lightbox-share-row" role="group" aria-label="Compartilhar na galeria">
           <button type="button" class="lb-share-btn lb-share-btn--primary" (click)="shareThisPet()" title="Compartilhar" aria-label="Compartilhar este pet">
@@ -69,10 +76,10 @@
           </span>
         </div>
         <div class="reactions-bar">
-          <button *ngFor="let r of reactionTypes; trackBy: trackReaction"
+            <button *ngFor="let r of reactionTypes; trackBy: trackReaction"
                   type="button"
                   class="reaction-chip"
-                  [class.active]="pet.userReactionTipo === r.tipo"
+                  [class.active]="userReactionForUi === r.tipo"
                   (click)="onSelectReaction(r.tipo)"
                   [attr.aria-label]="r.label">
             <span class="emoji">{{ r.emoji }}</span>

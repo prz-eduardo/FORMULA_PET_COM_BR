@@ -16,7 +16,11 @@
 	</div>
 </div>
 
+<!-- Modal global: conta de cliente banida/desativada -->
+<app-banned-user-modal></app-banned-user-modal>
+
 <!-- Global toast container -->
 <app-toast-container></app-toast-container>
 
-<app-cookie-consent></app-cookie-consent>
+<!-- Sem ngSkipHydration, a hidratação do SSR pode não vincular (click) nos botões; o <a href> continua a funcionar. -->
+<app-cookie-consent ngSkipHydration></app-cookie-consent>

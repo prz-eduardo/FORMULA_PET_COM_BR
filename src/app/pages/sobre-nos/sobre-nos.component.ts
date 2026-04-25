@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MARCA_LOGO_PATH, MARCA_NOME } from '../../constants/loja-public';
 
 interface MvvCard {
   icon: string;
@@ -43,6 +44,8 @@ interface StatItem {
   styleUrls: ['./sobre-nos.component.scss']
 })
 export class SobreNosComponent {
+  readonly marcaNome = MARCA_NOME;
+  readonly marcaLogoPath = MARCA_LOGO_PATH;
   stats: StatItem[] = [
     { value: '+10', label: 'anos cuidando de pets', icon: 'fa-solid fa-heart-pulse' },
     { value: '+5k', label: 'fórmulas manipuladas', icon: 'fa-solid fa-flask' },
@@ -96,18 +99,18 @@ export class SobreNosComponent {
 
   team: TeamMember[] = [
     {
-      name: 'Kamyla',
-      role: 'Co-fundadora · Química',
-      bio: 'Especialista em Química com dedicação total ao cuidado animal. Garante qualidade e eficácia em cada fórmula.',
+      name: 'Lívia',
+      role: 'Atendimento e orientação a tutores',
+      bio: 'Acompanha dúvidas sobre pedidos, prazos e como usar as fórmulas no dia a dia, com clareza e paciência.',
       image: '/imagens/kamy.jpg',
-      initials: 'KA',
+      initials: 'LI',
     },
     {
-      name: 'Heryck',
-      role: 'Co-fundador · Químico',
-      bio: 'Olhar técnico e atento à saúde dos pets. Assegura segurança e precisão em todos os processos.',
+      name: 'Thiago',
+      role: 'Processos, documentação e boas práticas',
+      bio: 'Cuida do registro das etapas, conformidade e padronização para que tudo saia alinhado ao que o veterinário prescreveu.',
       image: '/imagens/heryck.jpg',
-      initials: 'HE',
+      initials: 'TH',
     },
   ];
 

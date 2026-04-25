@@ -6,10 +6,12 @@ import { ShopProduct } from '../../../../services/store.service';
 import { ProductCardRendererComponent } from '../../../../product-cards/product-card-renderer.component';
 import { AdminToolbarComponent } from '../../../../shared/admin-page';
 import { normalizeCatalogConfig, normalizeThemeConfig } from '../../../../constants/loja-tema-card.config';
+import { LOJA_DEFAULT_THEME_COLORS } from '../../../../constants/loja-default-theme';
+import { MARCA_NOME } from '../../../../constants/loja-public';
 
 const DEFAULT_CONFIG: Record<string, unknown> = {
   version: 2,
-  colors: { primary: '#b45309', accent: '#f5a700', surface: '#ffffff' },
+  colors: { ...LOJA_DEFAULT_THEME_COLORS },
   cardSales: {
     imageRatio: '1/1',
     showMarca: true,
@@ -31,7 +33,7 @@ const MOCK_SALES: ShopProduct = {
   discount: 15,
   promoPrice: 160.9,
   strikePrice: 189.9,
-    marca: 'Loja Pet',
+  marca: MARCA_NOME,
   sku: 'FP-RAC-10K',
   cardLayout: 'sales',
   rating: 4.5,

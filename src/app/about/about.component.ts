@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { MARCA_NOME } from '../constants/loja-public';
 
 @Component({
   selector: 'app-about',
@@ -8,5 +9,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./about.component.scss']
 })
 export class AboutComponent {
-
+  readonly marcaNome = MARCA_NOME;
 }

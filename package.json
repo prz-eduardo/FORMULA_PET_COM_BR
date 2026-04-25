@@ -1,5 +1,5 @@
 {
-  "name": "formula-pet-com-br",
+  "name": "petsphere-com-br",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:FORMULA_PET_COM_BR": "node dist/formula-pet-com-br/server/server.mjs"
+    "serve:ssr:PETSPHERE_COM_BR": "node dist/petsphere-com-br/server/server.mjs"
   },
   "private": true,
   "dependencies": {

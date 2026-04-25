@@ -4,7 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
-import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse } from '../../../../services/admin-api.service';
+import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse, OmniChannelDefDto, ProdutoOmniPublicacaoDto } from '../../../../services/admin-api.service';
 import { EMBALAGENS } from '../../../../constants/embalagens';
 import { ProductCardSalesComponent } from '../../../../product-card-sales/product-card-sales.component';
 import { ShopProduct } from '../../../../services/store.service';
@@ -127,6 +127,14 @@ export class ProdutoComponent implements OnInit {
   packagingFiltered: Array<{ id: string | number; name: string }> = [];
   selectedPackagingIndex: number = -1;
   formulaEnabled = false;
+
+  /** Omnichannel: canais disponíveis e publicações por produto */
+  omniCanais = signal<OmniChannelDefDto[]>([]);
+  omniPublicacoes = signal<ProdutoOmniPublicacaoDto[]>([]);
+  omniMigrationsPending = signal(false);
+  omniSyncing = signal(false);
+  omniMessage = signal<string | null>(null);
+  omniPick = signal<Record<string, boolean>>({});
 
   ngOnInit() {
       // Inicializa destaqueHome e imagemPrincipal
@@ -252,6 +260,11 @@ export class ProdutoComponent implements OnInit {
     if (!this.editItem && produtoId) this.loadProduto(produtoId);
     // se editItem foi fornecido via @Input, aplica-o
     if (this.editItem) this.applyEditItem(this.editItem);
+
+    this.api.listOmniCanais().subscribe({
+      next: (r) => this.omniCanais.set(r.data || []),
+      error: () => this.omniCanais.set([]),
+    });
     if (this._pendingEditItem) { this.applyEditItem(this._pendingEditItem); this._pendingEditItem = null; }
 
     // ativo search removido
@@ -268,6 +281,77 @@ export class ProdutoComponent implements OnInit {
       if (this.form) this.applyEditItem(val);
       else this._pendingEditItem = val;
     }
+  }
+
+  private refreshOmniPublicacoes(produtoId: number | string | null | undefined) {
+    if (produtoId == null || produtoId === '') return;
+    this.api.getProdutoOmniPublicacoes(produtoId).subscribe({
+      next: (r) => {
+        this.omniPublicacoes.set(r.data || []);
+        this.omniMigrationsPending.set(!!r.meta?.migrationsPending);
+      },
+      error: () => {
+        this.omniPublicacoes.set([]);
+        this.omniMigrationsPending.set(false);
+      },
+    });
+  }
+
+  toggleOmniPick(canalId: string, ev: Event) {
+    const checked = (ev.target as HTMLInputElement)?.checked ?? false;
+    this.omniPick.update((m) => ({ ...m, [canalId]: checked }));
+  }
+
+  omniPubPorCanal(canalId: string): ProdutoOmniPublicacaoDto | undefined {
+    return this.omniPublicacoes().find((p) => p.canal === canalId);
+  }
+
+  omniStatusLabel(canalId: string): string {
+    const row = this.omniPubPorCanal(canalId);
+    if (!row) return 'Não publicado';
+    const map: Record<string, string> = {
+      draft: 'Rascunho',
+      queued: 'Na fila',
+      syncing: 'Sincronizando',
+      live: 'Publicado',
+      error: 'Erro',
+      disabled: 'Desativado',
+    };
+    return map[row.status] || row.status;
+  }
+
+  selectedOmniCanais(): string[] {
+    const m = this.omniPick();
+    return Object.keys(m).filter((k) => m[k]);
+  }
+
+  syncOmniCanais() {
+    const id = this.form?.value?.id;
+    if (!id) return;
+    const canais = this.selectedOmniCanais();
+    if (!canais.length) {
+      this.omniMessage.set('Selecione ao menos um canal.');
+      return;
+    }
+    this.omniSyncing.set(true);
+    this.omniMessage.set(null);
+    this.api.syncProdutoOmniCanais(id, canais).subscribe({
+      next: (r) => {
+        this.omniSyncing.set(false);
+        const errs = (r.results || []).filter((x) => x.ok === false);
+        if (errs.length) {
+          this.omniMessage.set(errs.map((e) => `${e.canal}: ${e.error || 'falha'}`).join(' · '));
+        } else {
+          this.omniMessage.set('Sincronização concluída.');
+        }
+        this.refreshOmniPublicacoes(id);
+      },
+      error: (err) => {
+        this.omniSyncing.set(false);
+        const msg = err?.error?.error || err?.message || 'Falha ao sincronizar.';
+        this.omniMessage.set(typeof msg === 'string' ? msg : 'Falha ao sincronizar.');
+      },
+    });
   }
 
   private applyEditItem(p: any) {
@@ -306,6 +390,7 @@ export class ProdutoComponent implements OnInit {
       }
       this.imagemPrincipal = capa;
       try { this.syncPrecoDigitsFromForm(); } catch(e) {}
+      if (p?.id) this.refreshOmniPublicacoes(p.id);
     } catch (e) { console.error('applyEditItem error', e); }
   }
 
@@ -702,6 +787,7 @@ export class ProdutoComponent implements OnInit {
         try { this.syncPrecoDigitsFromForm(); } catch(e) { /* noop */ }
 
         this.loading.set(false);
+        this.refreshOmniPublicacoes(p.id);
       },
       error: (err) => { console.error(err); this.loading.set(false); }
     });
@@ -1104,7 +1190,7 @@ export class ProdutoComponent implements OnInit {
 
   handleClickOutsideDropdown(event: MouseEvent) {
     const el = event.target as HTMLElement | null;
-    if (el && el.closest && (el.closest('.menu') || el.closest('.icon-menu') || el.closest('.nav-overlay'))) return;
+    if (el && el.closest && el.closest('.menu')) return;
     const dropdown = document.querySelector('.custom-dropdown');
     if (dropdown && !dropdown.contains(event.target as Node)) {
       this.showCategoryDropdown = false;
@@ -1478,6 +1564,7 @@ export class ProdutoComponent implements OnInit {
               this.saving.set(false);
               this.success.set('Produto salvo e campanha aplicada.');
               this.form.patchValue({ id: newId });
+              this.refreshOmniPublicacoes(newId);
               if (this.embedded) {
                 try { this.saved.emit({ id: newId, ...this.form.value }); } catch(e) {}
               }
@@ -1486,6 +1573,7 @@ export class ProdutoComponent implements OnInit {
               this.saving.set(false);
               this.success.set('Produto salvo. Falha ao aplicar campanha.');
               this.form.patchValue({ id: newId });
+              this.refreshOmniPublicacoes(newId);
               if (this.embedded) {
                 try { this.saved.emit({ id: newId, ...this.form.value }); } catch(e) {}
               }
@@ -1494,6 +1582,7 @@ export class ProdutoComponent implements OnInit {
           return;
         }
         this.saving.set(false); this.success.set('Produto salvo com sucesso.'); this.form.patchValue({ id: res.id });
+        this.refreshOmniPublicacoes(res?.id ?? newId);
         if (this.embedded) {
           try { this.saved.emit(res); } catch(e) { /* noop */ }
         }

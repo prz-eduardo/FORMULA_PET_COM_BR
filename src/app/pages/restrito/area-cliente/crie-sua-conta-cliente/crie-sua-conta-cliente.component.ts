@@ -7,6 +7,8 @@ import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../services/toast.service';
 import { RastreioLojaService } from '../../../../services/rastreio-loja.service';
 import { CookiePreferencesService } from '../../../../services/cookie-preferences.service';
+import { BannedUserModalService } from '../../../../services/banned-user-modal.service';
+import { isAccountBannedHttpError } from '../../../../utils/account-ban.util';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -37,7 +39,8 @@ export class CrieSuaContaClienteComponent {
     private apiService: ApiService,
     private toastService: ToastService,
     private rastreio: RastreioLojaService,
-    private cookiePreferences: CookiePreferencesService
+    private cookiePreferences: CookiePreferencesService,
+    private bannedModal: BannedUserModalService
   ) {}
 
   abrir() { this.aberto = true; }
@@ -159,19 +162,30 @@ export class CrieSuaContaClienteComponent {
         } catch (err: any) {
         const msgInner = this.parseError(err);
         if (msgInner === 'Vet já cadastrado!' || msgInner === 'Cliente já cadastrado!') {
-          const loginData = await firstValueFrom(
-            this.apiService.loginCliente({ email, idToken, visitanteId: this.rastreio.getVisitanteId() })
-          );
-          // Auto-login for existing client detected via Google
-          this.authService.login(loginData.token, true);
           try {
-            this.rastreio.afterClienteLogin();
-          } catch { /* */ }
-          localStorage.setItem('userType', loginData.tipo);
-          if (loginData.token) localStorage.setItem('token', loginData.token);
-          this.toastService.success('Login via Google realizado com sucesso!', 'Sucesso');
-          this.loggedIn.emit();
-          this.close.emit();
+            const loginData = await firstValueFrom(
+              this.apiService.loginCliente({ email, idToken, visitanteId: this.rastreio.getVisitanteId() })
+            );
+            // Auto-login for existing client detected via Google
+            this.authService.login(loginData.token, true);
+            try {
+              this.rastreio.afterClienteLogin();
+            } catch { /* */ }
+            localStorage.setItem('userType', loginData.tipo);
+            if (loginData.token) localStorage.setItem('token', loginData.token);
+            this.toastService.success('Login via Google realizado com sucesso!', 'Sucesso');
+            this.loggedIn.emit();
+            this.close.emit();
+          } catch (loginErr: any) {
+            if (isAccountBannedHttpError(loginErr)) {
+              this.mensagemErro = '';
+              await this.bannedModal.presentAfterBannedLogin();
+              return;
+            }
+            const msgLogin = this.parseError(loginErr) || 'Erro no login com Google';
+            this.mensagemErro = msgLogin;
+            this.toastService.error(msgLogin, 'Erro');
+          }
         } else {
           const msg = msgInner || 'Erro no cadastro/login com Google';
           this.mensagemErro = msg;
@@ -182,6 +196,11 @@ export class CrieSuaContaClienteComponent {
 
       this.fechar();
     } catch (err: any) {
+      if (isAccountBannedHttpError(err)) {
+        this.mensagemErro = '';
+        await this.bannedModal.presentAfterBannedLogin();
+        return;
+      }
       const msg = this.parseError(err) || 'Erro no cadastro/login com Google';
       this.mensagemErro = msg;
       console.error('Erro no cadastro/login com Google:', err);

@@ -1,0 +1,53 @@
+<app-navmenu></app-navmenu>
+<main class="container pet-perfil">
+  <a routerLink="/galeria" class="back">← Galeria</a>
+  <div *ngIf="loading" class="card">Carregando…</div>
+  <div *ngIf="error" class="card danger">{{ error }}</div>
+
+  <article *ngIf="!loading && pet" class="perfil-hero">
+    <div class="perfil-hero__media">
+      <img [src]="pet.foto || '/imagens/image.png'" [alt]="'Foto de ' + (pet.nome || 'pet')" class="perfil-hero__img" />
+    </div>
+    <div class="perfil-hero__body">
+      <h1>{{ pet.nome || 'Pet' }}</h1>
+      <p class="meta" *ngIf="pet.especie || pet.raca">
+        <span *ngIf="pet.especie">{{ pet.especie }}</span>
+        <span *ngIf="pet.raca"> · {{ pet.raca }}</span>
+      </p>
+      <p class="meta" *ngIf="pet.idade != null">{{ pet.idade }} {{ pet.idade === 1 ? 'ano' : 'anos' }}
+        <span *ngIf="pet.sexo"> · {{ pet.sexo }}</span>
+        <span *ngIf="pet.pesoKg"> · {{ pet.pesoKg }} kg</span>
+      </p>
+      <p *ngIf="pet.observacoes" class="obs">{{ pet.observacoes }}</p>
+      <p *ngIf="pet.tutor_nome" class="tutor">Tutor: {{ pet.tutor_nome }}</p>
+
+      <section class="reactions" *ngIf="data">
+        <p class="reactions-total" *ngIf="getTotalReactions() > 0">{{ getTotalReactions() }} reações neste perfil</p>
+        <div class="reactions-bar">
+          <button *ngFor="let r of reactionTypes" type="button" class="r-chip" [class.active]="userReactionTipo === r.tipo" (click)="onReaction(r.tipo)">
+            <span class="e">{{ r.emoji }}</span>
+            <span class="c">{{ getReactionCount(r.tipo) }}</span>
+          </button>
+        </div>
+        <p *ngIf="!token" class="muted small">Faça login para reagir ou comentar o perfil do pet.</p>
+      </section>
+    </div>
+  </article>
+
+  <section *ngIf="!loading && pet" class="perfil-coment">
+    <h2>Comentários no perfil ({{ totalComentarios }})</h2>
+    <p class="muted small">Estes comentários são sobre o pet. A galeria pública comenta cada foto em separado.</p>
+    <form *ngIf="token" (submit)="$event.preventDefault(); enviarComentario()">
+      <textarea [(ngModel)]="novoComentario" name="c" rows="2" maxlength="500" placeholder="Escreva para o pet…"></textarea>
+      <button type="submit" [disabled]="sendingComentario || !novoComentario.trim()">Enviar</button>
+    </form>
+    <div *ngIf="loadingComentarios" class="muted">Carregando comentários…</div>
+    <ul *ngIf="!loadingComentarios" class="c-list">
+      <li *ngFor="let c of comentarios" class="c-item">
+        <strong>{{ c.cliente?.nome || 'Anónimo' }}</strong>
+        <span class="c-time">{{ c.created_at }}</span>
+        <p>{{ c.comentario }}</p>
+      </li>
+    </ul>
+  </section>
+</main>

@@ -11,11 +11,38 @@
         <aside class="pet-card">
           <div class="pet-photo">
             <p class="photo-hint muted small">Pode enviar várias fotos (até 12 novas por vez, 3MB cada).</p>
-            <div class="gallery-preview-grid" *ngIf="existingGalleryUrls.length || fotoPreviews.length; else noFoto">
-              <div class="g-thumb" *ngFor="let u of existingGalleryUrls">
-                <img [src]="u" alt="Foto já guardada" />
-                <span class="g-badge">Guardada</span>
+            <div *ngIf="isEditMode" class="colecao-bar">
+              <p class="muted small">Coleções: junte várias fotos num álbum; na galeria pública aparecem com carrossel. Fotos fora de coleção entram no feed como fotos avulsas.</p>
+              <div class="colecao-bar__row">
+                <input class="colecao-bar__input" type="text" [(ngModel)]="novoTituloColecao" placeholder="Nome da nova coleção" />
+                <button type="button" class="btn-sec" (click)="criarColecao()">+ Coleção</button>
+                <button type="button" class="btn-sec" (click)="carregarColecoes()">Atualizar lista</button>
               </div>
+            </div>
+            <div class="gallery-preview-grid" *ngIf="existingGalleryUrls.length || fotoPreviews.length || galeriaItens.length; else noFoto">
+              <ng-container *ngIf="galeriaItens.length; else gUrlsLegacy">
+                <div class="g-thumb g-thumb--colecao" *ngFor="let g of galeriaItens">
+                  <img [src]="g.url" alt="Foto guardada" />
+                  <span class="g-badge">Guardada</span>
+                  <div *ngIf="isEditMode" class="g-colecao-select">
+                    <label class="sr-only" [attr.for]="'cl-'+g.id">Coleção</label>
+                    <select
+                      [id]="'cl-'+g.id"
+                      [ngModel]="g.colecao_id ?? null"
+                      (ngModelChange)="onColecaoImagemChange(g, $event)"
+                    >
+                      <option [ngValue]="null">No feed (foto avulsa)</option>
+                      <option *ngFor="let c of colecoes" [ngValue]="c.id">{{ c.titulo }}</option>
+                    </select>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-template #gUrlsLegacy>
+                <div class="g-thumb" *ngFor="let u of existingGalleryUrls">
+                  <img [src]="u" alt="Foto já guardada" />
+                  <span class="g-badge">Guardada</span>
+                </div>
+              </ng-template>
               <div class="g-thumb g-thumb--new" *ngFor="let p of fotoPreviews; let i = index">
                 <img [src]="p" alt="Nova foto" />
                 <button type="button" class="g-remove" (click)="removerNovaFoto(i)" aria-label="Remover nova foto">×</button>

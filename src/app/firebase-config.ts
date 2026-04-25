@@ -1,4 +1,6 @@
 // firebase-config.ts
+// ID do app no Google Firebase: ao criar o projeto "petsphere-com-br" no console, substitua o bloco
+// (apiKey, projectId, appId, etc.) coerentemente. Enquanto o app Web estiver vinculado ao projeto legado, mantenha estes campos.
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';

@@ -1,23 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CookiePreferencesService } from '../services/cookie-preferences.service';
-import {
-  LOJA_CEP,
-  LOJA_ENDERECO_TEXTO,
-  LOJA_MAPA_URL,
-  MARCA_DESCRICAO,
-  MARCA_LOGO_PATH,
-  MARCA_NOME,
-  MARCA_TAGLINE,
-} from '../constants/loja-public';
-
-type SocialKind = 'instagram';
-
-interface SocialLink {
-  kind: SocialKind;
-  label: string;
-  href: string;
-}
+import { LOJA_IDENTIDADE, LOJA_MAPA_URL } from '../constants/loja-public';
 
 interface AddressBlock {
   title?: string;
@@ -37,29 +21,22 @@ export class FooterComponent {
   readonly year = new Date().getFullYear();
 
   readonly company = {
-    name: MARCA_NOME,
-    tagline: MARCA_TAGLINE,
-    description: MARCA_DESCRICAO,
-    logo: MARCA_LOGO_PATH,
+    name: LOJA_IDENTIDADE.marca.nome,
+    tagline: LOJA_IDENTIDADE.marca.tagline,
+    description: LOJA_IDENTIDADE.marca.descricao,
+    logo: LOJA_IDENTIDADE.marca.logoPath,
     legal: [] as string[],
   };
 
-  /** Sem telefone público (demo anonimizado). */
-  readonly phone: { display: string; tel: string } | null = null;
+  readonly phone = LOJA_IDENTIDADE.contato.telefone;
 
-  readonly hours = 'Segunda a Sexta · 9h às 18h';
+  readonly hours = LOJA_IDENTIDADE.contato.horarioFuncionamento;
 
-  readonly socials: SocialLink[] = [
-    {
-      kind: 'instagram',
-      label: 'Instagram',
-      href: 'https://www.instagram.com/',
-    },
-  ];
+  readonly socials = LOJA_IDENTIDADE.social.links;
 
   readonly addresses: AddressBlock[] = [
     {
-      lines: [`${LOJA_ENDERECO_TEXTO}`, `CEP ${LOJA_CEP}`],
+      lines: [`${LOJA_IDENTIDADE.endereco.linha1}`, `CEP ${LOJA_IDENTIDADE.endereco.cep}`],
     },
   ];
 
