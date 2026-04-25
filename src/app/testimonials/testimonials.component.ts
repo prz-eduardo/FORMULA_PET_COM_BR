@@ -19,7 +19,7 @@ export class TestimonialsComponent implements OnInit, OnDestroy {
 
   testimonials = [
     {
-      text: 'Ótimo atendimento via WhatsApp e presencial. Gostei do custo-benefício dos remédios que comprei para meu gato!',
+      text: 'Ótimo atendimento online e presencial. Gostei do custo-benefício dos remédios que comprei para meu gato!',
       author: 'Juan Diego',
       image: 'https://lh3.googleusercontent.com/a-/ALV-UjXCll68zJ7joHMtEUrtO6C6QpRONaqZaOwb4niE2ojkvLTijrMG=s40-c-rp-mo-br100',
     },

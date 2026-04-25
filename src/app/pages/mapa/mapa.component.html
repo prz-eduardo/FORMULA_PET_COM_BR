@@ -12,7 +12,7 @@
           Encontre serviços pet <span class="hero-accent">perto de você</span>
         </h1>
         <p class="hero-subtitle">
-          Veterinários, dog walkers, petsitters, creches caninas e muito mais — tudo em um só mapa, com a confiança da Fórmula Pet.
+          Veterinários, dog walkers, petsitters, creches caninas e muito mais — tudo em um só mapa perto de você.
         </p>
       </div>
     </div>
@@ -23,16 +23,16 @@
       <span class="hero-stat"><span class="stat-dot" aria-hidden="true"></span>Curitiba - PR</span>
     </div>
 
-    <section class="farmacia-card" role="region" aria-label="Localização da farmácia">
-      <img src="/icones/pin-fp.png" alt="" aria-hidden="true" class="farmacia-pin" />
+    <section class="farmacia-card" role="region" aria-label="Localização da loja">
+      <img src="/icones/pin-pata.svg" alt="" aria-hidden="true" class="farmacia-pin" />
       <div class="farmacia-body">
-        <h2 class="farmacia-name">Fórmula Pet <span class="farmacia-tag">Nossa loja</span></h2>
-        <p class="farmacia-address">Rua Treze de Maio, 506, Conjunto 04 — São Francisco, Curitiba - PR, CEP 80510-030</p>
+        <h2 class="farmacia-name">{{ marcaNome }} <span class="farmacia-tag">Nossa loja</span></h2>
+        <p class="farmacia-address">{{ lojaEnderecoExibicao }}</p>
       </div>
       <button
         type="button"
         class="farmacia-center-btn"
-        aria-label="Centralizar mapa na localização da farmácia"
+        aria-label="Centralizar mapa na localização da loja"
         title="Centralizar mapa"
         (click)="centerOnPharmacy()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -134,8 +134,8 @@
         <!-- Legenda flutuante -->
         <div class="map-legend" aria-hidden="true">
           <div class="legend-item">
-            <img src="/icones/pin-fp.png" alt="" />
-            <span>Fórmula Pet</span>
+            <img src="/icones/pin-pata.svg" alt="" />
+            <span>{{ marcaNome }}</span>
           </div>
           <span class="legend-divider"></span>
           <div class="legend-item paw">

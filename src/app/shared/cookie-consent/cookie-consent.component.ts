@@ -22,8 +22,11 @@ export class CookieConsentComponent implements OnInit, OnDestroy {
   /** True quando o usuário já tinha preferências e abriu "gerir" (pode fechar sem alterar). */
   private manageSession = false;
   private sub = new Subscription();
-  /** Evita o painel cobrir a página da política; o leitor acessa via link do próprio aviso. */
-  protected onPoliticaPage = false;
+  /**
+   * Não exibir o aviso de cookies nestas rotas: leitura da política, área admin e cadastro de produto
+   * (o mesmo critério de `AppComponent` para nav/rodapé).
+   */
+  protected hideCookieByRoute = false;
 
   constructor(
     private readonly cookie: CookiePreferencesService,
@@ -32,12 +35,12 @@ export class CookieConsentComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.syncPoliticaPageFlag();
+    this.syncRouteCookieVisibility();
     this.sub.add(
       this.router.events
         .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
         .subscribe(() => {
-          this.syncPoliticaPageFlag();
+          this.syncRouteCookieVisibility();
           this.cdr.markForCheck();
         })
     );
@@ -61,9 +64,12 @@ export class CookieConsentComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
   }
 
-  private syncPoliticaPageFlag(): void {
+  private syncRouteCookieVisibility(): void {
     const path = (this.router.url || '').split('?')[0].split('#')[0];
-    this.onPoliticaPage = path === '/politica-de-privacidade' || path.endsWith('/politica-de-privacidade');
+    const onPolitica =
+      path === '/politica-de-privacidade' || path.endsWith('/politica-de-privacidade');
+    const onAdminArea = path.startsWith('/restrito/admin') || path.startsWith('/restrito/produto');
+    this.hideCookieByRoute = onPolitica || onAdminArea;
   }
 
   private hydrateDraft(): void {

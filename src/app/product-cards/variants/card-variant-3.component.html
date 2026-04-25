@@ -6,7 +6,7 @@
   <div class="details">
     <span class="cat">{{ product.category || 'Categoria' }}</span>
     <h4>{{ product.name }}</h4>
-    <p>{{ product.description || 'Produto Formula Pet' }}</p>
+    <p>{{ product.description || 'Produto' }}</p>
     <div class="bottom">
       <div class="price"><small *ngIf="oldPriceDisplay != null">{{ oldPriceDisplay | currency:'BRL' }}</small>{{ priceNow | currency:'BRL' }}</div>
       <div class="links">

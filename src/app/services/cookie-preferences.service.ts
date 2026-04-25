@@ -81,6 +81,15 @@ export class CookiePreferencesService {
     this.manageOpenSubject.next(false);
   }
 
+  /**
+   * Concluindo o cadastro de cliente, gravamos no navegador as preferências padrão
+   * (análise da loja e conteúdo de terceiros ativos), conforme descrito na política.
+   * O utilizador pode alterar a qualquer momento em “Preferências de cookies”.
+   */
+  applyDefaultsOnNewClienteAccount(): void {
+    this.save({ analytics: true, thirdParty: true });
+  }
+
   save(prefs: Pick<CookiePreferences, 'analytics' | 'thirdParty'>): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;

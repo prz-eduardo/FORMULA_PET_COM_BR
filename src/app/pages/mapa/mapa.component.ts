@@ -4,6 +4,13 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
+import {
+  LOJA_CEP,
+  LOJA_ENDERECO_TEXTO,
+  LOJA_MAPA_LAT,
+  LOJA_MAPA_LNG,
+  MARCA_NOME,
+} from '../../constants/loja-public';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
@@ -39,12 +46,12 @@ export class MapaComponent implements OnInit, OnDestroy {
   private mapInitialized = false;
   private mapReadyPromise: Promise<void> | null = null;
   private mapReadyResolver: (() => void) | null = null;
-  // default address used to center the map (same as previous iframe)
-  private defaultCenterAddress = 'Rua Treze de Maio, 506, Conjunto 04, São Francisco, Curitiba, PR, CEP 80510-030';
-  // exact pharmacy address requested by the user — we will geocode this and place the fixed pin here
-  private pharmacyAddress = 'Rua Treze de Maio, 506 – Sala 04, Curitiba, PR';
-  // resolved pharmacy coordinates (populated after a successful geocode); used by refreshMarkers()
-  private pharmacyCoords: { lat: number; lng: number } | null = null;
+  readonly marcaNome = MARCA_NOME;
+  readonly lojaEnderecoExibicao = `${LOJA_ENDERECO_TEXTO}, CEP ${LOJA_CEP}`;
+  private defaultCenterAddress = `${LOJA_ENDERECO_TEXTO}, Curitiba, PR, CEP ${LOJA_CEP}`;
+  private pharmacyAddress = `${LOJA_ENDERECO_TEXTO}, Curitiba, PR`;
+  private pharmacyCoords: { lat: number; lng: number } | null = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
+  private readonly pinLojaUrl = '/icones/pin-pata.svg';
 
   constructor(private api: ApiService, private toast: ToastService, @Inject(PLATFORM_ID) private platformId: Object, private appRef: ApplicationRef) {}
 
@@ -353,11 +360,11 @@ export class MapaComponent implements OnInit, OnDestroy {
 
     // add pharmacy marker at the resolved pharmacy coordinates (geocoded from pharmacyAddress)
     // fallback to the previous hardcoded coords if geocoding hasn't completed or failed
-    const fallbackCoords = { lat: -25.4270, lng: -49.2706 };
+    const fallbackCoords = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
     const coordsToUse = this.pharmacyCoords ?? fallbackCoords;
     try {
       const google = (window as any).google;
-      const pinFpUrl = '/icones/pin-fp.png';
+      const pinFpUrl = this.pinLojaUrl;
       const iconPharm = {
         url: pinFpUrl,
         scaledSize: new google.maps.Size(36, 44),
@@ -697,7 +704,7 @@ export class MapaComponent implements OnInit, OnDestroy {
 
       // geocode pharmacy address (best effort)
       let centerLatLng: any = null;
-      const fallbackCenter = { lat: -25.4284, lng: -49.2733 };
+      const fallbackCenter = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
       try {
         const geocoder = new google.maps.Geocoder();
         const results = await this.geocodeAddress(geocoder, this.pharmacyAddress).catch((err) => { console.warn('geocode error', err); return null; });
@@ -735,10 +742,10 @@ export class MapaComponent implements OnInit, OnDestroy {
       setTimeout(() => { try { google.maps.event.trigger(this.map, 'resize'); } catch (e) {} }, 600);
 
       // add pharmacy marker
-      const fallbackPharmacyCoords = { lat: -25.4270, lng: -49.2706 };
+      const fallbackPharmacyCoords = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
       const coordsToUse = this.pharmacyCoords ?? fallbackPharmacyCoords;
       try {
-        const pinFpUrl = '/icones/pin-fp.png';
+        const pinFpUrl = this.pinLojaUrl;
         const icon = {
           url: pinFpUrl,
           scaledSize: new google.maps.Size(36, 44),
@@ -901,7 +908,7 @@ export class MapaComponent implements OnInit, OnDestroy {
   async centerOnPharmacy(): Promise<void> {
     if (!isPlatformBrowser(this.platformId) || !(window as any).google || !this.map) return;
     const google = (window as any).google;
-    const fallback = { lat: -25.4270, lng: -49.2706 };
+    const fallback = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
     try {
       let coords = this.pharmacyCoords;
       if (!coords && this.pharmacyAddress) {
@@ -1000,9 +1007,9 @@ export class MapaComponent implements OnInit, OnDestroy {
         <!-- floating close button (visually overflows the card) -->
         <button id="map-close-btn" aria-label="Fechar" style="position:absolute;top:-20px;right:-20px;width:40px;height:40px;border-radius:50%;background:#111827;color:#fff;border:0;box-shadow:0 10px 28px rgba(0,0,0,.32);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0">✕</button>
         <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
-          <img src=\"/icones/pin-fp.png\" style=\"width:36px;height:44px;object-fit:contain;border-radius:4px\"/>
+          <img src=\"${this.pinLojaUrl}\" style=\"width:36px;height:44px;object-fit:contain;border-radius:4px\"/>
           <div style="flex:1">
-            <div style=\"font-family:'Pacifico',cursive,'Montserrat',Arial,sans-serif;font-weight:700;font-size:16px;color:#0f172a\">Formula Pet</div>
+            <div style=\"font-family:'Pacifico',cursive,'Montserrat',Arial,sans-serif;font-weight:700;font-size:16px;color:#0f172a\">${MARCA_NOME}</div>
             <div style=\"font-size:13px;color:#374151;margin-top:4px;line-height:1.2\">${address}</div>
           </div>
         </div>

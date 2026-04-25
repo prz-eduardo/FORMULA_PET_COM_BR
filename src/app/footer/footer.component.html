@@ -10,25 +10,28 @@
         <h2 id="footer-brand-title">{{ company.name }}</h2>
         <p class="subtitle">{{ company.tagline }}</p>
         <p class="description">{{ company.description }}</p>
-        <ul class="legal">
-          @for (item of company.legal; track item) {
-            <li>{{ item }}</li>
-          }
-        </ul>
+        @if (company.legal.length) {
+          <ul class="legal">
+            @for (item of company.legal; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        }
       </section>
 
       <section class="footer-col contact" aria-labelledby="footer-contact-title">
         <h3 id="footer-contact-title">Contato</h3>
 
-        <a [href]="'tel:' + phone.tel" class="contact-row" [attr.aria-label]="'Ligar para ' + phone.display">
-          <img src="/icones/telefone-pata.png" width="16" height="16" alt="" aria-hidden="true" />
-          <span>{{ phone.display }}</span>
-        </a>
+        @if (phone) {
+          <a [href]="'tel:' + phone.tel" class="contact-row" [attr.aria-label]="'Ligar para ' + phone.display">
+            <img src="/icones/telefone-pata.png" width="16" height="16" alt="" aria-hidden="true" />
+            <span>{{ phone.display }}</span>
+          </a>
+        }
 
         <nav class="cta-row" aria-label="Redes sociais">
           @for (social of socials; track social.kind) {
             <a class="btn-ico"
-               [class.whatsapp]="social.kind === 'whatsapp'"
                [class.instagram]="social.kind === 'instagram'"
                [href]="social.href"
                [attr.aria-label]="social.label"

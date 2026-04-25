@@ -25,7 +25,7 @@ export class AdminTestEmailComponent {
   ) {
     this.form = this.fb.group({
       para: ['', [Validators.required, Validators.email]],
-      assunto: ['Teste Fórmula Pet (Resend)', [Validators.required, Validators.maxLength(998)]],
+      assunto: ['Teste Loja Pet (Resend)', [Validators.required, Validators.maxLength(998)]],
       texto: ['Este é um e-mail de teste enviado pelo painel administrativo.', [Validators.required]],
     });
   }

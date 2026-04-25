@@ -80,9 +80,9 @@
       <button
         type="button"
         class="btn-action"
-        [attr.aria-label]="shopMode ? 'Comprar na loja' : 'Falar no WhatsApp'"
-        (click)="shopMode ? onBuy() : enviarMsgWhatsApp()">
-        {{ shopMode ? 'Comprar' : 'WhatsApp' }}
+        [attr.aria-label]="shopMode ? 'Comprar na loja' : 'Ver na loja'"
+        (click)="shopMode ? onBuy() : irParaLoja()">
+        {{ shopMode ? 'Comprar' : 'Ver na loja' }}
       </button>
     </div>
   </div>

@@ -30,11 +30,11 @@
         <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="checkout-cta-icon" />
         <div class="checkout-cta-body">
           <h2 class="checkout-cta-name">Precisa ajustar o pedido? <span class="checkout-cta-tag">suporte</span></h2>
-          <p class="checkout-cta-text">Fale com a gente no WhatsApp ou volte ao carrinho se ainda quiser mudar itens antes de pagar.</p>
+          <p class="checkout-cta-text">Volte ao carrinho se ainda quiser mudar itens antes de pagar.</p>
         </div>
         <div class="checkout-cta-btns">
           <a routerLink="/carrinho" class="checkout-cta-btn secondary" title="Voltar ao carrinho" aria-label="Voltar ao carrinho">Carrinho</a>
-          <a href="https://wa.me/554132051910" target="_blank" rel="noopener" class="checkout-cta-btn" title="WhatsApp Fórmula Pet" aria-label="Abrir WhatsApp">WhatsApp</a>
+          <a routerLink="/loja" class="checkout-cta-btn" title="Ir à loja" aria-label="Ir à loja">Loja</a>
         </div>
       </section>
     </header>
@@ -137,11 +137,8 @@
           <strong>{{ rotuloPixBadge }}</strong>
           <span class="muted">O valor aparece no resumo; o total segue a configuração da loja.</span>
         </div>
-        <div class="help-wa">
-          <span class="wa-ico" aria-hidden="true"></span>
-          <span>Em caso de dúvidas, fale com a gente no WhatsApp: 
-            <a class="wa-link" href="https://wa.me/554132051910" target="_blank" rel="noopener">(41) 3205-1910</a>
-          </span>
+        <div class="help-wa muted">
+          Em caso de dúvidas, revise os dados do pedido ou retorne ao carrinho para ajustes.
         </div>
           <div class="method-cta">
             <button class="btn cta" [disabled]="carregando || !pedidoCodigo" (click)="pagar()">
@@ -171,8 +168,8 @@
         <h3>Informações importantes</h3>
         <ul>
           <li>Produtos manipulados são preparados sob demanda. O prazo de entrega começa após a produção.</li>
-          <li>Você receberá atualizações por e-mail/WhatsApp quando seu pedido estiver pronto.</li>
-          <li class="duvidas">Dúvidas? <a class="wa-link" href="https://wa.me/554132051910" target="_blank" rel="noopener"><span class="wa-ico" aria-hidden="true"></span> (41) 3205-1910</a></li>
+          <li>Você receberá atualizações por e-mail quando seu pedido estiver pronto.</li>
+          <li class="duvidas">Dúvidas? Acompanhe o status do pedido na área do cliente.</li>
         </ul>
       </div>
     </aside>

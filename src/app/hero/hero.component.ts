@@ -22,7 +22,7 @@ export class HeroComponent implements OnInit {
     {
       title: '',
       subtitle: 'Excelência na manipulação veterinária',
-      text: 'Na Fórmula Pet, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos.',
+      text: 'Na Loja Pet, trabalhamos com rigorosos padrões de qualidade para desenvolver medicamentos.',
     },
     {
       title: '',

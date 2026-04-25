@@ -6,6 +6,7 @@ import { AuthService } from '../../../../services/auth.service';
 import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../services/toast.service';
 import { RastreioLojaService } from '../../../../services/rastreio-loja.service';
+import { CookiePreferencesService } from '../../../../services/cookie-preferences.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -35,7 +36,8 @@ export class CrieSuaContaClienteComponent {
     private authService: AuthService,
     private apiService: ApiService,
     private toastService: ToastService,
-    private rastreio: RastreioLojaService
+    private rastreio: RastreioLojaService,
+    private cookiePreferences: CookiePreferencesService
   ) {}
 
   abrir() { this.aberto = true; }
@@ -101,6 +103,9 @@ export class CrieSuaContaClienteComponent {
     try {
       this.rastreio.afterClienteLogin();
     } catch { /* */ }
+    try {
+      this.cookiePreferences.applyDefaultsOnNewClienteAccount();
+    } catch { /* */ }
     this.toastService.success('Conta criada com sucesso!', 'Sucesso');
     this.loggedIn.emit();
     this.close.emit();
@@ -144,6 +149,9 @@ export class CrieSuaContaClienteComponent {
           if (data.token) localStorage.setItem('token', data.token);
           try {
             this.rastreio.afterClienteLogin();
+          } catch { /* */ }
+          try {
+            this.cookiePreferences.applyDefaultsOnNewClienteAccount();
           } catch { /* */ }
           this.toastService.success('Conta criada com sucesso via Google!', 'Sucesso');
           this.loggedIn.emit();

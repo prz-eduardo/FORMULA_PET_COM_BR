@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-carrinho',
@@ -71,10 +72,10 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
   // CEP digitado para cálculo de frete
   cepInput: string = '';
   lojaInfo = {
-    nome: 'Fórmula Pet',
-    endereco: 'Rua Treze de Maio, 506, Conjunto 04 - São Francisco, Curitiba/PR',
-    cep: '80510-030',
-    horario: 'Seg a Sex 09:00–18:00, Sáb 09:00–13:00'
+    nome: MARCA_NOME,
+    endereco: `${LOJA_ENDERECO_TEXTO} - Curitiba/PR`,
+    cep: LOJA_CEP,
+    horario: 'Seg a Sex 09:00–18:00, Sáb 09:00–13:00',
   };
   // Novo endereço (form)
   novoEndereco: { cep: string; logradouro: string; numero: string; complemento?: string; bairro: string; cidade: string; estado: string; nome?: string; tipo?: string } = {

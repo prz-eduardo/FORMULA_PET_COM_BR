@@ -33,7 +33,7 @@ import { register } from 'swiper/element/bundle';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit, OnDestroy {
-  title = 'FORMULA_PET_COM_BR';
+  title = 'Loja Pet';
   deviceType: string = 'desktop';
   showFooter: boolean = true;
   showNav: boolean = true;

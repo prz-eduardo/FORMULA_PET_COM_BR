@@ -31,7 +31,7 @@ const MOCK_SALES: ShopProduct = {
   discount: 15,
   promoPrice: 160.9,
   strikePrice: 189.9,
-  marca: 'Fórmula Pet',
+    marca: 'Loja Pet',
   sku: 'FP-RAC-10K',
   cardLayout: 'sales',
   rating: 4.5,

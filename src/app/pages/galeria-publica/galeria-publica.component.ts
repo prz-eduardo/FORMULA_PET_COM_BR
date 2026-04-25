@@ -92,7 +92,7 @@ export class GaleriaPublicaComponent {
   }
 
   getGaleriaShareText(): string {
-    return 'Galeria da comunidade Fórmula Pet — veja os pets e reaja!';
+    return 'Galeria da comunidade Loja Pet — veja os pets e reaja!';
   }
 
   getGaleriaFullShareMessage(): string {
@@ -137,7 +137,7 @@ export class GaleriaPublicaComponent {
 
   async shareGaleria(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
-    const title = 'Galeria Fórmula Pet';
+    const title = 'Galeria Loja Pet';
     const text = this.getGaleriaShareText();
     const url = this.getGaleriaShareUrl();
     const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }) : null;

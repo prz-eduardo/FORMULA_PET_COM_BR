@@ -47,7 +47,7 @@ export class SobreNosComponent {
     { value: '+10', label: 'anos cuidando de pets', icon: 'fa-solid fa-heart-pulse' },
     { value: '+5k', label: 'fórmulas manipuladas', icon: 'fa-solid fa-flask' },
     { value: '100%', label: 'atendimento humanizado', icon: 'fa-solid fa-paw' },
-    { value: '24h', label: 'suporte via WhatsApp', icon: 'fa-brands fa-whatsapp' },
+    { value: 'Seg–Sex', label: 'atendimento na loja', icon: 'fa-solid fa-clock' },
   ];
 
   mvv: MvvCard[] = [
@@ -115,7 +115,7 @@ export class SobreNosComponent {
     {
       icon: 'fa-solid fa-prescription',
       title: 'Receita do veterinário',
-      text: 'Envie a receita pelo WhatsApp ou traga em nossa loja.',
+      text: 'Traga a receita em nossa loja ou envie conforme orientação no pedido.',
     },
     {
       icon: 'fa-solid fa-clipboard-check',
@@ -134,6 +134,4 @@ export class SobreNosComponent {
     },
   ];
 
-  whatsappLink =
-    'https://wa.me/4132051910?text=Ol%C3%A1!%20Gostaria%20de%20saber%20mais%20sobre%20as%20f%C3%B3rmulas%20personalizadas%20para%20meu%20pet.';
 }

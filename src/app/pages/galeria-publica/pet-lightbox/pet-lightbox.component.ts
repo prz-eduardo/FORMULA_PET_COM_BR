@@ -98,7 +98,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
 
   getPetShareText(): string {
     const nome = (this.pet?.nome || this.pet?.name || 'este pet').toString();
-    return `Conheça o ${nome} na galeria da comunidade Fórmula Pet!`;
+    return `Conheça o ${nome} na galeria da comunidade Loja Pet!`;
   }
 
   getPetShareMessage(): string {
@@ -143,7 +143,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
   async shareThisPet(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
     const nome = (this.pet?.nome || this.pet?.name || 'Pet').toString();
-    const title = `Fórmula Pet — ${nome}`;
+    const title = `Loja Pet — ${nome}`;
     const text = this.getPetShareText();
     const url = this.getGaleriaShareUrl();
     const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }) : null;

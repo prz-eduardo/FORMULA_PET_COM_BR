@@ -10,6 +10,7 @@ import { CardsService } from '../../services/cards.service';
 import { AuthService } from '../../services/auth.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-checkout',
@@ -125,10 +126,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   // Info da loja para retirada (fallback)
   lojaInfo = {
-    nome: 'Fórmula Pet',
-    endereco: 'Rua Treze de Maio, 506, Conjunto 04 - São Francisco, Curitiba/PR',
-    cep: '80510-030',
-    horario: 'Seg a Sex 09:00–18:00, Sáb 09:00–13:00'
+    nome: MARCA_NOME,
+    endereco: `${LOJA_ENDERECO_TEXTO} - Curitiba/PR`,
+    cep: LOJA_CEP,
+    horario: 'Seg a Sex 09:00–18:00, Sáb 09:00–13:00',
   };
 
   constructor(

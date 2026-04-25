@@ -1,8 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CookiePreferencesService } from '../services/cookie-preferences.service';
+import {
+  LOJA_CEP,
+  LOJA_ENDERECO_TEXTO,
+  LOJA_MAPA_URL,
+  MARCA_DESCRICAO,
+  MARCA_LOGO_PATH,
+  MARCA_NOME,
+  MARCA_TAGLINE,
+} from '../constants/loja-public';
 
-type SocialKind = 'whatsapp' | 'instagram';
+type SocialKind = 'instagram';
 
 interface SocialLink {
   kind: SocialKind;
@@ -28,29 +37,19 @@ export class FooterComponent {
   readonly year = new Date().getFullYear();
 
   readonly company = {
-    name: 'Fórmula Pet Curitiba',
-    tagline: 'Farmácia de Manipulação Veterinária',
-    description: 'Especializada em medicamentos, suplementos e cuidados para pets.',
-    logo: '/imagens/image.png',
-    legal: [
-      'CNPJ: 41.325.057/0001-48',
-      'REGISTRO MAPA Nº 002664-6',
-    ],
+    name: MARCA_NOME,
+    tagline: MARCA_TAGLINE,
+    description: MARCA_DESCRICAO,
+    logo: MARCA_LOGO_PATH,
+    legal: [] as string[],
   };
 
-  readonly phone = {
-    display: '(41) 3205-1910',
-    tel: '+554132051910',
-  };
+  /** Sem telefone público (demo anonimizado). */
+  readonly phone: { display: string; tel: string } | null = null;
 
   readonly hours = 'Segunda a Sexta · 9h às 18h';
 
   readonly socials: SocialLink[] = [
-    {
-      kind: 'whatsapp',
-      label: 'WhatsApp',
-      href: 'https://wa.me/554132051910?text=Oi%2C%20vim%20do%20site%20e%20gostaria%20de%20ajuda%20:)',
-    },
     {
       kind: 'instagram',
       label: 'Instagram',
@@ -60,15 +59,11 @@ export class FooterComponent {
 
   readonly addresses: AddressBlock[] = [
     {
-      lines: ['Rua Treze de Maio, 506 cj 4 - Centro', 'CEP 80510-030'],
-    },
-    {
-      title: 'Estacionamento conveniado',
-      lines: ['Rua Treze de Maio, 561 - Centro', 'CEP 80510-030'],
+      lines: [`${LOJA_ENDERECO_TEXTO}`, `CEP ${LOJA_CEP}`],
     },
   ];
 
-  readonly mapUrl = 'https://maps.google.com/?q=Rua%20Treze%20de%20Maio%2C%20506%2C%20Curitiba';
+  readonly mapUrl = LOJA_MAPA_URL;
 
   openCookiePreferences(e: Event): void {
     e.preventDefault();
