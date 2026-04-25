@@ -4,6 +4,7 @@ import { Observable, of, forkJoin } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { SessionService } from './session.service';
+import { RastreioDashboardDto } from '../pages/restrito/admin/rastreio/models/rastreio-dashboard.model';
 import { BannerPosition } from '../shared/banner/banner-positions';
 
 export type TaxonomyType = 'categorias' | 'tags' | 'dosages' | 'embalagens';
@@ -1192,6 +1193,16 @@ export class AdminApiService {
   }
 
   /** Rastreio de atividade da loja (/admin/rastreio) */
+  rastreioDashboard(params?: { from?: string; to?: string }): Observable<RastreioDashboardDto> {
+    let httpParams = new HttpParams();
+    if (params?.from) httpParams = httpParams.set('from', params.from);
+    if (params?.to) httpParams = httpParams.set('to', params.to);
+    return this.http.get<RastreioDashboardDto>(`${this.baseUrl}/rastreio/dashboard`, {
+      headers: this.headers(),
+      params: httpParams,
+    });
+  }
+
   rastreioTimeline(
     clienteId: string | number,
     params?: { cursor?: string | number; limit?: number; tipos?: string }

@@ -589,17 +589,31 @@ export class GaleriaPublicaComponent {
   getGalleryUrls(p: any): string[] {
     try {
       if (!p || p.type === 'vet_ad') return [];
+      const out: string[] = [];
       const direct = p.galeria_urls;
       if (Array.isArray(direct) && direct.length) {
-        return direct.map((u: string) => String(u).trim()).filter(Boolean);
+        out.push(...direct.map((u: string) => String(u).trim()).filter(Boolean));
+      } else {
+        const fotos = p.fotos;
+        if (Array.isArray(fotos) && fotos.length) {
+          out.push(...fotos.map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean));
+        }
       }
-      const fotos = p.fotos;
-      if (Array.isArray(fotos) && fotos.length) {
-        return fotos.map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean);
+      const main = p.foto || p.photo || p.photoURL || p.url || '';
+      const s = typeof main === 'string' ? main.trim() : '';
+      if (s && !out.some((u) => u.toLowerCase() === s.toLowerCase())) {
+        out.unshift(s);
       }
-      const one = p.foto || p.photo || p.photoURL || p.url || '';
-      const s = typeof one === 'string' ? one.trim() : '';
-      return s ? [s] : [];
+      const seen = new Set<string>();
+      const deduped: string[] = [];
+      for (const u of out) {
+        const k = u.toLowerCase();
+        if (!seen.has(k)) {
+          seen.add(k);
+          deduped.push(u);
+        }
+      }
+      return deduped;
     } catch {
       return [];
     }

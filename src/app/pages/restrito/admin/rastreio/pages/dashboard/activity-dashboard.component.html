@@ -1,0 +1,117 @@
+<section class="activity-dashboard" aria-label="Resumo de atividades">
+  <p class="activity-dashboard__lead">
+    Período exibido: <strong *ngIf="data() as d">{{ d.period.from }} — {{ d.period.to }}</strong>
+    (padrão: últimos 7 dias se não indicar datas).
+  </p>
+
+  <form [formGroup]="form" class="activity-dashboard__filters" (ngSubmit)="apply()">
+    <label>
+      <span>De</span>
+      <input type="date" formControlName="from" />
+    </label>
+    <label>
+      <span>Até</span>
+      <input type="date" formControlName="to" />
+    </label>
+    <button type="submit" appBtn class="primary">Atualizar</button>
+  </form>
+
+  <p class="muted" *ngIf="loading()">Carregando…</p>
+  <p class="error" *ngIf="error()">{{ error() }}</p>
+
+  <ng-container *ngIf="data() as d">
+    <div class="activity-dashboard__kpis" *ngIf="!loading()">
+      <div class="kpi">
+        <div class="kpi__val">{{ d.totals.all }}</div>
+        <div class="kpi__lbl">Eventos (total)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__val">{{ d.totals.page_views }}</div>
+        <div class="kpi__lbl">Page views</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__val">{{ d.totals.logins }}</div>
+        <div class="kpi__lbl">Logins</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__val">{{ d.totals.identify }}</div>
+        <div class="kpi__lbl">Identify</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__val">{{ d.visitantesUnicos }}</div>
+        <div class="kpi__lbl">Visitantes (distintos)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__val">{{ d.clientesComEvento }}</div>
+        <div class="kpi__lbl">Clientes c/ evento</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__val">{{ d.cartSnapshotsComItens }}</div>
+        <div class="kpi__lbl">Snapshots carrinho c/ itens</div>
+      </div>
+    </div>
+
+    <div class="activity-dashboard__grid">
+      <div class="panel">
+        <h3 class="panel__title">Por dia</h3>
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Eventos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of d.byDay">
+              <td>{{ row.date }}</td>
+              <td>{{ row.count }}</td>
+            </tr>
+            <tr *ngIf="!d.byDay.length">
+              <td colspan="2" class="empty">Sem dados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3 class="panel__title">Por tipo</h3>
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Qtd</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of d.byTipo">
+              <td>{{ row.tipo }}</td>
+              <td>{{ row.count }}</td>
+            </tr>
+            <tr *ngIf="!d.byTipo.length">
+              <td colspan="2" class="empty">Sem dados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel panel--wide">
+        <h3 class="panel__title">Top paths (page view)</h3>
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Path</th>
+              <th>Qtd</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of d.topPaths">
+              <td class="path-cell">{{ row.path }}</td>
+              <td>{{ row.count }}</td>
+            </tr>
+            <tr *ngIf="!d.topPaths.length">
+              <td colspan="2" class="empty">Sem dados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</section>

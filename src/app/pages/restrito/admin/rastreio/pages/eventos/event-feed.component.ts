@@ -1,18 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { AdminApiService } from '../../../../services/admin-api.service';
-import { ButtonDirective } from '../../../../shared/button';
+import { AdminApiService } from '../../../../../../services/admin-api.service';
+import { ButtonDirective } from '../../../../../../shared/button';
 import { Router, RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-rastreio-clientes',
+  selector: 'app-rastreio-event-feed',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, RouterModule],
-  templateUrl: './rastreio-clientes.component.html',
-  styleUrls: ['./rastreio-clientes.component.scss'],
+  templateUrl: './event-feed.component.html',
+  styleUrls: ['./event-feed.component.scss'],
 })
-export class RastreioClientesAdminComponent implements OnInit {
+export class EventFeedComponent implements OnInit {
   form: FormGroup;
   loading = signal(false);
   items = signal<any[]>([]);

@@ -1,13 +1,12 @@
-<div class="rastreio-page">
-  <header class="head">
-    <h2>Rastreio e atividade</h2>
-    <p class="muted">Eventos de navegação, carrinho e login capturados na loja (incl. antes do login, por visitante).</p>
-  </header>
+<div class="event-feed">
+  <p class="event-feed__intro muted">
+    Lista completa de eventos (navegação, carrinho, login, etc.), com filtros e paginação.
+  </p>
 
   <form [formGroup]="form" class="filters" (ngSubmit)="applyFilters()">
     <input type="search" formControlName="q" placeholder="Nome, e-mail, path, id evento" />
-    <input type="text" formControlName="tipo" placeholder="Tipo (ex. page_view)" list="tipos-rastreio" />
-    <datalist id="tipos-rastreio">
+    <input type="text" formControlName="tipo" placeholder="Tipo (ex. page_view)" list="tipos-rastreio-feed" />
+    <datalist id="tipos-rastreio-feed">
       <option value="page_view"></option>
       <option value="login"></option>
       <option value="cart_snapshot"></option>

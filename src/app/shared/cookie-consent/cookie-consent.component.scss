@@ -1,0 +1,227 @@
+$cookie-z: 10050;
+
+:host {
+  position: static;
+  display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.cookie-consent__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: $cookie-z;
+  background: rgba(7, 20, 39, 0.48);
+  -webkit-backdrop-filter: blur(5px) saturate(120%);
+  backdrop-filter: blur(5px) saturate(120%);
+  animation: cc-fade-in 0.28s ease;
+}
+
+@keyframes cc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cc-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cookie-consent__panel {
+  position: fixed;
+  z-index: $cookie-z + 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0));
+  pointer-events: none;
+}
+
+.cookie-consent__inner {
+  pointer-events: auto;
+  width: min(100%, 640px);
+  max-height: min(88dvh, 100vh);
+  overflow: auto;
+  background: linear-gradient(165deg, #ffffff 0%, #f4f7fb 100%);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 20px 20px 8px 8px;
+  box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.12), 0 24px 60px rgba(15, 23, 42, 0.18);
+  padding: 22px 20px 20px;
+  color: #0f172a;
+  font-family: var(--font-hero, 'Inter', system-ui, sans-serif);
+  animation: cc-slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 640px) {
+  .cookie-consent__panel {
+    inset: 0;
+    align-items: center;
+    padding: 24px;
+  }
+  .cookie-consent__inner {
+    border-radius: 20px;
+    max-height: min(80dvh, 640px);
+  }
+}
+
+.cookie-consent__title {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.cookie-consent__lede,
+.cookie-consent__hint {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.cookie-consent__link {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  &:hover {
+    color: #1e3a8a;
+  }
+}
+
+.cookie-consent__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.cookie-consent__actions--stack {
+  justify-content: stretch;
+  flex-direction: column;
+  @media (min-width: 480px) {
+    flex-direction: row;
+  }
+  .btn {
+    flex: 1 1 auto;
+  }
+}
+
+.btn {
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.btn-ghost {
+  background: transparent;
+  color: #475569;
+  border-color: #e2e8f0;
+  &:hover {
+    background: #f8fafc;
+  }
+}
+.btn-sec {
+  background: #fff;
+  color: #1e3a8a;
+  border-color: #bfdbfe;
+  &:hover {
+    background: #eff6ff;
+  }
+}
+.btn.primary {
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+.cookie-consent__categories {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cookie-consent__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cookie-consent__cat {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+.cookie-consent__on {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+.cookie-consent__desc {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.cookie-consent__switch {
+  input {
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+    accent-color: #2563eb;
+  }
+}
+
+.cookie-consent__dismiss {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  &:hover {
+    color: #0f172a;
+  }
+}

@@ -17,6 +17,7 @@
 
     <ul *ngIf="!carregando && pets.length" class="pet-grid" role="list">
       <li *ngFor="let p of pets; let i = index" class="pet-grid__item" role="listitem">
+        <div class="pet-card-outer">
         <button
           type="button"
           class="pet-card"
@@ -86,6 +87,15 @@
             </div>
           </div>
         </button>
+        <button
+          type="button"
+          class="pet-card__delete"
+          (click)="onDeleteClick($event, p)"
+          [disabled]="deletingPetId != null && deletingPetId === (idFor(p) || '')"
+          [attr.aria-label]="'Excluir ' + (p.nome || 'pet')"
+          title="Excluir"
+        >Excluir</button>
+        </div>
       </li>
     </ul>
 

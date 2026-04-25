@@ -1,0 +1,18 @@
+<div class="rastreio-shell">
+  <header class="rastreio-shell__head">
+    <h1 class="rastreio-shell__title">Atividade na loja</h1>
+    <p class="rastreio-shell__desc">Resumo e eventos capturados na vitrine e na área do cliente.</p>
+    <nav class="rastreio-shell__nav" aria-label="Secções do rastreio">
+      <a
+        routerLink="/restrito/admin/rastreio"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >Visão geral</a
+      >
+      <a routerLink="/restrito/admin/rastreio/eventos" routerLinkActive="is-active">Todos os eventos</a>
+    </nav>
+  </header>
+  <main class="rastreio-shell__main">
+    <router-outlet />
+  </main>
+</div>

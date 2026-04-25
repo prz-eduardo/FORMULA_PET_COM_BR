@@ -88,8 +88,8 @@
   <div *ngIf="loading" class="card">Carregando galeria...</div>
   <div *ngIf="error" class="card danger">{{ error }}</div>
 
-  <div class="masonry">
-  <div *ngFor="let p of pets" class="masonry-item" [class.vet-ad]="p.type === 'vet_ad'">
+  <div class="galeria-feed">
+  <div *ngFor="let p of pets" class="galeria-feed__item" [class.galeria-feed__item--ad]="p.type === 'vet_ad'">
       <ng-container *ngIf="p.type === 'vet_ad'; else regularPet">
         <!-- Veterinarian ad: special standalone layout -->
         <article class="vet-ad-card" role="article" aria-label="Anúncio Veterinário">
@@ -218,7 +218,7 @@
   <div class="loading-more" *ngIf="loadingMore">Carregando mais pets…</div>
   <div #sentinel class="sentinel" aria-hidden="true"></div>
 
-  <!-- Reações rápidas: popover único em position:fixed (evita coluna/row e clipping do masonry) -->
+  <!-- Reações rápidas: popover único em position:fixed (evita clipping do card) -->
   <div
     class="reaction-quick-backdrop"
     *ngIf="reactionPickerOpenFor && pickerAnchorPet"

@@ -113,6 +113,15 @@
             </div>
           </div>
 
+          <div class="acoes" *ngIf="isEditMode">
+            <button
+              type="button"
+              class="btn btn-danger-ghost"
+              (click)="excluirPet()"
+              [disabled]="carregando"
+            >Excluir pet</button>
+          </div>
+
           <div class="acoes">
             <button type="button" class="btn btn-sec" *ngIf="!modal" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
             <button type="button" class="btn btn-sec" *ngIf="modal" (click)="cancelar()" [disabled]="carregando">Fechar</button>

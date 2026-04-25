@@ -1,0 +1,86 @@
+@if (visible && !onPoliticaPage) {
+  <div
+    class="cookie-consent__backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cookie-consent-title"
+    (click)="canCloseSheet() && closeWithoutChanges()"
+  ></div>
+  <div
+    class="cookie-consent__panel"
+    role="document"
+  >
+    <div class="cookie-consent__inner" (click)="$event.stopPropagation()">
+      <h2 id="cookie-consent-title" class="cookie-consent__title">Cookies e privacidade</h2>
+
+      @if (!customMode) {
+        <p class="cookie-consent__lede">
+          Usamos cookies e dados de navegação para melhorar a loja, entender o uso do site e, com sua permissão, exibir conteúdo de parceiros.
+          Você pode aceitar, recusar o que não for essencial ou personalizar. Saiba mais na
+          <a routerLink="/politica-de-privacidade" class="cookie-consent__link">Política de privacidade</a>.
+        </p>
+
+        <div class="cookie-consent__actions" role="group" aria-label="Opções de consentimento de cookies">
+          <button type="button" class="btn btn-ghost" (click)="rejectNonEssential()">
+            Rejeitar não essenciais
+          </button>
+          <button type="button" class="btn btn-sec" (click)="showCustomize()">
+            Personalizar
+          </button>
+          <button type="button" class="btn primary" (click)="acceptAll()">
+            Aceitar todos
+          </button>
+        </div>
+      } @else {
+        <p class="cookie-consent__hint">
+          Ative ou desative cada categoria. Os necessários para o site funcionar permanecem ativos.
+        </p>
+        <ul class="cookie-consent__categories" role="list">
+          <li>
+            <div class="cookie-consent__row">
+              <span class="cookie-consent__cat">Necessários</span>
+              <span class="cookie-consent__on" aria-hidden="true">Sempre ativos</span>
+            </div>
+            <p class="cookie-consent__desc">Sessão, segurança e armazenamento da sua escolha.</p>
+          </li>
+          <li>
+            <div class="cookie-consent__row">
+              <span class="cookie-consent__cat">Análise e rastreio da loja</span>
+              <label class="cookie-consent__switch">
+                <input
+                  type="checkbox"
+                  [checked]="draftAnalytics"
+                  (change)="setDraftAnalytics($any($event.target).checked)"
+                />
+                <span class="sr-only">Permitir análise e rastreio da loja</span>
+              </label>
+            </div>
+            <p class="cookie-consent__desc">Páginas visitadas, carrinho e visitante (para melhorar a experiência).</p>
+          </li>
+          <li>
+            <div class="cookie-consent__row">
+              <span class="cookie-consent__cat">Conteúdo de terceiros</span>
+              <label class="cookie-consent__switch">
+                <input
+                  type="checkbox"
+                  [checked]="draftThirdParty"
+                  (change)="setDraftThirdParty($any($event.target).checked)"
+                />
+                <span class="sr-only">Permitir conteúdo de terceiros</span>
+              </label>
+            </div>
+            <p class="cookie-consent__desc">Widgets incorporados (ex.: avaliações) que podem definir cookies próprios.</p>
+          </li>
+        </ul>
+        <div class="cookie-consent__actions cookie-consent__actions--stack">
+          <button type="button" class="btn btn-sec" (click)="backFromCustomize()">Voltar</button>
+          <button type="button" class="btn primary" (click)="saveCustom()">Salvar preferências</button>
+        </div>
+      }
+
+      @if (isManageText()) {
+        <button type="button" class="cookie-consent__dismiss" (click)="closeWithoutChanges()">Fechar</button>
+      }
+    </div>
+  </div>
+}

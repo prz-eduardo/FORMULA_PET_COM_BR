@@ -251,6 +251,25 @@
   letter-spacing: 0.02em;
 }
 
+.footer-legal-row {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  a {
+    color: var(--fp-footer-ink, #0f172a);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+  .footer-dot {
+    display: inline-block;
+    margin: 0 0.4em;
+    opacity: 0.5;
+  }
+}
+
 /* Responsive ------------------------------------------------------------- */
 @media (max-width: 960px) {
   .footer-grid {

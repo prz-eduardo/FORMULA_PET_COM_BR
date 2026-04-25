@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID, NgZone, OnDestroy } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, NgZone, OnDestroy } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -13,6 +13,8 @@ import { ToastContainerComponent } from './shared/toast/toast-container.componen
 import { LoginClienteComponent } from './pages/restrito/area-cliente/login-cliente/login-cliente.component';
 import { StoreService } from './services/store.service';
 import { RastreioLojaService } from './services/rastreio-loja.service';
+import { CookiePreferencesService, CookiePreferences } from './services/cookie-preferences.service';
+import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -25,11 +27,12 @@ import { register } from 'swiper/element/bundle';
     NavmenuComponent,
     FooterComponent,
     LoginClienteComponent,
+    CookieConsentComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'FORMULA_PET_COM_BR';
   deviceType: string = 'desktop';
   showFooter: boolean = true;
@@ -37,13 +40,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private routerSub?: Subscription;
   showLoginModal = false;
   private openLoginHandler?: EventListenerOrEventListenerObject;
+  private cookiePreferencesSub?: Subscription;
+  private elfsightBadgeInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: any,
     private zone: NgZone,
     private router: Router,
     private store: StoreService,
-    private rastreio: RastreioLojaService
+    private rastreio: RastreioLojaService,
+    private cookiePreferences: CookiePreferencesService
   ) {
     register(); // Swiper
   }
@@ -70,7 +76,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     } catch (e) {}
     try {
-      this.rastreio.start();
+      this.cookiePreferencesSub = this.cookiePreferences.preferences$
+        .pipe(
+          filter(
+            (p): p is CookiePreferences =>
+              p != null && this.cookiePreferences.isValid(p)
+          )
+        )
+        .subscribe((p) => this.applyCookiePreferences(p));
     } catch (e) {}
     // Global listener for programmatic login requests (from other components)
     if (typeof window !== 'undefined') {
@@ -87,8 +100,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     } catch (e) {}
     try { if (this.routerSub) this.routerSub.unsubscribe(); } catch (e) {}
+    try { this.cookiePreferencesSub?.unsubscribe(); } catch (e) {}
+    try { if (this.elfsightBadgeInterval) { clearInterval(this.elfsightBadgeInterval); } } catch (e) {}
     try { if (this.openLoginHandler && typeof window !== 'undefined') window.removeEventListener('open-login', this.openLoginHandler as EventListener); } catch {}
 
+  }
+
+  private applyCookiePreferences(p: CookiePreferences): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    try {
+      this.rastreio.start(p.analytics);
+    } catch (e) {}
+    if (p.thirdParty) {
+      this.loadElfsightScript();
+    } else {
+      this.removeElfsightScript();
+    }
   }
 
   closeLoginModal() {
@@ -98,35 +127,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   onClienteLoggedIn() {
     this.closeLoginModal();
     this.store.resetClienteGate();
-  }
-
-  ngAfterViewInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.loadElfsightScript();
-    }
-    if (isPlatformBrowser(this.platformId)) {
-      // Remove o badge de branding do Elfsight depois que o widget carregar
-      // Tentando várias vezes porque o widget pode demorar pra renderizar
-      // Run the polling outside Angular so it doesn't keep the app unstable during hydration
-      this.zone.runOutsideAngular(() => {
-        let tries = 0;
-        const maxTries = 25;
-        let loadingTestimonials = true;
-        const intervalId = setInterval(() => {
-          const badge = document.querySelector('a[href*="elfsight.com/google-reviews-widget"]');
-          if (badge) {
-            badge.remove();
-            console.log('Badge Elfsight removido.');
-            loadingTestimonials = false;
-            clearInterval(intervalId);
-          } else if (++tries >= maxTries) {
-            loadingTestimonials = false;
-            clearInterval(intervalId);
-            console.warn('Não encontrou o badge Elfsight após várias tentativas.');
-          }
-        }, 2000);
-      });
-    }
   }
 
   detectDevice(): void {
@@ -144,6 +144,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadElfsightScript(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (this.elfsightBadgeInterval) {
+      clearInterval(this.elfsightBadgeInterval);
+      this.elfsightBadgeInterval = null;
+    }
     const existingScript = document.getElementById('elfsight-script');
     if (!existingScript) {
       const script = document.createElement('script');
@@ -151,6 +158,49 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       script.src = 'https://static.elfsight.com/platform/platform.js';
       script.defer = true;
       document.body.appendChild(script);
+    }
+    this.startElfsightBadgeStripper();
+  }
+
+  private startElfsightBadgeStripper(): void {
+    this.zone.runOutsideAngular(() => {
+      let tries = 0;
+      const maxTries = 25;
+      this.elfsightBadgeInterval = setInterval(() => {
+        const badge = document.querySelector('a[href*="elfsight.com/google-reviews-widget"]');
+        if (badge) {
+          badge.remove();
+          if (this.elfsightBadgeInterval) {
+            clearInterval(this.elfsightBadgeInterval);
+            this.elfsightBadgeInterval = null;
+          }
+        } else if (++tries >= maxTries) {
+          if (this.elfsightBadgeInterval) {
+            clearInterval(this.elfsightBadgeInterval);
+            this.elfsightBadgeInterval = null;
+          }
+        }
+      }, 2000);
+    });
+  }
+
+  private removeElfsightScript(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (this.elfsightBadgeInterval) {
+      try {
+        clearInterval(this.elfsightBadgeInterval);
+      } catch {
+        /* */
+      }
+      this.elfsightBadgeInterval = null;
+    }
+    const s = document.getElementById('elfsight-script');
+    try {
+      s?.remove();
+    } catch {
+      /* */
     }
   }
 }

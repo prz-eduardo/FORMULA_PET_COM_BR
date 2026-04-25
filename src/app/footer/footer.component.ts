@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterModule } from '@angular/router';
+import { CookiePreferencesService } from '../services/cookie-preferences.service';
 
 type SocialKind = 'whatsapp' | 'instagram';
 
@@ -16,12 +18,13 @@ interface AddressBlock {
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [],
+  imports: [RouterModule],
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FooterComponent {
+  private readonly cookies = inject(CookiePreferencesService);
   readonly year = new Date().getFullYear();
 
   readonly company = {
@@ -66,4 +69,9 @@ export class FooterComponent {
   ];
 
   readonly mapUrl = 'https://maps.google.com/?q=Rua%20Treze%20de%20Maio%2C%20506%2C%20Curitiba';
+
+  openCookiePreferences(e: Event): void {
+    e.preventDefault();
+    this.cookies.openPreferencesPanel();
+  }
 }

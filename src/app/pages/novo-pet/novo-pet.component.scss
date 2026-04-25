@@ -318,6 +318,17 @@
   border-color: rgba(196, 214, 0, 0.4);
 }
 
+.btn-danger-ghost {
+  background: transparent;
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.45);
+}
+.btn-danger-ghost:hover:not(:disabled) {
+  background: rgba(127, 29, 29, 0.35);
+  color: #fecaca;
+  border-color: rgba(252, 165, 165, 0.55);
+}
+
 .alergias-row {
   display: flex;
   gap: 8px;

@@ -333,6 +333,14 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
       if (ctx && Array.isArray(ctx.selectedPets)) {
         this.selectedPetIds = ctx.selectedPets.slice();
       }
+      // Remove ids de pets excluídos para não deixar seleção órfã
+      const validPetIds = new Set(
+        (this.pets || []).map((p: any) => Number(p?.id)).filter((n) => !Number.isNaN(n))
+      );
+      this.selectedPetIds = (this.selectedPetIds || []).filter((id) => validPetIds.has(Number(id)));
+      if (ctx) {
+        this.store.setCheckoutContext({ ...ctx, selectedPets: this.selectedPetIds });
+      }
     } catch {
       this.pets = [];
     } finally {

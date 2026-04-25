@@ -70,6 +70,11 @@
       <p class="footer-copyright-text">
         &copy;{{ year }} {{ company.name }} · Todos os direitos reservados
       </p>
+      <p class="footer-legal-row">
+        <a routerLink="/politica-de-privacidade">Política de privacidade</a>
+        <span class="footer-dot" aria-hidden="true">·</span>
+        <a href="#" (click)="openCookiePreferences($event)">Preferências de cookies</a>
+      </p>
     </div>
   </div>
 </footer>

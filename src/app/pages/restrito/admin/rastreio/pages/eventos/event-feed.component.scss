@@ -1,10 +1,5 @@
-.rastreio-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem 1.5rem 2rem;
-}
-.head h2 {
-  margin: 0 0 0.35rem;
+.event-feed__intro {
+  margin: 0 0 1rem;
 }
 .muted {
   color: #64748b;
@@ -14,7 +9,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 1rem 0 1.25rem;
+  margin: 0 0 1.25rem;
   align-items: center;
 }
 .filters input {

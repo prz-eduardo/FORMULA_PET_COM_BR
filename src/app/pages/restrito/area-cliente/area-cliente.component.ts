@@ -206,6 +206,23 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     return localStorage.getItem('userType') || sessionStorage.getItem('userType');
   }
 
+  /** Atualiza só a lista de pets (cliente já em `clienteData`). */
+  private refreshPetsForCliente(token: string) {
+    const id = Number(this.clienteData?.id);
+    if (isNaN(id) || id <= 0) return;
+    this.api.getPetsByCliente(id, token).subscribe({
+      next: (pets) => {
+        this.pets = pets || [];
+      },
+      error: (err) => {
+        const msg =
+          (err && err.error && (err.error.message || err.error.error)) || err.message || 'Erro ao buscar pets';
+        this.toast.error(msg, 'Erro');
+        this.pets = [];
+      }
+    });
+  }
+
   private loadProfile(token: string) {
     // silent load; if it fails, disconnect
     // avoid duplicate concurrent loads for the same token
@@ -485,6 +502,12 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
               }
             });
           }
+          if ((ref.instance as any).petDeleted) {
+            (ref.instance as any).petDeleted.subscribe(() => {
+              const t = this.auth.getToken();
+              if (t) this.refreshPetsForCliente(t);
+            });
+          }
         }
       } else if (view === 'novo-pet') {
         const mod = await import('../../../pages/novo-pet/novo-pet.component');
@@ -591,7 +614,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.titulo = 'Bem-vindo!';
   }
 
-  /** close + petSaved do cadastro/edição de pet no modal */
+  /** close + petSaved / petDeleted do cadastro/edição de pet no modal */
   private wireNovoPetModalListeners(instance: any) {
     if (!instance) return;
     if (instance.close) {
@@ -600,7 +623,14 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     if (instance.petSaved) {
       instance.petSaved.subscribe(() => {
         const t = this.auth.getToken();
-        if (t) this.loadProfile(t);
+        if (t) this.refreshPetsForCliente(t);
+        this.open('meus-pets');
+      });
+    }
+    if (instance.petDeleted) {
+      instance.petDeleted.subscribe(() => {
+        const t = this.auth.getToken();
+        if (t) this.refreshPetsForCliente(t);
         this.open('meus-pets');
       });
     }

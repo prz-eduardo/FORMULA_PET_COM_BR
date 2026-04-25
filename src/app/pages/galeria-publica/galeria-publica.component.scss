@@ -297,33 +297,22 @@
 
 .galeria-subtitle{ margin:0; color:#54646b; font-size:15px; line-height:1.45; font-weight:500; font-family: var(--gallery-font) }
 .cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px }
-.masonry{
-	column-count: 4;
-	column-gap: 16px;
-}
 
-/* Responsive masonry columns: desktop 4, tablet 2, phone 1 */
-@media screen and (max-width: 1200px) {
-  .masonry{ column-count: 3; }
+/* Feed: um card por linha, largura total do conteúdo (mobile e desktop) */
+.galeria-feed {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	width: 100%;
 }
-@media screen and (max-width: 900px) {
-  .masonry{ column-count: 2; }
-}
-@media screen and (max-width: 520px) {
-  .masonry{ column-count: 1; }
-}
-
-/* (picker antigo removido — reações rápidas usam .reaction-quick-* no fim do ficheiro) */
-.masonry-item{
+.galeria-feed__item {
 	border-radius: 14px;
-	/* allow overflow so floating UI (reaction picker) can escape the card bounds */
 	overflow: visible;
 	position: relative;
 	transform-origin: center;
 	transition: transform .26s ease, box-shadow .26s ease;
-	margin-bottom: 16px;
-	break-inside: avoid-column;
-	-webkit-column-break-inside: avoid;
+	width: 100%;
+	max-width: 100%;
 }
 
 /* ============================================================= */
@@ -518,10 +507,8 @@
 @media (max-width: 520px) {
 	.comments-label { display: none; }
 }
-/* Veterinário Ad card styles */
+/* Veterinário Ad card styles — altura da área de imagem alinhada ao card de pet (4/5) */
 .vet-ad-card {
-	break-inside: avoid-column;
-	margin-bottom: 12px;
 	border-radius: 14px;
 	overflow: hidden;
 	background: linear-gradient(180deg, #fff 0%, #f7fafc 100%);
@@ -530,9 +517,27 @@
 	color: #07101a;
 }
 .vet-ad-inner { display:flex; flex-direction:column; gap:10px }
-.vet-ad-badge { background:#f5a700; color:#08111a; font-weight:800; padding:6px 10px; border-radius:999px; display:inline-block; font-size:12px; margin:10px }
-.vet-photo-wrap { padding:0 10px }
-.vet-photo { width:100%; height:220px; object-fit:cover; border-radius:10px }
+.vet-ad-badge { background:#f5a700; color:#08111a; font-weight:800; padding:6px 10px; border-radius:999px; display:inline-block; font-size:12px; margin:10px 10px 0 10px; align-self: flex-start }
+/* Mesma proporção da área de foto do card de pet (4:5) */
+.vet-ad-card .vet-photo-wrap {
+	padding: 0;
+	margin: 0;
+	border-radius: 0;
+	aspect-ratio: 4 / 5;
+	background-image: url('/imagens/vet-placeholder.png');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+.vet-ad-card .vet-photo {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+	object-fit: cover;
+	border-radius: 0;
+}
 .vet-ad-body { padding: 6px 12px 18px }
 .vet-name { font-size:18px; margin:6px 0; font-weight:900 }
 .vet-promo { color:#334155; margin:6px 0; font-size:14px }
@@ -592,21 +597,10 @@
   transform: scale(1.2);
 }
 
-.masonry-item.vet-ad{
-	-webkit-column-span: 2;
-	column-span: 2;
-	break-inside: avoid-column;
-}
-.vet-photo-wrap{
-	position:relative;
-	background-image: url('/imagens/vet-placeholder.png');
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
+.galeria-feed__item--ad {
+	width: 100%;
 }
 .pet-photo{ width:100%; display:block; object-fit:cover; transition: transform .4s ease }
-
-.vet-photo{ display:block; width:100%; height:220px; object-fit:cover; border-radius:10px; background: transparent }
 
 /* Removed fixed-size variants; images render with natural dimensions now */
 
@@ -622,8 +616,9 @@
 .btn-like.active{ background: linear-gradient(90deg,#ff7aa2,#ff4d6d); box-shadow:0 6px 18px rgba(255,77,109,0.18) }
 
 /* hover lift */
-.masonry-item:hover{ transform: translateY(-6px); box-shadow: 0 18px 48px rgba(18,38,63,0.12) }
-.masonry-item:hover .pet-photo{ transform: scale(1.03) }
+.galeria-feed__item:hover{ transform: translateY(-4px) }
+.galeria-feed__item:hover .pet-photo{ transform: scale(1.03) }
+.galeria-feed__item--ad:hover{ transform: translateY(-4px) }
 
 .pet-actions{ width:100%; display:flex; justify-content:flex-end; padding-top:8px }
 .btn-like{ border:0; background:transparent; cursor:pointer; font-size:16px; display:inline-flex; align-items:center; gap:6px; padding:6px 8px; border-radius:8px; transition:all .18s ease }
@@ -753,31 +748,8 @@
 
 .loading-more{ text-align:center; padding:12px; color:#374151 }
 .sentinel{ height:1px }
-/* Mobile grid layout (<=640px) */
+/* Mobile: mesmo feed 1 coluna; reações ajustadas */
 @media screen and (max-width: 640px) {
-	.masonry {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 12px;
-	}
-	.masonry-item {
-		/* keep spacing visually similar to columns flow */
-		break-inside: avoid-column;
-		-webkit-column-break-inside: avoid;
-		margin-bottom: 12px;
-		width: 100%;
-	}
-	/* make vet-ad span full width in grid layout */
-	.masonry-item.vet-ad {
-		grid-column: 1 / -1;
-	}
-	/* stabilize image aspect to reduce layout shift */
-	.pet-photo {
-		aspect-ratio: 4 / 3;
-		width: 100%;
-		height: auto;
-		object-fit: cover;
-	}
 	.reaction-wrapper {
 		right: 8px;
 		bottom: 8px;

@@ -19,9 +19,13 @@ export class MeusPetsComponent implements OnChanges {
   @Output() newPet = new EventEmitter<void>();
   // Emit when user requests to edit a pet (id or full pet object)
   @Output() editPet = new EventEmitter<string | number>();
+  /** Após excluir um pet (para o host atualizar a lista, ex. área do cliente em modal) */
+  @Output() petDeleted = new EventEmitter<void>();
   @Input() clienteMe: any | null = null;
   @Input() pets: any[] = [];
   carregando = true;
+  /** id do pet em exclusão (evita cliques duplicados) */
+  deletingPetId: string | null = null;
   // track image loaded state per pet (key by id when available, otherwise by index fallback)
   petImageLoaded: Record<string, boolean> = {};
 
@@ -44,6 +48,56 @@ export class MeusPetsComponent implements OnChanges {
     try { this.router.navigateByUrl('/novo-pet'); } catch (e) { try { (window as any).location.href = '/novo-pet'; } catch {} }
   }
 
+  private getClienteIdNum(): number | null {
+    const c: any = this.clienteMe;
+    if (!c) return null;
+    const id = c.user?.id ?? c.id;
+    const n = Number(id);
+    return isNaN(n) || n <= 0 ? null : n;
+  }
+
+  onDeleteClick(ev: Event, pet: any) {
+    if (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    const id = this.resolvePetId(pet);
+    const nome = (pet && (pet.nome || 'este pet')) as string;
+    if (!id || !this.token) {
+      this.toast?.info('Não foi possível excluir: sessão ou pet inválido.');
+      return;
+    }
+    const ok = confirm(
+      `Excluir ${nome}? Esta ação não pode ser desfeita.`
+    );
+    if (!ok) return;
+    const cid = this.getClienteIdNum();
+    if (cid == null) {
+      this.toast.error('Não foi possível identificar o cliente.', 'Erro');
+      return;
+    }
+    this.deletingPetId = id;
+    this.api.deletePet(cid, id, this.token).subscribe({
+      next: () => {
+        this.deletingPetId = null;
+        this.pets = (this.pets || []).filter((p) => String(this.resolvePetId(p)) !== id);
+        this.initImageLoadState();
+        this.toast.success('Pet excluído.');
+        if (this.modal) this.petDeleted.emit();
+      },
+      error: (err: any) => {
+        this.deletingPetId = null;
+        const st = err?.status;
+        const body = err?.error;
+        const msg =
+          st === 409
+            ? (body?.error || 'Este pet possui receitas vinculadas e não pode ser excluído.')
+            : body?.error || body?.message || err?.message || 'Erro ao excluir pet';
+        this.toast.error(msg, 'Erro');
+      }
+    });
+  }
+
   // When edit is requested from a pet card
   onEditClick(pet: any) {
     if (!pet) return;
@@ -62,6 +116,11 @@ export class MeusPetsComponent implements OnChanges {
         try { console.warn('Não é possível navegar: pet sem id', pet); } catch {}
       }
     }
+  }
+
+  /** Exposto para o template (desabilitar botão durante exclusão). */
+  idFor(pet: any): string | null {
+    return this.resolvePetId(pet);
   }
 
   // Robust pet id resolver: supports `id`, `_id` and `_id.$oid` shapes

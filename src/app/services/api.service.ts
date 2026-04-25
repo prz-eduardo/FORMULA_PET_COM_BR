@@ -425,6 +425,22 @@ export class ApiService {
     });
   }
 
+  /** Excluir pet do cliente. Query opcional para fluxo vet (salvamento_pet_pelo_vet). */
+  deletePet(
+    clienteId: number,
+    petId: string | number,
+    token: string,
+    query?: { salvamento_pet_pelo_vet?: boolean }
+  ) {
+    let url = `${this.baseUrl}/clientes/${clienteId}/pets/${encodeURIComponent(String(petId))}`;
+    if (query?.salvamento_pet_pelo_vet) {
+      url += '?salvamento_pet_pelo_vet=true';
+    }
+    return this.http.delete<{ ok: boolean; id: number }>(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
   // Atualizar Cliente (PUT)
   updateCliente(clienteId: number, body: any, token: string) {
     return this.http.put<any>(`${this.baseUrl}/clientes/${clienteId}`, body, {

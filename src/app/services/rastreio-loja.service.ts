@@ -31,6 +31,13 @@ export class RastreioLojaService implements OnDestroy {
   private cartSub?: Subscription;
   private started = false;
   private enabled = true;
+  /**
+   * Quando falso, não gravamos `fp_rastreio_vid` nem enviamos eventos; `getVisitanteId()`
+   * devolve um ID só em memória (sessão) para login/checkout não dependerem de analytics.
+   * LGPD: opt-in explícito via preferências de cookies.
+   */
+  private allowAnalytics = false;
+  private ephemeralVisitanteId: string | null = null;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
@@ -47,11 +54,38 @@ export class RastreioLojaService implements OnDestroy {
     if (this.pageTimer) clearTimeout(this.pageTimer);
   }
 
-  /** Chamar uma vez no bootstrap da aplicação (ex.: app.component) no browser. */
-  start(): void {
-    if (!isPlatformBrowser(this.platformId) || this.started) return;
+  /**
+   * @param allowAnalytics se false, nada é persistido no storage de rastreio nem fila de eventos
+   * até o usuário optar; `getVisitanteId()` continua com ID efêmero para APIs de login.
+   */
+  start(allowAnalytics: boolean): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (this.started) {
+      if (!this.allowAnalytics && allowAnalytics) {
+        this.enableFullTracking();
+      } else if (this.allowAnalytics && !allowAnalytics) {
+        this.disableTracking();
+      }
+      return;
+    }
     this.started = true;
+    this.allowAnalytics = allowAnalytics;
     this.refreshEnabledFromUrl(this.router.url || '');
+    if (allowAnalytics) {
+      this.wireTrackingSubscriptions();
+      if (this.enabled) {
+        this.syncVisitante();
+        this.schedulePageView(this.router.url || '');
+      }
+    }
+  }
+
+  private wireTrackingSubscriptions(): void {
+    if (this.routerSub) {
+      return;
+    }
     this.routerSub = this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe((e) => {
@@ -61,16 +95,62 @@ export class RastreioLojaService implements OnDestroy {
     this.cartSub = this.store.cart$
       .pipe(debounceTime(2000))
       .subscribe((items) => this.enqueueCartSnapshot(items));
+  }
+
+  private enableFullTracking(): void {
+    this.allowAnalytics = true;
+    this.ephemeralVisitanteId = null;
+    this.wireTrackingSubscriptions();
     if (this.enabled) {
       this.syncVisitante();
       this.schedulePageView(this.router.url || '');
     }
   }
 
-  /** UUID persistente; usado no login (merge com o cliente). */
+  private disableTracking(): void {
+    this.allowAnalytics = false;
+    this.routerSub?.unsubscribe();
+    this.cartSub?.unsubscribe();
+    this.routerSub = undefined;
+    this.cartSub = undefined;
+    this.queue = [];
+    if (this.flushHandle) {
+      clearTimeout(this.flushHandle);
+      this.flushHandle = null;
+    }
+    if (this.pageTimer) {
+      clearTimeout(this.pageTimer);
+      this.pageTimer = null;
+    }
+    this.lastPath = '';
+    this.ephemeralVisitanteId = null;
+    this.clearPersistentVisitanteId();
+  }
+
+  private clearPersistentVisitanteId(): void {
+    if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      localStorage.removeItem(LS_VID);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Com analytics desligado, ID só em memória (sem gravar `fp_rastreio_vid`), para login continuar
+   * enviando um visitanteId sem conflito com a LGPD no armazenamento de rastreio.
+   */
   getVisitanteId(): string {
     if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
       return makeUuidV4();
+    }
+    if (!this.allowAnalytics) {
+      if (!this.ephemeralVisitanteId) {
+        this.ephemeralVisitanteId = makeUuidV4();
+      }
+      return this.ephemeralVisitanteId;
     }
     try {
       let v = localStorage.getItem(LS_VID);
@@ -86,6 +166,9 @@ export class RastreioLojaService implements OnDestroy {
 
   /** Após login com sucesso, força evento com JWT para o merge no backend. */
   afterClienteLogin(): void {
+    if (!this.allowAnalytics) {
+      return;
+    }
     this.enqueue({ tipo: 'identify' as const, path: this.sanitizePath(this.router.url) });
     this.flushSoon();
   }
@@ -117,7 +200,9 @@ export class RastreioLojaService implements OnDestroy {
   }
 
   private syncVisitante(): void {
-    if (!isPlatformBrowser(this.platformId) || !this.enabled) return;
+    if (!isPlatformBrowser(this.platformId) || !this.enabled || !this.allowAnalytics) {
+      return;
+    }
     const id = this.getVisitanteId();
     let landing_path: string;
     let document_referrer: string | null;
@@ -164,7 +249,9 @@ export class RastreioLojaService implements OnDestroy {
   }
 
   private schedulePageView(url: string): void {
-    if (this.isAdminPath(url) || !this.enabled) return;
+    if (this.isAdminPath(url) || !this.enabled || !this.allowAnalytics) {
+      return;
+    }
     if (this.pageTimer) clearTimeout(this.pageTimer);
     this.pageTimer = setTimeout(() => {
       this.pageTimer = null;
@@ -191,7 +278,9 @@ export class RastreioLojaService implements OnDestroy {
   }
 
   private enqueueCartSnapshot(items: CartItem[]): void {
-    if (!this.enabled) return;
+    if (!this.enabled || !this.allowAnalytics) {
+      return;
+    }
     const itemCount = items.reduce((a, c) => a + c.quantity, 0);
     let subtotal = 0;
     for (const c of items) {
@@ -232,7 +321,9 @@ export class RastreioLojaService implements OnDestroy {
   }
 
   private flush(): void {
-    if (!isPlatformBrowser(this.platformId) || this.queue.length === 0) return;
+    if (!isPlatformBrowser(this.platformId) || this.queue.length === 0 || !this.allowAnalytics) {
+      return;
+    }
     if (this.isAdminPath(this.router.url)) {
       this.queue = [];
       return;

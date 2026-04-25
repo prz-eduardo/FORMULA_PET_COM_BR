@@ -22,6 +22,7 @@ export class NovoPetComponent implements OnInit {
   @Input() clienteDataInjected: any = null;
   @Output() close = new EventEmitter<void>();
   @Output() petSaved = new EventEmitter<void>();
+  @Output() petDeleted = new EventEmitter<void>();
   // form fields
   nome = '';
   especie = '';
@@ -155,8 +156,54 @@ export class NovoPetComponent implements OnInit {
     this.buscarOutrasPredefinida();
   }
 
+  /** Id do pet em edição (rota ou `editId` em modal), ou null no cadastro novo. */
+  getEffectiveEditId(): string | null {
+    const routeId = this.route.snapshot.paramMap.get('id');
+    if (this.editId != null && String(this.editId) !== '') return String(this.editId);
+    return routeId;
+  }
+
+  get isEditMode(): boolean {
+    return !!this.getEffectiveEditId();
+  }
+
   cancelar(){
     if (this.modal) this.close.emit();
+  }
+
+  excluirPet() {
+    const effectiveEditId = this.getEffectiveEditId();
+    if (!effectiveEditId || !this.token || !this.getClienteIdNum()) {
+      this.toast.error('Não é possível excluir: sessão inválida ou pet não carregado.', 'Erro');
+      return;
+    }
+    const ok = confirm(
+      `Excluir ${this.nome || 'este pet'}? Esta ação não pode ser desfeita.`
+    );
+    if (!ok) return;
+    const cid = this.getClienteIdNum()!;
+    this.carregando = true;
+    this.api.deletePet(cid, effectiveEditId, this.token).subscribe({
+      next: () => {
+        this.toast.success('Pet excluído.');
+        this.carregando = false;
+        this.petDeleted.emit();
+        if (this.modal) {
+          return;
+        }
+        this.router.navigateByUrl('/area-cliente');
+      },
+      error: (err: any) => {
+        this.carregando = false;
+        const st = err?.status;
+        const body = err?.error;
+        const msg =
+          st === 409
+            ? (body?.error || 'Este pet possui receitas vinculadas e não pode ser excluído.')
+            : body?.error || body?.message || err?.message || 'Erro ao excluir pet';
+        this.toast.error(msg, 'Erro');
+      }
+    });
   }
 
   carregarListaAlergias() {
@@ -316,9 +363,7 @@ export class NovoPetComponent implements OnInit {
     }
 
     this.carregando = true;
-    const routeParamId = this.route.snapshot.paramMap.get('id');
-    const effectiveEditId =
-      this.editId != null && String(this.editId) !== '' ? String(this.editId) : routeParamId;
+    const effectiveEditId = this.getEffectiveEditId();
     const cid = this.getClienteIdNum()!;
     const req$ = effectiveEditId
       ? this.api.updatePet(cid, effectiveEditId, fd, this.token!)

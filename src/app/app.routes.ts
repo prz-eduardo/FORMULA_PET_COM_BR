@@ -13,6 +13,11 @@ export const routes: Routes = [
   { path: '', loadChildren: () => import('./pages/loja/loja.module').then(m => m.LojaModule) }, // Página pública (loja)
   { path: 'institucional', loadChildren: () => import('./pages/home/home.module').then(m => m.HomeModule) },
   { path: 'sobre-nos', loadComponent: () => import('./pages/sobre-nos/sobre-nos.component').then(m => m.SobreNosComponent) },
+  {
+    path: 'politica-de-privacidade',
+    loadComponent: () =>
+      import('./pages/politica-privacidade/politica-privacidade.component').then(m => m.PoliticaPrivacidadeComponent)
+  },
   { 
     path: 'meus-pedidos', 
     loadComponent: () => import('./pages/meus-pedidos/meus-pedidos.component').then(m => m.MeusPedidosComponent),
@@ -76,12 +81,13 @@ export const routes: Routes = [
       { path: 'clientes', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'cliente', title: 'Gerenciar Clientes' }, canActivate: [authGuard] },
       { path: 'veterinarios', loadComponent: async () => (await import('./pages/restrito/admin/people/people.component')).PeopleAdminComponent, data: { tipo: 'vet', title: 'Gerenciar Veterinários' }, canActivate: [authGuard] },
       {
-        path: 'rastreio-clientes',
-        loadComponent: () =>
-          import('./pages/restrito/admin/rastreio-clientes/rastreio-clientes.component').then((m) => m.RastreioClientesAdminComponent),
+        path: 'rastreio',
+        loadChildren: () =>
+          import('./pages/restrito/admin/rastreio/rastreio.routes').then((m) => m.RASTREIO_ROUTES),
         canActivate: [authGuard],
-        data: { title: 'Rastreio de clientes' },
+        data: { title: 'Atividade na loja' },
       },
+      { path: 'rastreio-clientes', redirectTo: 'rastreio/eventos', pathMatch: 'full' },
       {
         path: 'pets-galeria',
         loadComponent: () =>
