@@ -18,6 +18,7 @@ import { CookiePreferencesService, CookiePreferences } from './services/cookie-p
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { BannedUserModalComponent } from './shared/banned-user-modal/banned-user-modal.component';
 import { MARCA_NOME } from './constants/loja-public';
+import { environment } from '../environments/environment';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -38,6 +39,7 @@ import { register } from 'swiper/element/bundle';
 })
 export class AppComponent implements OnInit, OnDestroy {
   title = MARCA_NOME;
+  readonly comingSoon = environment.comingSoon;
   deviceType: string = 'desktop';
   showFooter: boolean = true;
   showNav: boolean = true;
@@ -61,6 +63,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.detectDevice();
+    if (this.comingSoon) {
+      return;
+    }
     if (isPlatformBrowser(this.platformId)) {
       try {
         this.titleService.setTitle(MARCA_NOME);

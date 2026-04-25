@@ -1,14 +1,14 @@
 <!-- Header fixo -->
-<app-navmenu *ngIf="showNav"></app-navmenu>
+<app-navmenu *ngIf="showNav && !comingSoon"></app-navmenu>
 
 <!-- Aqui entram todas as rotas (Home, Login, Admin) -->
-<main class="app-main" [class.no-nav]="!showNav"><router-outlet></router-outlet></main>
+<main class="app-main" [class.no-nav]="!showNav || comingSoon"><router-outlet></router-outlet></main>
 
 <!-- Footer fixo -->
-<app-footer *ngIf="showFooter"></app-footer>
+<app-footer *ngIf="showFooter && !comingSoon"></app-footer>
 
 <!-- Global login modal (opened by dispatching 'open-login' on window) -->
-<div class="global-login-modal" *ngIf="showLoginModal">
+<div class="global-login-modal" *ngIf="showLoginModal && !comingSoon">
 	<div class="login-overlay" (click)="closeLoginModal()"></div>
 	<div class="login-popover app-login-popover" role="dialog" aria-modal="true" aria-label="Login do cliente" (click)="$event.stopPropagation()">
 		<button type="button" class="app-login-popover__close" (click)="closeLoginModal()" aria-label="Fechar">×</button>
@@ -17,10 +17,10 @@
 </div>
 
 <!-- Modal global: conta de cliente banida/desativada -->
-<app-banned-user-modal></app-banned-user-modal>
+<app-banned-user-modal *ngIf="!comingSoon"></app-banned-user-modal>
 
 <!-- Global toast container -->
-<app-toast-container></app-toast-container>
+<app-toast-container *ngIf="!comingSoon"></app-toast-container>
 
 <!-- Sem ngSkipHydration, a hidratação do SSR pode não vincular (click) nos botões; o <a href> continua a funcionar. -->
-<app-cookie-consent ngSkipHydration></app-cookie-consent>
+<app-cookie-consent *ngIf="!comingSoon" ngSkipHydration></app-cookie-consent>

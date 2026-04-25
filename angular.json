@@ -58,6 +58,27 @@
               ],
               "outputHashing": "all"
             },
+            "com-br": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2MB",
+                  "maximumError": "3MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "40kB",
+                  "maximumError": "50kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.com-br.ts"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -71,6 +92,9 @@
           "configurations": {
             "production": {
               "buildTarget": "PETSPHERE_COM_BR:build:production"
+            },
+            "com-br": {
+              "buildTarget": "PETSPHERE_COM_BR:build:com-br"
             },
             "development": {
               "buildTarget": "PETSPHERE_COM_BR:build:development"

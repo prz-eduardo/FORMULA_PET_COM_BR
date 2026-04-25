@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:com-br": "ng build --configuration=com-br",
     "build:cap": "ng build && npx cap sync",
     "cap:sync": "npx cap sync",
     "open:android": "npx cap open android",

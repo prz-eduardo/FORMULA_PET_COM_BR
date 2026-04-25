@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { environment } from '../environments/environment';
 // import { HomeComponent } from './pages/home/home.component';
 import { GaleriaPublicaComponent } from './pages/galeria-publica/galeria-publica.component';
 import { LoginComponent } from './pages/restrito/login/login.component';
@@ -9,7 +10,15 @@ import { AdminPedidosComponent } from './pages/restrito/admin/pedidos/pedidos.co
 import { authGuard } from './guards/auth.guard';
 import { vetGuard } from './guards/vet.guard';
 
-export const routes: Routes = [
+/** Site público no domínio .com.br: apenas “em breve”, sem outras rotas. */
+const comingSoonRoutes: Routes = [
+  {
+    path: '**',
+    loadComponent: () => import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent)
+  }
+];
+
+const fullAppRoutes: Routes = [
   { path: '', loadChildren: () => import('./pages/loja/loja.module').then(m => m.LojaModule) }, // Página pública (loja)
   { path: 'institucional', loadChildren: () => import('./pages/home/home.module').then(m => m.HomeModule) },
   { path: 'sobre-nos', loadComponent: () => import('./pages/sobre-nos/sobre-nos.component').then(m => m.SobreNosComponent) },
@@ -138,3 +147,5 @@ export const routes: Routes = [
  
   { path: '**', redirectTo: '' }                        // Redireciona qualquer rota inválida pra home
 ];
+
+export const routes: Routes = environment.comingSoon ? comingSoonRoutes : fullAppRoutes;
