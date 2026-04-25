@@ -2,18 +2,18 @@
 * {
   -webkit-tap-highlight-color: transparent;
 }
-// Avatar do usuário na navbar
+// Avatar do usuário na navbar (alinha ao botão circular 36px)
 .user-trigger img {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
-  border-radius: 10px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  border-radius: 50% !important;
   object-fit: cover !important;
-  border: 1px solid #e5e7eb !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   background: #fff !important;
   display: block !important;
 }
@@ -123,7 +123,7 @@ $navbar-main-deep: #3d4ab0;
 $navbar-active-on-pill: #5161ce;
 
 .nav-menu {
-  height: 50px;
+  height: 64px;
 }
 
 /* Navigation — z-index acima de camadas internas do Google Maps (podem passar de 1e5) */
@@ -148,10 +148,10 @@ nav.app-navbar {
     position: absolute;
     top: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 10px;
-    padding: 0 12px;
+    padding: 4px 12px 8px;
     box-sizing: border-box;
     background: linear-gradient(120deg, $navbar-main-deep 0%, $navbar-main 42%, lighten($navbar-main, 6%) 100%);
     box-shadow: 0 8px 28px rgba(45, 55, 130, 0.38);
@@ -163,8 +163,13 @@ nav.app-navbar {
     }
 
     @include sm {
-      padding: 0 10px;
+      padding: 4px 10px 8px;
       gap: 8px;
+    }
+
+    .navbar-brand-link .logo-container {
+      transform: scale(0.82);
+      transform-origin: left center;
     }
   }
 
@@ -198,7 +203,7 @@ nav.app-navbar {
     position: relative;
     overflow: hidden;
     border-radius: 999px;
-    padding: 5px 6px;
+    padding: 3px 4px;
     max-width: 100%;
   }
 
@@ -210,9 +215,9 @@ nav.app-navbar {
     top: 0;
     pointer-events: none;
     background: #fff;
-    border-radius: 14px 14px 12px 12px;
+    border-radius: 10px 10px 9px 9px;
     box-shadow:
-      0 4px 18px rgba(15, 23, 42, 0.14),
+      0 3px 12px rgba(15, 23, 42, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.95);
     opacity: 0;
     transition:
@@ -224,39 +229,39 @@ nav.app-navbar {
 
     .hori-cap {
       position: absolute;
-      width: 22px;
-      height: 22px;
+      width: 16px;
+      height: 16px;
       background: #fff;
-      bottom: 8px;
+      bottom: 6px;
       pointer-events: none;
     }
 
     .hori-cap--right {
-      right: -22px;
+      right: -16px;
     }
 
     .hori-cap--left {
-      left: -22px;
+      left: -16px;
     }
 
     .hori-cap--right::before,
     .hori-cap--left::before {
       content: '';
       position: absolute;
-      width: 44px;
-      height: 44px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: $navbar-main;
     }
 
     .hori-cap--right::before {
       bottom: 0;
-      right: -22px;
+      right: -16px;
     }
 
     .hori-cap--left::before {
       bottom: 0;
-      left: -22px;
+      left: -16px;
     }
   }
 
@@ -284,12 +289,12 @@ nav.app-navbar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 11px 16px;
-    border-radius: 14px;
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: 10px;
     font-family: $font-01;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     letter-spacing: 0.02em;
     color: rgba(255, 255, 255, 0.62);
     text-decoration: none;
@@ -298,7 +303,7 @@ nav.app-navbar {
       transform 0.28s cubic-bezier(0.34, 1.15, 0.64, 1);
 
     i {
-      font-size: 0.88rem;
+      font-size: 0.74rem;
       opacity: 0.9;
       transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
     }
@@ -308,7 +313,7 @@ nav.app-navbar {
       transform: translateY(-1px);
 
       i {
-        transform: scale(1.08);
+        transform: scale(1.06);
       }
     }
   }
@@ -327,18 +332,18 @@ nav.app-navbar {
   }
 
   .nav-tab-badge {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
     border-radius: 999px;
     background: #ef4444;
     color: #fff;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
-    line-height: 18px;
+    line-height: 15px;
     text-align: center;
     margin-left: 2px;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95);
   }
 
   .navbar-actions {
@@ -352,25 +357,33 @@ nav.app-navbar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.98);
-    color: #1e293b;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.97);
+    color: #334155;
     cursor: pointer;
-    margin-left: 4px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    margin-left: 6px;
+    margin-bottom: 1px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
     transition:
       transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1),
       box-shadow 0.22s ease,
-      border-color 0.22s ease;
+      border-color 0.22s ease,
+      background 0.2s ease;
   }
 
   .user-trigger:hover {
-    transform: scale(1.05);
-    border-color: rgba(255, 255, 255, 0.65);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+    transform: scale(1.04);
+    border-color: rgba(255, 255, 255, 0.75);
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+  }
+
+  .user-trigger svg {
+    flex-shrink: 0;
   }
 
   .nav-primary-tabs--mobile {
@@ -407,18 +420,35 @@ nav.app-navbar {
       }
 
       .nav-tab-link {
-        padding: 9px 11px;
+        position: relative;
+        padding: 10px 12px;
         font-size: 0.72rem;
-        gap: 5px;
+        gap: 0;
+        justify-content: center;
         color: rgba(255, 255, 255, 0.7);
         border-radius: 999px;
       }
 
       .nav-tab-link i {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+      }
+
+      /* Só a aba ativa mostra o título; inativas ficam só com ícone (texto continua para leitores de ecrã) */
+      .nav-tab-item:not(.active) .nav-tab-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
       }
 
       .nav-tab-item.active .nav-tab-link {
+        gap: 6px;
+        padding: 9px 14px;
         background: #fff;
         color: $navbar-active-on-pill;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);

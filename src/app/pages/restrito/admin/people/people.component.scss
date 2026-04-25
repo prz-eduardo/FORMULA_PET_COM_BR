@@ -7,3 +7,13 @@
 	gap: 8px 12px;
 }
 .areas label { display: flex; align-items: center; gap: 6px; padding-right: 6px; }
+
+.fx-inativacao-notice {
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+	background: #fff5f5;
+	border: 1px solid #fecaca;
+	color: #1f2937;
+	p { margin: 0.35rem 0 0; white-space: pre-wrap; }
+}

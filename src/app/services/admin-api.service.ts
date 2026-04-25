@@ -185,6 +185,8 @@ export interface PessoaDto {
   tipo?: 'cliente' | 'vet' | 'admin';
   active?: 0 | 1;
   ativo?: 0 | 1;
+  /** Motivo da inativação (admin), quando ativo = 0 */
+  inativacao_motivo?: string | null;
   created_at?: string;
   updated_at?: string;
   // Vet extras

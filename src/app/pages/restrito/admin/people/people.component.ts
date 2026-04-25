@@ -287,11 +287,40 @@ export class PeopleAdminComponent implements OnInit {
 
   ativar(u: any) {
     const id = u.id || u.uid; const tipo = this.tipo; const body: any = { tipo, ativo: 1 };
-    if (this.api.updatePerson) this.api.updatePerson(id, tipo, body).subscribe(() => this.load()); else this.api.updateUsuario(id, { active: 1 }).subscribe(() => this.load());
+    const onOk = (updated?: PessoaDto) => {
+      this.load();
+      if (updated && this.expandedId() != null && String((updated as any).id) === String(id)) {
+        const prev = this.selected() as any;
+        this.view({ ...(prev || {}), ...updated } as PessoaDto);
+      }
+    };
+    if (this.api.updatePerson) {
+      this.api.updatePerson(id, tipo, body).subscribe((r) => onOk(r));
+    } else {
+      this.api.updateUsuario(id, { active: 1 } as any).subscribe(() => onOk());
+    }
   }
   desativar(u: any) {
-    const id = u.id || u.uid; const tipo = this.tipo; const body: any = { tipo, ativo: 0 };
-    if (this.api.updatePerson) this.api.updatePerson(id, tipo, body).subscribe(() => this.load()); else this.api.updateUsuario(id, { active: 0 }).subscribe(() => this.load());
+    const motivo = window.prompt('Informe o motivo da desativação (obrigatório, mín. 3 caracteres):', '');
+    if (motivo === null) return;
+    const m = (motivo || '').trim();
+    if (m.length < 3) {
+      window.alert('O motivo é obrigatório (mínimo 3 caracteres).');
+      return;
+    }
+    const id = u.id || u.uid; const tipo = this.tipo; const body: any = { tipo, ativo: 0, inativacao_motivo: m };
+    const onOk = (updated?: PessoaDto) => {
+      this.load();
+      if (updated && this.expandedId() != null && String((updated as any).id) === String(id)) {
+        const prev = this.selected() as any;
+        this.view({ ...(prev || {}), ...updated } as PessoaDto);
+      }
+    };
+    if (this.api.updatePerson) {
+      this.api.updatePerson(id, tipo, body).subscribe((r) => onOk(r));
+    } else {
+      this.api.updateUsuario(id, { active: 0, inativacao_motivo: m } as any).subscribe(() => onOk());
+    }
   }
 
   salvarEdicao() {
@@ -398,6 +427,7 @@ export class PeopleAdminComponent implements OnInit {
       phone: [''],
       senha: [''],
       ativo: [1],
+      inativacao_motivo: [''],
       approved: [this.tipo === 'vet' ? 0 : 1],
       // admin-specific
       role: [this.tipo === 'admin' ? 'funcionario' : ''],
@@ -419,6 +449,15 @@ export class PeopleAdminComponent implements OnInit {
     if (v.role) body.role = v.role;
     if (Array.isArray(v.areas) && v.areas.length) body.areas = v.areas;
     if (tipo === 'vet') body.approved = Number(v.approved) || 0; else body.ativo = Number(v.ativo) || 1;
+    const a0 = tipo !== 'vet' && Number(v.ativo) === 0;
+    if (a0) {
+      const mot = (v.inativacao_motivo || '').toString().trim();
+      if (mot.length < 3) {
+        window.alert('Com conta inativa, informe o motivo da inativação (mínimo 3 caracteres).');
+        return;
+      }
+      body.inativacao_motivo = mot;
+    }
     this.api.createPerson(body).subscribe(created => {
       this.showCreate.set(false);
       this.page.set(1);

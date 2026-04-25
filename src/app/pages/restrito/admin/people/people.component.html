@@ -127,6 +127,10 @@
           <div class="tab-body">
             <!-- DADOS ----------------------------------------------- -->
             <div class="pane" *ngIf="selectedTab()==='dados'">
+              <div class="fx-inativacao-notice" *ngIf="!isActive(s) && s.inativacao_motivo">
+                <strong>Motivo da inativação</strong>
+                <p>{{ s.inativacao_motivo }}</p>
+              </div>
               <form [formGroup]="form" class="fx-section">
                 <header class="fx-section__head">
                   <h3>Identificação</h3>
@@ -388,6 +392,10 @@
               <option [value]="1">Sim</option>
               <option [value]="0">Não</option>
             </select>
+          </div>
+          <div class="fx-field fx-col-2" *ngIf="createForm.value.tipo!=='vet' && (createForm.get('ativo')?.value == 0 || createForm.get('ativo')?.value === '0')">
+            <label>Motivo da inativação</label>
+            <textarea formControlName="inativacao_motivo" rows="2" placeholder="Obrigatório ao criar como inativo (mín. 3 caracteres)"></textarea>
           </div>
           <div class="fx-field" *ngIf="createForm.value.tipo==='admin'">
             <label>Role</label>
