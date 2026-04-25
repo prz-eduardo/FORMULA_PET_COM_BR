@@ -1,6 +1,6 @@
-import { Component, AfterViewInit, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit } from '@angular/core';
+import { Component, AfterViewInit, ChangeDetectorRef, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { Router, NavigationEnd, RouterLink } from '@angular/router';
+import { Router, NavigationEnd, NavigationStart, NavigationCancel, NavigationError, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { StoreService } from '../services/store.service';
 import { AuthService } from '../services/auth.service';
@@ -48,14 +48,18 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   cartCount = 0;
   isCliente = false;
   showFullMenu = true;
+  /** Aba que o utilizador acabou de escolher (clique síncrono); limpa-se no fim da navegação. */
+  selectedMainTabId: string | null = null;
 
-  /** Itens principais da barra (sem Carrinho — entra só para cliente logado). */
+  /**
+   * Ordem: Galeria → Mapa → Loja → (Carrinho se cliente) → Sobre.
+   * Carrinho é inserido em `visibleNavItems` após Loja.
+   */
   readonly mainNavItems: NavMainItem[] = [
-    { id: 'loja', label: 'Loja', link: '/', icon: 'fas fa-store' },
-    { id: 'institucional', label: 'Institucional', shortLabel: 'Instit.', link: '/institucional', icon: 'fas fa-house' },
-    { id: 'sobre', label: 'Sobre', link: '/sobre-nos', icon: 'fas fa-circle-info' },
-    { id: 'mapa', label: 'Mapa', link: '/mapa', icon: 'fas fa-map-location-dot' },
     { id: 'galeria', label: 'Galeria', link: '/galeria', icon: 'fas fa-images' },
+    { id: 'mapa', label: 'Mapa', link: '/mapa', icon: 'fas fa-map-location-dot' },
+    { id: 'loja', label: 'Loja', link: '/', icon: 'fas fa-store' },
+    { id: 'sobre', label: 'Sobre', link: '/sobre-nos', icon: 'fas fa-circle-info' },
   ];
 
   private readonly carrinhoNavItem: NavMainItem = {
@@ -68,7 +72,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get visibleNavItems(): NavMainItem[] {
     if (this.isCliente) {
-      return [...this.mainNavItems, this.carrinhoNavItem];
+      const i = this.mainNavItems.findIndex(x => x.id === 'loja') + 1;
+      return [...this.mainNavItems.slice(0, i), this.carrinhoNavItem, ...this.mainNavItems.slice(i)];
     }
     return this.mainNavItems;
   }
@@ -81,18 +86,55 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('desktopTabsTrack', { read: ElementRef }) desktopTabsTrack?: ElementRef<HTMLElement>;
   private idleTimer: any = null;
   private readonly idleTimeoutMs = 5000; // 5s sem scroll
+  /** Invalida timers de settle (ex.: após trocar de rota de novo). */
+  private tabPillLayoutGen = 0;
+  private trackResize: ResizeObserver | null = null;
+  private pillLayoutDebounce: ReturnType<typeof setTimeout> | null = null;
+  private menubarSettleTimer: ReturnType<typeof setTimeout> | null = null;
+  private pillFlipClearTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Última geometria aplicada ao hori-selector (para diff + FLIP). */
+  private lastPillMetrics: { left: number; top: number; width: number; height: number; key: string } | null = null;
+  private static readonly PILL_DIFF_PX = 0.85;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, private store: StoreService, private auth: AuthService) {}
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private router: Router,
+    private store: StoreService,
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    this.currentRoute = this.router.url;
+    this.setCurrentRoutePath(this.router.url);
     this.updateMenuMode();
+    // NavigationStart: atualiza aba e pill logo ao clicar, sem esperar chunk lazy nem APIs da página.
     this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
-        this.currentRoute = event.urlAfterRedirects;
-        this.updateMenuMode();
-        this.scheduleTabPillUpdate();
+      .pipe(
+        filter(
+          e =>
+            e instanceof NavigationStart ||
+            e instanceof NavigationEnd ||
+            e instanceof NavigationCancel ||
+            e instanceof NavigationError
+        )
+      )
+      .subscribe(event => {
+        if (event instanceof NavigationCancel || event instanceof NavigationError) {
+          this.selectedMainTabId = null;
+          return;
+        }
+        if (event instanceof NavigationStart) {
+          this.setCurrentRoutePath(event.url);
+          this.updateMenuMode();
+          this.cdr.detectChanges();
+          this.scheduleTabPillUpdate();
+        } else {
+          const ne = event as NavigationEnd;
+          this.setCurrentRoutePath(ne.urlAfterRedirects);
+          this.updateMenuMode();
+          this.selectedMainTabId = null;
+          this.scheduleTabPillUpdate();
+        }
       });
 
     this.store.cart$.subscribe(items => {
@@ -178,6 +220,26 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /** path sem query; usado no Start e no End para a navbar não depender do fim do carregamento. */
+  private setCurrentRoutePath(url: string): void {
+    this.currentRoute = (url || '').split('?')[0] || '';
+  }
+
+  /** Clique síncrono na aba: destaque e pill antes do lazy load / API da página. */
+  onMainTabClick(tabId: string): void {
+    this.selectedMainTabId = tabId;
+    this.cdr.detectChanges();
+    this.scheduleTabPillUpdate();
+  }
+
+  /** Destaque da aba: intenção do utilizador tem prioridade sobre isNavActive até NavigationEnd. */
+  isTabHighlighted(item: NavMainItem): boolean {
+    if (this.selectedMainTabId != null && this.selectedMainTabId !== '') {
+      return item.id === this.selectedMainTabId;
+    }
+    return this.isNavActive(item);
+  }
+
   isNavActive(item: NavMainItem): boolean {
     const path = (this.currentRoute || '').split('?')[0] || '';
     switch (item.id) {
@@ -189,8 +251,6 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           path.startsWith('/favoritos') ||
           path.startsWith('/checkout')
         );
-      case 'institucional':
-        return path.startsWith('/institucional');
       case 'sobre':
         return path.startsWith('/sobre-nos');
       case 'mapa':
@@ -224,6 +284,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       this.initMetaBalls();
       this.resetIdleTimer();
+      this.rebindTabsTrackResizeObserver();
       this.scheduleTabPillUpdate();
     }
   }
@@ -235,54 +296,191 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isVisible = currentScroll < this.previousScroll || currentScroll <= 0;
       this.previousScroll = currentScroll;
       this.resetIdleTimer();
+      this.requestPillLayoutFromScroll();
     }
   }
 
   @HostListener('window:resize', [])
   onWindowResize(): void {
-    this.scheduleTabPillUpdate();
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.requestPillLayoutFromScroll();
   }
 
   private updateMenuMode(): void {
     this.showFullMenu = this.showSlideMenu;
     this.scheduleTabPillUpdate();
+    if (isPlatformBrowser(this.platformId)) {
+      setTimeout(() => this.rebindTabsTrackResizeObserver(), 0);
+    }
+  }
+
+  /** Chamar quando o track de desktop for criado/destroi (ex. *ngIf="showFullMenu"). */
+  private rebindTabsTrackResizeObserver(): void {
+    this.trackResize?.disconnect();
+    this.trackResize = null;
+    if (!isPlatformBrowser(this.platformId) || typeof ResizeObserver === 'undefined') return;
+    const track = this.desktopTabsTrack?.nativeElement;
+    if (!track) return;
+    this.trackResize = new ResizeObserver(() => {
+      this.requestPillLayoutFromScroll();
+    });
+    this.trackResize.observe(track);
+  }
+
+  /**
+   * Scroll/resize/ResizeObserver: um único passo (debounce) e sem FLIP, para não reatribuir left/width
+   * ponto a ponto (evitava “recomeçar” a animação a cada 1px).
+   */
+  private requestPillLayoutFromScroll(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (this.pillLayoutDebounce) clearTimeout(this.pillLayoutDebounce);
+    this.pillLayoutDebounce = setTimeout(() => {
+      this.pillLayoutDebounce = null;
+      this.applyDesktopPillFromDom({ allowFlip: false, force: false });
+    }, 24);
   }
 
   private scheduleTabPillUpdate(): void {
     if (!isPlatformBrowser(this.platformId)) return;
-    const run = () => this.updateDesktopTabPill();
-    requestAnimationFrame(() => {
-      run();
-      if (this.showFullMenu) {
-        setTimeout(run, 0);
-      }
-    });
+    const session = ++this.tabPillLayoutGen;
+    if (this.menubarSettleTimer) {
+      clearTimeout(this.menubarSettleTimer);
+      this.menubarSettleTimer = null;
+    }
+    if (this.pillLayoutDebounce) {
+      clearTimeout(this.pillLayoutDebounce);
+      this.pillLayoutDebounce = null;
+    }
+    if (this.pillFlipClearTimer) {
+      clearTimeout(this.pillFlipClearTimer);
+      this.pillFlipClearTimer = null;
+    }
+    setTimeout(() => {
+      if (session !== this.tabPillLayoutGen) return;
+      this.cdr.detectChanges();
+      this.applyDesktopPillFromDom({ allowFlip: true, force: true });
+    }, 0);
+    // Pós-anim. da menubar (.hidden) — re-medida com force, sem FLIP, para Sobre>Mapa etc.
+    this.menubarSettleTimer = setTimeout(() => {
+      this.menubarSettleTimer = null;
+      if (session !== this.tabPillLayoutGen) return;
+      this.applyDesktopPillFromDom({ allowFlip: false, force: true });
+    }, 360);
   }
 
-  /** Indicador “hori-selector”: posição da aba ativa no desktop (sem jQuery). */
-  private updateDesktopTabPill(): void {
+  /**
+   * Posiciona o hori-selector: diff guard, FLIP em troca de aba, sem varrer left/width em rajada.
+   */
+  private applyDesktopPillFromDom(opts: { allowFlip: boolean; force: boolean }): void {
     const track = this.desktopTabsTrack?.nativeElement;
     if (!track || !this.showFullMenu) {
+      this.lastPillMetrics = null;
       return;
     }
     const selector = track.querySelector('.hori-selector') as HTMLElement | null;
-    const active = track.querySelector('li.nav-tab-item.active a.nav-tab-link') as HTMLElement | null;
     if (!selector) {
       return;
     }
+    const active = track.querySelector('li.nav-tab-item.active a.nav-tab-link') as HTMLElement | null;
     if (!active) {
-      selector.style.opacity = '0';
+      if (this.lastPillMetrics) {
+        selector.style.opacity = '0';
+      }
+      this.lastPillMetrics = null;
       return;
     }
     const tr = track.getBoundingClientRect();
     const ar = active.getBoundingClientRect();
     const left = ar.left - tr.left + track.scrollLeft;
     const top = ar.top - tr.top + track.scrollTop;
+    const heightToTrackBottom = Math.max(0, tr.bottom - ar.top);
+    const w = ar.width;
+    const h = heightToTrackBottom;
+    const li = active.closest('li') as HTMLElement | null;
+    const key = (li?.getAttribute('data-nav-id') || '').trim();
+
+    const last = this.lastPillMetrics;
+    if (last) {
+      const d = Math.max(
+        Math.abs(last.left - left),
+        Math.abs(last.top - top),
+        Math.abs(last.width - w),
+        Math.abs(last.height - h)
+      );
+      if (!opts.force && d < NavmenuComponent.PILL_DIFF_PX && last.key === key) {
+        return;
+      }
+    }
+
+    if (!opts.allowFlip) {
+      if (this.pillFlipClearTimer) {
+        clearTimeout(this.pillFlipClearTimer);
+        this.pillFlipClearTimer = null;
+      }
+      try {
+        selector.style.removeProperty('transform');
+        selector.style.removeProperty('transition');
+      } catch {
+        // ignore
+      }
+    }
+
+    if (
+      opts.allowFlip &&
+      last &&
+      key &&
+      last.key &&
+      key !== last.key
+    ) {
+      const dx = last.left - left;
+      const dy = last.top - top;
+      if (Math.hypot(dx, dy) > 1) {
+        if (this.pillFlipClearTimer) {
+          clearTimeout(this.pillFlipClearTimer);
+          this.pillFlipClearTimer = null;
+        }
+        selector.style.transition = 'none';
+        selector.style.left = `${left}px`;
+        selector.style.top = `${top}px`;
+        selector.style.width = `${w}px`;
+        selector.style.height = `${h}px`;
+        selector.style.opacity = '1';
+        selector.style.transform = `translate(${dx}px, ${dy}px)`;
+        this.lastPillMetrics = { left, top, width: w, height: h, key };
+        void selector.offsetWidth;
+        requestAnimationFrame(() => {
+          selector.style.transition = 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)';
+          selector.style.transform = 'translate(0, 0)';
+          this.pillFlipClearTimer = setTimeout(() => {
+            this.pillFlipClearTimer = null;
+            try {
+              selector.style.removeProperty('transform');
+              selector.style.removeProperty('transition');
+            } catch {
+              // ignore
+            }
+          }, 500);
+        });
+        return;
+      }
+    }
+
+    if (this.pillFlipClearTimer) {
+      clearTimeout(this.pillFlipClearTimer);
+      this.pillFlipClearTimer = null;
+    }
+    try {
+      selector.style.removeProperty('transform');
+      selector.style.removeProperty('transition');
+    } catch {
+      // ignore
+    }
     selector.style.left = `${left}px`;
     selector.style.top = `${top}px`;
-    selector.style.width = `${ar.width}px`;
-    selector.style.height = `${ar.height}px`;
+    selector.style.width = `${w}px`;
+    selector.style.height = `${h}px`;
     selector.style.opacity = '1';
+    this.lastPillMetrics = { left, top, width: w, height: h, key: key || last?.key || '' };
   }
 
   private applyClienteModalScrollLock(): void {
@@ -369,6 +567,12 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.idleTimer) clearTimeout(this.idleTimer);
+    if (this.pillLayoutDebounce) clearTimeout(this.pillLayoutDebounce);
+    if (this.menubarSettleTimer) clearTimeout(this.menubarSettleTimer);
+    if (this.pillFlipClearTimer) clearTimeout(this.pillFlipClearTimer);
+    this.trackResize?.disconnect();
+    this.trackResize = null;
+    this.tabPillLayoutGen += 1;
     this.releaseClienteModalScrollLock();
   }
 

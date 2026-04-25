@@ -2,7 +2,6 @@ import { Component, OnInit, Inject, OnDestroy, ElementRef, ViewChild, Renderer2 
 import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { StoreService, ShopProduct } from '../../services/store.service';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { ApiService, Receita } from '../../services/api.service';
 import { PrescriptionPickerComponent } from '../../components/prescription-picker/prescription-picker.component';
 import { ProductCardV2Component } from '../../product-card-v2/product-card-v2.component';
@@ -15,7 +14,7 @@ import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-
 @Component({
   selector: 'app-carrinho',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, NavmenuComponent, PrescriptionPickerComponent, FormsModule, ProductCardV2Component, BannerSlotComponent, RouterLink],
+  imports: [CommonModule, CurrencyPipe, PrescriptionPickerComponent, FormsModule, ProductCardV2Component, BannerSlotComponent, RouterLink],
   templateUrl: './carrinho.component.html',
   styleUrls: ['./carrinho.component.scss']
 })

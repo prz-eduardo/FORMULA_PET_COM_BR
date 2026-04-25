@@ -17,6 +17,29 @@ export interface CookiePreferences {
   savedAt: string;
 }
 
+function safeGetStorageItem(storage: Storage | undefined, key: string): string | null {
+  if (!storage) {
+    return null;
+  }
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetStorageItem(storage: Storage | undefined, key: string, value: string): boolean {
+  if (!storage) {
+    return false;
+  }
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class CookiePreferencesService {
   private readonly preferencesSubject = new BehaviorSubject<CookiePreferences | null>(this.readFromStorage());
@@ -111,24 +134,64 @@ export class CookiePreferencesService {
       thirdParty: prefs.thirdParty,
       savedAt: new Date().toISOString()
     };
-    try {
-      localStorage.setItem(LS_COOKIE_CONSENT_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
+    const payload = JSON.stringify(next);
+    let anyPersisted = false;
+    if (typeof localStorage !== 'undefined') {
+      anyPersisted = safeSetStorageItem(localStorage, LS_COOKIE_CONSENT_KEY, payload) || anyPersisted;
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      anyPersisted = safeSetStorageItem(sessionStorage, LS_COOKIE_CONSENT_KEY, payload) || anyPersisted;
+    }
+    if (!anyPersisted) {
+      /* ambos rejeitaram (ex. modo privado restrito); a memória ainda aplica na sessão atual */
     }
     this.manageOpenSubject.next(false);
     this.preferencesSubject.next(next);
   }
 
+  /**
+   * Releitura do storage (útil após hidratação no browser se a primeira leitura ocorrer cedo).
+   * Idempotente: só emite se o snapshot válido do storage for diferente do valor atual.
+   */
+  rehydrateFromStorage(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const p = this.parseStoredRaw();
+    if (!p) {
+      return;
+    }
+    const cur = this.preferencesSubject.getValue();
+    if (
+      !cur ||
+      cur.policyVersion !== p.policyVersion ||
+      cur.analytics !== p.analytics ||
+      cur.thirdParty !== p.thirdParty
+    ) {
+      this.preferencesSubject.next(p);
+    }
+  }
+
   private readFromStorage(): CookiePreferences | null {
-    if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+    if (typeof localStorage === 'undefined' && typeof sessionStorage === 'undefined') {
+      return null;
+    }
+    return this.parseStoredRaw();
+  }
+
+  private parseStoredRaw(): CookiePreferences | null {
+    const raw =
+      safeGetStorageItem(typeof localStorage !== 'undefined' ? localStorage : undefined, LS_COOKIE_CONSENT_KEY) ??
+      (typeof sessionStorage !== 'undefined'
+        ? safeGetStorageItem(sessionStorage, LS_COOKIE_CONSENT_KEY)
+        : null);
+    if (!raw) {
       return null;
     }
     try {
-      const raw = localStorage.getItem(LS_COOKIE_CONSENT_KEY);
-      if (!raw) {
-        return null;
-      }
       const p = JSON.parse(raw) as CookiePreferences;
       return this.isValid(p) ? p : null;
     } catch {

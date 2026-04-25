@@ -5,7 +5,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { DomSanitizer, Meta, SafeResourceUrl, Title } from '@angular/platform-browser';
 import { StoreService, ShopProduct, ProductDetailsLoadError } from '../services/store.service';
-import { NavmenuComponent } from '../navmenu/navmenu.component';
 import { ApiService } from '../services/api.service';
 import { BannerSlotComponent } from '../shared/banner-slot/banner-slot.component';
 import { MARCA_NOME } from '../constants/loja-public';
@@ -24,7 +23,7 @@ function youtubeVideoId(u: string): string | null {
 @Component({
   selector: 'app-product-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe, NavmenuComponent, BannerSlotComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe, BannerSlotComponent],
   templateUrl: './product-details.component.html',
   styleUrls: ['./product-details.component.scss']
 })

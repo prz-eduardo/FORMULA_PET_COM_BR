@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { StoreService, ShopProduct, StoreCategory, StoreMeta } from '../../services/store.service';
 import { ToastService } from '../../services/toast.service';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -20,7 +19,7 @@ import { MARCA_NOME } from '../../constants/loja-public';
 @Component({
   selector: 'app-loja',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NavmenuComponent, FooterComponent, ProductCardRendererComponent, BannerSlotComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FooterComponent, ProductCardRendererComponent, BannerSlotComponent],
   templateUrl: './loja.component.html',
   styleUrls: ['./loja.component.scss']
 })

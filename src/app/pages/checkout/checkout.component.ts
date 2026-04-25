@@ -8,14 +8,13 @@ import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { CardsService } from '../../services/cards.service';
 import { AuthService } from '../../services/auth.service';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, NavmenuComponent, BannerSlotComponent, RouterLink],
+  imports: [CommonModule, FormsModule, CurrencyPipe, BannerSlotComponent, RouterLink],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.scss']
 })

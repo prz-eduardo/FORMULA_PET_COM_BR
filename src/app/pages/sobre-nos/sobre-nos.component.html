@@ -1,22 +1,26 @@
 <div class="sobre-page">
-  <!-- =========================================================
-       HERO
-       ========================================================= -->
+  <!-- HERO -->
   <section class="sobre-hero" aria-labelledby="sobre-hero-title">
     <div class="hero-shell">
       <div class="hero-copy">
-        <span class="hero-kicker">
-          <i class="fa-solid fa-paw" aria-hidden="true"></i>
-          {{ marcaNome }} · Quem somos
-        </span>
         <h1 id="sobre-hero-title" class="hero-title">
-          Cuidar de pets é <span class="hero-accent">a nossa</span><br />
-          fórmula favorita.
+          {{ marcaNome }} · <span class="hero-accent">Quem somos</span>
         </h1>
+        <h2 class="hero-lead">
+          Cuidar de pets é a nossa missão, conectar o ecossistema é o nosso propósito.
+        </h2>
         <p class="hero-subtitle">
-          Somos uma farmácia de manipulação veterinária dedicada a transformar
-          prescrições em soluções personalizadas, com qualidade farmacêutica e
-          carinho do tamanho do seu pet.
+          A {{ marcaNome }} é uma plataforma digital que conecta todo o universo pet em um
+          só lugar.
+        </p>
+        <p class="hero-subtitle hero-subtitle-tight">
+          Reunimos tutores, petshops, veterinários e prestadores de serviço em um ambiente
+          único, onde é possível cuidar, encontrar e oferecer serviços para pets de forma
+          simples, organizada e inteligente.
+        </p>
+        <p class="hero-subtitle hero-subtitle-tight">
+          Não somos apenas um sistema de gestão e não somos apenas uma loja. Somos a
+          infraestrutura digital que organiza a relação entre pessoas e o universo pet.
         </p>
 
         <div class="hero-actions">
@@ -24,15 +28,11 @@
             <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
             Ver produtos
           </a>
+          <a routerLink="/mapa" class="btn btn-secondary">
+            <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+            Ver mapa
+          </a>
         </div>
-
-        <ul class="hero-trust" aria-label="Indicadores de confiança">
-          <li *ngFor="let s of stats">
-            <span class="trust-icon"><i [class]="s.icon" aria-hidden="true"></i></span>
-            <span class="trust-value">{{ s.value }}</span>
-            <span class="trust-label">{{ s.label }}</span>
-          </li>
-        </ul>
       </div>
 
       <div class="hero-visual" aria-hidden="true">
@@ -42,193 +42,96 @@
           <img [src]="marcaLogoPath" [alt]="marcaNome" loading="eager" decoding="async" />
         </div>
         <div class="hero-chip chip-a">
-          <i class="fa-solid fa-flask" aria-hidden="true"></i>
-          Manipulação sob medida
+          <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
+          Gestão integrada
         </div>
         <div class="hero-chip chip-b">
-          <i class="fa-solid fa-heart" aria-hidden="true"></i>
-          Feito com amor
+          <i class="fa-solid fa-network-wired" aria-hidden="true"></i>
+          Ecossistema conectado
         </div>
       </div>
     </div>
   </section>
 
-  <!-- =========================================================
-       NOSSA HISTÓRIA
-       ========================================================= -->
-  <section class="sobre-historia" aria-labelledby="historia-title">
-    <div class="section-inner two-col">
-      <div class="col-text">
-        <span class="eyebrow">Nossa história</span>
-        <h2 id="historia-title" class="section-title">
-          Nascemos da paixão por pets e da busca por um cuidado único.
-        </h2>
-        <p class="section-text">
-          Nossa loja surgiu para preencher uma lacuna: oferecer medicamentos
-          manipulados com a mesma precisão das farmácias humanas, mas
-          totalmente voltados ao universo animal. Desde o primeiro dia,
-          apostamos em tecnologia, ciência e acolhimento.
-        </p>
-        <p class="section-text">
-          Hoje somos referência em manipulação veterinária, atendendo cães,
-          gatos e pets exóticos com fórmulas adaptadas à realidade clínica de
-          cada um — porque cada bichinho merece um tratamento que funcione
-          de verdade.
-        </p>
+  <hr class="sobre-divider" aria-hidden="true" />
 
-        <div class="quote-card">
-          <i class="fa-solid fa-quote-left quote-mark" aria-hidden="true"></i>
-          <p>
-            Cuidado e responsabilidade em cada pedido. Esse é o nosso
-            compromisso com cada tutor e cada paciente.
-          </p>
-        </div>
-      </div>
-
-      <div class="col-visual">
-        <div class="visual-stack">
-          <div class="visual-card card-1">
-            <i class="fa-solid fa-vial-circle-check" aria-hidden="true"></i>
-            <strong>Precisão</strong>
-            <span>Dosagem certa para cada espécie e porte.</span>
-          </div>
-          <div class="visual-card card-2">
-            <i class="fa-solid fa-syringe" aria-hidden="true"></i>
-            <strong>Apresentação ideal</strong>
-            <span>Comprimidos, pastas, líquidos e muito mais.</span>
-          </div>
-          <div class="visual-card card-3">
-            <i class="fa-solid fa-paw" aria-hidden="true"></i>
-            <strong>Cuidado integral</strong>
-            <span>Desde o dia 1, pensando no bem-estar do seu pet.</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- =========================================================
-       MISSÃO · VISÃO · VALORES
-       ========================================================= -->
-  <section class="sobre-mvv" aria-labelledby="mvv-title">
+  <!-- O QUE FAZEMOS -->
+  <section class="sobre-pilares" aria-labelledby="pilares-title">
     <div class="section-inner">
       <div class="section-head">
-        <span class="eyebrow">O que nos move</span>
-        <h2 id="mvv-title" class="section-title">Missão, Visão e Valores</h2>
+        <span class="eyebrow">O que fazemos</span>
+        <h2 id="pilares-title" class="section-title">O que fazemos</h2>
         <p class="section-lead">
-          Princípios que guiam cada fórmula, cada atendimento e cada decisão.
+          A {{ marcaNome }} integra três pilares principais:
         </p>
       </div>
 
-      <div class="mvv-grid">
-        <article class="mvv-card" *ngFor="let card of mvv" [attr.data-accent]="card.accent">
-          <div class="mvv-icon">
-            <i [class]="card.icon" aria-hidden="true"></i>
-          </div>
-          <h3>{{ card.title }}</h3>
-          <p>{{ card.text }}</p>
+      <div class="pilares-grid">
+        <article class="pilar-card" *ngFor="let p of pilares" [attr.data-accent]="p.accent">
+          <div class="pilar-emoji" aria-hidden="true">{{ p.emoji }}</div>
+          <h3 class="pilar-title">{{ p.title }}</h3>
+          <p class="pilar-lead">{{ p.lead }}</p>
+          <ul class="pilar-list">
+            <li *ngFor="let item of p.items">{{ item }}</li>
+          </ul>
+          <p *ngIf="p.footer" class="pilar-footer">{{ p.footer }}</p>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- =========================================================
-       DIFERENCIAIS
-       ========================================================= -->
-  <section class="sobre-diferenciais" aria-labelledby="dif-title">
-    <div class="section-inner">
-      <div class="section-head">
-        <span class="eyebrow">Por que a {{ marcaNome }}</span>
-        <h2 id="dif-title" class="section-title">Feito para quem ama de verdade</h2>
-        <p class="section-lead">
-          Tudo pensado para que seu pet receba o tratamento certo, com
-          segurança e praticidade.
-        </p>
-      </div>
+  <hr class="sobre-divider" aria-hidden="true" />
 
-      <div class="dif-grid">
-        <div class="dif-card" *ngFor="let d of differentials">
-          <div class="dif-icon"><i [class]="d.icon" aria-hidden="true"></i></div>
-          <h3>{{ d.title }}</h3>
-          <p>{{ d.text }}</p>
-        </div>
-      </div>
+  <!-- NOSSA VISÃO -->
+  <section class="sobre-bloco" aria-labelledby="visao-title">
+    <div class="section-inner section-inner--narrow">
+      <h2 id="visao-title" class="section-title section-title--left">Nossa visão</h2>
+      <p class="section-prose">
+        Criar a principal rede digital do mercado pet, onde qualquer necessidade
+        relacionada a um animal possa ser resolvida em um único ambiente.
+      </p>
     </div>
   </section>
 
-  <!-- =========================================================
-       COMO FUNCIONA (TIMELINE)
-       ========================================================= -->
-  <section class="sobre-timeline" aria-labelledby="timeline-title">
-    <div class="section-inner">
-      <div class="section-head">
-        <span class="eyebrow">Como funciona</span>
-        <h2 id="timeline-title" class="section-title">Da receita à patinha</h2>
-        <p class="section-lead">
-          Um processo simples, transparente e rápido para cuidar do seu pet.
-        </p>
-      </div>
+  <hr class="sobre-divider" aria-hidden="true" />
 
-      <ol class="timeline">
-        <li class="timeline-item" *ngFor="let step of timeline; let i = index">
-          <div class="timeline-dot">
-            <i [class]="step.icon" aria-hidden="true"></i>
-          </div>
-          <div class="timeline-body">
-            <span class="timeline-step">Etapa {{ i + 1 }}</span>
-            <h3>{{ step.title }}</h3>
-            <p>{{ step.text }}</p>
-          </div>
-        </li>
-      </ol>
+  <!-- POR QUE EXISTIMOS -->
+  <section class="sobre-bloco" aria-labelledby="porque-title">
+    <div class="section-inner section-inner--narrow">
+      <h2 id="porque-title" class="section-title section-title--left">Por que existimos</h2>
+      <p class="section-prose">O mercado pet é fragmentado.</p>
+      <p class="section-prose">
+        Informações estão espalhadas, serviços desconectados e a experiência do tutor é
+        desorganizada. A {{ marcaNome }} nasce para centralizar, simplificar e conectar
+        tudo isso.
+      </p>
     </div>
   </section>
 
-  <!-- =========================================================
-       EQUIPE
-       ========================================================= -->
-  <section class="sobre-equipe" aria-labelledby="equipe-title">
-    <div class="section-inner">
-      <div class="section-head">
-        <span class="eyebrow">Quem faz acontecer</span>
-        <h2 id="equipe-title" class="section-title">Nosso time</h2>
-        <p class="section-lead">
-          Profissionais apaixonados, prontos para orientar tutores e veterinários
-          com atenção e conhecimento técnico.
-        </p>
-      </div>
+  <hr class="sobre-divider" aria-hidden="true" />
 
-      <div class="team-grid">
-        <article class="team-card" *ngFor="let member of team">
-          <div class="team-photo">
-            <img
-              [src]="member.image"
-              [alt]="member.name"
-              loading="lazy"
-              decoding="async"
-              (error)="$any($event.target).style.display='none'"
-            />
-            <span class="team-initials" aria-hidden="true">{{ member.initials }}</span>
-          </div>
-          <h3>{{ member.name }}</h3>
-          <span class="team-role">{{ member.role }}</span>
-          <p>{{ member.bio }}</p>
-        </article>
-      </div>
+  <!-- O FUTURO -->
+  <section class="sobre-bloco sobre-bloco--futuro" aria-labelledby="futuro-title">
+    <div class="section-inner section-inner--narrow">
+      <h2 id="futuro-title" class="section-title section-title--left">O futuro</h2>
+      <p class="section-prose">
+        Um ecossistema onde cada pet possui um histórico digital vivo, cada serviço é
+        facilmente acessível e cada profissional do setor pode ser encontrado e
+        contratado com poucos cliques.
+      </p>
     </div>
   </section>
 
-  <!-- =========================================================
-       CTA FINAL
-       ========================================================= -->
+  <!-- CTA FINAL -->
   <section class="sobre-cta" aria-labelledby="cta-title">
     <div class="section-inner">
       <div class="cta-shell">
         <div class="cta-copy">
           <span class="eyebrow light">Próximo passo</span>
-          <h2 id="cta-title">Conheça nossa loja</h2>
+          <h2 id="cta-title">Explore a {{ marcaNome }}</h2>
           <p>
-            Veja o catálogo, monte seu carrinho e acompanhe seu pedido com tranquilidade.
+            Conheça a loja, descubra prestadores no mapa e conecte-se ao ecossistema pet
+            em um só lugar.
           </p>
           <div class="cta-actions">
             <a routerLink="/loja" class="btn btn-primary lg">

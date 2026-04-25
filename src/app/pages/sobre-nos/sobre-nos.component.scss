@@ -94,6 +94,40 @@
   margin: 0 0 14px;
 }
 
+.section-inner--narrow { max-width: 720px; }
+
+.section-title--left {
+  text-align: left;
+  margin-top: 0;
+}
+
+.section-prose {
+  font-size: clamp(14.5px, 1.6vw, 16.5px);
+  line-height: 1.75;
+  color: var(--sp-ink-soft);
+  margin: 0 0 14px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.sobre-divider {
+  border: 0;
+  height: 1px;
+  margin: clamp(20px, 3vw, 32px) 0;
+  background: var(--sp-border);
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sobre-bloco {
+  padding: clamp(24px, 3.5vw, 40px) 0;
+}
+
+.sobre-bloco--futuro {
+  padding-bottom: clamp(8px, 1.5vw, 16px);
+}
+
 /* Buttons ------------------------------------------------------------------ */
 .btn {
   display: inline-flex;
@@ -120,6 +154,18 @@
     box-shadow: 0 10px 24px rgba(156, 179, 0, 0.32);
   }
   &-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(156, 179, 0, 0.4); filter: brightness(1.03); }
+
+  &-secondary {
+    background: #fff;
+    color: var(--sp-ink);
+    border: 1px solid var(--sp-border-strong);
+    box-shadow: var(--sp-shadow-sm);
+  }
+  &-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sp-shadow-md);
+    border-color: var(--sp-yellow-700);
+  }
 
   &-whatsapp {
     background: #25d366;
@@ -203,7 +249,7 @@
 }
 
 .hero-title {
-  margin: 18px 0 14px;
+  margin: 0 0 16px;
   font-family: 'Poppins', 'Montserrat', sans-serif;
   font-size: clamp(30px, 5vw, 54px);
   font-weight: 900;
@@ -219,12 +265,28 @@
   }
 }
 
+.hero-lead {
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--sp-ink-soft);
+  margin: 0 0 20px;
+  max-width: 640px;
+}
+
 .hero-subtitle {
   margin: 0 0 22px;
   color: var(--sp-ink-soft);
   font-size: clamp(15px, 1.8vw, 17.5px);
   line-height: 1.6;
-  max-width: 560px;
+  max-width: 640px;
+}
+
+.hero-subtitle-tight {
+  margin-top: -12px;
+  margin-bottom: 16px;
+  font-size: clamp(14px, 1.6vw, 16.5px);
 }
 
 .hero-actions {
@@ -432,6 +494,92 @@
 
   &.card-2 { margin-left: 28px; }
   &.card-3 { margin-left: 10px; }
+}
+
+/* ==========================================================================
+   PILARES (O que fazemos)
+   ========================================================================== */
+.sobre-pilares {
+  padding: clamp(24px, 4vw, 48px) 0;
+}
+
+.pilares-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.pilar-card {
+  position: relative;
+  padding: 24px 22px 22px;
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  box-shadow: var(--sp-shadow-sm);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--sp-yellow), var(--sp-yellow-700));
+  }
+
+  &[data-accent='mint']::before {
+    background: linear-gradient(90deg, var(--sp-mint), var(--sp-mint-700));
+  }
+  &[data-accent='rose']::before {
+    background: linear-gradient(90deg, var(--sp-rose), var(--sp-rose-700));
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sp-shadow-md);
+    border-color: var(--sp-border-strong);
+  }
+}
+
+.pilar-emoji {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.pilar-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(17px, 2vw, 20px);
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: var(--sp-ink);
+}
+
+.pilar-lead {
+  margin: 0 0 12px;
+  color: var(--sp-ink-soft);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.pilar-list {
+  margin: 0;
+  padding-left: 1.25em;
+  color: var(--sp-ink-soft);
+  font-size: 14px;
+  line-height: 1.65;
+
+  li { margin-bottom: 6px; }
+  li:last-child { margin-bottom: 0; }
+}
+
+.pilar-footer {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--sp-border);
+  color: var(--sp-ink-soft);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 /* ==========================================================================

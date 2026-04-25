@@ -11,14 +11,13 @@ import {
   LOJA_MAPA_LNG,
   MARCA_NOME,
 } from '../../constants/loja-public';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 
   // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavmenuComponent, BannerSlotComponent],
+  imports: [CommonModule, RouterModule, BannerSlotComponent],
   templateUrl: './mapa.component.html',
   styleUrls: ['./mapa.component.scss']
 })

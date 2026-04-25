@@ -151,10 +151,9 @@ nav.app-navbar {
     align-items: flex-end;
     justify-content: space-between;
     gap: 10px;
-    padding: 4px 12px 8px;
+    padding: 4px 12px 0;
     box-sizing: border-box;
-    background: linear-gradient(120deg, $navbar-main-deep 0%, $navbar-main 42%, lighten($navbar-main, 6%) 100%);
-    box-shadow: 0 8px 28px rgba(45, 55, 130, 0.38);
+    background: $navbar-main;
     transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
     will-change: transform;
 
@@ -199,15 +198,18 @@ nav.app-navbar {
     }
   }
 
+  /* Rounded rect em vez de cápsula 999px: com overflow:hidden, extremidades em arco de círculo
+     cortam os cantos do hori-selector na 1.ª/última aba. Padding horizontal dá respiro em desktop. */
   .navbar-tabs-track {
     position: relative;
     overflow: hidden;
-    border-radius: 999px;
-    padding: 3px 4px;
+    box-sizing: border-box;
+    border-radius: 16px;
+    padding: 4px 24px;
     max-width: 100%;
   }
 
-  /* Indicador deslizante (hori-selector) */
+  /* Indicador deslizante (hori-selector) — guia: só cantos superiores arredondados; base reta; hori-caps laterais */
   .hori-selector {
     position: absolute;
     z-index: 0;
@@ -215,24 +217,25 @@ nav.app-navbar {
     top: 0;
     pointer-events: none;
     background: #fff;
-    border-radius: 10px 10px 9px 9px;
-    box-shadow:
-      0 3px 12px rgba(15, 23, 42, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.1);
     opacity: 0;
+    transform: translate(0, 0);
+    /* Sem overshoot: evita “voltar ao início”; troca de aba pode usar transform via FLIP no TS */
     transition:
-      left 0.58s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-      top 0.42s cubic-bezier(0.25, 0.8, 0.25, 1),
-      width 0.52s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-      height 0.42s ease,
-      opacity 0.22s ease;
+      left 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.35s ease,
+      opacity 0.2s ease,
+      transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 
     .hori-cap {
       position: absolute;
       width: 16px;
       height: 16px;
       background: #fff;
-      bottom: 6px;
+      bottom: 0;
       pointer-events: none;
     }
 
@@ -321,6 +324,7 @@ nav.app-navbar {
   .nav-tab-item.active .nav-tab-link {
     color: $navbar-active-on-pill;
     transform: translateY(0);
+    border-radius: 10px 10px 0 0;
 
     i {
       color: $navbar-active-on-pill;

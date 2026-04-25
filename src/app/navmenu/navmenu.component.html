@@ -36,11 +36,17 @@
               <div class="hori-cap hori-cap--right"></div>
             </div>
             <ul class="navbar-nav-tabs" aria-label="Navegação principal">
-              <li class="nav-tab-item" *ngFor="let item of visibleNavItems" [class.active]="isNavActive(item)">
+              <li
+                class="nav-tab-item"
+                *ngFor="let item of visibleNavItems"
+                [class.active]="isTabHighlighted(item)"
+                [attr.data-nav-id]="item.id"
+              >
                 <a
                   class="nav-tab-link"
                   [routerLink]="item.link"
                   [attr.title]="item.label"
+                  (click)="onMainTabClick(item.id)"
                 >
                   <i [class]="item.icon" aria-hidden="true"></i>
                   <span class="nav-tab-label">{{ item.label }}</span>
@@ -68,11 +74,17 @@
         class="nav-primary-tabs nav-primary-tabs--mobile"
         aria-label="Navegação principal"
       >
-        <li class="nav-tab-item" *ngFor="let item of visibleNavItems" [class.active]="isNavActive(item)">
+        <li
+          class="nav-tab-item"
+          *ngFor="let item of visibleNavItems"
+          [class.active]="isTabHighlighted(item)"
+          [attr.data-nav-id]="item.id"
+        >
           <a
             class="nav-tab-link"
             [routerLink]="item.link"
             [attr.title]="item.label"
+            (click)="onMainTabClick(item.id)"
           >
             <i [class]="item.icon" aria-hidden="true"></i>
             <span class="nav-tab-label">{{ item.shortLabel || item.label }}</span>

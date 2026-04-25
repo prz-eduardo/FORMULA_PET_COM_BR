@@ -5,13 +5,12 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-pet-perfil-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './pet-perfil-publico.component.html',
   styleUrls: ['./pet-perfil-publico.component.scss']
 })

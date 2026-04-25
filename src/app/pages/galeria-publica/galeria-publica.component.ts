@@ -1,7 +1,6 @@
 import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
-import { NavmenuComponent } from '../../navmenu/navmenu.component';
 import { FooterComponent } from '../../footer/footer.component';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -14,7 +13,7 @@ import { MARCA_NOME } from '../../constants/loja-public';
 @Component({
   selector: 'app-galeria-publica',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavmenuComponent, FooterComponent, PetLightboxComponent, BannerSlotComponent],
+  imports: [CommonModule, RouterModule, FooterComponent, PetLightboxComponent, BannerSlotComponent],
   templateUrl: './galeria-publica.component.html',
   styleUrls: ['./galeria-publica.component.scss']
 })
