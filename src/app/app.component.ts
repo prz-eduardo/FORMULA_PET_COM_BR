@@ -73,16 +73,19 @@ export class AppComponent implements OnInit, OnDestroy {
         this.syncCookieDefaultsIfLoggedInClienteOrVet();
       } catch (e) {}
     }
-    // Hide global footer and nav on admin routes and product registration page
+    // Hide global footer and nav on admin routes and product registration page; hide footer on /mapa (full map)
     try {
       const current = (this.router && (this.router.url || '')) as string;
+      const path = (current.split('?')[0] || '').split('#')[0] || '';
       const hide = current.startsWith('/restrito/admin') || current.startsWith('/restrito/produto');
-      this.showFooter = !hide;
+      const hideFooterMapa = path === '/mapa';
+      this.showFooter = !hide && !hideFooterMapa;
       this.showNav = !hide;
       this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
         const u = ev.urlAfterRedirects || ev.url || '';
+        const p = (u.split('?')[0] || '').split('#')[0] || '';
         const hideNow = u.startsWith('/restrito/admin') || u.startsWith('/restrito/produto');
-        this.showFooter = !hideNow;
+        this.showFooter = !hideNow && p !== '/mapa';
         this.showNav = !hideNow;
       });
     } catch (e) {}

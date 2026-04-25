@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, NgZone, ApplicationRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, NgZone, ApplicationRef, HostBinding } from '@angular/core';
 import { filter, take } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -52,7 +52,29 @@ export class MapaComponent implements OnInit, OnDestroy {
   private pharmacyCoords: { lat: number; lng: number } | null = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
   private readonly pinLojaUrl = '/icones/pin-pata.svg';
 
-  constructor(private api: ApiService, private toast: ToastService, @Inject(PLATFORM_ID) private platformId: Object, private appRef: ApplicationRef) {}
+  /** Full map + overlays (matches CSS breakpoint max-width 860px) */
+  isMobileMapLayout = false;
+  /** Painel inferior (mobile): acordeão de resultados — inicia fechado */
+  resultsAccordionOpen = false;
+  @HostBinding('class.host--mobile-map') get hostMobileMap() {
+    return this.isMobileMapLayout;
+  }
+
+  toggleResultsAccordion(): void {
+    this.resultsAccordionOpen = !this.resultsAccordionOpen;
+    this.scheduleMapResize();
+  }
+
+  private mobileLayoutMql: MediaQueryList | null = null;
+  private mobileLayoutListener: (() => void) | null = null;
+
+  constructor(
+    private api: ApiService,
+    private toast: ToastService,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private appRef: ApplicationRef,
+    private zone: NgZone
+  ) {}
 
   // keep references so we can remove listeners on destroy
   private __errHandler = (ev: any) => { console.error('map uncaught error', ev); try { this.showFallbackMap(); } catch (e) {}; };
@@ -68,6 +90,7 @@ export class MapaComponent implements OnInit, OnDestroy {
     f.on = !f.on;
     // when a filter toggles, re-apply filters to update visible partners and markers
     try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
+    this.scheduleMapResize();
   }
 
   // compute the filtered partners based on currently selected filters for active tab
@@ -176,6 +199,7 @@ export class MapaComponent implements OnInit, OnDestroy {
     // follow the same pattern as other pages: only call API from the browser
     // to avoid SSR network errors.
     if (isPlatformBrowser(this.platformId)) {
+      this.initMobileLayoutListener();
       // attach global handlers to capture initialization errors so the app doesn't get left in a broken state
       try { window.addEventListener('error', this.__errHandler); window.addEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
       // load available professional types first (to build tabs).
@@ -208,11 +232,64 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     try { window.removeEventListener('error', this.__errHandler); window.removeEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
+    this.teardownMobileLayoutListener();
+  }
+
+  private initMobileLayoutListener(): void {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(max-width: 860px)');
+    this.mobileLayoutMql = mql;
+    const apply = () => {
+      const next = !!mql.matches;
+      this.zone.run(() => {
+        this.isMobileMapLayout = next;
+        if (!next) {
+          this.resultsAccordionOpen = false;
+        }
+        this.scheduleMapResize();
+      });
+    };
+    this.mobileLayoutListener = apply;
+    try {
+      if (mql.addEventListener) mql.addEventListener('change', apply);
+      else (mql as any).addListener(apply);
+    } catch (e) {
+      /* ignore */
+    }
+    apply();
+  }
+
+  private teardownMobileLayoutListener(): void {
+    if (!this.mobileLayoutMql || !this.mobileLayoutListener) return;
+    try {
+      if (this.mobileLayoutMql.removeEventListener) this.mobileLayoutMql.removeEventListener('change', this.mobileLayoutListener);
+      else (this.mobileLayoutMql as any).removeListener(this.mobileLayoutListener);
+    } catch (e) {
+      /* ignore */
+    }
+    this.mobileLayoutMql = null;
+    this.mobileLayoutListener = null;
+  }
+
+  /** After layout changes (esp. mobile overlay), refresh map tiles. */
+  private scheduleMapResize(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.map) return;
+    const run = () => {
+      try {
+        const g = (window as any).google;
+        if (g?.maps?.event) g.maps.event.trigger(this.map, 'resize');
+      } catch (e) {
+        /* ignore */
+      }
+    };
+    setTimeout(run, 0);
+    setTimeout(run, 200);
   }
 
   // when the user switches tabs we should refresh the anunciantes list for that tipo
   select(tabId: string){
     this.active = tabId;
+    this.scheduleMapResize();
     if (isPlatformBrowser(this.platformId)) {
       // resolve numeric type id from the populated tabs list and pass that to backend
       let tipo: any = tabId;
@@ -972,10 +1049,13 @@ export class MapaComponent implements OnInit, OnDestroy {
         try { this.map.panTo(marker.getPosition()); } catch (e) { /* ignore */ }
         try { if (this.map.setZoom) this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
         try { google.maps.event.trigger(marker, 'click'); } catch (e) { /* ignore */ }
-        // scroll map into view on small screens so user sees the centered marker
-        try {
-          const wrap = document.getElementById('gmap'); if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch (e) {}
+        // full-screen mobile map: map is always in view; avoid scrolling the page
+        if (!this.isMobileMapLayout) {
+          try {
+            const wrap = document.getElementById('gmap');
+            if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } catch (e) {}
+        }
         return;
       }
 

@@ -72,9 +72,29 @@
   animation: fadeDown .15s ease-out;
 }
 
+/* Celular / modal área do cliente: o host do sino é estreito e ancestrais com
+   transform recalibram o posicionamento; centraliza o painel e equilibra o padding. */
+@media (max-width: 560px) {
+  .panel {
+    position: fixed;
+    top: 50%;
+    right: auto;
+    left: 50%;
+    width: min(380px, calc(100vw - 24px));
+    max-height: min(70vh, calc(100dvh - 48px));
+    transform: translate(-50%, -50%);
+    animation: fadePanelMobile .2s ease-out;
+  }
+}
+
 @keyframes fadeDown {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadePanelMobile {
+  from { opacity: 0; transform: translate(-50%, calc(-50% - 6px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
 }
 
 .panel-header {
@@ -228,5 +248,28 @@
     font-size: .85rem;
     padding: 6px 12px;
     &:hover { text-decoration: underline; }
+  }
+}
+
+@media (max-width: 560px) {
+  .panel-header {
+    padding: 12px 16px;
+  }
+
+  .item {
+    padding: 12px 16px;
+
+    &.unread::before {
+      left: 8px;
+    }
+  }
+
+  .panel-footer {
+    padding: 8px 16px;
+  }
+
+  .empty {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }

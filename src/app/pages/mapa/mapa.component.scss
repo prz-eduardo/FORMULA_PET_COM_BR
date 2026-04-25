@@ -4,6 +4,10 @@
 
 /* Tokens locais (fallback caso variáveis globais sumam) */
 :host {
+  /* Altura útil: nav (styles.scss) + dock móvel ~80px + safe areas */
+  --mapa-mobile-vh: calc(
+    100dvh - var(--nav-height, 64px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 80px
+  );
   --fp-yellow: var(--brand-yellow, #c4d600);
   --fp-yellow-700: var(--brand-yellow-700, #9bb300);
   --fp-yellow-50: var(--brand-50, #fbfde6);
@@ -202,6 +206,11 @@
 /* ==========================================================================
    LAYOUT GRID
    ========================================================================== */
+.mapa-viewport {
+  display: block;
+  min-width: 0;
+}
+
 .map-layout {
   display: grid;
   grid-template-columns: 380px 1fr;
@@ -589,10 +598,332 @@
 }
 
 /* ==========================================================================
-   RESPONSIVE (<=860px)
+   RESPONSIVE (<=860px) — nota: hero/banner no mobile vêm de *ngIf (desktop only)
    ========================================================================== */
 @media (max-width: 860px) {
-  .mapa-container { padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 24px; }
+  /* Altura fechada: se só min-height, a sidebar cresce o host e o mapa vira uma faixa no meio */
+  :host.host--mobile-map {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: var(--mapa-mobile-vh);
+    max-height: var(--mapa-mobile-vh);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mapa-container--mobile-full {
+    padding: 0 0 0;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .mapa-viewport {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .map-layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    gap: 0;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .map-area {
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 0;
+    min-height: 0;
+    max-height: 100%;
+    height: 100%;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .map-frame-wrap {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+
+  .gmap {
+    min-height: 0;
+    border-radius: 0;
+  }
+
+  .map-sidebar {
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 4;
+    align-self: stretch;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .map-sidebar-top,
+  .map-sidebar-bottom,
+  .map-sidebar button,
+  .map-sidebar a,
+  .map-sidebar [role="tablist"],
+  .map-sidebar [tabindex] {
+    pointer-events: auto;
+  }
+
+  .map-sidebar-toprow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .mapa-loja-fab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--fp-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--fp-shadow-sm);
+    cursor: pointer;
+  }
+  .mapa-loja-fab:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(196, 214, 0, 0.35);
+  }
+  .mapa-loja-fab img {
+    display: block;
+  }
+
+  .map-sidebar-top .service-tabs,
+  .map-sidebar-toprow .service-tabs {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .map-sidebar-top .filters {
+    margin-bottom: 0;
+    padding: 6px 0 0;
+  }
+
+  .map-sidebar-top .filters h4 {
+    font-size: 11px;
+  }
+
+  .map-sidebar-top {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 40vh;
+    margin: 0;
+    padding: 6px 8px 8px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .map-sidebar-bottom {
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.98);
+    border: 0;
+    border-top: 1px solid var(--fp-border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.14);
+    overflow: hidden;
+  }
+
+  /* Acordeão mobile: inicia colapsado; legenda colada ao topo do painel */
+  .map-accordion--mobile {
+    max-height: none;
+  }
+
+  .map-accordion__head {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 0 0 auto;
+    background: rgba(255, 255, 255, 0.98);
+  }
+
+  .map-legend--on-accordion {
+    position: relative;
+    z-index: 1;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    justify-content: center;
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid var(--fp-border);
+    padding: 8px 12px;
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  .map-accordion__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    padding: 10px 14px 12px;
+    margin: 0;
+    border: 0;
+    background: rgba(255, 255, 255, 0.98);
+    color: var(--fp-ink);
+    font: 700 15px/1.2 'Poppins', 'Montserrat', sans-serif;
+    cursor: pointer;
+    text-align: left;
+  }
+  .map-accordion__toggle:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(196, 214, 0, 0.5);
+  }
+  .map-accordion__toggle-text {
+    flex: 0 0 auto;
+  }
+  .map-accordion__count {
+    margin-left: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 800;
+    background: var(--fp-yellow-50);
+    color: var(--fp-yellow-700);
+    border-radius: 999px;
+    border: 1px solid rgba(156, 179, 0, 0.3);
+  }
+  .map-accordion__chev {
+    display: flex;
+    align-items: center;
+    color: var(--fp-ink-soft);
+    flex-shrink: 0;
+    transition: transform 0.22s ease;
+  }
+  .map-accordion__chev.is-open {
+    transform: rotate(180deg);
+  }
+
+  .map-accordion__panel {
+    min-height: 0;
+  }
+
+  .map-accordion--mobile .map-accordion__panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .map-accordion--mobile.map-accordion--open .map-accordion__panel {
+    max-height: min(58vh, 520px);
+  }
+
+  .map-sidebar-bottom:not(.map-accordion--mobile) .map-accordion__panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .map-accordion--mobile .map-accordion__panel .results {
+    margin-top: 0;
+    padding: 0 12px
+      calc(20px + env(safe-area-inset-bottom, 0px) + 8px) 12px;
+    max-height: min(50vh, 420px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .map-accordion--mobile .map-accordion__panel .results > h4 {
+    display: none;
+  }
+
+  .map-accordion--mobile .map-accordion__panel .partner-cta {
+    margin-bottom: 4px;
+  }
+
+  .map-sidebar-bottom .results {
+    margin-top: 0;
+    padding: 10px 12px 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile tabs: scroll horizontal com pills (full map top bar) */
+  .map-sidebar .service-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .map-sidebar .service-tabs::-webkit-scrollbar { display: none; }
+  .map-sidebar .service-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+    border-radius: 999px;
+  }
+  .map-sidebar .service-tabs .tab-icon { width: 18px; height: 18px; flex: 0 0 18px; }
+
+  .mapa-container:not(.mapa-container--mobile-full) {
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 24px;
+  }
 
   .mapa-hero {
     padding: 20px 18px 18px;
@@ -618,41 +949,13 @@
     padding: 12px 16px;
   }
 
-  .map-layout { grid-template-columns: 1fr; gap: 16px; }
-  .map-sidebar {
-    order: 2;
-    min-height: auto;
-    padding: 14px;
-  }
-
-  /* Mobile tabs: scroll horizontal com pills */
-  .service-tabs {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-  }
-  .service-tabs::-webkit-scrollbar { display: none; }
-  .service-tabs button {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    padding: 8px 14px;
-    border-radius: 999px;
-  }
-  .service-tabs .tab-icon { width: 18px; height: 18px; flex: 0 0 18px; }
-
-  .map-frame-wrap {
-    height: min(52vh, 420px);
-    border-radius: 14px;
-  }
-  .gmap { min-height: min(48vh, 400px); border-radius: 14px; }
-
-  /* Esconde a legenda em mobile para não poluir */
-  .map-legend { display: none; }
-
-  .partner-cta { padding: 16px; }
+  .partner-cta { padding: 14px; }
   .partner-cta p { max-width: none; }
+
+  .empty-state {
+    padding: 12px 4px 6px;
+  }
+  .empty-state img { width: 64px; height: 64px; }
 }
 
 @media (max-width: 480px) {
@@ -673,7 +976,9 @@
   .farmacia-center-btn,
   .partner-cta-btn,
   .service-tabs button,
-  .filter-chip {
+  .filter-chip,
+  .map-accordion--mobile .map-accordion__panel,
+  .map-accordion__chev {
     animation: none !important;
     transition: none !important;
   }
