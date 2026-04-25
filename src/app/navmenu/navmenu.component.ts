@@ -46,6 +46,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   currentRoute: string = '';
   useGaleriaSvg = false;
   cartCount = 0;
+  /** Pulso do badge móvel quando a quantidade no carrinho sobe. */
+  cartBadgeBumping = false;
   isCliente = false;
   showFullMenu = true;
   /** Aba que o utilizador acabou de escolher (clique síncrono); limpa-se no fim da navegação. */
@@ -92,6 +94,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private pillLayoutDebounce: ReturnType<typeof setTimeout> | null = null;
   private menubarSettleTimer: ReturnType<typeof setTimeout> | null = null;
   private pillFlipClearTimer: ReturnType<typeof setTimeout> | null = null;
+  private cartBadgeBumpTimer: ReturnType<typeof setTimeout> | null = null;
+  private cartCountSeenFromStore = false;
   /** Última geometria aplicada ao hori-selector (para diff + FLIP). */
   private lastPillMetrics: { left: number; top: number; width: number; height: number; key: string } | null = null;
   private static readonly PILL_DIFF_PX = 0.85;
@@ -138,7 +142,13 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
     this.store.cart$.subscribe(items => {
-      this.cartCount = items.reduce((n, it) => n + it.quantity, 0);
+      const next = items.reduce((n, it) => n + it.quantity, 0);
+      const prev = this.cartCount;
+      if (this.cartCountSeenFromStore && next > prev) {
+        this.triggerCartBadgeBump();
+      }
+      this.cartCount = next;
+      this.cartCountSeenFromStore = true;
       this.scheduleTabPillUpdate();
     });
 
@@ -230,6 +240,19 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedMainTabId = tabId;
     this.cdr.detectChanges();
     this.scheduleTabPillUpdate();
+  }
+
+  private triggerCartBadgeBump(): void {
+    if (this.cartBadgeBumpTimer) {
+      clearTimeout(this.cartBadgeBumpTimer);
+    }
+    this.cartBadgeBumping = true;
+    this.cdr.detectChanges();
+    this.cartBadgeBumpTimer = setTimeout(() => {
+      this.cartBadgeBumping = false;
+      this.cartBadgeBumpTimer = null;
+      this.cdr.detectChanges();
+    }, 500);
   }
 
   /** Destaque da aba: intenção do utilizador tem prioridade sobre isNavActive até NavigationEnd. */
@@ -570,6 +593,10 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.pillLayoutDebounce) clearTimeout(this.pillLayoutDebounce);
     if (this.menubarSettleTimer) clearTimeout(this.menubarSettleTimer);
     if (this.pillFlipClearTimer) clearTimeout(this.pillFlipClearTimer);
+    if (this.cartBadgeBumpTimer) {
+      clearTimeout(this.cartBadgeBumpTimer);
+      this.cartBadgeBumpTimer = null;
+    }
     this.trackResize?.disconnect();
     this.trackResize = null;
     this.tabPillLayoutGen += 1;

@@ -78,6 +78,8 @@
           class="nav-tab-item"
           *ngFor="let item of visibleNavItems"
           [class.active]="isTabHighlighted(item)"
+          [class.nav-tab-item--loja-anchor]="item.id === 'loja'"
+          [class.nav-tab-item--has-cart-items]="item.id === 'carrinho' && cartCount > 0"
           [attr.data-nav-id]="item.id"
         >
           <a
@@ -88,7 +90,11 @@
           >
             <i [class]="item.icon" aria-hidden="true"></i>
             <span class="nav-tab-label">{{ item.shortLabel || item.label }}</span>
-            <span class="nav-tab-badge" *ngIf="item.id === 'carrinho' && cartCount > 0">{{ cartCount }}</span>
+            <span
+              class="nav-tab-badge"
+              *ngIf="item.id === 'carrinho' && cartCount > 0"
+              [class.nav-tab-badge--bump]="item.id === 'carrinho' && cartBadgeBumping"
+            >{{ cartCount }}</span>
           </a>
         </li>
       </ul>

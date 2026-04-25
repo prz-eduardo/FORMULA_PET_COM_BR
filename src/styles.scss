@@ -34,7 +34,8 @@ html, body{
 /* Dock móvel das abas principais (institucional / área vet): evita conteúdo sob a pílula */
 @media (max-width: 767px) {
     body:has(app-navmenu .nav-primary-tabs--mobile) .app-main:not(.no-nav) {
-        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        /* Dock móvel com mais padding vertical / pílula ativa (navmenu premium) */
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     }
 }
 
