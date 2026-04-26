@@ -749,7 +749,7 @@ nav.app-navbar {
   border:0;
   border-radius:20px;
   z-index:2000020;
-  max-height:calc(100vh - 110px);
+  max-height: calc(100dvh - 110px - env(safe-area-inset-bottom, 0px));
   overflow:hidden; /* clip inner rounded corners */
   padding:0;
   box-shadow: 0 30px 60px rgba(0,0,0,.45);
@@ -768,6 +768,9 @@ nav.app-navbar {
 .cliente-modal-inner{
   overscroll-behavior: contain;
   position:relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background:
     radial-gradient(600px 220px at 50% 0%, rgba(196,214,0,0.08), transparent 70%),
     linear-gradient(180deg, #0f1419 0%, #0a0d12 100%);
@@ -781,9 +784,11 @@ nav.app-navbar {
 
 @media (max-width: 560px) {
   .cliente-modal {
-    top: 72px;
+    top: max(56px, calc(env(safe-area-inset-top, 0px) + 48px));
     width: calc(100vw - 16px);
-    max-height: calc(100vh - 88px);
+    max-height: calc(
+      100dvh - max(56px, calc(env(safe-area-inset-top, 0px) + 48px)) - env(safe-area-inset-bottom, 0px) - 20px
+    );
   }
 }
 
@@ -880,7 +885,8 @@ nav.app-navbar {
 
 @keyframes innerFadeIn{
   0%{ opacity: 0; transform: translate3d(0, 8px, 0) }
-  100%{ opacity: 1; transform: translate3d(0, 0, 0) }
+  /* transform: none — evita containing block para position:fixed nos modais internos (login) */
+  100%{ opacity: 1; transform: none }
 }
 @keyframes innerFadeOut{
   0%{ opacity: 1; transform: translate3d(0, 0, 0) }

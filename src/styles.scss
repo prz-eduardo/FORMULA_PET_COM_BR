@@ -10,6 +10,7 @@
 html, body{
     margin: 0;
     padding: 0;
+    color-scheme: light;
     background-color: var(--fp-site-surface, #e8ebf5);
     color: #333;
     max-width: 100vw;
@@ -20,6 +21,7 @@ html, body{
 
 /* Navbar safe-area variable and main wrapper to avoid content being hidden under fixed header */
 :root{
+    color-scheme: light;
     --nav-height: 64px;
     /* Marca pública: header em navmenu ($navbar-main); superfície do corpo + tab ativa (mesma leitura visual) */
     --fp-nav-brand: #5161ce;
@@ -32,6 +34,12 @@ html, body{
     padding-top: calc(var(--nav-height) + constant(safe-area-inset-top));
     padding-top: calc(var(--nav-height) + env(safe-area-inset-top));
     box-sizing: border-box;
+}
+
+/* Área do cliente (host) preenche o painel .cliente-modal-inner (flex) para modais internos */
+.cliente-modal-inner > app-area-cliente {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 /* Dock móvel das abas principais (institucional / área vet): evita conteúdo sob a pílula */
@@ -50,6 +58,36 @@ html, body{
     padding-top: calc(constant(safe-area-inset-top));
     padding-top: calc(env(safe-area-inset-top));
     box-sizing: border-box;
+}
+
+/* /mapa no telefone: esconde só a barra fixa (logo + conta); mantém o dock inferior do navmenu */
+@media (max-width: 767px) {
+    body.mapa-no-topnav app-navmenu,
+    body.mapa-no-topnav .app-navbar {
+        pointer-events: none;
+    }
+    body.mapa-no-topnav .app-navbar .nav-primary-tabs--mobile {
+        pointer-events: auto;
+    }
+    body.mapa-no-topnav .app-navbar .menubar.navbar-mainbg {
+        display: none !important;
+    }
+    body.mapa-no-topnav .app-navbar .nav-menu {
+        height: 0;
+        min-height: 0;
+    }
+    body.mapa-no-topnav .app-main:not(.no-nav) {
+        padding-top: 0;
+        padding-top: constant(safe-area-inset-top);
+        padding-top: env(safe-area-inset-top);
+    }
+
+    /* Mapa mobile: ecrã cheio = 100dvh − entalhes − dock; sem reservar 64px do header que já foi ocultado */
+    body.mapa-no-topnav app-mapa.host--mobile-map {
+        --mapa-mobile-vh: calc(
+            100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 80px
+        );
+    }
 }
 
 /* App-root login modal: fixed overlay (styles in loja.component.scss are encapsulated and do not apply here) */

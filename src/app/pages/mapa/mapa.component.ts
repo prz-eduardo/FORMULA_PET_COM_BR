@@ -47,6 +47,8 @@ export class MapaComponent implements OnInit, OnDestroy {
   private directionsService: any = null;
   private directionsRenderer: any = null;
   private originMarker: any = null;
+  /** Marcador da posição atual do usuário (geolocalização) */
+  private userLocationMarker: any = null;
   private mapInitialized = false;
   private mapReadyPromise: Promise<void> | null = null;
   private mapReadyResolver: (() => void) | null = null;
@@ -240,6 +242,10 @@ export class MapaComponent implements OnInit, OnDestroy {
     this.teardownMobileLayoutListener();
     this.stopPharmacyPulse();
     this.disposePartnerClusterer();
+    if (this.userLocationMarker) {
+      try { this.userLocationMarker.setMap(null); } catch { /* ignore */ }
+      this.userLocationMarker = null;
+    }
   }
 
   private initMobileLayoutListener(): void {
@@ -1008,6 +1014,9 @@ export class MapaComponent implements OnInit, OnDestroy {
       this.mapInitialized = true;
       if (this.mapReadyResolver) { try { this.mapReadyResolver(); } catch (e) {} this.mapReadyResolver = null; }
 
+      // Centralizar na posição do usuário quando permitido (lista de parceiros “perto de você” faz mais sentido)
+      this.requestInitialUserCenter();
+
       // If there is a saved destination from a previous session, do NOT auto-draw the route
       // (auto-drawing has caused navigation/lock issues on some environments). Instead,
       // show a small "Restaurar rota" button over the map so the user can restore manually.
@@ -1072,6 +1081,102 @@ export class MapaComponent implements OnInit, OnDestroy {
         else reject(status);
       });
     });
+  }
+
+  /**
+   * Lê a posição do dispositivo (com permissão do navegador).
+   */
+  private getUserPosition(opts?: { maxAge?: number; timeout?: number }): Promise<{ lat: number; lng: number }> {
+    return new Promise((resolve, reject) => {
+      if (!isPlatformBrowser(this.platformId) || !navigator.geolocation) {
+        reject(new Error('no-geolocation'));
+        return;
+      }
+      const maxAge = opts?.maxAge ?? 120000;
+      const timeout = opts?.timeout ?? 12000;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout, maximumAge: maxAge }
+      );
+    });
+  }
+
+  private setUserLocationMarker(pos: { lat: number; lng: number }): void {
+    if (!this.map || !(window as any).google) return;
+    const google = (window as any).google;
+    if (this.userLocationMarker) {
+      try { this.userLocationMarker.setMap(null); } catch { /* ignore */ }
+      this.userLocationMarker = null;
+    }
+    try {
+      this.userLocationMarker = new google.maps.Marker({
+        position: pos,
+        map: this.map,
+        title: 'Sua posição',
+        zIndex: 999998,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: '#1a73e8',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          scale: 8
+        }
+      });
+    } catch (e) {
+      console.warn('setUserLocationMarker failed', e);
+    }
+  }
+
+  /** Após o mapa abrir, tenta centralizar no usuário sem mensagens (fallback: loja/parceiro). */
+  private requestInitialUserCenter(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.map) return;
+    this.getUserPosition({ maxAge: 300000, timeout: 12000 })
+      .then((pos) => {
+        if (!pos || !this.map) return;
+        this.zone.run(() => {
+          try {
+            this.map.setCenter(pos);
+            this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 14));
+            this.setUserLocationMarker(pos);
+            this.nudgeMapForMobileChrome();
+          } catch (e) {
+            console.warn('requestInitialUserCenter failed', e);
+          }
+        });
+      })
+      .catch(() => { /* manter centro da loja/parceiro */ });
+  }
+
+  /**
+   * Centraliza o mapa na posição do usuário (e mostra o marcador azul).
+   * @param userInitiated se true, exibe aviso se a localização falhar
+   */
+  async centerOnUserLocation(userInitiated = false): Promise<void> {
+    if (!isPlatformBrowser(this.platformId) || !(window as any).google) return;
+    try {
+      await this.waitForMapReady(10000).catch(() => {});
+    } catch { /* ignore */ }
+    if (!this.map) {
+      if (userInitiated) {
+        this.toast.error('Mapa ainda não está pronto.');
+      }
+      return;
+    }
+    try {
+      const pos = await this.getUserPosition(
+        userInitiated ? { maxAge: 0, timeout: 15000 } : { maxAge: 120000, timeout: 12000 }
+      );
+      this.map.setCenter(pos);
+      this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15));
+      this.setUserLocationMarker(pos);
+      this.nudgeMapForMobileChrome();
+    } catch (e) {
+      if (userInitiated) {
+        this.toast.error('Não foi possível obter sua localização. Verifique a permissão de localização no navegador.');
+      }
+    }
   }
 
   private loadGoogleMapsScript(apiKey: string): Promise<void> {

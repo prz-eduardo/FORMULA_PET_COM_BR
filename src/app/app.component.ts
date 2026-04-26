@@ -42,6 +42,9 @@ export class AppComponent implements OnInit, OnDestroy {
   showFooter: boolean = true;
   showNav: boolean = true;
   private routerSub?: Subscription;
+  /** Sincroniza classe no body: mapa + viewport estreita → esconde só o header superior da navbar, mantendo o dock móvel. */
+  private mapaTopNavMql: MediaQueryList | null = null;
+  private mapaTopNavMqlHandler = () => this.syncMapaNoTopnavBodyClass();
   showLoginModal = false;
   private openLoginHandler?: EventListenerOrEventListenerObject;
   private cookiePreferencesSub?: Subscription;
@@ -75,18 +78,32 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     // Hide global footer and nav on admin routes and product registration page; hide footer on /mapa (full map)
     try {
+      if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined' && window.matchMedia) {
+        this.mapaTopNavMql = window.matchMedia('(max-width: 767px)');
+        try {
+          if (this.mapaTopNavMql.addEventListener) {
+            this.mapaTopNavMql.addEventListener('change', this.mapaTopNavMqlHandler);
+          } else {
+            (this.mapaTopNavMql as any).addListener(this.mapaTopNavMqlHandler);
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      }
       const current = (this.router && (this.router.url || '')) as string;
       const path = (current.split('?')[0] || '').split('#')[0] || '';
       const hide = current.startsWith('/restrito/admin') || current.startsWith('/restrito/produto');
       const hideFooterMapa = path === '/mapa';
       this.showFooter = !hide && !hideFooterMapa;
       this.showNav = !hide;
+      this.syncMapaNoTopnavBodyClass();
       this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
         const u = ev.urlAfterRedirects || ev.url || '';
         const p = (u.split('?')[0] || '').split('#')[0] || '';
         const hideNow = u.startsWith('/restrito/admin') || u.startsWith('/restrito/produto');
         this.showFooter = !hideNow && p !== '/mapa';
         this.showNav = !hideNow;
+        this.syncMapaNoTopnavBodyClass();
       });
     } catch (e) {}
     try {
@@ -111,6 +128,23 @@ export class AppComponent implements OnInit, OnDestroy {
       if (isPlatformBrowser(this.platformId)) {
         document.documentElement.classList.remove('force-light');
         document.body.classList.remove('force-light');
+        try {
+          document.body.classList.remove('mapa-no-topnav');
+        } catch (e) {
+          /* */
+        }
+        if (this.mapaTopNavMql) {
+          try {
+            if (this.mapaTopNavMql.removeEventListener) {
+              this.mapaTopNavMql.removeEventListener('change', this.mapaTopNavMqlHandler);
+            } else {
+              (this.mapaTopNavMql as any).removeListener(this.mapaTopNavMqlHandler);
+            }
+          } catch (e) {
+            /* */
+          }
+          this.mapaTopNavMql = null;
+        }
       }
     } catch (e) {}
     try { if (this.routerSub) this.routerSub.unsubscribe(); } catch (e) {}
@@ -158,6 +192,35 @@ export class AppComponent implements OnInit, OnDestroy {
   onClienteLoggedIn() {
     this.closeLoginModal();
     this.store.resetClienteGate();
+  }
+
+  /**
+   * Em /mapa no telefone (≤767px, igual ao `sm` do navmenu) remove só a faixa do topo (logo + área do cliente);
+   * o dock inferior continua a ser o `app-navmenu` completo.
+   */
+  private syncMapaNoTopnavBodyClass(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    try {
+      const u = this.router.url || '';
+      const p = (u.split('?')[0] || '').split('#')[0] || '';
+      const isMapa = p === '/mapa';
+      const narrow = this.mapaTopNavMql?.matches ?? false;
+      this.zone.run(() => {
+        try {
+          if (isMapa && narrow) {
+            document.body.classList.add('mapa-no-topnav');
+          } else {
+            document.body.classList.remove('mapa-no-topnav');
+          }
+        } catch (e) {
+          /* */
+        }
+      });
+    } catch (e) {
+      /* */
+    }
   }
 
   detectDevice(): void {

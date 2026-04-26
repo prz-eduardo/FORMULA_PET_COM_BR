@@ -5,6 +5,18 @@
    - Logout: ação destacada (danger ghost)
    ========================================================================== */
 
+:host {
+  display: block;
+}
+
+/* Dentro do painel da navbar: encaixa em coluna flex para altura previsível e modais internos */
+:host-context(.cliente-modal-inner) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .area-cliente-wrapper {
   --ac-text:        #e6eef8;
   --ac-text-dim:    #94a3b8;
@@ -32,9 +44,13 @@
 
   /* Quando dentro do modal (navmenu), tirar o background e altura mínima, e reduzir padding */
   &.is-modal {
-    min-height: unset;
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 22px 22px 26px;
     background: transparent;
+    position: relative;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -445,6 +461,31 @@
   z-index: 1000;
   box-shadow: 0 30px 60px rgba(0,0,0,0.45);
   color: var(--ac-text);
+}
+
+/*
+ * Dentro do painel “Área do cliente”: overlay e caixa ficam absolute ao wrapper,
+ * limitados à altura do painel (evita recorte por overflow do shell e mantém o login “dentro”).
+ */
+.area-cliente-wrapper.is-modal .modal-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.area-cliente-wrapper.is-modal .modal-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(92%, 480px);
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 32px);
+  height: auto;
+  margin: 0;
+  padding: 22px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Corpo do modal de confirmação de logout */
