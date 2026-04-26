@@ -9,7 +9,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -72,12 +72,15 @@ export class ParceiroCadastroComponent implements OnInit {
   serverError = '';
   serverFieldErrors: Record<string, string> = {};
   types: Array<{ id: string; nome?: string; label?: string }> = [];
+  claimSource: 'google' | null = null;
+  claimPlaceId: string | null = null;
 
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
     private toast: ToastService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -107,9 +110,93 @@ export class ParceiroCadastroComponent implements OnInit {
     );
 
     this.api.getProfessionalTypes().subscribe({
-      next: (res) => { this.types = res?.types || []; },
+      next: (res) => {
+        this.types = res?.types || [];
+        this.applyPrefillFromQueryParams();
+      },
       error: () => { this.types = []; }
     });
+
+    this.applyPrefillFromQueryParams();
+  }
+
+  get hasClaimContext(): boolean {
+    return !!this.claimSource;
+  }
+
+  private applyPrefillFromQueryParams(): void {
+    if (!this.form) return;
+    const queryMap = this.route.snapshot.queryParamMap;
+    if (!queryMap.keys.length) return;
+
+    const source = queryMap.get('source');
+    const nome = this.readPrefillText(queryMap.get('nome'), 150);
+    const telefone = this.readPrefillPhone(queryMap.get('telefone'));
+    const endereco = this.readPrefillText(queryMap.get('endereco'), 180);
+    const cidade = this.readPrefillText(queryMap.get('cidade'), 80);
+    const estado = this.readPrefillState(queryMap.get('estado'));
+    const latitude = this.readPrefillNumber(queryMap.get('latitude'), -90, 90);
+    const longitude = this.readPrefillNumber(queryMap.get('longitude'), -180, 180);
+    const suggestedType = this.resolveTypeFromQuery(
+      queryMap.get('tipo'),
+      queryMap.get('suggestedType'),
+      queryMap.get('tipoPrimario')
+    );
+
+    this.claimSource = source === 'google' ? 'google' : null;
+    this.claimPlaceId = this.readPrefillText(queryMap.get('placeId'), 128);
+
+    this.form.patchValue({
+      nome: nome ?? this.form.get('nome')?.value ?? '',
+      telefone: telefone ?? this.form.get('telefone')?.value ?? '',
+      endereco: endereco ?? this.form.get('endereco')?.value ?? '',
+      cidade: cidade ?? this.form.get('cidade')?.value ?? '',
+      estado: estado ?? this.form.get('estado')?.value ?? '',
+      latitude: latitude != null ? String(latitude) : this.form.get('latitude')?.value ?? '',
+      longitude: longitude != null ? String(longitude) : this.form.get('longitude')?.value ?? '',
+      tipo: suggestedType ?? this.form.get('tipo')?.value ?? '',
+    }, { emitEvent: false });
+  }
+
+  private resolveTypeFromQuery(...candidates: Array<string | null>): string | null {
+    if (!this.types.length) return null;
+    for (const candidate of candidates) {
+      const normalized = String(candidate || '').trim().toLowerCase();
+      if (!normalized) continue;
+      const match = this.types.find((type: any) => {
+        const id = String(type?.id ?? '').trim().toLowerCase();
+        const nome = String(type?.nome ?? type?.label ?? '').trim().toLowerCase();
+        const slug = nome
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        return normalized === id || normalized === nome || normalized === slug;
+      });
+      if (match) return String(match.id);
+    }
+    return null;
+  }
+
+  private readPrefillText(value: string | null, maxLen: number): string | null {
+    const trimmed = String(value || '').trim();
+    return trimmed ? trimmed.slice(0, maxLen) : null;
+  }
+
+  private readPrefillPhone(value: string | null): string | null {
+    const digits = onlyDigitsFn(value).slice(0, 11);
+    return digits ? this.formatTelefone(digits) : null;
+  }
+
+  private readPrefillState(value: string | null): string | null {
+    const trimmed = String(value || '').trim().toUpperCase();
+    return trimmed ? trimmed.slice(0, 2) : null;
+  }
+
+  private readPrefillNumber(value: string | null, min: number, max: number): number | null {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return null;
+    return Math.min(max, Math.max(min, parsed));
   }
 
   // ------------------------------ Getters ------------------------------
@@ -242,6 +329,8 @@ export class ParceiroCadastroComponent implements OnInit {
       latitude: raw.latitude ? Number(raw.latitude) : undefined,
       longitude: raw.longitude ? Number(raw.longitude) : undefined,
       senha: raw.senha,
+      origem_mapa: this.claimSource || undefined,
+      origem_place_id: this.claimPlaceId || undefined,
     };
 
     this.api.registerAnunciante(payload).subscribe({

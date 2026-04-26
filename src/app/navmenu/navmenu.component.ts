@@ -103,6 +103,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   clienteLoading = false;
   /** True while this modal applied overflow lock on html/body (see releaseClienteModalScrollLock). */
   private clienteModalScrollLockActive = false;
+  private clienteModalClosing = false;
+  private clienteModalCloseTimer: ReturnType<typeof setTimeout> | null = null;
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('desktopTabsTrack', { read: ElementRef }) desktopTabsTrack?: ElementRef<HTMLElement>;
@@ -119,6 +121,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private clienteModalOpenSub?: Subscription;
   /** Última geometria aplicada ao hori-selector (para diff + FLIP). */
   private lastPillMetrics: { left: number; top: number; width: number; height: number; key: string } | null = null;
+  private static readonly CLIENTE_MODAL_ENTER_MS = 720;
+  private static readonly CLIENTE_MODAL_EXIT_MS = 500;
   private static readonly PILL_DIFF_PX = 0.85;
 
   constructor(
@@ -551,7 +555,24 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch {}
   }
 
+  private clearClienteModalCloseTimer(): void {
+    if (!this.clienteModalCloseTimer) return;
+    clearTimeout(this.clienteModalCloseTimer);
+    this.clienteModalCloseTimer = null;
+  }
+
+  private finalizeClienteModalClose(): void {
+    this.clearClienteModalCloseTimer();
+    this.clienteModalClosing = false;
+    this.showClienteModal = false;
+    this.clienteLoading = false;
+    try { this.clienteHost?.clear(); } catch {}
+    this.releaseClienteModalScrollLock();
+  }
+
   async abrirClienteModal(initialView?: ClienteAreaModalView | undefined) {
+    this.clearClienteModalCloseTimer();
+    this.clienteModalClosing = false;
     this.showClienteModal = true;
     this.applyClienteModalScrollLock();
     this.clienteLoading = true;
@@ -566,8 +587,9 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           const oy = (br.top + br.height / 2 - mr.top) / Math.max(mr.height, 1);
           modal.style.setProperty('--origin-x', `${Math.min(Math.max(ox, 0), 1)}`);
           modal.style.setProperty('--origin-y', `${Math.min(Math.max(oy, 0), 1)}`);
+          modal.classList.remove('anim-exit');
           modal.classList.add('anim-enter');
-          setTimeout(() => modal.classList.remove('anim-enter'), 450);
+          setTimeout(() => modal.classList.remove('anim-enter'), NavmenuComponent.CLIENTE_MODAL_ENTER_MS);
         }
       } catch {}
     });
@@ -592,27 +614,23 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   fecharClienteModal() {
+    if (!this.showClienteModal || this.clienteModalClosing) return;
+    this.clienteModalClosing = true;
     try {
       const modal = document.querySelector('.cliente-modal') as HTMLElement | null;
       const overlay = document.querySelector('.cliente-overlay') as HTMLElement | null;
       if (modal) {
         modal.classList.add('anim-exit');
         if (overlay) overlay.classList.add('anim-exit');
-        setTimeout(() => {
+        this.clienteModalCloseTimer = setTimeout(() => {
           modal.classList.remove('anim-exit');
           if (overlay) overlay.classList.remove('anim-exit');
-          this.showClienteModal = false;
-          this.clienteLoading = false;
-          try { this.clienteHost?.clear(); } catch {}
-          this.releaseClienteModalScrollLock();
-        }, 320);
+          this.finalizeClienteModalClose();
+        }, NavmenuComponent.CLIENTE_MODAL_EXIT_MS);
         return;
       }
     } catch {}
-    this.showClienteModal = false;
-    this.clienteLoading = false;
-    try { this.clienteHost?.clear(); } catch {}
-    this.releaseClienteModalScrollLock();
+    this.finalizeClienteModalClose();
   }
 
   ngOnDestroy(): void {
@@ -628,6 +646,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.trackResize?.disconnect();
     this.trackResize = null;
     this.tabPillLayoutGen += 1;
+    this.clearClienteModalCloseTimer();
     this.releaseClienteModalScrollLock();
   }
 

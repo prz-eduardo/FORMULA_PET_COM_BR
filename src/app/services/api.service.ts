@@ -53,6 +53,85 @@ export interface ClienteMeResponse {
   tokenExp?: number;
 }
 
+export type PlaceSource = 'google' | 'petsphere';
+
+export interface MapLayerType {
+  id: string | number;
+  nome: string;
+  slug?: string | null;
+  icone?: string | null;
+}
+
+export interface UnifiedMapPlace {
+  source: PlaceSource;
+  sourceLabel: string;
+  id: string | number | null;
+  nome: string;
+  endereco?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  telefone?: string | null;
+  rating?: number | null;
+  totalAvaliacoes?: number | null;
+  websiteUrl?: string | null;
+  googleMapsUrl?: string | null;
+  tipoPrimario?: string | null;
+  tipos?: MapLayerType[];
+  partner_type?: string | null;
+  descricao?: string | null;
+  logo_url?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  cep?: string | null;
+  [key: string]: any;
+}
+
+export interface PetsphereMapLayerResponse {
+  source: 'petsphere';
+  sourceLabel: string;
+  disclaimer: string;
+  items: UnifiedMapPlace[];
+  tipos: MapLayerType[];
+}
+
+export interface GooglePlacesResponse {
+  source: 'google';
+  sourceLabel: string;
+  disclaimer: string;
+  items: UnifiedMapPlace[];
+}
+
+export interface GooglePlaceDetailsResponse {
+  source: 'google';
+  sourceLabel: string;
+  disclaimer: string;
+  item: UnifiedMapPlace & { horarioFuncionamento?: string[] };
+}
+
+export interface GoogleClaimIntentResponse {
+  ok: boolean;
+  source: 'google';
+  sourceLabel: string;
+  disclaimer: string;
+  redirectTo: string;
+  claimContext: {
+    source: 'google';
+    placeId: string;
+    suggestedType?: string | null;
+  };
+  prefill: {
+    nome: string;
+    telefone?: string | null;
+    endereco?: string | null;
+    cidade?: string | null;
+    estado?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    websiteUrl?: string | null;
+    tipoPrimario?: string | null;
+  };
+}
+
 export interface ClienteGaleriaFoto {
   id: number;
   pet_imagem_id: number;
@@ -953,6 +1032,104 @@ export class ApiService {
           }
         }
         return of({ partners: [], mapsApiKey: null });
+      }) as any
+    );
+  }
+
+  getPetsphereMapLayer(tipo?: string | number): Observable<PetsphereMapLayerResponse> {
+    const search = new URLSearchParams();
+    if (tipo != null) search.set('tipo', String(tipo));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/maps/layers/petsphere${qp ? `?${qp}` : ''}`;
+    return this.http.get<PetsphereMapLayerResponse>(url).pipe(
+      catchError(() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/maps/layers/petsphere${qp ? `?${qp}` : ''}`;
+            return this.http.get<PetsphereMapLayerResponse>(fallback).pipe(
+              catchError(() => of({ source: 'petsphere', sourceLabel: 'PetSphere', disclaimer: '', items: [], tipos: [] }))
+            );
+          } catch (e) {
+            return of({ source: 'petsphere', sourceLabel: 'PetSphere', disclaimer: '', items: [], tipos: [] });
+          }
+        }
+        return of({ source: 'petsphere', sourceLabel: 'PetSphere', disclaimer: '', items: [], tipos: [] });
+      }) as any
+    );
+  }
+
+  searchGoogleMapPlaces(params: {
+    q: string;
+    lat?: number | null;
+    lng?: number | null;
+    radiusMeters?: number;
+    pageSize?: number;
+  }): Observable<GooglePlacesResponse> {
+    const search = new URLSearchParams();
+    search.set('q', params.q);
+    if (typeof params.lat === 'number') search.set('lat', String(params.lat));
+    if (typeof params.lng === 'number') search.set('lng', String(params.lng));
+    if (typeof params.radiusMeters === 'number') search.set('radiusMeters', String(params.radiusMeters));
+    if (typeof params.pageSize === 'number') search.set('pageSize', String(params.pageSize));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/maps/google/search?${qp}`;
+    return this.http.get<GooglePlacesResponse>(url).pipe(
+      catchError(() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/maps/google/search?${qp}`;
+            return this.http.get<GooglePlacesResponse>(fallback).pipe(
+              catchError(() => of({ source: 'google', sourceLabel: 'Google Maps', disclaimer: '', items: [] }))
+            );
+          } catch (e) {
+            return of({ source: 'google', sourceLabel: 'Google Maps', disclaimer: '', items: [] });
+          }
+        }
+        return of({ source: 'google', sourceLabel: 'Google Maps', disclaimer: '', items: [] });
+      }) as any
+    );
+  }
+
+  getGoogleMapPlaceDetails(placeId: string): Observable<GooglePlaceDetailsResponse | null> {
+    const safePlaceId = encodeURIComponent(String(placeId || '').trim());
+    const url = `${this.baseUrl}/maps/google/details/${safePlaceId}`;
+    return this.http.get<GooglePlaceDetailsResponse>(url).pipe(
+      catchError(() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/maps/google/details/${safePlaceId}`;
+            return this.http.get<GooglePlaceDetailsResponse>(fallback).pipe(catchError(() => of(null)));
+          } catch (e) {
+            return of(null);
+          }
+        }
+        return of(null);
+      }) as any
+    );
+  }
+
+  createGooglePlaceClaimIntent(payload: {
+    placeId: string;
+    nome: string;
+    endereco?: string | null;
+    telefone?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    websiteUrl?: string | null;
+    tipoPrimario?: string | null;
+  }): Observable<GoogleClaimIntentResponse | null> {
+    const url = `${this.baseUrl}/maps/google/claim-intent`;
+    return this.http.post<GoogleClaimIntentResponse>(url, payload).pipe(
+      catchError(() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const fallback = `${window.location.protocol}//${window.location.hostname}:4000/maps/google/claim-intent`;
+            return this.http.post<GoogleClaimIntentResponse>(fallback, payload).pipe(catchError(() => of(null)));
+          } catch (e) {
+            return of(null);
+          }
+        }
+        return of(null);
       }) as any
     );
   }

@@ -26,6 +26,7 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
   @Input() compact = false;
 
   open = false;
+  mobileLayout = false;
   filter: 'all' | 'unread' = 'all';
 
   notifications: NotificationItem[] = [];
@@ -41,6 +42,7 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.syncViewportMode();
     this.subs.push(this.svc.notifications$.subscribe(list => {
       this.notifications = (list || []).filter(n => n.audience === this.audience);
     }));
@@ -58,16 +60,28 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
     return this.notifications;
   }
 
+  private syncViewportMode() {
+    this.mobileLayout = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(max-width: 560px)').matches;
+  }
+
   toggle(ev?: MouseEvent) {
     if (ev) ev.stopPropagation();
+    this.syncViewportMode();
     this.open = !this.open;
     if (this.open) this.svc.refreshUnread();
+  }
+
+  close(ev?: MouseEvent) {
+    if (ev) ev.stopPropagation();
+    this.open = false;
   }
 
   handleClick(n: NotificationItem, ev?: MouseEvent) {
     if (ev) ev.stopPropagation();
     if (!n.lida) this.svc.markRead(n.id);
-    this.open = false;
+    this.close();
     if (n.link) {
       try {
         const url = new URL(n.link, window.location.origin);
@@ -139,11 +153,17 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocClick(ev: MouseEvent) {
     if (!this.open) return;
+    if (this.mobileLayout) return;
     const t = ev.target as HTMLElement | null;
     if (t && this.host.nativeElement.contains(t)) return;
-    this.open = false;
+    this.close();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    this.syncViewportMode();
   }
 
   @HostListener('document:keydown.escape')
-  onEsc() { this.open = false; }
+  onEsc() { this.close(); }
 }

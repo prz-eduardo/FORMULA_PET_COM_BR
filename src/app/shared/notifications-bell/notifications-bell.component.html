@@ -12,7 +12,16 @@
     </span>
   </button>
 
-  <div class="panel" *ngIf="open" (click)="$event.stopPropagation()">
+  <div class="panel-backdrop" *ngIf="open && mobileLayout" (click)="close($event)" aria-hidden="true"></div>
+
+  <div
+    class="panel"
+    *ngIf="open"
+    [class.panel--mobile]="mobileLayout"
+    (click)="$event.stopPropagation()"
+    [attr.aria-modal]="mobileLayout ? 'true' : null"
+    [attr.role]="mobileLayout ? 'dialog' : null"
+  >
     <div class="panel-header">
       <strong>Notificações</strong>
       <div class="header-actions">
@@ -40,6 +49,16 @@
           title="Marcar todas como lidas"
         >
           <i class="fa-solid fa-check-double"></i>
+        </button>
+        <button
+          *ngIf="mobileLayout"
+          type="button"
+          class="close"
+          (click)="close($event)"
+          aria-label="Fechar notificações"
+          title="Fechar notificações"
+        >
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
     </div>

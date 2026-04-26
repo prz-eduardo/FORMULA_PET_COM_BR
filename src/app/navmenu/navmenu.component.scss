@@ -435,40 +435,50 @@ nav.app-navbar {
   }
 
   @include sm {
-    /* Dock móvel — glass suave, sombras em camadas, pílula ativa “flutuante” */
+    /* Dock móvel — superfície mais limpa e hierarquia mais equilibrada */
     .nav-primary-tabs--mobile {
       --dock-transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       position: fixed;
       left: 50%;
-      bottom: calc(12px + constant(safe-area-inset-bottom));
-      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      bottom: calc(10px + constant(safe-area-inset-bottom));
+      bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       transform: translateX(-50%);
       z-index: 2000015;
       max-width: min(calc(100vw - 16px), 440px);
-      padding: 8px 8px;
-      gap: 8px;
+      width: min(calc(100vw - 16px), 440px);
+      padding: 9px;
+      gap: 6px;
       margin: 0;
       list-style: none;
       box-sizing: border-box;
-      border-radius: 18px;
+      border-radius: 24px;
       scroll-snap-type: x proximity;
-      background: rgba(81, 97, 206, 0.62);
+      background: rgba(62, 75, 164, 0.82);
       @supports (background: color-mix(in srgb, #5161ce 50%, transparent)) {
-        background: color-mix(in srgb, $navbar-main 62%, transparent);
+        background: color-mix(in srgb, $navbar-main 80%, rgba(17, 24, 39, 0.15));
       }
-      -webkit-backdrop-filter: blur(24px) saturate(1.35);
-      backdrop-filter: blur(24px) saturate(1.35);
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      -webkit-backdrop-filter: blur(18px) saturate(1.18);
+      backdrop-filter: blur(18px) saturate(1.18);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow:
-        0 4px 6px -1px rgba(15, 23, 42, 0.06),
-        0 12px 28px -8px rgba(39, 48, 100, 0.28),
-        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+        0 10px 30px -14px rgba(15, 23, 42, 0.58),
+        0 4px 12px rgba(39, 48, 100, 0.18),
+        0 1px 0 rgba(255, 255, 255, 0.08) inset;
       overflow-x: auto;
       overflow-y: hidden;
       scrollbar-width: none;
       -ms-overflow-style: none;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border-radius: inherit;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02));
+        pointer-events: none;
+      }
 
       &::-webkit-scrollbar {
         display: none;
@@ -478,14 +488,17 @@ nav.app-navbar {
         display: flex;
         justify-content: center;
         align-items: center;
-        flex-shrink: 0;
+        flex: 1 1 0;
+        min-width: 0;
+        flex-shrink: 1;
         align-self: center;
         scroll-snap-align: center;
-        min-width: 44px;
+        position: relative;
       }
 
       .nav-tab-item--loja-anchor {
         align-self: center;
+        flex-grow: 1.08;
       }
 
       .nav-tab-link {
@@ -495,23 +508,27 @@ nav.app-navbar {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 6px 8px;
-        min-height: 44px;
-        min-width: 44px;
+        width: 100%;
+        padding: 8px 6px 7px;
+        min-height: 54px;
+        min-width: 0;
         font-size: 0.7rem;
-        font-weight: 600;
-        gap: 2px;
-        color: rgba(255, 255, 255, 0.94);
-        border-radius: 14px;
+        font-weight: 700;
+        gap: 4px;
+        color: rgba(255, 255, 255, 0.72);
+        border: 1px solid transparent;
+        border-radius: 18px;
         overflow: visible;
-        opacity: 0.93;
+        opacity: 1;
         transform: translateY(0) scale(1);
         transform-origin: center;
         -webkit-tap-highlight-color: transparent;
+        background: transparent;
         box-shadow: none;
         text-decoration: none;
         transition:
           color var(--dock-transition),
+          border-color var(--dock-transition),
           opacity var(--dock-transition),
           transform var(--dock-transition),
           background var(--dock-transition),
@@ -520,49 +537,51 @@ nav.app-navbar {
 
       .nav-tab-link i {
         display: block;
-        font-size: 0.88rem;
+        font-size: 0.98rem;
         line-height: 1;
         flex-shrink: 0;
-        transition: transform var(--dock-transition), color var(--dock-transition);
+        transition: transform var(--dock-transition), color var(--dock-transition), filter var(--dock-transition);
       }
 
       @media (hover: hover) and (pointer: fine) {
         .nav-tab-item:not(.active):not(.nav-tab-item--loja-anchor) .nav-tab-link:hover {
-          opacity: 0.99;
+          color: rgba(255, 255, 255, 0.92);
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.08);
         }
 
         .nav-tab-item:not(.active):not(.nav-tab-item--loja-anchor) .nav-tab-link:hover i {
-          transform: scale(1.06);
+          transform: translateY(-1px);
         }
 
         .nav-tab-item--loja-anchor:not(.active) .nav-tab-link:hover {
-          opacity: 1;
+          color: rgba(255, 255, 255, 0.94);
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.12);
         }
 
         .nav-tab-item--loja-anchor:not(.active) .nav-tab-link:hover i {
-          transform: scale(1.04);
+          transform: translateY(-1px);
         }
       }
 
       .nav-tab-item:not(.active) .nav-tab-link:focus-visible {
         opacity: 1;
+        color: #fff;
         outline: 2px solid rgba(255, 255, 255, 0.55);
         outline-offset: 2px;
       }
 
       .nav-tab-item:not(.active):not(.nav-tab-item--loja-anchor) .nav-tab-link:active {
-        transform: scale(0.97);
-        opacity: 0.9;
+        transform: translateY(1px) scale(0.98);
         transition-duration: 0.12s;
       }
 
       .nav-tab-item--loja-anchor:not(.active) .nav-tab-link:active {
-        transform: scale(0.98);
-        opacity: 0.98;
+        transform: translateY(1px) scale(0.985);
         transition-duration: 0.12s;
       }
 
-      /* Rótulos curtos visíveis no dock (acessibilidade + clareza) */
       .nav-tab-label {
         position: static;
         width: auto;
@@ -573,59 +592,52 @@ nav.app-navbar {
         clip: auto;
         white-space: nowrap;
         border-width: 0;
-        max-width: 4.2rem;
-        font-size: 0.625rem;
-        font-weight: 600;
-        line-height: 1.1;
-        letter-spacing: 0.01em;
+        max-width: 100%;
+        font-size: 0.64rem;
+        font-weight: 700;
+        line-height: 1.05;
+        letter-spacing: 0.02em;
         color: inherit;
         text-overflow: ellipsis;
         text-align: center;
       }
 
-      /* Loja = âncora: chapa horizontal; sombras mais difusas (elevação suave) */
       .nav-tab-item--loja-anchor .nav-tab-link {
-        gap: 2px;
-        padding: 9px 16px;
-        min-height: 44px;
-        min-width: 44px;
-        background: var(--fp-site-surface, #e8ebf5);
-        color: $navbar-active-on-pill;
+        gap: 4px;
+        padding-inline: 8px;
+        min-height: 54px;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.82);
         opacity: 1;
         transform: none;
-        border-radius: 15px;
-        box-shadow:
-          0 1px 0 0 rgba(255, 255, 255, 0.88) inset,
-          0 4px 14px rgba(15, 23, 42, 0.08),
-          0 14px 32px -8px rgba(39, 48, 100, 0.26);
+        border-radius: 18px;
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
         i {
-          font-size: 0.98rem;
-          color: $navbar-active-on-pill;
+          font-size: 1rem;
+          color: inherit;
         }
 
         .nav-tab-label {
-          color: $navbar-active-on-pill;
-          opacity: 0.92;
+          opacity: 0.98;
         }
       }
 
       .nav-tab-item--loja-anchor:not(.active) .nav-tab-link {
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow:
-          0 1px 0 0 rgba(255, 255, 255, 0.75) inset,
-          0 3px 12px rgba(15, 23, 42, 0.07),
-          0 12px 28px -8px rgba(39, 48, 100, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
-      /* Loja ativa: lime da marca; animação de press (evita conflito com o :active geral) */
       .nav-tab-item--loja-anchor.active .nav-tab-link {
-        background: $bg-05; /* #c4d600 — cor principal / lime marca */
-        transform: scale(1.04);
+        background: linear-gradient(180deg, #dbe74f 0%, $bg-05 100%);
+        border-color: rgba(255, 255, 255, 0.34);
+        color: #1f2937;
+        transform: translateY(-2px);
         box-shadow:
-          0 0 0 1px rgba(15, 23, 42, 0.18) inset,
-          0 6px 18px rgba(196, 214, 0, 0.45),
-          0 14px 32px -8px rgba(39, 48, 100, 0.3);
+          0 12px 24px -14px rgba(196, 214, 0, 0.78),
+          0 10px 18px -14px rgba(15, 23, 42, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
 
         i {
           color: #1f2937;
@@ -638,80 +650,80 @@ nav.app-navbar {
       }
 
       .nav-tab-item--loja-anchor.active .nav-tab-link:active {
-        transform: scale(0.99);
+        transform: translateY(-1px) scale(0.99);
         transition-duration: 0.12s;
       }
 
-      /* Abas ativas (não Loja): pílula glass, distinta da âncora Loja sólida */
       .nav-tab-item.active:not(.nav-tab-item--loja-anchor) .nav-tab-link {
-        width: auto;
-        gap: 2px;
-        padding: 5px 14px;
-        min-height: 44px;
-        min-width: 44px;
-        background: rgba(255, 255, 255, 0.18);
+        gap: 4px;
+        min-height: 54px;
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.14);
         color: #fff;
         opacity: 1;
-        transform: none;
-        border-radius: 12px;
+        transform: translateY(-2px);
+        border-radius: 18px;
         box-shadow:
-          0 0 0 1px rgba(255, 255, 255, 0.55) inset,
-          0 2px 8px rgba(15, 23, 42, 0.1);
+          0 10px 22px -16px rgba(15, 23, 42, 0.7),
+          0 0 0 1px rgba(255, 255, 255, 0.16) inset;
 
         i {
-          font-size: 0.92rem;
+          font-size: 1rem;
           color: #fff;
+          filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.22));
         }
       }
 
       .nav-tab-item.active:not(.nav-tab-item--loja-anchor) .nav-tab-link:active {
-        transform: scale(0.98);
+        transform: translateY(-1px) scale(0.99);
         transition-duration: 0.12s;
       }
 
       .nav-tab-item--has-cart-items:not(.active) .nav-tab-link {
-        color: rgba(255, 255, 255, 0.99);
-        opacity: 0.97;
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.88);
+        border-color: rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
       }
 
       .nav-tab-item--has-cart-items:not(.active) .nav-tab-link i {
-        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
       }
 
       .nav-tab-item--carrinho-disabled .nav-tab-link--disabled {
         cursor: not-allowed;
         pointer-events: none;
-        opacity: 0.62;
-        color: rgba(255, 255, 255, 0.72);
+        opacity: 0.72;
+        color: rgba(255, 255, 255, 0.56);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.05);
       }
 
       .nav-tab-item--carrinho-disabled .nav-tab-link--disabled i {
-        color: rgba(255, 255, 255, 0.68);
+        color: rgba(255, 255, 255, 0.54);
       }
 
       .nav-tab-item--carrinho-disabled .nav-tab-link--disabled .nav-tab-label {
-        opacity: 0.85;
+        opacity: 0.78;
       }
 
       .nav-tab-badge {
         position: absolute;
         z-index: 2;
-        top: 0;
-        right: 2px;
-        min-width: 16px;
-        height: 16px;
+        top: 5px;
+        right: 7px;
+        min-width: 17px;
+        height: 17px;
         padding: 0 4px;
         border-radius: 999px;
         background: #ef4444;
         color: #fff;
         font-size: 9px;
         font-weight: 800;
-        line-height: 16px;
+        line-height: 17px;
         text-align: center;
-        box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95), 0 2px 6px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 0 0 2px rgba(62, 75, 164, 0.92), 0 4px 10px rgba(0, 0, 0, 0.22);
         pointer-events: none;
         transform-origin: center;
       }
@@ -726,8 +738,8 @@ nav.app-navbar {
       .nav-primary-tabs--mobile {
         width: calc(100vw - 10px);
         max-width: calc(100vw - 10px);
-        padding: 6px 6px;
-        gap: 6px;
+        padding: 7px;
+        gap: 4px;
         overflow-x: hidden;
       }
 
@@ -740,34 +752,37 @@ nav.app-navbar {
       }
 
       .nav-primary-tabs--mobile .nav-tab-link {
-        width: auto;
         min-width: 0;
-        min-height: 42px;
-        padding: 5px 4px;
-        gap: 1px;
+        min-height: 50px;
+        padding: 7px 3px 6px;
+        gap: 3px;
       }
 
       .nav-primary-tabs--mobile .nav-tab-link i {
-        font-size: 0.82rem;
+        font-size: 0.88rem;
       }
 
       .nav-primary-tabs--mobile .nav-tab-label {
         max-width: 100%;
-        font-size: 0.58rem;
+        font-size: 0.56rem;
       }
 
       .nav-primary-tabs--mobile .nav-tab-item--loja-anchor .nav-tab-link {
         min-width: 0;
-        min-height: 42px;
-        padding: 6px 12px;
-        border-radius: 12px;
+        min-height: 50px;
+        padding: 7px 4px 6px;
+        border-radius: 16px;
       }
 
       .nav-primary-tabs--mobile .nav-tab-item.active:not(.nav-tab-item--loja-anchor) .nav-tab-link {
         min-width: 0;
-        min-height: 42px;
-        padding: 5px 12px;
-        border-radius: 12px;
+        min-height: 50px;
+        border-radius: 16px;
+      }
+
+      .nav-primary-tabs--mobile .nav-tab-badge {
+        top: 4px;
+        right: 4px;
       }
     }
   }

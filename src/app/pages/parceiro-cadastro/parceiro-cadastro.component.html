@@ -4,6 +4,13 @@
     <p class="subtitle">Preencha os dados abaixo. Após o envio, seu acesso ficará aguardando aprovação do administrador.</p>
   </header>
 
+  <div class="success-box" *ngIf="hasClaimContext && !success">
+    <h3>Perfil importado como referência</h3>
+    <p>
+      Você veio de um estabelecimento encontrado no Google. Revise os dados com cuidado antes de enviar o cadastro para a PetSphere.
+    </p>
+  </div>
+
   <div class="success-box" *ngIf="success">
     <h3>✅ Cadastro enviado!</h3>
     <p>Assim que seu cadastro for aprovado você poderá acessar o painel com o e-mail e a senha informados.</p>
