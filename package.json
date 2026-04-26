@@ -31,6 +31,7 @@
     "@capacitor/keyboard": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
+    "@googlemaps/markerclusterer": "^2.6.2",
     "@mercadopago/sdk-js": "^0.0.3",
     "axios": "^1.12.2",
     "canvas-confetti": "^1.9.3",

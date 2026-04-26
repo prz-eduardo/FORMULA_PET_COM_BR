@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MARCA_LOGO_PATH, MARCA_NOME } from '../../constants/loja-public';
+import { MARCA_NOME } from '../../constants/loja-public';
 
 interface Pilar {
   emoji: string;
@@ -21,7 +21,7 @@ interface Pilar {
 })
 export class SobreNosComponent {
   readonly marcaNome = MARCA_NOME;
-  readonly marcaLogoPath = MARCA_LOGO_PATH;
+  readonly ecossistemaImgPath = '/imagens/petsphere-ecossistema.png';
 
   pilares: Pilar[] = [
     {

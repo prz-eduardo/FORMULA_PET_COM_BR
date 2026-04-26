@@ -560,7 +560,7 @@
   min-height: min(60vh, 600px);
   border-radius: 18px;
   overflow: hidden;
-  background: linear-gradient(180deg, #f6f7fb, #ffffff);
+  background: #e8eaef;
 }
 .gmap, .gmap * { touch-action: auto; -ms-touch-action: auto; }
 .map-frame-wrap iframe {
@@ -595,6 +595,46 @@
 .map-legend .legend-item.paw img { width: 18px; height: 18px; }
 .map-legend .legend-divider {
   width: 1px; height: 14px; background: var(--fp-border);
+}
+
+/* Legenda mobile: dois chips sobre o mapa (canto inferior) */
+.map-legend--mobile {
+  top: auto;
+  right: auto;
+  left: 10px;
+  bottom: 10px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 20px);
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.map-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--fp-border);
+  border-radius: 999px;
+  box-shadow: var(--fp-shadow-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fp-ink);
+  pointer-events: none;
+}
+.map-legend-chip img {
+  width: 14px;
+  height: 17px;
+  object-fit: contain;
+}
+.map-legend-chip--paw img {
+  width: 16px;
+  height: 16px;
 }
 
 /* ==========================================================================
@@ -708,11 +748,32 @@
     pointer-events: auto;
   }
 
+  .map-mobile-top-card {
+    margin: 8px 10px 0;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--fp-border);
+    border-radius: 16px;
+    box-shadow: var(--fp-shadow-md);
+  }
+
+  .map-mobile-filters-card {
+    margin: 8px 10px 0;
+    padding: 8px 10px 10px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--fp-border);
+    border-radius: 14px;
+    box-shadow: var(--fp-shadow-sm);
+  }
+  .map-mobile-filters-card h4 {
+    margin-bottom: 8px;
+  }
+
   .map-sidebar-toprow {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 0;
   }
 
   .mapa-loja-fab {
@@ -720,18 +781,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     padding: 0;
-    border: 1px solid var(--fp-border);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: var(--fp-shadow-sm);
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.12),
+      0 1px 3px rgba(15, 23, 42, 0.08);
     cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .mapa-loja-fab:active {
+    transform: scale(0.96);
   }
   .mapa-loja-fab:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(196, 214, 0, 0.35);
+    box-shadow: 0 0 0 3px rgba(196, 214, 0, 0.4), 0 4px 12px rgba(15, 23, 42, 0.12);
   }
   .mapa-loja-fab img {
     display: block;
@@ -745,24 +812,23 @@
 
   .map-sidebar-top .filters {
     margin-bottom: 0;
-    padding: 6px 0 0;
+    padding: 0;
   }
 
-  .map-sidebar-top .filters h4 {
+  .map-sidebar-top .filters h4,
+  .map-mobile-filters-card h4 {
     font-size: 11px;
   }
 
   .map-sidebar-top {
     flex: 0 1 auto;
     min-height: 0;
-    max-height: 40vh;
+    max-height: 38vh;
     margin: 0;
-    padding: 6px 8px 8px;
-    background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 0 0 16px 16px;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    padding: 0 0 4px;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     overflow-x: hidden;
     overflow-y: auto;
   }
@@ -796,26 +862,6 @@
     width: 100%;
     flex: 0 0 auto;
     background: rgba(255, 255, 255, 0.98);
-  }
-
-  .map-legend--on-accordion {
-    position: relative;
-    z-index: 1;
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    margin: 0;
-    width: 100%;
-    max-width: none;
-    box-sizing: border-box;
-    justify-content: center;
-    border-radius: 0;
-    border: 0;
-    border-bottom: 1px solid var(--fp-border);
-    padding: 8px 12px;
-    font-size: 12px;
-    pointer-events: none;
   }
 
   .map-accordion__toggle {
@@ -980,6 +1026,9 @@
   .map-accordion--mobile .map-accordion__panel,
   .map-accordion__chev {
     animation: none !important;
+    transition: none !important;
+  }
+  .mapa-loja-fab {
     transition: none !important;
   }
 }

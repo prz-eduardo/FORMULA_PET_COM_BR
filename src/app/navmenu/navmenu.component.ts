@@ -56,12 +56,13 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
    * Ordem: Galeria → Mapa → Loja → (Carrinho se cliente) → Sobre.
    * Carrinho é inserido em `visibleNavItems` após Loja.
+   * Dock móvel: ícones `fas` + `fa-fw` para largura e alinhamento uniformes.
    */
   readonly mainNavItems: NavMainItem[] = [
-    { id: 'galeria', label: 'Galeria', link: '/galeria', icon: 'fas fa-images' },
-    { id: 'mapa', label: 'Mapa', link: '/mapa', icon: 'fas fa-map-location-dot' },
-    { id: 'loja', label: 'Loja', link: '/', icon: 'fas fa-store' },
-    { id: 'sobre', label: 'Sobre', link: '/sobre-nos', icon: 'fas fa-circle-info' },
+    { id: 'galeria', label: 'Galeria', shortLabel: 'Fotos', link: '/galeria', icon: 'fas fa-fw fa-images' },
+    { id: 'mapa', label: 'Mapa', shortLabel: 'Mapa', link: '/mapa', icon: 'fas fa-fw fa-map-location-dot' },
+    { id: 'loja', label: 'Loja', shortLabel: 'Loja', link: '/', icon: 'fas fa-fw fa-store' },
+    { id: 'sobre', label: 'Sobre', shortLabel: 'Sobre', link: '/sobre-nos', icon: 'fas fa-fw fa-circle-info' },
   ];
 
   private readonly carrinhoNavItem: NavMainItem = {
@@ -69,7 +70,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     label: 'Carrinho',
     shortLabel: 'Carrinho',
     link: '/carrinho',
-    icon: 'fas fa-cart-shopping',
+    icon: 'fas fa-fw fa-cart-shopping',
   };
 
   get visibleNavItems(): NavMainItem[] {
@@ -78,6 +79,23 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       return [...this.mainNavItems.slice(0, i), this.carrinhoNavItem, ...this.mainNavItems.slice(i)];
     }
     return this.mainNavItems;
+  }
+
+  /** Dock móvel: carrinho sempre visível; deslogado fica desabilitado (sem navegação). */
+  get mobileNavItems(): NavMainItem[] {
+    const i = this.mainNavItems.findIndex(x => x.id === 'loja') + 1;
+    return [...this.mainNavItems.slice(0, i), this.carrinhoNavItem, ...this.mainNavItems.slice(i)];
+  }
+
+  isMobileCarrinhoDisabled(item: NavMainItem): boolean {
+    return item.id === 'carrinho' && !this.isCliente;
+  }
+
+  isMobileTabHighlighted(item: NavMainItem): boolean {
+    if (this.isMobileCarrinhoDisabled(item)) {
+      return false;
+    }
+    return this.isTabHighlighted(item);
   }
   showClienteModal = false;
   clienteLoading = false;

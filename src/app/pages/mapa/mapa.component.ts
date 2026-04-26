@@ -12,6 +12,8 @@ import {
   MARCA_NOME,
 } from '../../constants/loja-public';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { FP_MAP_STYLES } from './mapa-map-styles';
 
   // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
 @Component({
@@ -36,6 +38,9 @@ export class MapaComponent implements OnInit, OnDestroy {
   // google maps runtime objects
   private map: any = null;
   private markers: any[] = [];
+  private partnerClusterer: MarkerClusterer | null = null;
+  private pharmacyPulseCircle: any = null;
+  private pharmacyPulseRaf = 0;
   private infoWindow: any = null;
   // currently opened info window instance (so different markers don't overwrite behavior)
   private currentInfoWindow: any = null;
@@ -233,6 +238,8 @@ export class MapaComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     try { window.removeEventListener('error', this.__errHandler); window.removeEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
     this.teardownMobileLayoutListener();
+    this.stopPharmacyPulse();
+    this.disposePartnerClusterer();
   }
 
   private initMobileLayoutListener(): void {
@@ -284,6 +291,93 @@ export class MapaComponent implements OnInit, OnDestroy {
     };
     setTimeout(run, 0);
     setTimeout(run, 200);
+  }
+
+  /** Evita que o ponto activo fique sob o acordeão / dock em mobile. */
+  private nudgeMapForMobileChrome(): void {
+    if (!this.isMobileMapLayout || !this.map) return;
+    try {
+      this.map.panBy(0, -100);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  private disposePartnerClusterer(): void {
+    if (!this.partnerClusterer) return;
+    try {
+      this.partnerClusterer.clearMarkers();
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      (this.partnerClusterer as any).setMap(null);
+    } catch (e) {
+      /* ignore */
+    }
+    this.partnerClusterer = null;
+  }
+
+  private stopPharmacyPulse(): void {
+    if (this.pharmacyPulseRaf) {
+      try {
+        cancelAnimationFrame(this.pharmacyPulseRaf);
+      } catch (e) {
+        /* ignore */
+      }
+      this.pharmacyPulseRaf = 0;
+    }
+    if (this.pharmacyPulseCircle) {
+      try {
+        this.pharmacyPulseCircle.setMap(null);
+      } catch (e) {
+        /* ignore */
+      }
+      this.pharmacyPulseCircle = null;
+    }
+  }
+
+  private startPharmacyPulse(center: { lat: number; lng: number }): void {
+    this.stopPharmacyPulse();
+    if (!this.map || !(window as any).google) return;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+    const google = (window as any).google;
+    try {
+      this.pharmacyPulseCircle = new google.maps.Circle({
+        map: this.map,
+        center,
+        radius: 28,
+        strokeColor: '#c4d600',
+        strokeOpacity: 0.5,
+        strokeWeight: 2,
+        fillColor: '#c4d600',
+        fillOpacity: 0.1,
+        zIndex: 0,
+      });
+    } catch (e) {
+      return;
+    }
+    let t = 0;
+    const tick = () => {
+      if (!this.pharmacyPulseCircle) return;
+      t += 0.028;
+      const w = 0.5 + 0.5 * Math.sin(t);
+      const r = 22 + 18 * w;
+      const fo = 0.06 + 0.08 * w;
+      try {
+        this.pharmacyPulseCircle.setRadius(r);
+        this.pharmacyPulseCircle.setOptions({
+          fillOpacity: fo,
+          strokeOpacity: 0.32 + 0.22 * w,
+        });
+      } catch (e) {
+        /* ignore */
+      }
+      this.pharmacyPulseRaf = requestAnimationFrame(tick) as unknown as number;
+    };
+    this.pharmacyPulseRaf = requestAnimationFrame(tick) as unknown as number;
   }
 
   // when the user switches tabs we should refresh the anunciantes list for that tipo
@@ -426,55 +520,145 @@ export class MapaComponent implements OnInit, OnDestroy {
     });
   }
 
-  private refreshMarkers(){
+  private readonly clusterPartnerThreshold = 15;
+
+  private refreshMarkers() {
     if (!this.map || !(window as any).google) return;
-    // close any open infoWindow and remove existing markers
-    try { if (this.currentInfoWindow) { try { this.currentInfoWindow.close(); } catch(e){} this.currentInfoWindow = null; } } catch(e){}
-    // remove existing markers
-    for (const m of this.markers) { try { m.setMap(null); } catch(e){} }
+    try {
+      if (this.currentInfoWindow) {
+        try {
+          this.currentInfoWindow.close();
+        } catch (e) {
+          /* ignore */
+        }
+        this.currentInfoWindow = null;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+
+    this.stopPharmacyPulse();
+    this.disposePartnerClusterer();
+    for (const m of this.markers) {
+      try {
+        m.setMap(null);
+      } catch (e) {
+        /* ignore */
+      }
+    }
     this.markers = [];
 
-    // add pharmacy marker at the resolved pharmacy coordinates (geocoded from pharmacyAddress)
-    // fallback to the previous hardcoded coords if geocoding hasn't completed or failed
     const fallbackCoords = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
     const coordsToUse = this.pharmacyCoords ?? fallbackCoords;
+    const google = (window as any).google;
+
     try {
-      const google = (window as any).google;
       const pinFpUrl = this.pinLojaUrl;
       const iconPharm = {
         url: pinFpUrl,
         scaledSize: new google.maps.Size(36, 44),
-        anchor: new google.maps.Point(18, 44)
+        anchor: new google.maps.Point(18, 44),
       };
-      const pharmacyMarker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon: iconPharm, title: 'Farmácia / Loja' });
+      const pharmacyMarker = new google.maps.Marker({
+        position: coordsToUse,
+        map: this.map,
+        icon: iconPharm,
+        title: 'Farmácia / Loja',
+        zIndex: 1000,
+      });
       this.markers.push(pharmacyMarker);
-      // attach info window on click
-      try { this.attachPharmacyInfo(pharmacyMarker, coordsToUse); } catch (e) { console.warn('attachPharmacyInfo failed', e); }
+      try {
+        this.attachPharmacyInfo(pharmacyMarker, coordsToUse);
+      } catch (e) {
+        console.warn('attachPharmacyInfo failed', e);
+      }
     } catch (e) {
-      const pharmacyMarker = new (window as any).google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
+      const pharmacyMarker = new google.maps.Marker({
+        position: coordsToUse,
+        map: this.map,
+        title: 'Farmácia / Loja',
+        zIndex: 1000,
+      });
       this.markers.push(pharmacyMarker);
-      try { this.attachPharmacyInfo(pharmacyMarker, coordsToUse); } catch (err) { console.warn('attachPharmacyInfo fallback failed', err); }
+      try {
+        this.attachPharmacyInfo(pharmacyMarker, coordsToUse);
+      } catch (err) {
+        console.warn('attachPharmacyInfo fallback failed', err);
+      }
     }
 
-    // add markers for partners/anunciantes
+    this.startPharmacyPulse(coordsToUse);
+
+    const partnerMarkers: any[] = [];
     for (const p of this.partners) {
       const lat = p.latitude ?? p.lat ?? p.latitud ?? null;
       const lng = p.longitude ?? p.lng ?? p.long ?? null;
-      if (lat != null && lng != null) {
-          try {
-            const google = (window as any).google;
-            const iconObj = this.getIconForPartner(p);
-            const opts: any = { position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' };
-            if (iconObj) opts.icon = iconObj;
-            const marker = new google.maps.Marker(opts);
-            try { (marker as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
-            this.markers.push(marker);
-            try { this.attachPartnerInfo(marker, p); } catch (e) { console.warn('attachPartnerInfo failed', e); }
+      if (lat == null || lng == null) continue;
+      try {
+        const iconObj = this.getIconForPartner(p);
+        const defaultIcon = {
+          url: '/icones/pin-pata.svg',
+          scaledSize: new google.maps.Size(32, 36),
+          anchor: new google.maps.Point(16, 36),
+        };
+        const useCluster = this.partners.length > this.clusterPartnerThreshold;
+        const markerOpts: any = {
+          position: { lat: Number(lat), lng: Number(lng) },
+          map: useCluster ? null : this.map,
+          title: p.nome || p.name || p.id?.toString?.() || 'Anunciante',
+          zIndex: 500,
+        };
+        if (iconObj) markerOpts.icon = iconObj;
+        else markerOpts.icon = defaultIcon;
+        const marker = new google.maps.Marker(markerOpts);
+        try {
+          (marker as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null;
         } catch (e) {
-          const marker = new (window as any).google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || p.id?.toString?.() || 'Anunciante' });
-          try { (marker as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
-          this.markers.push(marker);
-            try { this.attachPartnerInfo(marker, p); } catch (err) { console.warn('attachPartnerInfo fallback failed', err); }
+          /* ignore */
+        }
+        this.markers.push(marker);
+        partnerMarkers.push(marker);
+        try {
+          this.attachPartnerInfo(marker, p);
+        } catch (e) {
+          console.warn('attachPartnerInfo failed', e);
+        }
+      } catch (e) {
+        const marker = new google.maps.Marker({
+          position: { lat: Number(lat), lng: Number(lng) },
+          map: this.partners.length > this.clusterPartnerThreshold ? null : this.map,
+          title: p.nome || p.name || 'Anunciante',
+          zIndex: 500,
+        });
+        try {
+          (marker as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null;
+        } catch (e) {
+          /* ignore */
+        }
+        this.markers.push(marker);
+        partnerMarkers.push(marker);
+        try {
+          this.attachPartnerInfo(marker, p);
+        } catch (err) {
+          console.warn('attachPartnerInfo fallback failed', err);
+        }
+      }
+    }
+
+    if (partnerMarkers.length > this.clusterPartnerThreshold) {
+      try {
+        this.partnerClusterer = new MarkerClusterer({
+          map: this.map,
+          markers: partnerMarkers,
+        });
+      } catch (e) {
+        console.warn('MarkerClusterer failed, falling back to individual markers', e);
+        for (const m of partnerMarkers) {
+          try {
+            m.setMap(this.map);
+          } catch (e) {
+            /* ignore */
+          }
         }
       }
     }
@@ -525,6 +709,7 @@ export class MapaComponent implements OnInit, OnDestroy {
     marker.addListener('click', () => {
       try { if (this.currentInfoWindow) this.currentInfoWindow.close(); } catch {}
       try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
+      this.nudgeMapForMobileChrome();
       iw.open(this.map, marker);
       this.currentInfoWindow = iw;
       try {
@@ -771,11 +956,7 @@ export class MapaComponent implements OnInit, OnDestroy {
         disableDefaultUI: true,
         clickableIcons: false,
         gestureHandling: 'greedy',
-        styles: [
-          { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-          { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-          { featureType: 'poi', elementType: 'labels.text', stylers: [{ visibility: 'off' }] }
-        ]
+        styles: [...FP_MAP_STYLES],
       };
 
       // geocode pharmacy address (best effort)
@@ -817,50 +998,10 @@ export class MapaComponent implements OnInit, OnDestroy {
 
       setTimeout(() => { try { google.maps.event.trigger(this.map, 'resize'); } catch (e) {} }, 600);
 
-      // add pharmacy marker
-      const fallbackPharmacyCoords = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
-      const coordsToUse = this.pharmacyCoords ?? fallbackPharmacyCoords;
       try {
-        const pinFpUrl = this.pinLojaUrl;
-        const icon = {
-          url: pinFpUrl,
-          scaledSize: new google.maps.Size(36, 44),
-          anchor: new google.maps.Point(18, 44)
-        };
-        const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, icon, title: 'Farmácia / Loja' });
-        this.markers.push(marker);
-        try { this.attachPharmacyInfo(marker, coordsToUse); } catch (e) { console.warn('attachPharmacyInfo init failed', e); }
+        this.refreshMarkers();
       } catch (e) {
-        try {
-          const marker = new google.maps.Marker({ position: coordsToUse, map: this.map, title: 'Farmácia / Loja' });
-          this.markers.push(marker);
-          try { this.attachPharmacyInfo(marker, coordsToUse); } catch (err) { console.warn('attachPharmacyInfo init fallback failed', err); }
-        } catch (err) {
-          console.warn('Failed to add pharmacy marker', err);
-        }
-      }
-
-      // add partner markers
-      for (const p of this.partners) {
-        const lat = p.lat ?? p.latitude ?? p.latitud ?? null;
-        const lng = p.lng ?? p.longitude ?? p.long ?? null;
-        if (lat != null && lng != null) {
-          try {
-            const google = (window as any).google;
-            const iconObj = this.getIconForPartner(p);
-            const opts: any = { position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' };
-            if (iconObj) opts.icon = iconObj; else opts.icon = { url: '/icones/pin-pata.svg', scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
-            const m = new google.maps.Marker(opts);
-            try { (m as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
-            this.markers.push(m);
-            try { this.attachPartnerInfo(m, p); } catch (e) { console.warn('attachPartnerInfo init failed', e); }
-          } catch (e) {
-            const m = new google.maps.Marker({ position: { lat: Number(lat), lng: Number(lng) }, map: this.map, title: p.nome || p.name || 'Parceiro' });
-            try { (m as any).__partnerId = p.anuncio_id ?? p.id ?? p._raw?.id ?? null; } catch (e) {}
-            this.markers.push(m);
-            try { this.attachPartnerInfo(m, p); } catch (err) { console.warn('attachPartnerInfo init fallback failed', err); }
-          }
-        }
+        console.warn('refreshMarkers during init failed', e);
       }
 
       // mark ready and resolve waiters
@@ -1005,6 +1146,7 @@ export class MapaComponent implements OnInit, OnDestroy {
       const center = coords ?? fallback;
       try { this.map.setCenter(center); } catch (e) { console.warn('map.setCenter failed', e); }
       try { this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
+      this.nudgeMapForMobileChrome();
     } catch (e) {
       console.warn('centerOnPharmacy unexpected error', e);
     }
@@ -1062,6 +1204,7 @@ export class MapaComponent implements OnInit, OnDestroy {
       // final fallback: if we have coords, center the map on them
       if (lat != null && lng != null) {
         try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
+        this.nudgeMapForMobileChrome();
       }
     } catch (e) {
       console.warn('centerOnPartner failed', e);
@@ -1104,6 +1247,7 @@ export class MapaComponent implements OnInit, OnDestroy {
     marker.addListener('click', () => {
       try { if (this.currentInfoWindow) this.currentInfoWindow.close(); } catch {}
       try { this.map.panTo({ lat: Number(lat), lng: Number(lng) }); } catch (e) {}
+      this.nudgeMapForMobileChrome();
       iw.open(this.map, marker);
       this.currentInfoWindow = iw;
       try {
@@ -1205,7 +1349,13 @@ export class MapaComponent implements OnInit, OnDestroy {
           try {
             // fit map to route bounds
             const route = result.routes && result.routes[0];
-            if (route && route.bounds) this.map.fitBounds(route.bounds);
+            if (route && route.bounds) {
+              if (this.isMobileMapLayout) {
+                this.map.fitBounds(route.bounds, { top: 48, right: 20, bottom: 100, left: 20 });
+              } else {
+                this.map.fitBounds(route.bounds, 48);
+              }
+            }
           } catch (e) {}
 
           // create/update a single origin marker (user) while keeping pharmacy marker intact

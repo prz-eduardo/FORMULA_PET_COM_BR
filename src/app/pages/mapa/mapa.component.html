@@ -48,27 +48,29 @@
     <!-- ======================================================= SIDEBAR -->
     <aside class="map-sidebar">
       <div class="map-sidebar-top">
-        <div class="map-sidebar-toprow" *ngIf="isMobileMapLayout">
-          <button
-            type="button"
-            class="mapa-loja-fab"
-            aria-label="Centralizar mapa na localização da loja"
-            title="Centralizar na loja"
-            (click)="centerOnPharmacy()">
-            <img src="/icones/pin-pata.svg" alt="" aria-hidden="true" width="22" height="26" />
-          </button>
-          <nav class="service-tabs" role="tablist" aria-label="Serviços">
-            <button *ngFor="let t of tabs"
-              (click)="select(t.id)"
-              [class.active]="active===t.id"
-              role="tab"
-              [attr.aria-selected]="(active===t.id) ? 'true' : 'false'"
-              [attr.aria-controls]="'panel-' + t.id">
-              <img [src]="getTabIcon(t)" class="tab-icon" alt="" aria-hidden="true" />
-              <span class="tab-label">{{ t.label }}</span>
-              <span class="tab-count" *ngIf="active===t.id && partners?.length">{{ partners.length }}</span>
+        <div *ngIf="isMobileMapLayout" class="map-mobile-top-card">
+          <div class="map-sidebar-toprow">
+            <button
+              type="button"
+              class="mapa-loja-fab"
+              aria-label="Centralizar mapa na localização da loja"
+              title="Centralizar na loja"
+              (click)="centerOnPharmacy()">
+              <img src="/icones/pin-pata.svg" alt="" aria-hidden="true" width="22" height="26" />
             </button>
-          </nav>
+            <nav class="service-tabs" role="tablist" aria-label="Serviços">
+              <button *ngFor="let t of tabs"
+                (click)="select(t.id)"
+                [class.active]="active===t.id"
+                role="tab"
+                [attr.aria-selected]="(active===t.id) ? 'true' : 'false'"
+                [attr.aria-controls]="'panel-' + t.id">
+                <img [src]="getTabIcon(t)" class="tab-icon" alt="" aria-hidden="true" />
+                <span class="tab-label">{{ t.label }}</span>
+                <span class="tab-count" *ngIf="active===t.id && partners?.length">{{ partners.length }}</span>
+              </button>
+            </nav>
+          </div>
         </div>
 
         <!-- Abas (desktop) — no mobile o bloco acima renderiza as abas dentro do toprow -->
@@ -85,16 +87,16 @@
           </button>
         </nav>
 
-        <!-- Filtros -->
-        <div class="filters" role="region" [attr.aria-labelledby]="'filters-' + active">
+        <!-- Filtros (só quando existem chips) -->
+        <div
+          *ngIf="getFiltersForActive().length"
+          class="filters"
+          [class.map-mobile-filters-card]="isMobileMapLayout"
+          role="region"
+          [attr.aria-labelledby]="'filters-' + active">
           <h4 [attr.id]="'filters-' + active">Filtros — {{ getActiveLabel() }}</h4>
           <div class="filter-list" id="panel-{{active}}">
-            <ng-container *ngIf="getFiltersForActive().length; else noFilters">
-              <button class="filter-chip" *ngFor="let f of getFiltersForActive()" (click)="toggleFilter(f)" [class.on]="f.on">{{ f.label }}</button>
-            </ng-container>
-            <ng-template #noFilters>
-              <div class="no-filters">Nenhum filtro disponível para este serviço.</div>
-            </ng-template>
+            <button class="filter-chip" *ngFor="let f of getFiltersForActive()" (click)="toggleFilter(f)" [class.on]="f.on">{{ f.label }}</button>
           </div>
         </div>
       </div>
@@ -103,19 +105,8 @@
         class="map-sidebar-bottom"
         [class.map-accordion--mobile]="isMobileMapLayout"
         [class.map-accordion--open]="!isMobileMapLayout || resultsAccordionOpen">
-        <!-- Mobile: legenda + acordeão (largura total, inicia minimizado) -->
+        <!-- Mobile: acordeão (largura total, inicia minimizado); legenda no mapa -->
         <div *ngIf="isMobileMapLayout" class="map-accordion__head">
-          <div class="map-legend map-legend--on-accordion" aria-hidden="true">
-            <div class="legend-item">
-              <img src="/icones/pin-pata.svg" alt="" />
-              <span>{{ marcaNome }}</span>
-            </div>
-            <span class="legend-divider"></span>
-            <div class="legend-item paw">
-              <img src="/icones/paw.png" alt="" />
-              <span>Parceiros</span>
-            </div>
-          </div>
           <button
             type="button"
             class="map-accordion__toggle"
@@ -198,7 +189,7 @@
     <!-- ======================================================= MAPA -->
     <section class="map-area">
       <div class="map-frame-wrap">
-        <!-- Legenda no mapa (desktop; no mobile fica no acordeão) -->
+        <!-- Legenda: desktop (topo) | mobile (chips no canto inferior do mapa) -->
         <div *ngIf="!isMobileMapLayout" class="map-legend" aria-hidden="true">
           <div class="legend-item">
             <img src="/icones/pin-pata.svg" alt="" />
@@ -206,6 +197,16 @@
           </div>
           <span class="legend-divider"></span>
           <div class="legend-item paw">
+            <img src="/icones/paw.png" alt="" />
+            <span>Parceiros</span>
+          </div>
+        </div>
+        <div *ngIf="isMobileMapLayout" class="map-legend map-legend--mobile" aria-hidden="true">
+          <div class="map-legend-chip">
+            <img src="/icones/pin-pata.svg" alt="" />
+            <span>{{ marcaNome }}</span>
+          </div>
+          <div class="map-legend-chip map-legend-chip--paw">
             <img src="/icones/paw.png" alt="" />
             <span>Parceiros</span>
           </div>

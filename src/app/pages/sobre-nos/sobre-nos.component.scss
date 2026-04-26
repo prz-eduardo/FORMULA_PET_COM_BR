@@ -391,6 +391,30 @@
   &:hover { transform: rotate(0deg) scale(1.02); }
 }
 
+/* Infográfico no hero: sem card branco / sem “moldura” — só a arte. */
+.hero-card-main.hero-card-ecossistema {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+  transform: none;
+  width: min(400px, 90%);
+  aspect-ratio: auto;
+
+  img {
+    max-width: 100%;
+    max-height: none;
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 999px;
+    filter: drop-shadow(0 16px 40px rgba(15, 23, 42, 0.12));
+  }
+
+  &:hover { transform: none; }
+}
+
 .hero-chip {
   position: absolute;
   z-index: 2;
@@ -964,7 +988,7 @@
   .sobre-hero { padding: 20px; border-radius: 20px; }
   .sobre-hero::before, .sobre-hero::after { display: none; }
   .hero-title { font-size: clamp(26px, 8vw, 34px); }
-  .hero-card-main { width: min(280px, 82%); }
+  .hero-card-main.hero-card-ecossistema { width: min(300px, 86%); }
   .hero-chip { font-size: 12px; padding: 8px 12px; }
   .chip-a { top: 4%; }
   .chip-b { bottom: 4%; }

@@ -35,17 +35,24 @@
         </div>
       </div>
 
-      <div class="hero-visual" aria-hidden="true">
-        <div class="hero-blob blob-a"></div>
-        <div class="hero-blob blob-b"></div>
-        <div class="hero-card hero-card-main">
-          <img [src]="marcaLogoPath" [alt]="marcaNome" loading="eager" decoding="async" />
+      <div class="hero-visual">
+        <div class="hero-blob blob-a" aria-hidden="true"></div>
+        <div class="hero-blob blob-b" aria-hidden="true"></div>
+        <div class="hero-card hero-card-main hero-card-ecossistema">
+          <img
+            [src]="ecossistemaImgPath"
+            width="640"
+            height="640"
+            alt="Infográfico do ecossistema pet integrado: serviços conectados em rede ao redor de um cão e um gato no centro."
+            loading="eager"
+            decoding="async"
+          />
         </div>
-        <div class="hero-chip chip-a">
+        <div class="hero-chip chip-a" aria-hidden="true">
           <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
           Gestão integrada
         </div>
-        <div class="hero-chip chip-b">
+        <div class="hero-chip chip-b" aria-hidden="true">
           <i class="fa-solid fa-network-wired" aria-hidden="true"></i>
           Ecossistema conectado
         </div>
