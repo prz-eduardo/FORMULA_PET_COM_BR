@@ -64,22 +64,58 @@
       </button>
     </div>
 
-    <section class="galeria-cta-card" role="region" aria-label="Compartilhe seu pet">
-      <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="galeria-cta-icon" />
-      <div class="galeria-cta-body">
-        <h2 class="galeria-cta-name">Seu pet também merece aparecer <span class="galeria-cta-tag">participe</span></h2>
-        <p class="galeria-cta-text">Cadastre seu pet, compartilhe as melhores fotos e receba reações da comunidade.</p>
+    <section class="galeria-cta-wrap" role="region" aria-label="Participe da galeria">
+      <button
+        type="button"
+        class="galeria-cta-trigger"
+        (click)="toggleCtaAccordion()"
+        [attr.aria-expanded]="ctaAccordionOpen"
+        aria-controls="galeria-cta-panel"
+        id="galeria-cta-heading"
+      >
+        <span class="galeria-cta-trigger__text">Seu pet também merece aparecer</span>
+        <i
+          class="fa fa-chevron-down galeria-cta-chevron"
+          [class.galeria-cta-chevron--open]="ctaAccordionOpen"
+          aria-hidden="true"
+        ></i>
+      </button>
+
+      <div
+        *ngIf="ctaAccordionOpen"
+        id="galeria-cta-panel"
+        class="galeria-cta-card galeria-cta-card--body"
+        role="region"
+        aria-labelledby="galeria-cta-heading"
+      >
+        <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="galeria-cta-icon" />
+        <div class="galeria-cta-body">
+          <h2 class="galeria-cta-name">Seu pet também merece aparecer <span class="galeria-cta-tag">participe</span></h2>
+          <p class="galeria-cta-text">Cadastre seu pet, compartilhe as melhores fotos e receba reações da comunidade.</p>
+        </div>
+        <div class="galeria-cta-actions">
+          <a
+            [routerLink]="'/meus-pets'"
+            class="galeria-cta-btn"
+            title="Ir para Meus Pets"
+            aria-label="Ir para Meus Pets">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 21s-7-4.35-9.33-9.03C1.27 9.47 2.6 6 5.67 6c1.77 0 3.13 1.04 3.97 2.3C10.47 7.04 11.83 6 13.6 6c3.07 0 4.4 3.47 3 5.97C19 16.65 12 21 12 21z" fill="currentColor"/>
+            </svg>
+            Meus Pets
+          </a>
+          <button
+            type="button"
+            class="galeria-cta-btn galeria-cta-btn--secondary"
+            (click)="openPostFotoModal()"
+            title="Postar nova foto na galeria"
+            aria-label="Postar nova foto na galeria"
+          >
+            <i class="fa fa-camera" aria-hidden="true"></i>
+            Postar nova foto
+          </button>
+        </div>
       </div>
-      <a
-        [routerLink]="'/meus-pets'"
-        class="galeria-cta-btn"
-        title="Ir para Meus Pets"
-        aria-label="Ir para Meus Pets">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M12 21s-7-4.35-9.33-9.03C1.27 9.47 2.6 6 5.67 6c1.77 0 3.13 1.04 3.97 2.3C10.47 7.04 11.83 6 13.6 6c3.07 0 4.4 3.47 3 5.97C19 16.65 12 21 12 21z" fill="currentColor"/>
-        </svg>
-        Meus Pets
-      </a>
     </section>
   </header>
 
@@ -172,6 +208,12 @@
   <div #sentinel class="sentinel" aria-hidden="true"></div>
 
 </main>
+
+<app-galeria-post-foto-modal
+  [open]="postFotoModalOpen"
+  (closeModal)="onPostFotoModalClose()"
+  (posted)="onPostFotoSuccess()"
+></app-galeria-post-foto-modal>
 
 <app-pet-lightbox
   [pet]="lightboxPet"

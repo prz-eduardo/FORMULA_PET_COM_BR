@@ -160,6 +160,18 @@
   flex-shrink: 0;
 }
 
+.pet-multi-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chip--multi {
+  background: rgba(245, 167, 0, 0.18);
+  border: 1px solid rgba(212, 160, 18, 0.35);
+  font-size: 11px;
+}
+
 .pet-meta {
   display: flex;
   flex-wrap: wrap;

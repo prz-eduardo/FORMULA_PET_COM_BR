@@ -1,4 +1,26 @@
 <main class="mapa-container" [class.mapa-container--mobile-full]="isMobileMapLayout">
+  <!-- Consentimento LGPD: localização no mapa (cookies fp_map_*) -->
+  <div *ngIf="mapLocationOptInVisible" class="mapa-loc-optin" role="region" aria-label="Uso de localização no mapa">
+    <p class="mapa-loc-optin__text">
+      Para <strong>centralizar o mapa na sua região</strong> e usar rotas a partir de onde você está, precisamos da sua
+      <strong>localização aproximada</strong> (coordenadas). Com sua permissão, guardamos a última posição e o endereço
+      aproximado em <strong>cookies</strong> do navegador, conforme a
+      <a routerLink="/politica-de-privacidade" class="mapa-loc-optin__link">política de privacidade</a>.
+    </p>
+    <div class="mapa-loc-optin__actions">
+      <button type="button" class="mapa-loc-optin__btn mapa-loc-optin__btn--secondary" (click)="declineMapLocation()">
+        Não usar minha posição
+      </button>
+      <button type="button" class="mapa-loc-optin__btn mapa-loc-optin__btn--primary" (click)="acceptMapLocation()">
+        Permitir e ver perto de mim
+      </button>
+    </div>
+  </div>
+  <div *ngIf="mapLocationReopenBar" class="mapa-loc-reopen" role="status">
+    <span>Localização do mapa desativada.</span>
+    <button type="button" class="mapa-loc-reopen__link" (click)="reopenMapLocationPrompt()">Alterar localização</button>
+  </div>
+
   <app-banner-slot *ngIf="!isMobileMapLayout" posicao="mapa" mode="carousel" class="mapa-banner-slot"></app-banner-slot>
 
   <!-- ========================================================= HERO (desktop) -->
@@ -64,26 +86,45 @@
     <aside class="map-sidebar">
       <div class="map-sidebar-top">
         <div *ngIf="isMobileMapLayout" class="map-mobile-top-card">
-          <div class="map-sidebar-toprow">
-            <button
-              type="button"
-              class="mapa-user-fab"
-              aria-label="Centralizar mapa na minha posição"
-              title="Minha posição"
-              (click)="centerOnUserLocation(true)">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" fill="currentColor" />
-                <path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v2M12 20v2M2 12h2M20 12h2" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="mapa-loja-fab"
-              aria-label="Centralizar mapa na localização da loja"
-              title="Centralizar na loja"
-              (click)="centerOnPharmacy()">
-              <img src="/icones/pin-pata.svg" alt="" aria-hidden="true" width="22" height="26" />
-            </button>
+          <div class="map-sidebar-toprow" [class.map-sidebar-toprow--search-open]="mapSearchUiOpen">
+            <ng-container *ngIf="!mapSearchUiOpen">
+              <button
+                type="button"
+                class="mapa-user-fab"
+                aria-label="Centralizar mapa na minha posição"
+                title="Minha posição"
+                (click)="centerOnUserLocation(true)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                  <path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="mapa-loja-fab"
+                aria-label="Centralizar mapa na localização da loja"
+                title="Centralizar na loja"
+                (click)="centerOnPharmacy()">
+                <img src="/icones/pin-pata.svg" alt="" aria-hidden="true" width="22" height="26" />
+              </button>
+            </ng-container>
+            <div *ngIf="mapSearchUiOpen" class="map-mobile-search-row">
+              <input
+                #mapSearchInput
+                type="search"
+                class="map-mobile-search-input"
+                [value]="mapTextQuery"
+                (input)="onMapTextInput($event)"
+                placeholder="Buscar por nome ou endereço"
+                aria-label="Buscar parceiros no mapa"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="map-mobile-search-close"
+                (click)="closeMapSearchUi()"
+                aria-label="Fechar busca">✕</button>
+            </div>
             <nav class="service-tabs" role="tablist" aria-label="Serviços">
               <button *ngFor="let t of tabs"
                 (click)="select(t.id)"
@@ -96,6 +137,27 @@
                 <span class="tab-count" *ngIf="active===t.id && partners?.length">{{ partners.length }}</span>
               </button>
             </nav>
+            <div class="mapa-search-fab-col" *ngIf="!mapSearchUiOpen">
+              <button
+                type="button"
+                class="mapa-search-fab"
+                (click)="openMapSearchUi()"
+                aria-label="Abrir busca por texto"
+                title="Buscar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2.2" fill="none"/>
+                  <path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/>
+                </svg>
+              </button>
+              <button
+                *ngIf="quickSearchCountLabel"
+                type="button"
+                class="mapa-qs-count"
+                (click)="onQuickSearchChipClick()"
+                [attr.aria-label]="'Próximo parceiro na categoria. ' + quickSearchCountLabel">
+                {{ quickSearchCountLabel }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -227,19 +289,72 @@
             <span>Parceiros</span>
           </div>
         </div>
-        <div *ngIf="isMobileMapLayout" class="map-legend map-legend--mobile" aria-hidden="true">
-          <div class="map-legend-chip">
-            <img src="/icones/pin-pata.svg" alt="" />
-            <span>{{ marcaNome }}</span>
-          </div>
-          <div class="map-legend-chip map-legend-chip--paw">
-            <img src="/icones/paw.png" alt="" />
-            <span>Parceiros</span>
+        <div *ngIf="isMobileMapLayout" class="map-legend map-legend--mobile" role="group" aria-label="Camadas do mapa">
+          <div class="map-legend-pills" role="toolbar">
+            <button
+              type="button"
+              class="map-legend-pill"
+              [class.map-legend-pill--on]="mapShowPharmacy"
+              [attr.aria-pressed]="mapShowPharmacy"
+              (click)="toggleMapShowPharmacy()">
+              <img src="/icones/pin-pata.svg" alt="" />
+              <span class="map-legend-pill__text">{{ marcaNome }}</span>
+            </button>
+            <button
+              *ngFor="let t of mapTabsForPills(); trackBy: trackTabId"
+              type="button"
+              class="map-legend-pill map-legend-pill--paw"
+              [class.map-legend-pill--on]="isCategoryMapVisible(t.id)"
+              [attr.aria-pressed]="isCategoryMapVisible(t.id)"
+              (click)="toggleMapCategory(t.id)">
+              <img [src]="getTabIcon(t)" alt="" />
+              <span class="map-legend-pill__text">{{ t.label }}</span>
+            </button>
           </div>
         </div>
 
         <!-- Container do Google Maps (inicializado dinamicamente) -->
         <div id="gmap" class="gmap" role="region" aria-label="Mapa de parceiros"></div>
+
+        <button
+          *ngIf="isMobileMapLayout"
+          type="button"
+          class="map-mapa-config-fab"
+          (click)="toggleMapConfig()"
+          [attr.aria-expanded]="mapConfigOpen"
+          aria-label="Configurações do mapa e busca">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" stroke="currentColor" stroke-width="1.8" fill="none"/>
+            <path d="M19.4 12a1.4 1.4 0 0 0 .1-.5v-.1l1.6-1.2-1.5-2.5-1.8.8a5 5 0 0 0-1.1-.6L16.2 4h-3L12 5.2a4.7 4.7 0 0 0-1.1.6L9 4.5 7.4 7l1.5 1.2a3 3 0 0 0 0 1.6L7.4 11l1.5 2.5 1.8-.7a4.7 4.7 0 0 0 1.1.6L13.1 20h2.2l.4-2.5a4.3 4.3 0 0 0 1.1-.6L19 20l1.4-2.5-1.5-1.1z" stroke="currentColor" stroke-width="1" fill="none"/>
+          </svg>
+        </button>
+
+        <div *ngIf="isMobileMapLayout && mapConfigOpen" class="map-mapa-config-panel" role="dialog" aria-label="Configurações do mapa">
+          <div class="map-mapa-config-panel__head">
+            <span>Mapa e busca</span>
+            <button type="button" class="map-mapa-config-panel__x" (click)="toggleMapConfig()" aria-label="Fechar">✕</button>
+          </div>
+          <label class="map-mapa-config-row">
+            <span>Raio de busca (km)</span>
+            <input type="range" min="1" max="50" step="1" [value]="searchRadiusKm" (input)="onMapSettingsRadiusInput($event)" />
+            <span class="map-mapa-config-val">{{ searchRadiusKm }} km</span>
+          </label>
+          <div class="map-mapa-config-row map-mapa-config-row--prices">
+            <label class="map-mapa-config-check">
+              <input
+                type="checkbox"
+                [checked]="priceFilterEnabled"
+                (change)="onPriceFilterEnabledChange($event)" />
+              Filtrar por preço (hospedagem)
+            </label>
+            <p *ngIf="!lodgingPriceAvailable" class="map-mapa-config-hint">Preço de diária: só aplica filtro quando o valor for conhecido no anúncio.</p>
+            <div *ngIf="priceFilterEnabled" class="map-mapa-config-prices">
+              <label>Mín. <input type="number" min="0" step="1" [value]="priceFilterMin ?? ''" (input)="onPriceMinInput($event)" placeholder="—" /></label>
+              <label>Máx. <input type="number" min="0" step="1" [value]="priceFilterMax ?? ''" (input)="onPriceMaxInput($event)" placeholder="—" /></label>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="isMobileMapLayout && mapConfigOpen" class="map-mapa-config-backdrop" (click)="toggleMapConfig()" role="presentation"></div>
       </div>
     </section>
   </div>

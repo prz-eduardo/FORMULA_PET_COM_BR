@@ -55,6 +55,7 @@
 
 .galeria-hero .hero-top,
 .galeria-hero .hero-stats,
+.galeria-hero .galeria-cta-wrap,
 .galeria-hero .galeria-cta-card { position: relative; z-index: 1; }
 
 @keyframes heroIn { to { opacity: 1; transform: none; } }
@@ -197,9 +198,53 @@
   }
 }
 
+/* CTA acordeão + card expandido */
+.galeria-cta-wrap {
+  margin-top: 22px;
+}
+
+.galeria-cta-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--fp-border);
+  border-radius: 16px;
+  box-shadow: var(--fp-shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+.galeria-cta-trigger:hover {
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+}
+.galeria-cta-trigger:focus-visible {
+  outline: 3px solid rgba(15, 23, 42, 0.2);
+  outline-offset: 2px;
+}
+.galeria-cta-trigger__text {
+  font-family: "Pacifico", cursive, "Montserrat", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--fp-ink);
+  line-height: 1.25;
+}
+.galeria-cta-chevron {
+  flex: 0 0 auto;
+  transition: transform 0.2s ease;
+  color: var(--fp-ink-soft);
+  font-size: 16px;
+}
+.galeria-cta-chevron--open {
+  transform: rotate(180deg);
+}
+
 /* CTA card dentro do hero (equivalente ao farmacia-card do mapa) */
 .galeria-cta-card {
-  margin-top: 22px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -209,6 +254,34 @@
   border-radius: 16px;
   box-shadow: var(--fp-shadow-sm);
 }
+.galeria-cta-card--body {
+  margin-top: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.galeria-cta-actions {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.galeria-cta-btn--secondary {
+  background: #fff;
+  color: #111;
+  border: 2px solid var(--fp-yellow-700, #c9a000);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.galeria-cta-btn--secondary:hover {
+  filter: brightness(0.99);
+  transform: translateY(-2px);
+}
+.galeria-cta-btn--secondary i { font-size: 15px; }
 .galeria-cta-icon {
   width: 48px; height: 56px; object-fit: contain; flex: 0 0 48px;
   filter: drop-shadow(0 6px 14px rgba(245, 167, 0, 0.35));

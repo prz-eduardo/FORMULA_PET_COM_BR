@@ -425,6 +425,13 @@ export class ApiService {
     });
   }
 
+  /** Posta uma foto na galeria com um ou mais pets (campo `foto` + `pet_ids` JSON no FormData). */
+  postGaleriaFoto(clienteId: number, formData: FormData, token: string) {
+    return this.http.post<any>(`${this.baseUrl}/clientes/${clienteId}/galeria-fotos`, formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
   /** Excluir pet do cliente. Query opcional para fluxo vet (salvamento_pet_pelo_vet). */
   deletePet(
     clienteId: number,

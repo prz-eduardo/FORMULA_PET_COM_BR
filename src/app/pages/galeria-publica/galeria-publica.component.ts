@@ -1,23 +1,24 @@
-import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { FooterComponent } from '../../footer/footer.component';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { PetLightboxComponent, PetLightboxReaction } from './pet-lightbox/pet-lightbox.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
+import { GaleriaPostFotoModalComponent } from './galeria-post-foto-modal/galeria-post-foto-modal.component';
 import { MARCA_NOME } from '../../constants/loja-public';
 
 @Component({
   selector: 'app-galeria-publica',
   standalone: true,
-  imports: [CommonModule, RouterModule, FooterComponent, PetLightboxComponent, BannerSlotComponent],
+  imports: [CommonModule, RouterModule, FooterComponent, PetLightboxComponent, BannerSlotComponent, GaleriaPostFotoModalComponent],
   templateUrl: './galeria-publica.component.html',
   styleUrls: ['./galeria-publica.component.scss']
 })
-export class GaleriaPublicaComponent {
+export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly marcaNome = MARCA_NOME;
   pets: any[] = [];
   // client-side UID counter for rendered cards to guarantee uniqueness per instance
@@ -33,7 +34,13 @@ export class GaleriaPublicaComponent {
 
   private observer?: IntersectionObserver;
   @ViewChild('sentinel', { static: false }) sentinel?: ElementRef;
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private api: ApiService, private auth: AuthService, private toast: ToastService) {}
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private api: ApiService,
+    private auth: AuthService,
+    private toast: ToastService,
+    private router: Router
+  ) {}
   // placeholder mode when API returns empty: show curated random pet images
   placeholderMode = false;
   placeholderImages: string[] = [];
@@ -42,6 +49,10 @@ export class GaleriaPublicaComponent {
   // Lightbox: currently-open pet reference (or null). We keep a direct reference so
   // mutations made inside the lightbox (reaction/comment totals) reflect in the card.
   lightboxPet: any = null;
+
+  /** CTA: acordeão (fechado = só título + chevron). */
+  ctaAccordionOpen = false;
+  postFotoModalOpen = false;
 
   // available reaction types (emoji + tipo)
   reactionTypes = [
@@ -88,6 +99,39 @@ export class GaleriaPublicaComponent {
   getGaleriaFullShareMessage(): string {
     const u = this.getGaleriaShareUrl();
     return u ? `${this.getGaleriaShareText()}\n${u}` : this.getGaleriaShareText();
+  }
+
+  toggleCtaAccordion(): void {
+    this.ctaAccordionOpen = !this.ctaAccordionOpen;
+  }
+
+  openPostFotoModal(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.auth.getToken()) {
+      this.toast.info('Faça login para postar uma foto na galeria.');
+      this.router.navigateByUrl('/restrito/login');
+      return;
+    }
+    this.postFotoModalOpen = true;
+  }
+
+  onPostFotoModalClose(): void {
+    this.postFotoModalOpen = false;
+  }
+
+  onPostFotoSuccess(): void {
+    this.postFotoModalOpen = false;
+    this.refreshGaleriaFeed();
+  }
+
+  private refreshGaleriaFeed(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.page = 1;
+    this.hasMore = true;
+    this.placeholderMode = false;
+    this.pets = [];
+    this._uidCounter = 1;
+    this.loadPage(1);
   }
 
   async copyGaleriaLink(): Promise<void> {

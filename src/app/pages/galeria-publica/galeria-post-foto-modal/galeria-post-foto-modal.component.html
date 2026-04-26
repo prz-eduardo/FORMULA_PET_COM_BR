@@ -1,0 +1,66 @@
+<div
+  class="gpf-overlay"
+  *ngIf="open"
+  (click)="close()"
+  role="presentation"
+  aria-hidden="false"
+>
+  <div
+    class="gpf-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="gpf-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="gpf-head">
+      <h2 id="gpf-title" class="gpf-title">Postar nova foto</h2>
+      <button type="button" class="gpf-x" (click)="close()" aria-label="Fechar">×</button>
+    </div>
+    <p class="gpf-hint">O primeiro pet da lista é o <strong>principal</strong> na galeria. Marque todos que aparecem na foto.</p>
+
+    <form (ngSubmit)="submit($event)" class="gpf-form">
+      <div class="gpf-section">
+        <span class="gpf-label">Quem aparece na foto?</span>
+        <div *ngIf="loadingPets" class="gpf-loading">Carregando seus pets…</div>
+        <ul *ngIf="!loadingPets" class="gpf-pet-list" role="list">
+          <li *ngFor="let p of pets" class="gpf-pet-item">
+            <label class="gpf-pet-label">
+              <input
+                type="checkbox"
+                [checked]="isSelected(p.id)"
+                (change)="togglePet(p.id)"
+              />
+              <span class="gpf-pet-nome">{{ p.nome || 'Sem nome' }}</span>
+              <span class="gpf-pet-raca" *ngIf="p.raca || p.especie">{{ p.raca || p.especie }}</span>
+            </label>
+          </li>
+        </ul>
+        <p *ngIf="!loadingPets && !pets.length" class="gpf-empty">Nenhum pet cadastrado.</p>
+        <p *ngIf="selectedOrder.length" class="gpf-order-hint">Ordem: {{ orderNames() }} (o primeiro é o pet principal no feed)</p>
+      </div>
+
+      <div class="gpf-section">
+        <label class="gpf-label" for="gpf-file">Imagem</label>
+        <input
+          [attr.id]="'gpf-file-' + fileInputReset"
+          [attr.name]="'foto-' + fileInputReset"
+          type="file"
+          accept="image/*"
+          (change)="onFileInput($event)"
+        />
+        <span class="gpf-filename" *ngIf="file">{{ file.name }}</span>
+      </div>
+
+      <div class="gpf-actions">
+        <button type="button" class="gpf-btn gpf-btn--ghost" (click)="close()" [disabled]="submitting">Cancelar</button>
+        <button
+          type="submit"
+          class="gpf-btn gpf-btn--primary"
+          [disabled]="submitting || loadingPets || !pets.length"
+        >
+          {{ submitting ? 'Enviando…' : 'Publicar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

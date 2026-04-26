@@ -1,4 +1,15 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, NgZone, ApplicationRef, HostBinding } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  Inject,
+  PLATFORM_ID,
+  NgZone,
+  ApplicationRef,
+  HostBinding,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { filter, take } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -14,6 +25,10 @@ import {
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { FP_MAP_STYLES } from './mapa-map-styles';
+import { MapLocationConsentService } from '../../services/map-location-consent.service';
+
+const FP_MAPA_LS_PREFIX = 'fp_mapa_';
+const DEFAULT_SEARCH_RADIUS_KM = 15;
 
   // `allPartners` holds the raw/full list from backend; `partners` is the filtered/visible list
 @Component({
@@ -63,9 +78,28 @@ export class MapaComponent implements OnInit, OnDestroy {
   isMobileMapLayout = false;
   /** Painel inferior (mobile): acordeão de resultados — inicia fechado */
   resultsAccordionOpen = false;
+  /** Aviso LGPD: pedir consentimento para geolocalização (antes de gravação em cookies). */
+  mapLocationOptInVisible = false;
+  /** Usuário recusou: mostrar atalho para reabrir a escolha. */
+  mapLocationReopenBar = false;
   @HostBinding('class.host--mobile-map') get hostMobileMap() {
     return this.isMobileMapLayout;
   }
+
+  mapSearchUiOpen = false;
+  mapTextQuery = '';
+  @ViewChild('mapSearchInput') mapSearchInput?: ElementRef<HTMLInputElement>;
+
+  partnersForMap: any[] = [];
+  visibleCategoryIds: { [tabId: string]: boolean } = {};
+  mapShowPharmacy = true;
+  mapConfigOpen = false;
+  searchRadiusKm = DEFAULT_SEARCH_RADIUS_KM;
+  priceFilterMin: number | null = null;
+  priceFilterMax: number | null = null;
+  priceFilterEnabled = false;
+  quickSearchIndex = 0;
+  quickSearchOrdered: any[] = [];
 
   toggleResultsAccordion(): void {
     this.resultsAccordionOpen = !this.resultsAccordionOpen;
@@ -78,6 +112,7 @@ export class MapaComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private toast: ToastService,
+    private mapLocationConsent: MapLocationConsentService,
     @Inject(PLATFORM_ID) private platformId: Object,
     private appRef: ApplicationRef,
     private zone: NgZone
@@ -92,35 +127,301 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   
   toggleFilter(f: any){
-    // toggle the filter state in-place — since we bind objects from filtersByTab,
-    // this will update the correct service-specific filter array.
     f.on = !f.on;
-    // when a filter toggles, re-apply filters to update visible partners and markers
     try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
     this.scheduleMapResize();
   }
 
-  // compute the filtered partners based on currently selected filters for active tab
-  private computeFilteredPartners(): any[] {
-    const key = this.active || '';
-    const filters = this.filtersByTab[key] || [];
-    // collect keys of filters that are ON
-    const activeFilterKeys = filters.filter(f => !!f.on).map(f => String(f.id));
-    // if no active filters, return full list
-    if (!activeFilterKeys.length) return this.allPartners.slice();
-
-    // otherwise return partners where all active filter keys are true in filtros_selecionados
-    return this.allPartners.filter(p => {
-      try {
-        const sel = p.filtros_selecionados || {};
-        return activeFilterKeys.every(k => !!sel[k]);
-      } catch (e) { return false; }
+  openMapSearchUi(): void {
+    this.mapSearchUiOpen = true;
+    this.resultsAccordionOpen = false;
+    this.zone.runOutsideAngular(() => {
+      setTimeout(() => {
+        this.zone.run(() => {
+          try { this.mapSearchInput?.nativeElement?.focus(); } catch (e) { /* ignore */ }
+        });
+      }, 0);
     });
   }
 
-  // apply filters and refresh UI + markers
+  closeMapSearchUi(): void {
+    this.mapSearchUiOpen = false;
+    this.mapTextQuery = '';
+    try { this.applyFilters(); } catch (e) { console.warn('applyFilters on close search failed', e); }
+  }
+
+  onMapTextInput(ev: Event): void {
+    this.mapTextQuery = (ev.target as HTMLInputElement)?.value ?? '';
+    try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
+  }
+
+  get quickSearchCountLabel(): string {
+    const n = this.quickSearchOrdered.length;
+    if (n < 1) return '';
+    return `${this.quickSearchIndex + 1} / ${n}`;
+  }
+
+  onQuickSearchChipClick(): void {
+    if (!this.quickSearchOrdered.length) {
+      this.toast.info('Nenhum parceiro com os filtros atuais. Ajuste a categoria ou o texto.');
+      return;
+    }
+    const p = this.quickSearchOrdered[this.quickSearchIndex];
+    if (p) this.centerOnPartner(p);
+    this.quickSearchIndex = (this.quickSearchIndex + 1) % this.quickSearchOrdered.length;
+  }
+
+  toggleMapCategory(tabId: string): void {
+    this.visibleCategoryIds[tabId] = !this.visibleCategoryIds[tabId];
+    try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
+  }
+
+  isCategoryMapVisible(tabId: string): boolean {
+    return !!this.visibleCategoryIds[tabId];
+  }
+
+  mapTabsForPills(): Array<{ id: string; label: string; typeId?: number; icon?: string }> {
+    return (this.tabs || []).filter(t => t.id !== 'todos');
+  }
+
+  toggleMapConfig(): void {
+    this.mapConfigOpen = !this.mapConfigOpen;
+  }
+
+  toggleMapShowPharmacy(): void {
+    this.mapShowPharmacy = !this.mapShowPharmacy;
+    try { this.refreshMarkers(); } catch (e) { console.warn('refreshMarkers failed', e); }
+  }
+
+  onMapSettingsRadiusInput(ev: Event): void {
+    const n = Number((ev.target as HTMLInputElement).value);
+    if (!isNaN(n) && n >= 1) {
+      this.searchRadiusKm = n;
+      this.saveMapLocalSettings();
+      try { this.rebuildQuickSearchList(); } catch (e) { /* ignore */ }
+    }
+  }
+
+  onPriceMinInput(ev: Event): void {
+    const v = (ev.target as HTMLInputElement).value;
+    this.priceFilterMin = v === '' ? null : Number(v);
+    this.saveMapLocalSettings();
+    try { this.applyFilters(); } catch (e) { /* ignore */ }
+  }
+
+  onPriceMaxInput(ev: Event): void {
+    const v = (ev.target as HTMLInputElement).value;
+    this.priceFilterMax = v === '' ? null : Number(v);
+    this.saveMapLocalSettings();
+    try { this.applyFilters(); } catch (e) { /* ignore */ }
+  }
+
+  onPriceFilterEnabledChange(ev: Event): void {
+    this.priceFilterEnabled = (ev.target as HTMLInputElement).checked;
+    if (!this.priceFilterEnabled) {
+      this.priceFilterMin = null;
+      this.priceFilterMax = null;
+    }
+    this.saveMapLocalSettings();
+    try { this.applyFilters(); } catch (e) { /* ignore */ }
+  }
+
+  get lodgingPriceAvailable(): boolean {
+    for (const p of this.allPartners || []) {
+      if (this.getPartnerLodgingPrice(p) != null) return true;
+    }
+    return false;
+  }
+
+  trackTabId(_: number, t: { id: string }): string {
+    return t.id;
+  }
+
+  private initVisibleCategoryToggles(): void {
+    for (const t of this.tabs) {
+      if (this.visibleCategoryIds[t.id] === undefined) {
+        this.visibleCategoryIds[t.id] = true;
+      }
+    }
+  }
+
+  private loadMapLocalSettings(): void {
+    if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') return;
+    try {
+      const r = localStorage.getItem(`${FP_MAPA_LS_PREFIX}raio_km`);
+      if (r != null) {
+        const n = Number(r);
+        if (!isNaN(n) && n >= 1 && n <= 500) this.searchRadiusKm = n;
+      }
+      const pmin = localStorage.getItem(`${FP_MAPA_LS_PREFIX}preco_min`);
+      const pmax = localStorage.getItem(`${FP_MAPA_LS_PREFIX}preco_max`);
+      this.priceFilterMin = pmin != null && pmin !== '' ? Number(pmin) : null;
+      this.priceFilterMax = pmax != null && pmax !== '' ? Number(pmax) : null;
+      this.priceFilterEnabled = this.priceFilterMin != null || this.priceFilterMax != null;
+    } catch (e) { /* ignore */ }
+  }
+
+  private saveMapLocalSettings(): void {
+    if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(`${FP_MAPA_LS_PREFIX}raio_km`, String(this.searchRadiusKm));
+      if (this.priceFilterMin != null) localStorage.setItem(`${FP_MAPA_LS_PREFIX}preco_min`, String(this.priceFilterMin));
+      else localStorage.removeItem(`${FP_MAPA_LS_PREFIX}preco_min`);
+      if (this.priceFilterMax != null) localStorage.setItem(`${FP_MAPA_LS_PREFIX}preco_max`, String(this.priceFilterMax));
+      else localStorage.removeItem(`${FP_MAPA_LS_PREFIX}preco_max`);
+    } catch (e) { /* ignore */ }
+  }
+
+  private distanceKm(
+    a: { lat: number; lng: number },
+    p: { latitude?: number; longitude?: number; lat?: any; lng?: any }
+  ): number {
+    const lat1 = a.lat * (Math.PI / 180);
+    const lat2 = (Number(p.latitude ?? p.lat) || 0) * (Math.PI / 180);
+    const dLat = lat2 - lat1;
+    const dLng = (Number(p.longitude ?? p.lng) - a.lng) * (Math.PI / 180);
+    const s1 = Math.sin(dLat / 2);
+    const s2 = Math.sin(dLng / 2);
+    const h = s1 * s1 + Math.cos(lat1) * Math.cos(lat2) * s2 * s2;
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    return 6371 * c;
+  }
+
+  private getQuickSearchReferencePoint(): { lat: number; lng: number } {
+    const last = this.mapLocationConsent.getLastPosition();
+    if (last && this.mapLocationConsent.getConsent() === true) {
+      return { lat: last.lat, lng: last.lng };
+    }
+    return this.pharmacyCoords ?? { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
+  }
+
+  getPartnerLodgingPrice(p: any): number | null {
+    try {
+      const r = p?._raw;
+      for (const k of ['preco_diaria', 'diaria_valor', 'valor_diaria', 'preco', 'hospedagem_preco'] as const) {
+        if (r?.[k] != null) {
+          const n = Number(r[k]);
+          if (!isNaN(n)) return n;
+        }
+      }
+      const sel = p?.filtros_selecionados || {};
+      for (const key of Object.keys(sel)) {
+        if (!/diaria|hosped|preço|preco|valor/i.test(key)) continue;
+        const v = (sel as any)[key];
+        if (typeof v === 'number' && !isNaN(v)) return v;
+      }
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  private partnerMatchesTextQuery(p: any): boolean {
+    const q = (this.mapTextQuery || '').trim().toLowerCase();
+    if (!q) return true;
+    const name = String(p.nome || p.titulo || p.name || '').toLowerCase();
+    const loc = (this.getPartnerLocation(p) || '').toLowerCase();
+    const end = String(p.endereco || p._raw?.endereco || '').toLowerCase();
+    return name.includes(q) || loc.includes(q) || end.includes(q);
+  }
+
+  private partnerMatchesActiveTab(p: any): boolean {
+    if (this.active === 'todos') return true;
+    return this.partnerMatchesTabId(p, this.active);
+  }
+
+  private partnerMatchesTabId(p: any, tabId: string): boolean {
+    if (tabId === 'todos') return true;
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return false;
+    const wantId = tab.typeId;
+    const cands: any[] = [];
+    if (p?.tipo) cands.push(p.tipo);
+    if (Array.isArray(p?.tipos)) cands.push(...p.tipos);
+    for (const t of cands) {
+      if (!t) continue;
+      if (wantId != null) {
+        const id = t.id ?? t.tipo_id ?? t.tipoId;
+        if (id != null && Number(id) === Number(wantId)) return true;
+      }
+      if (t.slug && String(t.slug) === String(tabId)) return true;
+    }
+    if (typeof p?.tipo === 'string' && p.tipo && String(p.tipo).toLowerCase() === String(tabId).toLowerCase()) {
+      return true;
+    }
+    return false;
+  }
+
+  private partnerVisibleForMapCategories(p: any): boolean {
+    for (const t of this.tabs) {
+      if (t.id === 'todos') continue;
+      if (this.visibleCategoryIds[t.id] && this.partnerMatchesTabId(p, t.id)) return true;
+    }
+    return false;
+  }
+
+  private matchesAttributeFilters(p: any): boolean {
+    const key = this.active || '';
+    const filters = this.filtersByTab[key] || [];
+    const activeFilterKeys = filters.filter(f => !!f.on).map(f => String(f.id));
+    if (!activeFilterKeys.length) return true;
+    try {
+      const sel = p.filtros_selecionados || {};
+      return activeFilterKeys.every(k => !!sel[k]);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  private matchesAttributeFiltersMapContext(p: any): boolean {
+    if (!this.partnerMatchesActiveTab(p)) return true;
+    return this.matchesAttributeFilters(p);
+  }
+
+  private matchesPriceIfConfigured(p: any): boolean {
+    if (!this.priceFilterEnabled) return true;
+    const price = this.getPartnerLodgingPrice(p);
+    if (price == null || isNaN(price)) return true;
+    if (this.priceFilterMin != null && !isNaN(this.priceFilterMin) && price < this.priceFilterMin) return false;
+    if (this.priceFilterMax != null && !isNaN(this.priceFilterMax) && price > this.priceFilterMax) return false;
+    return true;
+  }
+
+  private matchesForSidebarList(p: any): boolean {
+    if (!this.partnerMatchesActiveTab(p)) return false;
+    if (!this.matchesAttributeFilters(p)) return false;
+    if (!this.partnerMatchesTextQuery(p)) return false;
+    if (!this.matchesPriceIfConfigured(p)) return false;
+    return true;
+  }
+
+  private matchesForMapView(p: any): boolean {
+    if (!this.partnerVisibleForMapCategories(p)) return false;
+    if (!this.matchesAttributeFiltersMapContext(p)) return false;
+    if (!this.partnerMatchesTextQuery(p)) return false;
+    if (!this.matchesPriceIfConfigured(p)) return false;
+    return true;
+  }
+
+  private rebuildQuickSearchList(): void {
+    const ref = this.getQuickSearchReferencePoint();
+    const base = (this.allPartners || []).filter(p => this.matchesForSidebarList(p));
+    const withD = base
+      .map(p => ({ p, d: this.distanceKm(ref, p) }))
+      .filter(x => {
+        if (x.p.latitude == null && x.p.longitude == null) return false;
+        return x.d <= this.searchRadiusKm;
+      })
+      .sort((a, b) => a.d - b.d);
+    this.quickSearchOrdered = withD.map(x => x.p);
+    if (this.quickSearchIndex >= this.quickSearchOrdered.length) {
+      this.quickSearchIndex = 0;
+    }
+  }
+
   private applyFilters(){
-    this.partners = this.computeFilteredPartners();
+    const base = this.allPartners || [];
+    this.partners = base.filter(p => this.matchesForSidebarList(p));
+    this.partnersForMap = base.filter(p => this.matchesForMapView(p));
+    try { this.rebuildQuickSearchList(); } catch (e) { console.warn('rebuildQuickSearchList failed', e); }
     try { this.refreshMarkers(); } catch (e) { console.warn('refreshMarkers failed in applyFilters', e); }
   }
   getActiveLabel(){
@@ -206,6 +507,8 @@ export class MapaComponent implements OnInit, OnDestroy {
     // follow the same pattern as other pages: only call API from the browser
     // to avoid SSR network errors.
     if (isPlatformBrowser(this.platformId)) {
+      this.loadMapLocalSettings();
+      this.syncLocationOptInFromCookies();
       this.initMobileLayoutListener();
       // attach global handlers to capture initialization errors so the app doesn't get left in a broken state
       try { window.addEventListener('error', this.__errHandler); window.addEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
@@ -219,18 +522,15 @@ export class MapaComponent implements OnInit, OnDestroy {
         const stableSub = (this.appRef.isStable as any).pipe(filter((s: boolean) => s), take(1)).subscribe(() => {
           try { clearTimeout(stableTimer as any); } catch (e) {}
             this.loadPartners();
-              // only load anunciantes if a tab is already selected
-              if (this.active) this.loadAnunciantes(this.active === 'todos' ? undefined : this.active);
+            this.loadAnunciantes(undefined);
         });
-        // fallback timer: if stability doesn't occur within 1500ms, proceed anyway
         const stableTimer = setTimeout(() => {
           try { stableSub.unsubscribe(); } catch (e) {}
             this.loadPartners();
-            if (this.active) this.loadAnunciantes(this.active === 'todos' ? undefined : this.active);
+            this.loadAnunciantes(undefined);
         }, 1500);
       } catch (e) {
-        // fallback: schedule after a tick
-        setTimeout(() => { this.loadPartners(); this.loadAnunciantes(this.active); }, 0);
+        setTimeout(() => { this.loadPartners(); this.loadAnunciantes(undefined); }, 0);
       }
     } else {
       this.loading = false;
@@ -386,20 +686,12 @@ export class MapaComponent implements OnInit, OnDestroy {
     this.pharmacyPulseRaf = requestAnimationFrame(tick) as unknown as number;
   }
 
-  // when the user switches tabs we should refresh the anunciantes list for that tipo
+  // Lista carregada uma vez (todos); aba muda só filtros no cliente
   select(tabId: string){
     this.active = tabId;
     this.scheduleMapResize();
     if (isPlatformBrowser(this.platformId)) {
-      // resolve numeric type id from the populated tabs list and pass that to backend
-      let tipo: any = tabId;
-      // if the special 'todos' tab is selected, send undefined so backend returns all
-      if (String(tabId) === 'todos') tipo = undefined;
-      try {
-        const tab = this.tabs.find(t => t.id === tabId);
-        if (tab && typeof tab.typeId !== 'undefined') tipo = Number(tab.typeId);
-      } catch (e) {}
-      this.loadAnunciantes(tipo);
+      try { this.applyFilters(); } catch (e) { console.warn('applyFilters on select failed', e); }
     }
   }
 
@@ -420,18 +712,14 @@ export class MapaComponent implements OnInit, OnDestroy {
             filtros = Array.isArray((res as any).filtros) ? (res as any).filtros : [];
           }
 
-          // populate filtersByTab for the currently active tab (or fallback to tipo as key)
-          const key = this.active || String(tipo ?? '');
+          const key = this.active || String(tipo ?? 'todos');
           try {
-            // Prefer `filtros` (legacy) but if backend supplies atributos_disponiveis or
-            // anuncios include atributos (or atributos_disponiveis) use those to build filters.
             let availableAtributos: any[] = [];
             if (filtros && filtros.length) {
               availableAtributos = filtros.map((f: any) => ({ atributo_id: f.atributo_id ?? null, chave: f.chave ?? null, nome: f.nome ?? f.chave ?? '' }));
             } else if (res && Array.isArray((res as any).atributos_disponiveis) && (res as any).atributos_disponiveis.length) {
               availableAtributos = (res as any).atributos_disponiveis.map((a: any) => ({ atributo_id: a.atributo_id ?? null, chave: a.chave ?? null, nome: a.nome ?? a.chave ?? '' }));
             } else {
-              // fallback: collect atributos_disponiveis or atributos from anuncios
               const collect: { [k: string]: any } = {};
               (anuncios || []).forEach((an: any) => {
                 if (Array.isArray(an.atributos_disponiveis)) {
@@ -445,13 +733,42 @@ export class MapaComponent implements OnInit, OnDestroy {
             }
 
             if (availableAtributos && availableAtributos.length) {
-              this.filtersByTab[key] = availableAtributos.map((f: any) => ({ id: f.chave ?? String(f.atributo_id ?? ''), label: f.nome ?? f.chave ?? '', on: false }));
+              const mapped = availableAtributos.map((f: any) => ({
+                id: f.chave ?? String(f.atributo_id ?? ''),
+                label: f.nome ?? f.chave ?? '',
+                on: false
+              }));
+              if (this.tabs.length) {
+                for (const t of this.tabs) {
+                  const prev = this.filtersByTab[t.id] || [];
+                  this.filtersByTab[t.id] = mapped.map(m => ({
+                    id: m.id,
+                    label: m.label,
+                    on: prev.find(o => o.id === m.id)?.on ?? false
+                  }));
+                }
+              } else {
+                this.filtersByTab[key] = mapped;
+              }
+            } else {
+              if (this.tabs.length) {
+                for (const t of this.tabs) {
+                  this.filtersByTab[t.id] = this.filtersByTab[t.id] || [];
+                }
+              } else {
+                this.filtersByTab[key] = this.filtersByTab[key] || [];
+              }
+            }
+          } catch (e) {
+            if (this.tabs.length) {
+              for (const t of this.tabs) {
+                this.filtersByTab[t.id] = this.filtersByTab[t.id] || [];
+              }
             } else {
               this.filtersByTab[key] = this.filtersByTab[key] || [];
             }
-          } catch (e) {
-            this.filtersByTab[key] = this.filtersByTab[key] || [];
           }
+          this.initVisibleCategoryToggles();
 
             // normalize anuncios into partner objects expected by the UI/map
             this.allPartners = (anuncios || []).map((a: any) => {
@@ -517,6 +834,7 @@ export class MapaComponent implements OnInit, OnDestroy {
           console.error('loadAnunciantes parse failed', e);
           this.allPartners = [];
           this.partners = [];
+          this.partnersForMap = [];
         }
       },
       error: (err) => {
@@ -558,45 +876,48 @@ export class MapaComponent implements OnInit, OnDestroy {
     const coordsToUse = this.pharmacyCoords ?? fallbackCoords;
     const google = (window as any).google;
 
-    try {
-      const pinFpUrl = this.pinLojaUrl;
-      const iconPharm = {
-        url: pinFpUrl,
-        scaledSize: new google.maps.Size(36, 44),
-        anchor: new google.maps.Point(18, 44),
-      };
-      const pharmacyMarker = new google.maps.Marker({
-        position: coordsToUse,
-        map: this.map,
-        icon: iconPharm,
-        title: 'Farmácia / Loja',
-        zIndex: 1000,
-      });
-      this.markers.push(pharmacyMarker);
+    if (this.mapShowPharmacy) {
       try {
-        this.attachPharmacyInfo(pharmacyMarker, coordsToUse);
+        const pinFpUrl = this.pinLojaUrl;
+        const iconPharm = {
+          url: pinFpUrl,
+          scaledSize: new google.maps.Size(36, 44),
+          anchor: new google.maps.Point(18, 44),
+        };
+        const pharmacyMarker = new google.maps.Marker({
+          position: coordsToUse,
+          map: this.map,
+          icon: iconPharm,
+          title: 'Farmácia / Loja',
+          zIndex: 1000,
+        });
+        this.markers.push(pharmacyMarker);
+        try {
+          this.attachPharmacyInfo(pharmacyMarker, coordsToUse);
+        } catch (e) {
+          console.warn('attachPharmacyInfo failed', e);
+        }
       } catch (e) {
-        console.warn('attachPharmacyInfo failed', e);
+        const pharmacyMarker = new google.maps.Marker({
+          position: coordsToUse,
+          map: this.map,
+          title: 'Farmácia / Loja',
+          zIndex: 1000,
+        });
+        this.markers.push(pharmacyMarker);
+        try {
+          this.attachPharmacyInfo(pharmacyMarker, coordsToUse);
+        } catch (err) {
+          console.warn('attachPharmacyInfo fallback failed', err);
+        }
       }
-    } catch (e) {
-      const pharmacyMarker = new google.maps.Marker({
-        position: coordsToUse,
-        map: this.map,
-        title: 'Farmácia / Loja',
-        zIndex: 1000,
-      });
-      this.markers.push(pharmacyMarker);
-      try {
-        this.attachPharmacyInfo(pharmacyMarker, coordsToUse);
-      } catch (err) {
-        console.warn('attachPharmacyInfo fallback failed', err);
-      }
+
+      this.startPharmacyPulse(coordsToUse);
     }
 
-    this.startPharmacyPulse(coordsToUse);
-
+    const mapPartners = this.partnersForMap || [];
     const partnerMarkers: any[] = [];
-    for (const p of this.partners) {
+    for (const p of mapPartners) {
       const lat = p.latitude ?? p.lat ?? p.latitud ?? null;
       const lng = p.longitude ?? p.lng ?? p.long ?? null;
       if (lat == null || lng == null) continue;
@@ -607,7 +928,7 @@ export class MapaComponent implements OnInit, OnDestroy {
           scaledSize: new google.maps.Size(32, 36),
           anchor: new google.maps.Point(16, 36),
         };
-        const useCluster = this.partners.length > this.clusterPartnerThreshold;
+        const useCluster = mapPartners.length > this.clusterPartnerThreshold;
         const markerOpts: any = {
           position: { lat: Number(lat), lng: Number(lng) },
           map: useCluster ? null : this.map,
@@ -632,7 +953,7 @@ export class MapaComponent implements OnInit, OnDestroy {
       } catch (e) {
         const marker = new google.maps.Marker({
           position: { lat: Number(lat), lng: Number(lng) },
-          map: this.partners.length > this.clusterPartnerThreshold ? null : this.map,
+          map: mapPartners.length > this.clusterPartnerThreshold ? null : this.map,
           title: p.nome || p.name || 'Anunciante',
           zIndex: 500,
         });
@@ -828,7 +1149,16 @@ export class MapaComponent implements OnInit, OnDestroy {
           if (!this.tabs.find(x => x.id === 'todos')) {
             this.tabs.unshift({ id: 'todos', label: 'Todos', typeId: undefined, icon: undefined });
           }
-          // do NOT auto-select other tabs — we keep `this.active` default (currently 'todos')
+          this.initVisibleCategoryToggles();
+          const baseF = this.filtersByTab['todos'] || this.filtersByTab[this.active];
+          if (baseF && baseF.length) {
+            for (const t of this.tabs) {
+              if (!this.filtersByTab[t.id]?.length) {
+                this.filtersByTab[t.id] = baseF.map(f => ({ id: f.id, label: f.label, on: false }));
+              }
+            }
+            try { this.applyFilters(); } catch (e) { /* ignore */ }
+          }
         }
       },
       error: (err) => {
@@ -1014,8 +1344,8 @@ export class MapaComponent implements OnInit, OnDestroy {
       this.mapInitialized = true;
       if (this.mapReadyResolver) { try { this.mapReadyResolver(); } catch (e) {} this.mapReadyResolver = null; }
 
-      // Centralizar na posição do usuário quando permitido (lista de parceiros “perto de você” faz mais sentido)
-      this.requestInitialUserCenter();
+      // Só centraliza no usuário após consentimento explícito e gravação conforme política (cookies).
+      this.maybeCenterFromUserConsent();
 
       // If there is a saved destination from a previous session, do NOT auto-draw the route
       // (auto-drawing has caused navigation/lock issues on some environments). Instead,
@@ -1085,6 +1415,7 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   /**
    * Lê a posição do dispositivo (com permissão do navegador).
+   * Tenta alta precisão e, se falhar, posição aproximada (melhor taxa de sucesso em desktop / Wi-Fi).
    */
   private getUserPosition(opts?: { maxAge?: number; timeout?: number }): Promise<{ lat: number; lng: number }> {
     return new Promise((resolve, reject) => {
@@ -1093,13 +1424,106 @@ export class MapaComponent implements OnInit, OnDestroy {
         return;
       }
       const maxAge = opts?.maxAge ?? 120000;
-      const timeout = opts?.timeout ?? 12000;
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => reject(err),
-        { enableHighAccuracy: true, timeout, maximumAge: maxAge }
-      );
+      const timeout = opts?.timeout ?? 15000;
+      const run = (highAccuracy: boolean) =>
+        new Promise<{ lat: number; lng: number }>((res, rej) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => res({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            rej,
+            { enableHighAccuracy: highAccuracy, timeout, maximumAge: maxAge }
+          );
+        });
+      run(true)
+        .then(resolve)
+        .catch(() => run(false).then(resolve).catch(reject));
     });
+  }
+
+  private syncLocationOptInFromCookies(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const c = this.mapLocationConsent.getConsent();
+    this.mapLocationOptInVisible = c === null;
+    this.mapLocationReopenBar = c === false;
+  }
+
+  /** Endereço legível a partir de coordenadas (Google Geocoder), para cookie e alinhamento com o “endereço” do usuário. */
+  private reverseGeocodeToAddress(pos: { lat: number; lng: number }): Promise<string | null> {
+    try {
+      const google = (window as any).google;
+      if (!google?.maps?.Geocoder) return Promise.resolve(null);
+      const geocoder = new google.maps.Geocoder();
+      return new Promise((resolve) => {
+        try {
+          geocoder.geocode({ location: pos }, (results: any, status: string) => {
+            if (status === 'OK' && results?.[0]?.formatted_address) {
+              resolve(String(results[0].formatted_address));
+            } else {
+              resolve(null);
+            }
+          });
+        } catch {
+          resolve(null);
+        }
+      });
+    } catch {
+      return Promise.resolve(null);
+    }
+  }
+
+  /**
+   * Após o usuário permitir: obtém posição, atualiza mapa, grava posição e endereço aproximado em cookie.
+   */
+  private async refreshUserPositionOnMap(userInitiated: boolean): Promise<void> {
+    if (this.mapLocationConsent.getConsent() !== true || !this.map) return;
+    const pos = await this.getUserPosition(
+      userInitiated
+        ? { maxAge: 0, timeout: 20000 }
+        : { maxAge: 300000, timeout: 15000 }
+    );
+    this.zone.run(() => {
+      try {
+        this.map.setCenter(pos);
+        this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 14));
+        this.setUserLocationMarker(pos);
+        this.nudgeMapForMobileChrome();
+        try { this.rebuildQuickSearchList(); } catch (e) { /* ignore */ }
+      } catch (e) {
+        console.warn('refreshUserPositionOnMap center failed', e);
+      }
+    });
+    const address = await this.reverseGeocodeToAddress(pos);
+    this.mapLocationConsent.setLastPosition(pos, address);
+  }
+
+  async acceptMapLocation(): Promise<void> {
+    this.mapLocationConsent.setConsent(true);
+    this.syncLocationOptInFromCookies();
+    try {
+      await this.waitForMapReady(12000).catch(() => {});
+    } catch { /* */ }
+    if (!this.map) {
+      this.toast.error('Mapa ainda não está pronto. Tente “Minha posição” em instantes.');
+      return;
+    }
+    try {
+      await this.refreshUserPositionOnMap(true);
+    } catch (e) {
+      this.toast.error('Não foi possível obter sua localização. Verifique a permissão do navegador.');
+    }
+  }
+
+  declineMapLocation(): void {
+    this.mapLocationConsent.setConsent(false);
+    this.mapLocationConsent.clearLastPosition();
+    this.syncLocationOptInFromCookies();
+    this.toast.info('O mapa permanece na região da loja. Você pode reativar a localização quando quiser.');
+  }
+
+  /** Volta a exibir o aviso (limpa o cookie de decisão). */
+  reopenMapLocationPrompt(): void {
+    this.mapLocationConsent.clearConsent();
+    this.mapLocationConsent.clearLastPosition();
+    this.syncLocationOptInFromCookies();
   }
 
   private setUserLocationMarker(pos: { lat: number; lng: number }): void {
@@ -1129,24 +1553,31 @@ export class MapaComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Após o mapa abrir, tenta centralizar no usuário sem mensagens (fallback: loja/parceiro). */
-  private requestInitialUserCenter(): void {
+  /**
+   * Se o visitante já consentiu, usa a última posição em cookie (rápido) e atualiza em seguida, sem toasts.
+   */
+  private maybeCenterFromUserConsent(): void {
     if (!isPlatformBrowser(this.platformId) || !this.map) return;
-    this.getUserPosition({ maxAge: 300000, timeout: 12000 })
-      .then((pos) => {
-        if (!pos || !this.map) return;
+    if (this.mapLocationConsent.getConsent() !== true) return;
+
+    const last = this.mapLocationConsent.getLastPosition();
+    if (last) {
+      const ageMs = Date.now() - new Date(last.savedAt).getTime();
+      if (ageMs < 24 * 60 * 60 * 1000) {
         this.zone.run(() => {
           try {
-            this.map.setCenter(pos);
+            this.map.setCenter({ lat: last.lat, lng: last.lng });
             this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 14));
-            this.setUserLocationMarker(pos);
+            this.setUserLocationMarker({ lat: last.lat, lng: last.lng });
             this.nudgeMapForMobileChrome();
           } catch (e) {
-            console.warn('requestInitialUserCenter failed', e);
+            console.warn('maybeCenterFromUserConsent (cache) failed', e);
           }
         });
-      })
-      .catch(() => { /* manter centro da loja/parceiro */ });
+      }
+    }
+
+    this.refreshUserPositionOnMap(false).catch(() => { /* manter loja/parceiro */ });
   }
 
   /**
@@ -1155,6 +1586,20 @@ export class MapaComponent implements OnInit, OnDestroy {
    */
   async centerOnUserLocation(userInitiated = false): Promise<void> {
     if (!isPlatformBrowser(this.platformId) || !(window as any).google) return;
+    const consent = this.mapLocationConsent.getConsent();
+    if (consent !== true) {
+      this.syncLocationOptInFromCookies();
+      if (consent === null) {
+        if (userInitiated) {
+          this.toast.info('Para usar sua posição no mapa, responda ao aviso de localização no topo da página.');
+        }
+        return;
+      }
+      if (userInitiated) {
+        this.toast.info('A localização no mapa está desativada. Use "Alterar localização" para permitir de novo.');
+      }
+      return;
+    }
     try {
       await this.waitForMapReady(10000).catch(() => {});
     } catch { /* ignore */ }
@@ -1165,13 +1610,7 @@ export class MapaComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      const pos = await this.getUserPosition(
-        userInitiated ? { maxAge: 0, timeout: 15000 } : { maxAge: 120000, timeout: 12000 }
-      );
-      this.map.setCenter(pos);
-      this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15));
-      this.setUserLocationMarker(pos);
-      this.nudgeMapForMobileChrome();
+      await this.refreshUserPositionOnMap(!!userInitiated);
     } catch (e) {
       if (userInitiated) {
         this.toast.error('Não foi possível obter sua localização. Verifique a permissão de localização no navegador.');
@@ -1421,17 +1860,15 @@ export class MapaComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Try to get user's current position as origin
+    // Origem: só lê o GPS com consentimento no mapa (LGPD); senão, centro do mapa
     let origin: any = null;
-    try {
-      origin = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
-        if (!navigator.geolocation) return reject('no-geolocation');
-        navigator.geolocation.getCurrentPosition((pos) => {
-          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        }, (err) => reject(err), { timeout: 5000 });
-      });
-    } catch (e) {
-      // fallback to map center
+    if (this.mapLocationConsent.getConsent() === true) {
+      try {
+        origin = await this.getUserPosition({ maxAge: 120000, timeout: 12000 });
+      } catch (e) {
+        try { const c = this.map.getCenter(); origin = { lat: c.lat(), lng: c.lng() }; } catch { origin = null; }
+      }
+    } else {
       try { const c = this.map.getCenter(); origin = { lat: c.lat(), lng: c.lng() }; } catch { origin = null; }
     }
 
@@ -1531,18 +1968,17 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   private async openMapsWithRoute(dest: { lat: number; lng: number }) {
     const destStr = `${dest.lat},${dest.lng}`;
-    // Try to get user's position
+    if (this.mapLocationConsent.getConsent() !== true) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destStr)}`;
+      window.open(url, '_blank');
+      return;
+    }
     try {
-      const pos = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
-        if (!navigator.geolocation) return reject('no-geolocation');
-        navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), (err) => reject(err), { timeout: 5000 });
-      });
+      const pos = await this.getUserPosition({ maxAge: 120000, timeout: 10000 });
       const originStr = `${pos.lat},${pos.lng}`;
       const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originStr)}&destination=${encodeURIComponent(destStr)}`;
       window.open(url, '_blank');
-      return;
     } catch (e) {
-      // if geolocation failed, open directions with destination only
       const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destStr)}`;
       window.open(url, '_blank');
     }
