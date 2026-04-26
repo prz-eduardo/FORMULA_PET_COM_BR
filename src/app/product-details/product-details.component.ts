@@ -306,6 +306,8 @@ export class ProductDetailsComponent implements OnInit {
     if (!this.product) return 0;
     if (this.selectedVariant && this.selectedVariant.preco != null) return Number(this.selectedVariant.preco);
     if (typeof this.product.promoPrice === 'number') return this.product.promoPrice;
+    // Use backend-calculated priceFinal directly to avoid re-applying discount on the frontend
+    if (this.product.priceFinal != null) return this.product.priceFinal;
     return this.store.getPriceWithDiscount(this.product);
   }
 
@@ -323,6 +325,10 @@ export class ProductDetailsComponent implements OnInit {
     if (!this.product) return null;
     if (this.product.promoPrice != null) return this.product.price;
     const now = this.priceNow();
+    // When backend returned a promoted priceFinal, show priceOriginal as the crossed-out reference
+    if (this.product.priceFinal != null && this.product.priceOriginal != null && this.product.priceOriginal > now + 0.009) {
+      return this.product.priceOriginal;
+    }
     const s = this.product.strikePrice;
     if (s != null && Number.isFinite(s) && s > now + 0.009) return s;
     return null;

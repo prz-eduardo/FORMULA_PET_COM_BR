@@ -242,7 +242,9 @@ export interface AdminFornecedorDto {
   obs?: string | null;
   ativo?: 0 | 1;
   // Optional administrative fields for partners
-  tipo?: string | number | null; // partner type id
+  tipo_id?: string | number | null;
+  tipo_name?: string | null;
+  tipo?: string | number | null;
   numero?: string | null; // endereço número
   complemento?: string | null; // endereço complemento
   latitude?: string | number | null;
@@ -253,6 +255,42 @@ export interface AdminFornecedorDto {
 }
 
 export interface PartnerTypeDto { id?: number | string; name: string }
+
+export interface TipoProfissionalDto {
+  id: number;
+  nome: string;
+  slug?: string | null;
+  icone?: string | null;
+  descricao?: string | null;
+}
+
+export interface AdminParceiroDto {
+  id?: number;
+  nome: string;
+  email?: string | null;
+  telefone?: string | null;
+  cpf_cnpj?: string | null;
+  descricao?: string | null;
+  logo_url?: string | null;
+  tipo_id?: number | null;
+  tipo_nome?: string | null;
+  tipo_slug?: string | null;
+  destaque?: boolean;
+  status?: 'pending' | 'approved' | 'rejected' | 'suspended';
+  criado_em?: string;
+  updated_at?: string;
+  end_id?: number | null;
+  endereco?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  cep?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  account_ativo?: 0 | 1 | null;
+}
 
 // Fórmulas (manipulados)
 export interface FormulaDto {
@@ -865,6 +903,48 @@ export class AdminApiService {
   }
   deleteAdminFornecedor(id: number | string): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/fornecedores/${id}`, { headers: this.headers() });
+  }
+
+  // Admin - Parceiros CRUD (/admin/parceiros)
+  listTiposParceiro(): Observable<TipoProfissionalDto[]> {
+    return this.http.get<TipoProfissionalDto[]>(`${this.baseUrl}/parceiros/tipos`, { headers: this.headers() });
+  }
+  createTipoParceiro(body: { nome: string; slug?: string; icone?: string; descricao?: string }): Observable<TipoProfissionalDto> {
+    return this.http.post<TipoProfissionalDto>(`${this.baseUrl}/parceiros/tipos`, body, { headers: this.headers() });
+  }
+  updateTipoParceiro(id: number | string, body: Partial<TipoProfissionalDto>): Observable<TipoProfissionalDto> {
+    return this.http.put<TipoProfissionalDto>(`${this.baseUrl}/parceiros/tipos/${id}`, body, { headers: this.headers() });
+  }
+  deleteTipoParceiro(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/parceiros/tipos/${id}`, { headers: this.headers() });
+  }
+  listAdminParceiros(params?: { q?: string; status?: string; page?: number; pageSize?: number }): Observable<Paged<AdminParceiroDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.q) httpParams = httpParams.set('q', params.q);
+      if (params.status && params.status !== 'all') httpParams = httpParams.set('status', params.status);
+      if (params.page) httpParams = httpParams.set('page', String(params.page));
+      if (params.pageSize) httpParams = httpParams.set('pageSize', String(params.pageSize));
+    }
+    return this.http.get<Paged<AdminParceiroDto>>(`${this.baseUrl}/parceiros`, { headers: this.headers(), params: httpParams });
+  }
+  getAdminParceiro(id: number | string): Observable<AdminParceiroDto> {
+    return this.http.get<AdminParceiroDto>(`${this.baseUrl}/parceiros/${id}`, { headers: this.headers() });
+  }
+  updateAdminParceiro(id: number | string, body: Partial<AdminParceiroDto>): Observable<AdminParceiroDto> {
+    return this.http.put<AdminParceiroDto>(`${this.baseUrl}/parceiros/${id}`, body, { headers: this.headers() });
+  }
+  approveAdminParceiro(id: number | string): Observable<AdminParceiroDto> {
+    return this.http.put<AdminParceiroDto>(`${this.baseUrl}/parceiros/${id}/approve`, {}, { headers: this.headers() });
+  }
+  rejectAdminParceiro(id: number | string): Observable<AdminParceiroDto> {
+    return this.http.put<AdminParceiroDto>(`${this.baseUrl}/parceiros/${id}/reject`, {}, { headers: this.headers() });
+  }
+  toggleDestaqueAdminParceiro(id: number | string, destaque: boolean): Observable<AdminParceiroDto> {
+    return this.http.put<AdminParceiroDto>(`${this.baseUrl}/parceiros/${id}/destaque`, { destaque }, { headers: this.headers() });
+  }
+  deleteAdminParceiro(id: number | string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/parceiros/${id}`, { headers: this.headers() });
   }
 
   // Dashboard

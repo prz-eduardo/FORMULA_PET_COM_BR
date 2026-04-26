@@ -35,7 +35,7 @@
   max-width: none;
   max-height: none;
   box-shadow: none;
-  border-radius: 20px;
+  border-radius: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -49,32 +49,8 @@
   margin-bottom: 8px;
 }
 
-.gpf-dialog--embedded .gpf-head,
-.gpf-dialog--embedded .gpf-hint,
 .gpf-dialog--embedded .gpf-form {
-  background: #fff;
-}
-
-.gpf-dialog--embedded .gpf-head {
-  padding: 20px 20px 0;
-  border: 1px solid var(--fp-border, #e8e0d0);
-  border-bottom: 0;
-  border-radius: 20px 20px 0 0;
-}
-
-.gpf-dialog--embedded .gpf-hint {
-  margin-bottom: 0;
-  padding: 10px 20px 0;
-  border-left: 1px solid var(--fp-border, #e8e0d0);
-  border-right: 1px solid var(--fp-border, #e8e0d0);
-}
-
-.gpf-dialog--embedded .gpf-form {
-  padding: 16px 20px 20px;
-  border: 1px solid var(--fp-border, #e8e0d0);
-  border-top: 0;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  gap: 14px;
 }
 
 .gpf-title {
@@ -102,9 +78,27 @@
   line-height: 1.4;
 }
 
+.gpf-hint--embedded {
+  margin-bottom: 14px;
+  padding: 0 2px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
 .gpf-form { display: flex; flex-direction: column; gap: 16px; }
 
+.gpf-form--embedded {
+  gap: 14px;
+}
+
 .gpf-section { display: flex; flex-direction: column; gap: 8px; }
+
+.gpf-section--card {
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(232, 224, 208, 0.92);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
 
 .gpf-label {
   font-size: 12px;
@@ -214,6 +208,7 @@
 
 .gpf-pet-nome { font-weight: 700; color: var(--fp-ink, #1a1a1a); }
 .gpf-pet-raca { font-size: 12px; color: #64748b; }
+.gpf-pet-gallery-badge { font-size: 10px; font-weight: 600; color: #7c3aed; background: #ede9fe; border-radius: 4px; padding: 1px 5px; letter-spacing: .02em; }
 
 .gpf-empty-card {
   display: flex;
@@ -246,7 +241,7 @@
   font-size: 11px;
   color: #94a3b8;
   margin: 0;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 .gpf-file-row {
@@ -309,6 +304,10 @@
   margin-top: 4px;
 }
 
+.gpf-dialog--embedded .gpf-actions {
+  padding-top: 4px;
+}
+
 .gpf-btn {
   border: 0;
   border-radius: 999px;
@@ -339,6 +338,10 @@
     padding: 18px 16px 14px;
   }
 
+  .gpf-dialog--embedded {
+    padding: 0;
+  }
+
   .gpf-pet-list {
     grid-template-columns: 1fr;
   }
@@ -358,6 +361,15 @@
   }
 
   .gpf-inline-cta {
+    width: 100%;
+  }
+
+  .gpf-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .gpf-btn {
     width: 100%;
   }
 }

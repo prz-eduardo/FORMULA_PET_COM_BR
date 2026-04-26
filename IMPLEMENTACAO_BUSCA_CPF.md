@@ -90,30 +90,29 @@ buscarClienteComPets(cpf: string, token: string): Observable<any>
    - Se cliente não encontrado, permite cadastro manual
    - CPF já vem preenchido
 
-### 📝 Backend (A Implementar)
+### ✅ Backend (Implementado)
 
-O arquivo `backend/INSTRUCOES_BACKEND.md` contém:
+A implementação do backend já está presente no projeto:
 
-1. **Especificação dos Endpoints**
-   - GET /api/clientes/cpf/:cpf
-   - GET /api/clientes/cpf/:cpf?include=pets
+1. **Endpoint disponível**
+   - `GET /api/clientes/cpf/:cpf`
+   - `GET /api/clientes/cpf/:cpf?include=pets`
 
-2. **Exemplos de Implementação**
-   - Node.js/Express
-   - Go/Gin Framework
+2. **Arquivos envolvidos**
+   - `FORMULA_PET_COM_BR_BACKEND/routes/clientesRoutes.js`
+   - `FORMULA_PET_COM_BR_BACKEND/controllers/clientesController.js`
 
-3. **Estrutura de Banco de Dados**
-   - Tabela `clientes`
-   - Tabela `pets`
-   - Índices para performance
+3. **Comportamento atual**
+   - Proteção por `verifyToken` e `requireApprovedVet`
+   - Validação do CPF recebido na rota
+   - Busca do cliente por CPF na tabela `clientes`
+   - Inclusão opcional de pets via `include=pets`
+   - Retorno de endereço quando a tabela `enderecos` existe
+   - Tratamento de erros `400`, `403`, `404` e `500`
 
-4. **Middleware de Autenticação**
-   - Verificação de token JWT
-   - Validação de tipo de usuário (veterinário)
-
-5. **Exemplos de Teste**
-   - cURL
-   - Postman
+4. **Observação sobre testes**
+   - Não foi localizado teste automatizado específico para `getClienteByCPF`
+   - A validação atual desse fluxo é documental/manual
 
 ---
 
@@ -206,27 +205,16 @@ Headers:
 
 ---
 
-## 🚀 Próximos Passos (Backend)
+## 🚀 Próximos Passos
 
-1. **Implementar Endpoints**
-   - GET /api/clientes/cpf/:cpf
-   - Seguir especificações em `backend/INSTRUCOES_BACKEND.md`
+1. **Adicionar teste automatizado do endpoint**
+   - Cobrir sucesso, CPF inválido, cliente não encontrado e acesso sem permissão
 
-2. **Configurar Banco de Dados**
-   - Criar tabelas `clientes` e `pets`
-   - Adicionar índices
+2. **Validar o fluxo fim a fim**
+   - Confirmar retorno de cliente, endereço e pets com dados reais
 
-3. **Implementar Autenticação**
-   - Middleware JWT
-   - Validação de tipo de usuário
-
-4. **Testar Integração**
-   - Testar com dados reais
-   - Validar performance
-
-5. **Deploy**
-   - Configurar variáveis de ambiente
-   - Configurar CORS
+3. **Revisar dependências de schema opcional**
+   - Confirmar o comportamento quando `pets`, `enderecos` ou `pet_sensibilidades` não estiverem disponíveis
 
 ---
 
@@ -286,20 +274,20 @@ this.tutorEncontrado = {
 - [x] Cadastro manual como fallback
 - [x] Loading state
 
-### Backend ⏳ PENDENTE
-- [ ] Endpoint GET /api/clientes/cpf/:cpf
-- [ ] Query para buscar cliente por CPF
-- [ ] Query para buscar pets do cliente
-- [ ] Middleware de autenticação
-- [ ] Validação de CPF
-- [ ] Tratamento de erros
-- [ ] Testes de integração
+### Backend ✅ IMPLEMENTADO
+- [x] Endpoint GET /api/clientes/cpf/:cpf
+- [x] Query para buscar cliente por CPF
+- [x] Query para buscar pets do cliente
+- [x] Middleware de autenticação
+- [x] Validação de CPF
+- [x] Tratamento de erros
+- Teste automatizado específico do endpoint não foi localizado no backend
 
 ---
 
 ## 🎉 Conclusão
 
-A implementação no **frontend está completa e funcional**. Quando o backend for implementado seguindo as especificações em `backend/INSTRUCOES_BACKEND.md`, a funcionalidade estará 100% operacional.
+A implementação está funcional no **frontend** e no **backend**. O fluxo de busca por CPF já pode ser usado na área do veterinário, com busca de cliente, endereço e pets quando o backend retorna `include=pets`.
 
 O veterinário poderá:
 1. Digitar o CPF do cliente

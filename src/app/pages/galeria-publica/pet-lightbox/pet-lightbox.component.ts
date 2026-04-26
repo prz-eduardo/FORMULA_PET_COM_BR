@@ -310,11 +310,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
       const urls = this.getGalleryUrls();
       const idx = Math.min(Math.max(0, this.lightboxImgIndex), Math.max(0, urls.length - 1));
       const raw = urls[idx] || urls[0] || '';
-      if (!raw || typeof raw !== 'string') return '/imagens/image.png';
-      let url = raw.trim();
-      if (url.startsWith('//')) url = (typeof window !== 'undefined' ? window.location.protocol : 'https:') + url;
-      if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) url = 'https://' + url;
-      return url || '/imagens/image.png';
+      return this.api.resolveMediaUrl(raw);
     } catch { return '/imagens/image.png'; }
   }
 

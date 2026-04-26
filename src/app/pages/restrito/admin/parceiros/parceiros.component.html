@@ -1,24 +1,22 @@
-<div class="fornec-wrap">
+﻿<div class="fornec-wrap">
   <!-- Header -->
   <div class="header">
     <h2>Gerenciar Parceiros</h2>
     <div class="filters">
-      <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, CNPJ, contato…" />
+      <input type="search" [value]="q()" (input)="onQ($event)" placeholder="Buscar por nome, CPF/CNPJ…" />
       <button appBtn class="ghost" (click)="openTypes()">
         <i class="fa fa-tags"></i> Gerir Tipos
-      </button>
-      <button appBtn class="primary" (click)="openCreate()">
-        <i class="fa fa-plus"></i> Novo
       </button>
     </div>
   </div>
 
   <!-- Advanced filters -->
   <div class="filters-adv">
-    <select [value]="active()" (change)="onActive($event)" aria-label="Status">
+    <select [value]="statusFilter()" (change)="onStatusFilter($event)" aria-label="Status">
       <option value="all">Todos</option>
-      <option value="1">Ativos</option>
-      <option value="0">Inativos</option>
+      <option value="pending">Pendentes</option>
+      <option value="approved">Aprovados</option>
+      <option value="rejected">Reprovados</option>
     </select>
     <div class="spacer"></div>
   </div>
@@ -31,30 +29,27 @@
       <div class="col main">
         <div class="name">
           {{ s.nome }}
-          <span class="chip tipo" *ngIf="s.tipo">{{ partnerTypeName(s.tipo) }}</span>
+          <span class="chip tipo" *ngIf="s.tipo_id">{{ tipoNome(s.tipo_id) }}</span>
+          <span class="chip warn" *ngIf="s.destaque">Destaque</span>
         </div>
-        <div class="muted">{{ s.cnpj ? formatCnpjDisplay(s.cnpj) : 'CNPJ não informado' }}</div>
+        <div class="muted">{{ s.cpf_cnpj ? formatCpfCnpjDisplay(s.cpf_cnpj) : 'CPF/CNPJ não informado' }}</div>
         <div class="chips">
-          <span class="chip" [class.ok]="(s.ativo ?? 1)===1" [class.danger]="(s.ativo ?? 1)!==1">
-            {{ (s.ativo ?? 1) === 1 ? 'Ativo' : 'Inativo' }}
-          </span>
           <span class="chip warn" *ngIf="s.status === 'pending'">Pendente</span>
           <span class="chip ok" *ngIf="s.status === 'approved'">Aprovado</span>
           <span class="chip danger" *ngIf="s.status === 'rejected'">Reprovado</span>
+          <span class="chip" *ngIf="!s.status">—</span>
         </div>
       </div>
 
       <div class="col meta">
         <div class="muted">{{ s.email || '—' }}</div>
-        <div class="muted">{{ s.telefone || s.contato || '—' }}</div>
+        <div class="muted">{{ s.telefone || '—' }}</div>
       </div>
 
       <div class="col actions" (click)="$event.stopPropagation()">
         <button appBtn (click)="toggleExpand(s)">
           {{ isExpanded(s) ? 'Fechar' : 'Ver/Editar' }}
         </button>
-        <button appBtn class="ok" *ngIf="(s.ativo ?? 1) !== 1" (click)="toggleActive(s)">Ativar</button>
-        <button appBtn class="warn" *ngIf="(s.ativo ?? 1) === 1" (click)="toggleActive(s)">Desativar</button>
       </div>
 
       <!-- Expanded panel (inline edit) ----------------------------------- -->
@@ -70,16 +65,14 @@
                 <div>
                   <h3>{{ sel.nome }}</h3>
                   <div class="chips">
-                    <span class="chip tipo">{{ partnerTypeName(sel.tipo) }}</span>
-                    <span class="chip" [class.ok]="(sel.ativo ?? 1) === 1" [class.danger]="(sel.ativo ?? 1) !== 1">
-                      {{ (sel.ativo ?? 1) === 1 ? 'Ativo' : 'Inativo' }}
-                    </span>
+                    <span class="chip tipo" *ngIf="sel.tipo_id">{{ tipoNome(sel.tipo_id) }}</span>
+                    <span class="chip warn" *ngIf="sel.destaque">Destaque</span>
                     <span class="chip warn" *ngIf="sel.status === 'pending'">Pendente</span>
                     <span class="chip ok" *ngIf="sel.status === 'approved'">Aprovado</span>
                     <span class="chip danger" *ngIf="sel.status === 'rejected'">Reprovado</span>
                   </div>
                   <div class="meta-dates muted">
-                    <span *ngIf="sel.created_at">Criado em {{ sel.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                    <span *ngIf="sel.criado_em">Criado em {{ sel.criado_em | date:'dd/MM/yyyy HH:mm' }}</span>
                     <span *ngIf="sel.updated_at"> · Atualizado em {{ sel.updated_at | date:'dd/MM/yyyy HH:mm' }}</span>
                   </div>
                 </div>
@@ -88,8 +81,11 @@
                 <button type="button" class="fx-btn ok small" (click)="approveSelected()" *ngIf="sel.status !== 'approved'">
                   <i class="fa fa-check"></i> Aprovar
                 </button>
-                <button type="button" class="fx-btn small" (click)="toggleActive()">
-                  {{ (sel.ativo ?? 1) === 1 ? 'Desativar' : 'Ativar' }}
+                <button type="button" class="fx-btn warn small" (click)="rejectSelected()" *ngIf="sel.status !== 'rejected'">
+                  <i class="fa fa-times"></i> Rejeitar
+                </button>
+                <button type="button" class="fx-btn small" (click)="toggleDestaque(sel)">
+                  {{ sel.destaque ? 'Remover destaque' : 'Destacar' }}
                 </button>
                 <button type="button" class="fx-btn danger small" (click)="remove()"><i class="fa fa-trash"></i> Remover</button>
                 <button type="button" class="fx-btn primary small" (click)="save()" [disabled]="form.invalid"><i class="fa fa-save"></i> Salvar</button>
@@ -110,20 +106,16 @@
                 <input formControlName="nome" />
               </div>
               <div class="fx-field">
-                <label>CNPJ</label>
-                <input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"
-                       (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'edit')" />
+                <label>CPF / CNPJ</label>
+                <input formControlName="cpf_cnpj" inputmode="numeric" maxlength="18" placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                       (keydown)="blockNonDigits($event)" (input)="onCpfCnpjInput($event)" />
               </div>
               <div class="fx-field">
                 <label>Tipo</label>
-                <select formControlName="tipo">
+                <select formControlName="tipo_id">
                   <option value="">—</option>
-                  <option *ngFor="let t of partnerTypes()" [value]="t.id">{{ t.name }}</option>
+                  <option *ngFor="let t of tiposParceiro()" [value]="t.id">{{ t.nome }}</option>
                 </select>
-              </div>
-              <div class="fx-field">
-                <label>Contato</label>
-                <input formControlName="contato" />
               </div>
               <div class="fx-field">
                 <label>Email</label>
@@ -133,16 +125,9 @@
                 <label>Telefone</label>
                 <input formControlName="telefone" />
               </div>
-              <div class="fx-field">
-                <label>Status</label>
-                <select formControlName="ativo">
-                  <option [ngValue]="1">Ativo</option>
-                  <option [ngValue]="0">Inativo</option>
-                </select>
-              </div>
               <div class="fx-field fx-col-2">
-                <label>Observações</label>
-                <textarea rows="3" formControlName="obs"></textarea>
+                <label>Descrição</label>
+                <textarea rows="3" formControlName="descricao"></textarea>
               </div>
             </div>
           </form>
@@ -209,92 +194,6 @@
     </div>
   </div>
 
-  <!-- Create drawer ------------------------------------------------------ -->
-  <app-admin-drawer
-    [open]="showCreate()"
-    [title]="'Novo parceiro'"
-    [primaryLabel]="'Criar parceiro'"
-    [primaryDisabled]="createForm.invalid"
-    (primaryAction)="create()"
-    (secondaryAction)="cancelCreate()"
-    (closeRequest)="cancelCreate()">
-    <form [formGroup]="createForm" (ngSubmit)="create()" class="fx-drawer" novalidate>
-      <section class="fx-section">
-        <header class="fx-section__head">
-          <h3>Dados gerais</h3>
-          <p>Identificação, contato e classificação do parceiro.</p>
-        </header>
-
-        <div class="fx-grid">
-          <div class="fx-field fx-col-2">
-            <label>Nome <span class="req">*</span></label>
-            <input formControlName="nome" />
-          </div>
-          <div class="fx-field">
-            <label>CNPJ</label>
-            <input formControlName="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"
-                   (keydown)="blockNonDigits($event)" (input)="onCnpjInput($event,'create')" />
-          </div>
-          <div class="fx-field">
-            <label>Tipo</label>
-            <select formControlName="tipo">
-              <option value="">—</option>
-              <option *ngFor="let t of partnerTypes()" [value]="t.id">{{ t.name }}</option>
-            </select>
-          </div>
-          <div class="fx-field">
-            <label>Contato</label>
-            <input formControlName="contato" />
-          </div>
-          <div class="fx-field">
-            <label>Email</label>
-            <input type="email" formControlName="email" />
-          </div>
-          <div class="fx-field">
-            <label>Telefone</label>
-            <input formControlName="telefone" />
-          </div>
-          <div class="fx-field">
-            <label>Status</label>
-            <select formControlName="ativo">
-              <option [ngValue]="1">Ativo</option>
-              <option [ngValue]="0">Inativo</option>
-            </select>
-          </div>
-          <div class="fx-field fx-col-2">
-            <label>Observações</label>
-            <textarea rows="3" formControlName="obs"></textarea>
-          </div>
-        </div>
-      </section>
-
-      <section class="fx-section">
-        <header class="fx-section__head">
-          <h3>Endereço</h3>
-          <p>Usado para localizar o parceiro e emitir documentos.</p>
-        </header>
-        <app-admin-address [group]="$any(createForm.get('address'))"></app-admin-address>
-      </section>
-
-      <section class="fx-section">
-        <header class="fx-section__head">
-          <h3>Geolocalização</h3>
-          <p>Opcional. Defina manualmente ou preencha pelo endereço ao salvar.</p>
-        </header>
-        <div class="fx-grid">
-          <div class="fx-field">
-            <label>Latitude</label>
-            <input formControlName="latitude" inputmode="decimal" />
-          </div>
-          <div class="fx-field">
-            <label>Longitude</label>
-            <input formControlName="longitude" inputmode="decimal" />
-          </div>
-        </div>
-      </section>
-    </form>
-  </app-admin-drawer>
-
   <!-- Types drawer ------------------------------------------------------- -->
   <app-admin-drawer
     [open]="showTypes()"
@@ -313,37 +212,52 @@
         </header>
 
         <div class="types-list">
-          <div *ngFor="let t of partnerTypes()" class="type-row">
-            <span>{{ t.name }}</span>
+          <div *ngFor="let t of tiposParceiro()" class="type-row">
+            <span>{{ t.nome }}</span>
             <div class="fx-section__actions">
-              <button type="button" class="fx-btn small" (click)="editType(t)">Editar</button>
-              <button type="button" class="fx-btn danger small" (click)="deleteType(t.id)">Remover</button>
+              <button type="button" class="fx-btn small" (click)="editTipo(t)">Editar</button>
+              <button type="button" class="fx-btn danger small" (click)="deleteTipo(t)">Remover</button>
             </div>
           </div>
-          <div class="fx-items-empty" *ngIf="!partnerTypes().length">
+          <div class="fx-items-empty" *ngIf="!tiposParceiro().length">
             <div class="fx-items-empty__title">Nenhum tipo cadastrado.</div>
             <div class="fx-items-empty__desc">Crie o primeiro tipo abaixo.</div>
           </div>
         </div>
       </section>
 
-      <section class="fx-section">
+      <section class="fx-section" *ngIf="tipoForm">
         <header class="fx-section__head">
-          <h3>Novo tipo</h3>
-          <p>Adicione uma nova categoria de parceiro.</p>
+          <h3>{{ editingTipo() ? 'Editar tipo' : 'Novo tipo' }}</h3>
+          <p>{{ editingTipo() ? 'Altere os dados do tipo selecionado.' : 'Adicione uma nova categoria de parceiro.' }}</p>
         </header>
 
-        <div class="fx-grid">
+        <form [formGroup]="tipoForm" class="fx-grid" (ngSubmit)="saveTipo()">
           <div class="fx-field">
-            <label>Nome</label>
-            <input #newType placeholder="Ex.: Clínica veterinária" />
+            <label>Nome <span class="req">*</span></label>
+            <input formControlName="nome" placeholder="Ex.: Clínica veterinária" />
           </div>
-          <div class="fx-field fx-inline">
-            <button type="button" class="fx-btn primary" (click)="createType(newType.value); newType.value='';">
-              <i class="fa fa-plus"></i> Criar tipo
+          <div class="fx-field">
+            <label>Slug</label>
+            <input formControlName="slug" placeholder="Ex.: clinica-veterinaria" />
+          </div>
+          <div class="fx-field">
+            <label>Ícone (Font Awesome)</label>
+            <input formControlName="icone" placeholder="Ex.: fa-stethoscope" />
+          </div>
+          <div class="fx-field fx-col-2">
+            <label>Descrição</label>
+            <textarea rows="2" formControlName="descricao"></textarea>
+          </div>
+          <div class="fx-field fx-col-2 fx-inline">
+            <button type="submit" class="fx-btn primary" [disabled]="tipoForm.invalid">
+              <i class="fa fa-save"></i> {{ editingTipo() ? 'Atualizar' : 'Criar tipo' }}
+            </button>
+            <button type="button" class="fx-btn" (click)="cancelEditTipo()" *ngIf="editingTipo()">
+              Cancelar
             </button>
           </div>
-        </div>
+        </form>
       </section>
     </div>
   </app-admin-drawer>

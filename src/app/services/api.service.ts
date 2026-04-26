@@ -279,6 +279,50 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
+  resolveMediaUrl(raw: string | null | undefined, fallback = '/imagens/image.png'): string {
+    if (typeof raw !== 'string') return fallback;
+
+    const trimmed = raw.trim();
+    if (!trimmed) return fallback;
+
+    const normalized = trimmed.replace(/\\/g, '/');
+    if (/^(data:image\/|blob:)/i.test(normalized)) return normalized;
+
+    if (normalized.startsWith('//')) {
+      const protocol = typeof window !== 'undefined' && window.location?.protocol ? window.location.protocol : 'https:';
+      return `${protocol}${normalized}`;
+    }
+
+    if (/^https?:\/\//i.test(normalized)) return normalized;
+    if (/^[\w.-]+\.[a-z]{2,}(?:[/:?#]|$)/i.test(normalized) && !normalized.startsWith('/')) {
+      return `https://${normalized}`;
+    }
+
+    const mediaBase = this.getMediaBaseOrigin();
+    const relativePath = normalized.replace(/^\.?\//, '');
+
+    if (!mediaBase) {
+      return normalized.startsWith('/') ? normalized : `/${relativePath}`;
+    }
+
+    try {
+      return new URL(normalized.startsWith('/') ? normalized : `/${relativePath}`, mediaBase).toString();
+    } catch {
+      return fallback;
+    }
+  }
+
+  private getMediaBaseOrigin(): string | null {
+    try {
+      return new URL(this.baseUrl).origin;
+    } catch {
+      if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin;
+      }
+      return null;
+    }
+  }
+
   // Ativos
   getAtivos(): Observable<Ativo[]> {
     return this.http.get<Ativo[]>(`${this.baseUrl}/ativos`);
@@ -419,6 +463,16 @@ export class ApiService {
         return of(null);
       }) as any
     );
+  }
+
+  sendParceiroEmailVerificacao(email: string): Observable<any> {
+    const url = `${this.baseUrl}/anunciantes/email/send-code`;
+    return this.http.post<any>(url, { email });
+  }
+
+  verifyParceiroEmailCode(email: string, codigo: string): Observable<any> {
+    const url = `${this.baseUrl}/anunciantes/email/verify-code`;
+    return this.http.post<any>(url, { email, codigo });
   }
 
   // front

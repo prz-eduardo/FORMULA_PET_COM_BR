@@ -121,15 +121,7 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
   }
 
   private normalizeImgUrl(raw: string): string {
-    if (!raw || typeof raw !== 'string') return '/imagens/image.png';
-    let url = raw.trim();
-    if (url.startsWith('//')) {
-      url = (typeof window !== 'undefined' ? window.location.protocol : 'https:') + url;
-    }
-    if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) {
-      url = 'https://' + url;
-    }
-    return url || '/imagens/image.png';
+    return this.api.resolveMediaUrl(raw);
   }
 
   petInitials(nome?: string): string {
@@ -209,9 +201,15 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
     fd.append('foto', this.file, this.file.name);
     fd.append('pet_ids', JSON.stringify(this.selectedOrder));
     this.api.postGaleriaFoto(cid, fd, token).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.submitting = false;
-        this.toast.success('Foto publicada na galeria com sucesso.');
+        const enabled = Number(res?.pets_enabled ?? 0);
+        if (enabled > 0) {
+          const label = enabled === 1 ? 'pet habilitado' : 'pets habilitados';
+          this.toast.success(`Foto publicada! ${enabled} ${label} para a galeria pública.`);
+        } else {
+          this.toast.success('Foto publicada na galeria com sucesso.');
+        }
         this.resetForm();
         this.posted.emit();
         this.close();

@@ -554,15 +554,7 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   private normalizeImgUrl(raw: string): string {
-    if (!raw || typeof raw !== 'string') return '/imagens/image.png';
-    let url = raw.trim();
-    if (url.startsWith('//')) {
-      url = (typeof window !== 'undefined' ? window.location.protocol : 'https:') + url;
-    }
-    if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) {
-      url = 'https://' + url;
-    }
-    return url || '/imagens/image.png';
+    return this.api.resolveMediaUrl(raw);
   }
 
   // Normalize/validate image URLs returned by the API. This helps with

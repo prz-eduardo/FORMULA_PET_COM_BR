@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -62,18 +62,107 @@ const strongPasswordValidator: ValidatorFn = (ctrl: AbstractControl): Validation
   templateUrl: './parceiro-cadastro.component.html',
   styleUrls: ['./parceiro-cadastro.component.scss']
 })
-export class ParceiroCadastroComponent implements OnInit {
-  form!: FormGroup;
+export class ParceiroCadastroComponent implements OnInit, OnDestroy {
+  // ---- Wizard state ----
+  currentStep = 1;
+  readonly TOTAL_STEPS = 6;
+
+  // ---- Forms per step ----
+  formBasico!: FormGroup;
+  formEndereco!: FormGroup;
+  formEmail!: FormGroup;
+  formSenha!: FormGroup;
+
+  // ---- Step-level submission flags ----
+  submittedBasico = false;
+  submittedEndereco = false;
+  submittedEmail = false;
+  submittedSenha = false;
+
+  // ---- Final submit state ----
   loading = false;
-  submitted = false;
   success = false;
-  showPwd = false;
-  showPwd2 = false;
   serverError = '';
   serverFieldErrors: Record<string, string> = {};
-  types: Array<{ id: string; nome?: string; label?: string }> = [];
+
+  // ---- Password visibility ----
+  showPwd = false;
+  showPwd2 = false;
+
+  // ---- Logo ----
+  logoPreview: string | null = null;
+
+  // ---- Email verification ----
+  codeSent = false;
+  codeVerified = false;
+  sendingCode = false;
+  verifyingCode = false;
+  codeError = '';
+  codeSuccess = '';
+  resendCountdown = 0;
+  private resendTimer: any = null;
+
+  // ---- Plan selection (step 5) ----
+  planoSelecionado: string | null = null;
+  readonly planos = [
+    {
+      id: 'basico',
+      nome: 'Básico',
+      preco: 'Gratuito',
+      periodo: '',
+      destaque: false,
+      recursos: [
+        'Perfil público no mapa',
+        'Até 1 tipo de serviço',
+        'Contato por telefone',
+      ],
+    },
+    {
+      id: 'essencial',
+      nome: 'Essencial',
+      preco: 'R$ 49',
+      periodo: '/ mês',
+      destaque: false,
+      recursos: [
+        'Tudo do Básico',
+        'Até 3 tipos de serviço',
+        'Fotos do estabelecimento',
+        'Destaque nos resultados',
+      ],
+    },
+    {
+      id: 'profissional',
+      nome: 'Profissional',
+      preco: 'R$ 99',
+      periodo: '/ mês',
+      destaque: true,
+      recursos: [
+        'Tudo do Essencial',
+        'Tipos de serviço ilimitados',
+        'Atributos personalizados',
+        'Badge "Verificado"',
+        'Relatórios de visitas',
+      ],
+    },
+    {
+      id: 'premium',
+      nome: 'Premium',
+      preco: 'R$ 199',
+      periodo: '/ mês',
+      destaque: false,
+      recursos: [
+        'Tudo do Profissional',
+        'Posição prioritária no topo',
+        'Suporte dedicado',
+        'Integrações exclusivas',
+      ],
+    },
+  ];
+
+  // ---- Prefill (Google Maps) ----
   claimSource: 'google' | null = null;
   claimPlaceId: string | null = null;
+  types: Array<{ id: string; nome?: string; label?: string }> = [];
 
   constructor(
     private fb: FormBuilder,
@@ -84,24 +173,33 @@ export class ParceiroCadastroComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.form = this.fb.group(
+    this.formBasico = this.fb.group({
+      nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
+      tipo: ['', Validators.required],
+      cnpj: ['', [cnpjValidator]],
+      telefone: ['', [Validators.required, Validators.minLength(14)]],
+      descricao: ['', Validators.maxLength(1000)],
+      logo: [''],
+    });
+
+    this.formEndereco = this.fb.group({
+      cep: ['', [Validators.required, Validators.minLength(9)]],
+      endereco: ['', Validators.required],
+      numero: [''],
+      complemento: [''],
+      bairro: [''],
+      cidade: [''],
+      estado: [''],
+      latitude: [''],
+      longitude: [''],
+    });
+
+    this.formEmail = this.fb.group({
+      email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
+    });
+
+    this.formSenha = this.fb.group(
       {
-        nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
-        tipo: ['', Validators.required],
-        email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
-        telefone: ['', [Validators.required, Validators.minLength(14)]],
-        cep: ['', [Validators.required, Validators.minLength(9)]],
-        endereco: ['', Validators.required],
-        numero: [''],
-        complemento: [''],
-        bairro: [''],
-        cidade: [''],
-        estado: [''],
-        latitude: [''],
-        longitude: [''],
-        descricao: ['', Validators.maxLength(1000)],
-        logo: [''],
-        cnpj: ['', [cnpjValidator]],
         senha: ['', [Validators.required, strongPasswordValidator]],
         confirmSenha: ['', [Validators.required]],
         aceitoTermos: [false, [Validators.requiredTrue]],
@@ -120,215 +218,143 @@ export class ParceiroCadastroComponent implements OnInit {
     this.applyPrefillFromQueryParams();
   }
 
-  get hasClaimContext(): boolean {
-    return !!this.claimSource;
+  ngOnDestroy(): void {
+    if (this.resendTimer) clearInterval(this.resendTimer);
   }
 
-  private applyPrefillFromQueryParams(): void {
-    if (!this.form) return;
-    const queryMap = this.route.snapshot.queryParamMap;
-    if (!queryMap.keys.length) return;
-
-    const source = queryMap.get('source');
-    const nome = this.readPrefillText(queryMap.get('nome'), 150);
-    const telefone = this.readPrefillPhone(queryMap.get('telefone'));
-    const endereco = this.readPrefillText(queryMap.get('endereco'), 180);
-    const cidade = this.readPrefillText(queryMap.get('cidade'), 80);
-    const estado = this.readPrefillState(queryMap.get('estado'));
-    const latitude = this.readPrefillNumber(queryMap.get('latitude'), -90, 90);
-    const longitude = this.readPrefillNumber(queryMap.get('longitude'), -180, 180);
-    const suggestedType = this.resolveTypeFromQuery(
-      queryMap.get('tipo'),
-      queryMap.get('suggestedType'),
-      queryMap.get('tipoPrimario')
-    );
-
-    this.claimSource = source === 'google' ? 'google' : null;
-    this.claimPlaceId = this.readPrefillText(queryMap.get('placeId'), 128);
-
-    this.form.patchValue({
-      nome: nome ?? this.form.get('nome')?.value ?? '',
-      telefone: telefone ?? this.form.get('telefone')?.value ?? '',
-      endereco: endereco ?? this.form.get('endereco')?.value ?? '',
-      cidade: cidade ?? this.form.get('cidade')?.value ?? '',
-      estado: estado ?? this.form.get('estado')?.value ?? '',
-      latitude: latitude != null ? String(latitude) : this.form.get('latitude')?.value ?? '',
-      longitude: longitude != null ? String(longitude) : this.form.get('longitude')?.value ?? '',
-      tipo: suggestedType ?? this.form.get('tipo')?.value ?? '',
-    }, { emitEvent: false });
+  // ------------------------------ Step labels ------------------------------
+  get stepLabels(): string[] {
+    return ['Dados básicos', 'Endereço', 'E-mail', 'Senha', 'Plano', 'Confirmar'];
   }
 
-  private resolveTypeFromQuery(...candidates: Array<string | null>): string | null {
-    if (!this.types.length) return null;
-    for (const candidate of candidates) {
-      const normalized = String(candidate || '').trim().toLowerCase();
-      if (!normalized) continue;
-      const match = this.types.find((type: any) => {
-        const id = String(type?.id ?? '').trim().toLowerCase();
-        const nome = String(type?.nome ?? type?.label ?? '').trim().toLowerCase();
-        const slug = nome
-          .normalize('NFD')
-          .replace(/\p{Diacritic}/gu, '')
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '');
-        return normalized === id || normalized === nome || normalized === slug;
-      });
-      if (match) return String(match.id);
+  // ------------------------------ Navigation ------------------------------
+  goToStep(step: number): void {
+    if (step < this.currentStep) this.currentStep = step;
+  }
+
+  nextStep(): void {
+    if (this.currentStep === 1) {
+      this.submittedBasico = true;
+      if (this.formBasico.invalid) { this.formBasico.markAllAsTouched(); this.toast.error('Verifique os campos destacados.'); return; }
     }
-    return null;
+    if (this.currentStep === 2) {
+      this.submittedEndereco = true;
+      if (this.formEndereco.invalid) { this.formEndereco.markAllAsTouched(); this.toast.error('Verifique os campos de endereço.'); return; }
+    }
+    if (this.currentStep === 3) {
+      this.submittedEmail = true;
+      if (this.formEmail.invalid) { this.formEmail.markAllAsTouched(); this.toast.error('Informe um e-mail válido.'); return; }
+      if (!this.codeVerified) { this.toast.error('Confirme seu e-mail com o código enviado.'); return; }
+    }
+    if (this.currentStep === 4) {
+      this.submittedSenha = true;
+      if (this.formSenha.invalid) { this.formSenha.markAllAsTouched(); this.toast.error('Verifique os campos de senha.'); return; }
+    }
+    if (this.currentStep < this.TOTAL_STEPS) this.currentStep++;
   }
 
-  private readPrefillText(value: string | null, maxLen: number): string | null {
-    const trimmed = String(value || '').trim();
-    return trimmed ? trimmed.slice(0, maxLen) : null;
+  prevStep(): void {
+    if (this.currentStep > 1) this.currentStep--;
   }
 
-  private readPrefillPhone(value: string | null): string | null {
-    const digits = onlyDigitsFn(value).slice(0, 11);
-    return digits ? this.formatTelefone(digits) : null;
+  // ------------------------------ Step 3: Email verification ------------------------------
+  get emailValue(): string {
+    return String(this.formEmail.get('email')?.value || '').trim().toLowerCase();
   }
 
-  private readPrefillState(value: string | null): string | null {
-    const trimmed = String(value || '').trim().toUpperCase();
-    return trimmed ? trimmed.slice(0, 2) : null;
-  }
+  sendCode(): void {
+    this.submittedEmail = true;
+    if (this.formEmail.invalid) { this.formEmail.markAllAsTouched(); return; }
+    this.sendingCode = true;
+    this.codeError = '';
+    this.codeSuccess = '';
+    this.codeSent = false;
+    this.codeVerified = false;
 
-  private readPrefillNumber(value: string | null, min: number, max: number): number | null {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return null;
-    return Math.min(max, Math.max(min, parsed));
-  }
-
-  // ------------------------------ Getters ------------------------------
-  get f() { return this.form.controls; }
-  hasError(name: string, err?: string): boolean {
-    const c = this.form.get(name);
-    if (!c) return false;
-    if (!c.touched && !this.submitted) return false;
-    if (err) return !!c.hasError(err);
-    return c.invalid;
-  }
-  get passwordMismatch(): boolean {
-    return !!(this.form.errors?.['passwordMismatch']
-      && (this.form.get('confirmSenha')?.touched || this.submitted));
-  }
-
-  // ------------------------------ Máscaras ------------------------------
-  private onlyDigits(v: string) { return onlyDigitsFn(v); }
-
-  formatCep(v: string) {
-    const d = this.onlyDigits(v).slice(0, 8);
-    if (!d) return '';
-    return d.length <= 5 ? d : d.slice(0, 5) + '-' + d.slice(5);
-  }
-  onCepInput(e: any) {
-    const digits = this.onlyDigits(e?.target?.value || '').slice(0, 8);
-    this.form.get('cep')?.setValue(this.formatCep(digits), { emitEvent: false });
-    if (digits.length === 8) this.lookupCep(digits);
-  }
-
-  lookupCep(cepDigits: string) {
-    this.api.buscarCepViaCep(cepDigits).subscribe({
-      next: (res: any) => {
-        if (!res || res.erro) { this.toast.error('CEP não encontrado.'); return; }
-        const enderecoText = `${res.logradouro || ''}`.trim();
-        if (enderecoText) this.form.get('endereco')?.setValue(enderecoText);
-        if (res.bairro) this.form.get('bairro')?.setValue(res.bairro);
-        if (res.localidade) this.form.get('cidade')?.setValue(res.localidade);
-        if (res.uf) this.form.get('estado')?.setValue(res.uf);
-
-        const fullAddress = `${res.logradouro || ''} ${res.bairro || ''} ${res.localidade || ''} ${res.uf || ''} Brasil`.trim();
-        if (fullAddress.replace(/\s/g, '') !== '') {
-          this.api.geocodeAddress(fullAddress).subscribe({
-            next: (geo: any[]) => {
-              if (geo && geo.length > 0) {
-                this.form.get('latitude')?.setValue(geo[0].lat);
-                this.form.get('longitude')?.setValue(geo[0].lon);
-              }
-            },
-            error: () => {}
-          });
-        }
+    this.api.sendParceiroEmailVerificacao(this.emailValue).subscribe({
+      next: () => {
+        this.sendingCode = false;
+        this.codeSent = true;
+        this.toast.success('Código enviado! Verifique seu e-mail.');
+        this.startResendCountdown();
       },
-      error: (err) => { console.error(err); this.toast.error('Erro ao consultar CEP.'); }
+      error: (err) => {
+        this.sendingCode = false;
+        this.codeError = err?.error?.error || 'Não foi possível enviar o código. Tente novamente.';
+        this.toast.error(this.codeError);
+      },
     });
   }
 
-  formatTelefone(v: string) {
-    const d = this.onlyDigits(v).slice(0, 11);
-    if (!d) return '';
-    if (d.length <= 2) return `(${d}`;
-    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7, 11)}`;
-  }
-  onTelefoneInput(e: any) {
-    const masked = this.formatTelefone(e?.target?.value || '');
-    this.form.get('telefone')?.setValue(masked, { emitEvent: false });
-  }
-
-  formatCnpj(v: string) {
-    const d = this.onlyDigits(v).slice(0, 14);
-    if (!d) return '';
-    if (d.length <= 2) return d;
-    if (d.length <= 5) return d.slice(0, 2) + '.' + d.slice(2);
-    if (d.length <= 8) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5);
-    if (d.length <= 12) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8);
-    return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8, 12) + '-' + d.slice(12);
-  }
-  onCnpjInput(e: any) {
-    const masked = this.formatCnpj(e?.target?.value || '');
-    this.form.get('cnpj')?.setValue(masked, { emitEvent: false });
+  verifyCode(codigo: string): void {
+    if (!/^\d{6}$/.test(codigo)) { this.codeError = 'Digite os 6 dígitos do código.'; return; }
+    this.verifyingCode = true;
+    this.codeError = '';
+    this.api.verifyParceiroEmailCode(this.emailValue, codigo).subscribe({
+      next: () => {
+        this.verifyingCode = false;
+        this.codeVerified = true;
+        this.codeSuccess = 'E-mail verificado com sucesso!';
+      },
+      error: (err) => {
+        this.verifyingCode = false;
+        this.codeError = err?.error?.error || 'Código incorreto ou expirado.';
+      },
+    });
   }
 
-  // ------------------------------ Logo ------------------------------
-  logoPreview: string | null = null;
-  onLogoSelected(e: any) {
-    const file: File = e?.target?.files?.[0];
-    if (!file) return;
-    if (!file.type?.startsWith('image/')) { this.toast.error('Formato inválido. Envie uma imagem.'); return; }
-    if (file.size > 2 * 1024 * 1024) { this.toast.error('Imagem muito grande. Máx 2MB.'); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-      this.logoPreview = dataUrl;
-      this.form.get('logo')?.setValue(dataUrl);
-    };
-    reader.readAsDataURL(file);
+  private startResendCountdown(): void {
+    this.resendCountdown = 60;
+    if (this.resendTimer) clearInterval(this.resendTimer);
+    this.resendTimer = setInterval(() => {
+      this.resendCountdown--;
+      if (this.resendCountdown <= 0) { clearInterval(this.resendTimer); this.resendTimer = null; }
+    }, 1000);
   }
 
-  // ------------------------------ Submit ------------------------------
-  submit() {
-    this.submitted = true;
+  onCodeInput(e: any): void {
+    const raw = onlyDigitsFn(e?.target?.value || '').slice(0, 6);
+    e.target.value = raw;
+    this.codeError = '';
+    this.codeSuccess = '';
+    if (raw.length === 6 && !this.codeVerified) this.verifyCode(raw);
+  }
+
+  // ------------------------------ Step 5: Plan selection ------------------------------
+  selecionarPlano(id: string): void {
+    this.planoSelecionado = id;
+  }
+
+  // ------------------------------ Final submit (step 6) ------------------------------
+  submit(): void {
     this.serverError = '';
     this.serverFieldErrors = {};
-
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.toast.error('Verifique os campos destacados.');
-      return;
-    }
-
     this.loading = true;
-    const raw = this.form.value;
+
+    const b = this.formBasico.value;
+    const e = this.formEndereco.value;
+    const email = this.emailValue;
+    const s = this.formSenha.value;
+
     const payload: any = {
-      nome: raw.nome?.trim(),
-      tipo: raw.tipo,
-      email: String(raw.email || '').trim().toLowerCase(),
-      telefone: this.onlyDigits(raw.telefone),
-      cep: this.onlyDigits(raw.cep),
-      endereco: raw.endereco?.trim(),
-      numero: raw.numero?.trim() || undefined,
-      complemento: raw.complemento?.trim() || undefined,
-      bairro: raw.bairro?.trim() || undefined,
-      cidade: raw.cidade?.trim() || undefined,
-      estado: raw.estado ? String(raw.estado).trim().toUpperCase() : undefined,
-      descricao: raw.descricao?.trim() || undefined,
-      logo: raw.logo || undefined,
-      cnpj: raw.cnpj ? this.onlyDigits(raw.cnpj) : undefined,
-      latitude: raw.latitude ? Number(raw.latitude) : undefined,
-      longitude: raw.longitude ? Number(raw.longitude) : undefined,
-      senha: raw.senha,
+      nome: b.nome?.trim(),
+      tipo: b.tipo,
+      email,
+      telefone: onlyDigitsFn(b.telefone),
+      cep: onlyDigitsFn(e.cep),
+      endereco: e.endereco?.trim(),
+      numero: e.numero?.trim() || undefined,
+      complemento: e.complemento?.trim() || undefined,
+      bairro: e.bairro?.trim() || undefined,
+      cidade: e.cidade?.trim() || undefined,
+      estado: e.estado ? String(e.estado).trim().toUpperCase() : undefined,
+      descricao: b.descricao?.trim() || undefined,
+      logo: b.logo || undefined,
+      cnpj: b.cnpj ? onlyDigitsFn(b.cnpj) : undefined,
+      latitude: e.latitude ? Number(e.latitude) : undefined,
+      longitude: e.longitude ? Number(e.longitude) : undefined,
+      senha: s.senha,
+      plano: this.planoSelecionado || undefined,
       origem_mapa: this.claimSource || undefined,
       origem_place_id: this.claimPlaceId || undefined,
     };
@@ -342,10 +368,7 @@ export class ParceiroCadastroComponent implements OnInit {
           return;
         }
         this.success = true;
-        this.toast.success('Cadastro enviado com sucesso! Aguarde a aprovação do administrador.');
-        this.form.reset();
-        this.logoPreview = null;
-        this.submitted = false;
+        this.toast.success('Cadastro enviado! Aguarde a aprovação do administrador.');
       },
       error: (err) => {
         this.loading = false;
@@ -361,7 +384,186 @@ export class ParceiroCadastroComponent implements OnInit {
     });
   }
 
-  irParaLogin() {
+  irParaLogin(): void {
     this.router.navigateByUrl('/restrito/login');
+  }
+
+  // ------------------------------ Helpers ------------------------------
+  get hasClaimContext(): boolean { return !!this.claimSource; }
+
+  private applyPrefillFromQueryParams(): void {
+    const queryMap = this.route.snapshot.queryParamMap;
+    if (!queryMap.keys.length) return;
+
+    const source = queryMap.get('source');
+    const nome = this.readPrefillText(queryMap.get('nome'), 150);
+    const telefone = this.readPrefillPhone(queryMap.get('telefone'));
+    const endereco = this.readPrefillText(queryMap.get('endereco'), 180);
+    const cidade = this.readPrefillText(queryMap.get('cidade'), 80);
+    const estado = this.readPrefillState(queryMap.get('estado'));
+    const latitude = this.readPrefillNumber(queryMap.get('latitude'), -90, 90);
+    const longitude = this.readPrefillNumber(queryMap.get('longitude'), -180, 180);
+    const suggestedType = this.resolveTypeFromQuery(
+      queryMap.get('tipo'), queryMap.get('suggestedType'), queryMap.get('tipoPrimario')
+    );
+
+    this.claimSource = source === 'google' ? 'google' : null;
+    this.claimPlaceId = this.readPrefillText(queryMap.get('placeId'), 128);
+
+    this.formBasico?.patchValue({
+      nome: nome ?? this.formBasico.get('nome')?.value ?? '',
+      tipo: suggestedType ?? this.formBasico.get('tipo')?.value ?? '',
+      telefone: telefone ?? this.formBasico.get('telefone')?.value ?? '',
+    }, { emitEvent: false });
+
+    this.formEndereco?.patchValue({
+      endereco: endereco ?? this.formEndereco.get('endereco')?.value ?? '',
+      cidade: cidade ?? this.formEndereco.get('cidade')?.value ?? '',
+      estado: estado ?? this.formEndereco.get('estado')?.value ?? '',
+      latitude: latitude != null ? String(latitude) : this.formEndereco.get('latitude')?.value ?? '',
+      longitude: longitude != null ? String(longitude) : this.formEndereco.get('longitude')?.value ?? '',
+    }, { emitEvent: false });
+  }
+
+  private resolveTypeFromQuery(...candidates: Array<string | null>): string | null {
+    if (!this.types.length) return null;
+    for (const candidate of candidates) {
+      const normalized = String(candidate || '').trim().toLowerCase();
+      if (!normalized) continue;
+      const match = this.types.find((type: any) => {
+        const id = String(type?.id ?? '').trim().toLowerCase();
+        const nome = String(type?.nome ?? type?.label ?? '').trim().toLowerCase();
+        const slug = nome.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        return normalized === id || normalized === nome || normalized === slug;
+      });
+      if (match) return String(match.id);
+    }
+    return null;
+  }
+
+  private readPrefillText(value: string | null, maxLen: number): string | null {
+    const trimmed = String(value || '').trim();
+    return trimmed ? trimmed.slice(0, maxLen) : null;
+  }
+  private readPrefillPhone(value: string | null): string | null {
+    const digits = onlyDigitsFn(value).slice(0, 11);
+    return digits ? this.formatTelefone(digits) : null;
+  }
+  private readPrefillState(value: string | null): string | null {
+    const trimmed = String(value || '').trim().toUpperCase();
+    return trimmed ? trimmed.slice(0, 2) : null;
+  }
+  private readPrefillNumber(value: string | null, min: number, max: number): number | null {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return null;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  // ------------------------------ Error helpers ------------------------------
+  hasErrorBasico(name: string, err?: string): boolean {
+    const c = this.formBasico.get(name);
+    if (!c || (!c.touched && !this.submittedBasico)) return false;
+    return err ? !!c.hasError(err) : c.invalid;
+  }
+  hasErrorEndereco(name: string, err?: string): boolean {
+    const c = this.formEndereco.get(name);
+    if (!c || (!c.touched && !this.submittedEndereco)) return false;
+    return err ? !!c.hasError(err) : c.invalid;
+  }
+  hasErrorEmail(name: string, err?: string): boolean {
+    const c = this.formEmail.get(name);
+    if (!c || (!c.touched && !this.submittedEmail)) return false;
+    return err ? !!c.hasError(err) : c.invalid;
+  }
+  hasErrorSenha(name: string, err?: string): boolean {
+    const c = this.formSenha.get(name);
+    if (!c || (!c.touched && !this.submittedSenha)) return false;
+    return err ? !!c.hasError(err) : c.invalid;
+  }
+  get passwordMismatch(): boolean {
+    return !!(this.formSenha.errors?.['passwordMismatch']
+      && (this.formSenha.get('confirmSenha')?.touched || this.submittedSenha));
+  }
+
+  // ------------------------------ Máscaras ------------------------------
+  private onlyDigits(v: string) { return onlyDigitsFn(v); }
+
+  formatCep(v: string) {
+    const d = this.onlyDigits(v).slice(0, 8);
+    if (!d) return '';
+    return d.length <= 5 ? d : d.slice(0, 5) + '-' + d.slice(5);
+  }
+  onCepInput(e: any) {
+    const digits = this.onlyDigits(e?.target?.value || '').slice(0, 8);
+    this.formEndereco.get('cep')?.setValue(this.formatCep(digits), { emitEvent: false });
+    if (digits.length === 8) this.lookupCep(digits);
+  }
+
+  lookupCep(cepDigits: string) {
+    this.api.buscarCepViaCep(cepDigits).subscribe({
+      next: (res: any) => {
+        if (!res || res.erro) { this.toast.error('CEP não encontrado.'); return; }
+        const enderecoText = `${res.logradouro || ''}`.trim();
+        if (enderecoText) this.formEndereco.get('endereco')?.setValue(enderecoText);
+        if (res.bairro) this.formEndereco.get('bairro')?.setValue(res.bairro);
+        if (res.localidade) this.formEndereco.get('cidade')?.setValue(res.localidade);
+        if (res.uf) this.formEndereco.get('estado')?.setValue(res.uf);
+
+        const fullAddress = `${res.logradouro || ''} ${res.bairro || ''} ${res.localidade || ''} ${res.uf || ''} Brasil`.trim();
+        if (fullAddress.replace(/\s/g, '') !== '') {
+          this.api.geocodeAddress(fullAddress).subscribe({
+            next: (geo: any[]) => {
+              if (geo && geo.length > 0) {
+                this.formEndereco.get('latitude')?.setValue(geo[0].lat);
+                this.formEndereco.get('longitude')?.setValue(geo[0].lon);
+              }
+            },
+            error: () => {}
+          });
+        }
+      },
+      error: () => { this.toast.error('Erro ao consultar CEP.'); }
+    });
+  }
+
+  formatTelefone(v: string) {
+    const d = this.onlyDigits(v).slice(0, 11);
+    if (!d) return '';
+    if (d.length <= 2) return `(${d}`;
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7, 11)}`;
+  }
+  onTelefoneInput(e: any) {
+    const masked = this.formatTelefone(e?.target?.value || '');
+    this.formBasico.get('telefone')?.setValue(masked, { emitEvent: false });
+  }
+
+  formatCnpj(v: string) {
+    const d = this.onlyDigits(v).slice(0, 14);
+    if (!d) return '';
+    if (d.length <= 2) return d;
+    if (d.length <= 5) return d.slice(0, 2) + '.' + d.slice(2);
+    if (d.length <= 8) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5);
+    if (d.length <= 12) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8);
+    return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8, 12) + '-' + d.slice(12);
+  }
+  onCnpjInput(e: any) {
+    const masked = this.formatCnpj(e?.target?.value || '');
+    this.formBasico.get('cnpj')?.setValue(masked, { emitEvent: false });
+  }
+
+  onLogoSelected(e: any) {
+    const file: File = e?.target?.files?.[0];
+    if (!file) return;
+    if (!file.type?.startsWith('image/')) { this.toast.error('Formato inválido. Envie uma imagem.'); return; }
+    if (file.size > 2 * 1024 * 1024) { this.toast.error('Imagem muito grande. Máx 2MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      this.logoPreview = dataUrl;
+      this.formBasico.get('logo')?.setValue(dataUrl);
+    };
+    reader.readAsDataURL(file);
   }
 }

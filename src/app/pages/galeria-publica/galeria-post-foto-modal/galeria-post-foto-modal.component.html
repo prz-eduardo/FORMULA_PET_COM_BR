@@ -14,14 +14,14 @@
     aria-labelledby="gpf-title"
     (click)="$event.stopPropagation()"
   >
-    <div class="gpf-head">
+    <div class="gpf-head" *ngIf="!embedded">
       <h2 id="gpf-title" class="gpf-title">Postar nova foto</h2>
       <button type="button" class="gpf-x" (click)="close()" [attr.aria-label]="embedded ? 'Voltar' : 'Fechar'">×</button>
     </div>
-    <p class="gpf-hint">O primeiro pet da lista é o <strong>principal</strong> na galeria. Marque todos que aparecem na foto.</p>
+    <p class="gpf-hint" [class.gpf-hint--embedded]="embedded">O primeiro pet da lista é o <strong>principal</strong> na galeria. Marque todos que aparecem na foto.</p>
 
-    <form (ngSubmit)="submit($event)" class="gpf-form">
-      <div class="gpf-section">
+    <form (ngSubmit)="submit($event)" class="gpf-form" [class.gpf-form--embedded]="embedded">
+      <div class="gpf-section" [class.gpf-section--card]="embedded">
         <span class="gpf-label">Quem aparece na foto?</span>
         <div *ngIf="loadingPets" class="gpf-loading">Carregando seus pets…</div>
         <ul *ngIf="!loadingPets && pets.length" class="gpf-pet-list" role="list">
@@ -46,6 +46,11 @@
               <span class="gpf-pet-copy">
                 <span class="gpf-pet-nome">{{ p.nome || 'Sem nome' }}</span>
                 <span class="gpf-pet-raca" *ngIf="petMeta(p)">{{ petMeta(p) }}</span>
+                <span
+                  *ngIf="p.exibir_galeria_publica != 1 && p.exibir_galeria_publica !== true && p.exibir_galeria_publica !== '1'"
+                  class="gpf-pet-gallery-badge"
+                  title="Este pet será habilitado para a galeria ao publicar a foto"
+                >+ galeria</span>
               </span>
             </button>
           </li>
@@ -57,7 +62,7 @@
         <p *ngIf="selectedOrder.length" class="gpf-order-hint">Ordem: {{ orderNames() }} (o primeiro é o pet principal no feed)</p>
       </div>
 
-      <div class="gpf-section">
+      <div class="gpf-section" [class.gpf-section--card]="embedded">
         <label class="gpf-label" [attr.for]="fileInputId()">Imagem</label>
         <div class="gpf-file-row">
           <label class="gpf-file-picker" [attr.for]="fileInputId()">Escolher imagem</label>
