@@ -38,6 +38,7 @@ html, body{
 @media (max-width: 767px) {
     body:has(app-navmenu .nav-primary-tabs--mobile) .app-main:not(.no-nav) {
         /* Dock móvel com mais padding vertical / pílula ativa (navmenu premium) */
+        padding-bottom: calc(80px + constant(safe-area-inset-bottom));
         padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     }
 }

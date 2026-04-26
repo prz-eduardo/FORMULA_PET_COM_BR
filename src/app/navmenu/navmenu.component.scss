@@ -429,6 +429,7 @@ nav.app-navbar {
       align-items: center;
       position: fixed;
       left: 50%;
+      bottom: calc(12px + constant(safe-area-inset-bottom));
       bottom: calc(12px + env(safe-area-inset-bottom, 0px));
       transform: translateX(-50%);
       z-index: 2000015;

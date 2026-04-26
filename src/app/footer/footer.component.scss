@@ -372,3 +372,19 @@
     padding: 16px max(20px, 5vw) 20px;
   }
 }
+
+/*
+ * Safe area + dock: padding no bloco copyright (#d9ea24), não em .pg-footer,
+ * para a faixa inferior ter a mesma cor do rodapé visível (evita “listra” clara).
+ */
+@media (max-width: 767px) {
+  .footer-copyright {
+    padding-bottom: calc(20px + constant(safe-area-inset-bottom));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :host-context(body:has(app-navmenu .nav-primary-tabs--mobile)) .footer-copyright {
+    padding-bottom: calc(20px + 80px + constant(safe-area-inset-bottom));
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+}
