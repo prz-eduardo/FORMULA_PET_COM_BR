@@ -1,10 +1,12 @@
 import { Component, AfterViewInit, ChangeDetectorRef, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd, NavigationStart, NavigationCancel, NavigationError, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { StoreService } from '../services/store.service';
 import { AuthService } from '../services/auth.service';
 import { gsap } from 'gsap';
+import { ClienteAreaModalService, ClienteAreaModalView } from '../services/cliente-area-modal.service';
 
 export interface NavMainItem {
   id: string;
@@ -114,6 +116,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private pillFlipClearTimer: ReturnType<typeof setTimeout> | null = null;
   private cartBadgeBumpTimer: ReturnType<typeof setTimeout> | null = null;
   private cartCountSeenFromStore = false;
+  private clienteModalOpenSub?: Subscription;
   /** Última geometria aplicada ao hori-selector (para diff + FLIP). */
   private lastPillMetrics: { left: number; top: number; width: number; height: number; key: string } | null = null;
   private static readonly PILL_DIFF_PX = 0.85;
@@ -123,7 +126,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private store: StoreService,
     private auth: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private clienteAreaModal: ClienteAreaModalService
   ) {}
 
   ngOnInit(): void {
@@ -168,6 +172,10 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cartCount = next;
       this.cartCountSeenFromStore = true;
       this.scheduleTabPillUpdate();
+    });
+
+    this.clienteModalOpenSub = this.clienteAreaModal.openRequests$.subscribe((view) => {
+      this.abrirClienteModal(view || undefined);
     });
 
     this.isCliente = false;
@@ -543,7 +551,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch {}
   }
 
-  async abrirClienteModal() {
+  async abrirClienteModal(initialView?: ClienteAreaModalView | undefined) {
     this.showClienteModal = true;
     this.applyClienteModalScrollLock();
     this.clienteLoading = true;
@@ -573,6 +581,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           const ref = this.clienteHost.createComponent(Cmp);
           if (ref?.instance) {
             (ref.instance as any).modal = true;
+            (ref.instance as any).initialView = initialView || null;
           }
           setTimeout(() => { this.clienteLoading = false; }, 0);
         }
@@ -607,6 +616,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    try { this.clienteModalOpenSub?.unsubscribe(); } catch {}
     if (this.idleTimer) clearTimeout(this.idleTimer);
     if (this.pillLayoutDebounce) clearTimeout(this.pillLayoutDebounce);
     if (this.menubarSettleTimer) clearTimeout(this.menubarSettleTimer);

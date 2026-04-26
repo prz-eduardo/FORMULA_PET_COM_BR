@@ -13,6 +13,7 @@ import { ToastService } from '../../../services/toast.service';
 })
 export class GaleriaPostFotoModalComponent implements OnChanges {
   @Input() open = false;
+  @Input() embedded = false;
   @Output() closeModal = new EventEmitter<void>();
   @Output() posted = new EventEmitter<void>();
 
@@ -147,7 +148,7 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
     this.api.postGaleriaFoto(cid, fd, token).subscribe({
       next: () => {
         this.submitting = false;
-        this.toast.success('Foto enviada! Ela pode aparecer na galeria após moderação.');
+        this.toast.success('Foto publicada na galeria com sucesso.');
         this.resetForm();
         this.posted.emit();
         this.close();

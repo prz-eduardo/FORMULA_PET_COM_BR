@@ -1,20 +1,21 @@
 import { Component, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
-import { FooterComponent } from '../../footer/footer.component';
+import { Subscription } from 'rxjs';
 import { Router, RouterModule } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { ApiService, ClienteGaleriaFoto } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { PetLightboxComponent, PetLightboxReaction } from './pet-lightbox/pet-lightbox.component';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { GaleriaPostFotoModalComponent } from './galeria-post-foto-modal/galeria-post-foto-modal.component';
 import { MARCA_NOME } from '../../constants/loja-public';
+import { ClienteAreaModalService } from '../../services/cliente-area-modal.service';
 
 @Component({
   selector: 'app-galeria-publica',
   standalone: true,
-  imports: [CommonModule, RouterModule, FooterComponent, PetLightboxComponent, BannerSlotComponent, GaleriaPostFotoModalComponent],
+  imports: [CommonModule, RouterModule, PetLightboxComponent, BannerSlotComponent, GaleriaPostFotoModalComponent],
   templateUrl: './galeria-publica.component.html',
   styleUrls: ['./galeria-publica.component.scss']
 })
@@ -39,7 +40,8 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
     private api: ApiService,
     private auth: AuthService,
     private toast: ToastService,
-    private router: Router
+    private router: Router,
+    private clienteAreaModal: ClienteAreaModalService
   ) {}
   // placeholder mode when API returns empty: show curated random pet images
   placeholderMode = false;
@@ -53,6 +55,11 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
   /** CTA: acordeão (fechado = só título + chevron). */
   ctaAccordionOpen = false;
   postFotoModalOpen = false;
+  ctaClientePets: any[] = [];
+  ctaClienteFotos: ClienteGaleriaFoto[] = [];
+  ctaContextLoading = false;
+  private ctaClienteId: number | null = null;
+  private ctaSubscriptions = new Subscription();
 
   // available reaction types (emoji + tipo)
   reactionTypes = [
@@ -103,6 +110,51 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
 
   toggleCtaAccordion(): void {
     this.ctaAccordionOpen = !this.ctaAccordionOpen;
+    if (this.ctaAccordionOpen) {
+      this.loadClienteCtaContext();
+    }
+  }
+
+  openClienteAreaView(view: 'novo-pet' | 'postar-foto'): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.clienteAreaModal.open(view);
+  }
+
+  hasClienteAuth(): boolean {
+    return !!this.auth.getToken();
+  }
+
+  getCtaPetHint(): string {
+    if (!this.hasClienteAuth()) return 'Entre na sua conta e use o + para cadastrar seu primeiro pet.';
+    if (!this.ctaClientePets.length) return 'Nenhum pet cadastrado ainda. Use o + para adicionar.';
+    return 'Seus pets aparecem aqui. Use o + para cadastrar outro.';
+  }
+
+  getCtaFotoHint(): string {
+    if (!this.hasClienteAuth()) return 'Entre na sua conta e use o + para postar sua primeira foto.';
+    if (!this.ctaClienteFotos.length) return 'Nenhuma foto postada ainda. Use o + para publicar a primeira.';
+    return 'Suas ultimas fotos aparecem aqui. Use o + para postar outra.';
+  }
+
+  resolveClientePetAvatar(pet: any): string | null {
+    try {
+      const raw = String(pet?.photoURL || pet?.foto || pet?.photo || pet?.photo_url || '').trim();
+      return raw ? this.normalizeImgUrl(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  clientePetInitials(nome?: string): string {
+    const base = String(nome || 'Pet').trim();
+    if (!base) return 'P';
+    const parts = base.split(/\s+/).filter(Boolean);
+    return (parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('')) || 'P';
+  }
+
+  resolveClienteFotoThumb(foto: ClienteGaleriaFoto | null | undefined): string {
+    const raw = String(foto?.url || '').trim();
+    return raw ? this.normalizeImgUrl(raw) : '/imagens/image.png';
   }
 
   openPostFotoModal(): void {
@@ -121,6 +173,7 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
 
   onPostFotoSuccess(): void {
     this.postFotoModalOpen = false;
+    this.loadClienteGaleriaFotos(true);
     this.refreshGaleriaFeed();
   }
 
@@ -193,6 +246,21 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
       // reset uid counter on fresh client render
       this._uidCounter = 1;
       this.loadPage(1);
+      this.ctaSubscriptions.add(this.auth.isLoggedIn$.subscribe((loggedIn) => {
+        if (!loggedIn || !this.auth.getToken()) {
+          this.resetClienteCtaContext();
+          return;
+        }
+        if (this.ctaAccordionOpen) {
+          this.loadClienteCtaContext(true);
+        }
+      }));
+      this.ctaSubscriptions.add(this.clienteAreaModal.petsChanged$.subscribe(() => {
+        this.loadClientePets(true);
+      }));
+      this.ctaSubscriptions.add(this.clienteAreaModal.galeriaFotosChanged$.subscribe(() => {
+        this.loadClienteGaleriaFotos(true);
+      }));
     } else {
       // on server render, skip fetching and let client load after hydration
       this.loading = false;
@@ -228,6 +296,83 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
 
   ngOnDestroy(): void {
     if (this.observer) this.observer.disconnect();
+    this.ctaSubscriptions.unsubscribe();
+  }
+
+  private resetClienteCtaContext(): void {
+    this.ctaClienteId = null;
+    this.ctaClientePets = [];
+    this.ctaClienteFotos = [];
+    this.ctaContextLoading = false;
+  }
+
+  private async resolveClienteIdForCta(token: string, force = false): Promise<number | null> {
+    if (!force && this.ctaClienteId) return this.ctaClienteId;
+    const me: any = await this.api.getClienteMe(token).toPromise();
+    const id = Number(me?.user?.id ?? me?.id ?? 0);
+    this.ctaClienteId = !isNaN(id) && id > 0 ? id : null;
+    return this.ctaClienteId;
+  }
+
+  private async loadClienteCtaContext(force = false): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const token = this.auth.getToken();
+    if (!token) {
+      this.resetClienteCtaContext();
+      return;
+    }
+    if (this.ctaContextLoading) return;
+    this.ctaContextLoading = true;
+    try {
+      const clienteId = await this.resolveClienteIdForCta(token, force);
+      const [pets, fotos] = await Promise.all([
+        clienteId ? this.api.getPetsByCliente(clienteId, token).toPromise() : Promise.resolve([]),
+        this.api.getMinhaGaleriaFotos(token).toPromise(),
+      ]);
+      this.ctaClientePets = Array.isArray(pets) ? pets : [];
+      this.ctaClienteFotos = Array.isArray(fotos) ? fotos : [];
+    } catch (e) {
+      console.warn('Falha ao carregar CTA da galeria', e);
+    } finally {
+      this.ctaContextLoading = false;
+    }
+  }
+
+  private async loadClientePets(force = false): Promise<void> {
+    const token = this.auth.getToken();
+    if (!token) {
+      this.ctaClientePets = [];
+      this.ctaClienteId = null;
+      return;
+    }
+    try {
+      const clienteId = await this.resolveClienteIdForCta(token, force);
+      if (!clienteId) {
+        this.ctaClientePets = [];
+        return;
+      }
+      const pets = await this.api.getPetsByCliente(clienteId, token).toPromise();
+      this.ctaClientePets = Array.isArray(pets) ? pets : [];
+    } catch (e) {
+      console.warn('Falha ao recarregar pets da CTA', e);
+    }
+  }
+
+  private async loadClienteGaleriaFotos(force = false): Promise<void> {
+    const token = this.auth.getToken();
+    if (!token) {
+      this.ctaClienteFotos = [];
+      return;
+    }
+    try {
+      if (force && !this.ctaClienteId) {
+        await this.resolveClienteIdForCta(token, true);
+      }
+      const fotos = await this.api.getMinhaGaleriaFotos(token).toPromise();
+      this.ctaClienteFotos = Array.isArray(fotos) ? fotos : [];
+    } catch (e) {
+      console.warn('Falha ao recarregar fotos da CTA', e);
+    }
   }
 
   /** Chave estável do item do feed (foto, coleção ou anúncio) */

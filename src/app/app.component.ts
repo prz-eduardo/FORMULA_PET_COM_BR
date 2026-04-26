@@ -44,7 +44,10 @@ export class AppComponent implements OnInit, OnDestroy {
   private routerSub?: Subscription;
   /** Sincroniza classe no body: mapa + viewport estreita → esconde só o header superior da navbar, mantendo o dock móvel. */
   private mapaTopNavMql: MediaQueryList | null = null;
-  private mapaTopNavMqlHandler = () => this.syncMapaNoTopnavBodyClass();
+  private mapaTopNavMqlHandler = () => {
+    this.syncShellVisibility();
+    this.syncMapaNoTopnavBodyClass();
+  };
   showLoginModal = false;
   private openLoginHandler?: EventListenerOrEventListenerObject;
   private cookiePreferencesSub?: Subscription;
@@ -76,7 +79,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.syncCookieDefaultsIfLoggedInClienteOrVet();
       } catch (e) {}
     }
-    // Hide global footer and nav on admin routes and product registration page; hide footer on /mapa (full map)
+    // Hide global footer and nav on admin routes and product registration page; on /mapa hide footer only on mobile.
     try {
       if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined' && window.matchMedia) {
         this.mapaTopNavMql = window.matchMedia('(max-width: 767px)');
@@ -91,18 +94,11 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
       const current = (this.router && (this.router.url || '')) as string;
-      const path = (current.split('?')[0] || '').split('#')[0] || '';
-      const hide = current.startsWith('/restrito/admin') || current.startsWith('/restrito/produto');
-      const hideFooterMapa = path === '/mapa';
-      this.showFooter = !hide && !hideFooterMapa;
-      this.showNav = !hide;
+      this.syncShellVisibility(current);
       this.syncMapaNoTopnavBodyClass();
       this.routerSub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((ev: any) => {
         const u = ev.urlAfterRedirects || ev.url || '';
-        const p = (u.split('?')[0] || '').split('#')[0] || '';
-        const hideNow = u.startsWith('/restrito/admin') || u.startsWith('/restrito/produto');
-        this.showFooter = !hideNow && p !== '/mapa';
-        this.showNav = !hideNow;
+        this.syncShellVisibility(u);
         this.syncMapaNoTopnavBodyClass();
       });
     } catch (e) {}
@@ -221,6 +217,16 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (e) {
       /* */
     }
+  }
+
+  private syncShellVisibility(url?: string): void {
+    const current = url ?? this.router.url ?? '';
+    const path = (current.split('?')[0] || '').split('#')[0] || '';
+    const hide = current.startsWith('/restrito/admin') || current.startsWith('/restrito/produto');
+    const hideFooterMapa = path === '/mapa' && (this.mapaTopNavMql?.matches ?? false);
+
+    this.showFooter = !hide && !hideFooterMapa;
+    this.showNav = !hide;
   }
 
   detectDevice(): void {

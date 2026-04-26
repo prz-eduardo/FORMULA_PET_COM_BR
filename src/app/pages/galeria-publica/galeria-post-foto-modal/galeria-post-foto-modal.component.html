@@ -1,20 +1,22 @@
 <div
   class="gpf-overlay"
+  [class.gpf-overlay--embedded]="embedded"
   *ngIf="open"
-  (click)="close()"
+  (click)="!embedded && close()"
   role="presentation"
-  aria-hidden="false"
+  [attr.aria-hidden]="embedded ? null : 'false'"
 >
   <div
     class="gpf-dialog"
-    role="dialog"
-    aria-modal="true"
+    [class.gpf-dialog--embedded]="embedded"
+    [attr.role]="embedded ? null : 'dialog'"
+    [attr.aria-modal]="embedded ? null : 'true'"
     aria-labelledby="gpf-title"
     (click)="$event.stopPropagation()"
   >
     <div class="gpf-head">
       <h2 id="gpf-title" class="gpf-title">Postar nova foto</h2>
-      <button type="button" class="gpf-x" (click)="close()" aria-label="Fechar">×</button>
+      <button type="button" class="gpf-x" (click)="close()" [attr.aria-label]="embedded ? 'Voltar' : 'Fechar'">×</button>
     </div>
     <p class="gpf-hint">O primeiro pet da lista é o <strong>principal</strong> na galeria. Marque todos que aparecem na foto.</p>
 

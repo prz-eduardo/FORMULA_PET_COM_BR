@@ -10,6 +10,15 @@
   box-sizing: border-box;
 }
 
+.gpf-overlay--embedded {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  background: transparent;
+  display: block;
+  padding: 0;
+}
+
 .gpf-dialog {
   width: 100%;
   max-width: 420px;
@@ -22,12 +31,50 @@
   padding: 20px 20px 16px;
 }
 
+.gpf-dialog--embedded {
+  max-width: none;
+  max-height: none;
+  box-shadow: none;
+  border-radius: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .gpf-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.gpf-dialog--embedded .gpf-head,
+.gpf-dialog--embedded .gpf-hint,
+.gpf-dialog--embedded .gpf-form {
+  background: #fff;
+}
+
+.gpf-dialog--embedded .gpf-head {
+  padding: 20px 20px 0;
+  border: 1px solid var(--fp-border, #e8e0d0);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+}
+
+.gpf-dialog--embedded .gpf-hint {
+  margin-bottom: 0;
+  padding: 10px 20px 0;
+  border-left: 1px solid var(--fp-border, #e8e0d0);
+  border-right: 1px solid var(--fp-border, #e8e0d0);
+}
+
+.gpf-dialog--embedded .gpf-form {
+  padding: 16px 20px 20px;
+  border: 1px solid var(--fp-border, #e8e0d0);
+  border-top: 0;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
 }
 
 .gpf-title {

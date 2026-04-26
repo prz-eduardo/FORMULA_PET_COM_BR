@@ -454,6 +454,86 @@
   right: 16px;
 }
 
+.delete-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.delete-modal {
+  width: min(100%, 420px);
+  border-radius: 18px;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 14, 22, 0.98) 100%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  padding: 22px;
+  color: var(--ac-text);
+}
+
+.delete-modal__title {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.delete-modal__text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+}
+
+.delete-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.delete-modal__btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.delete-modal__btn:hover:not([disabled]) {
+  transform: translateY(-1px);
+}
+
+.delete-modal__btn[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.delete-modal__btn--ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ac-text);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.delete-modal__btn--danger {
+  background: rgba(127, 29, 29, 0.95);
+  color: #fff;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.delete-modal__btn--danger:hover:not([disabled]) {
+  background: rgba(153, 27, 27, 1);
+}
+
 @media (max-width: 640px) {
   .page-title {
     font-size: 22px;
@@ -470,6 +550,18 @@
     font-size: 28px;
     right: 14px;
     bottom: 14px;
+  }
+
+  .delete-modal {
+    padding: 18px;
+  }
+
+  .delete-modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .delete-modal__btn {
+    width: 100%;
   }
 }
 

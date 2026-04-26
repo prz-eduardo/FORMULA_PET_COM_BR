@@ -90,30 +90,53 @@
       >
         <img src="/icones/mapa-pata.png" alt="" aria-hidden="true" class="galeria-cta-icon" />
         <div class="galeria-cta-body">
-          <h2 class="galeria-cta-name">Seu pet também merece aparecer <span class="galeria-cta-tag">participe</span></h2>
           <p class="galeria-cta-text">Cadastre seu pet, compartilhe as melhores fotos e receba reações da comunidade.</p>
-        </div>
-        <div class="galeria-cta-actions">
-          <a
-            [routerLink]="'/meus-pets'"
-            class="galeria-cta-btn"
-            title="Ir para Meus Pets"
-            aria-label="Ir para Meus Pets">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 21s-7-4.35-9.33-9.03C1.27 9.47 2.6 6 5.67 6c1.77 0 3.13 1.04 3.97 2.3C10.47 7.04 11.83 6 13.6 6c3.07 0 4.4 3.47 3 5.97C19 16.65 12 21 12 21z" fill="currentColor"/>
-            </svg>
-            Meus Pets
-          </a>
-          <button
-            type="button"
-            class="galeria-cta-btn galeria-cta-btn--secondary"
-            (click)="openPostFotoModal()"
-            title="Postar nova foto na galeria"
-            aria-label="Postar nova foto na galeria"
-          >
-            <i class="fa fa-camera" aria-hidden="true"></i>
-            Postar nova foto
-          </button>
+          <div class="galeria-cta-shelves">
+            <section class="galeria-cta-shelf" aria-label="Pets cadastrados">
+              <div class="galeria-cta-shelf__head">
+                <h2 class="galeria-cta-shelf__title">Seus pets</h2>
+                <span class="galeria-cta-tag">cadastro</span>
+              </div>
+              <p class="galeria-cta-shelf__hint">{{ getCtaPetHint() }}</p>
+              <div class="galeria-cta-bubbles" role="list">
+                <span *ngFor="let pet of ctaClientePets" class="galeria-cta-bubble" role="listitem" [attr.title]="pet.nome || 'Pet'" [attr.aria-label]="pet.nome || 'Pet'">
+                  <ng-container *ngIf="resolveClientePetAvatar(pet) as petAvatar; else petInitial">
+                    <img [src]="petAvatar" alt="" aria-hidden="true" />
+                  </ng-container>
+                  <ng-template #petInitial>
+                    <span class="galeria-cta-bubble__initials">{{ clientePetInitials(pet.nome) }}</span>
+                  </ng-template>
+                </span>
+                <button
+                  type="button"
+                  class="galeria-cta-bubble galeria-cta-bubble--add"
+                  (click)="openClienteAreaView('novo-pet')"
+                  aria-label="Cadastrar novo pet"
+                  title="Cadastrar novo pet"
+                >+</button>
+              </div>
+            </section>
+
+            <section class="galeria-cta-shelf" aria-label="Fotos já publicadas">
+              <div class="galeria-cta-shelf__head">
+                <h2 class="galeria-cta-shelf__title">Suas fotos</h2>
+                <span class="galeria-cta-tag">galeria</span>
+              </div>
+              <p class="galeria-cta-shelf__hint">{{ getCtaFotoHint() }}</p>
+              <div class="galeria-cta-bubbles" role="list">
+                <span *ngFor="let foto of ctaClienteFotos" class="galeria-cta-bubble galeria-cta-bubble--photo" role="listitem" title="Foto já publicada" aria-label="Foto já publicada">
+                  <img [src]="resolveClienteFotoThumb(foto)" alt="" aria-hidden="true" />
+                </span>
+                <button
+                  type="button"
+                  class="galeria-cta-bubble galeria-cta-bubble--add galeria-cta-bubble--photo-add"
+                  (click)="openClienteAreaView('postar-foto')"
+                  aria-label="Postar nova foto"
+                  title="Postar nova foto"
+                >+</button>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </section>

@@ -26,6 +26,7 @@ export class MeusPetsComponent implements OnChanges {
   carregando = true;
   /** id do pet em exclusão (evita cliques duplicados) */
   deletingPetId: string | null = null;
+  pendingDeletePet: any | null = null;
   // track image loaded state per pet (key by id when available, otherwise by index fallback)
   petImageLoaded: Record<string, boolean> = {};
 
@@ -62,17 +63,29 @@ export class MeusPetsComponent implements OnChanges {
       ev.preventDefault();
     }
     const id = this.resolvePetId(pet);
-    const nome = (pet && (pet.nome || 'este pet')) as string;
     if (!id || !this.token) {
       this.toast?.info('Não foi possível excluir: sessão ou pet inválido.');
       return;
     }
-    const ok = confirm(
-      `Excluir ${nome}? Esta ação não pode ser desfeita.`
-    );
-    if (!ok) return;
+    this.pendingDeletePet = pet;
+  }
+
+  cancelDelete(): void {
+    if (this.deletingPetId) return;
+    this.pendingDeletePet = null;
+  }
+
+  confirmDelete(): void {
+    const pet = this.pendingDeletePet;
+    const id = this.resolvePetId(pet);
+    if (!id || !this.token) {
+      this.pendingDeletePet = null;
+      this.toast?.info('Não foi possível excluir: sessão ou pet inválido.');
+      return;
+    }
     const cid = this.getClienteIdNum();
     if (cid == null) {
+      this.pendingDeletePet = null;
       this.toast.error('Não foi possível identificar o cliente.', 'Erro');
       return;
     }
@@ -80,6 +93,7 @@ export class MeusPetsComponent implements OnChanges {
     this.api.deletePet(cid, id, this.token).subscribe({
       next: () => {
         this.deletingPetId = null;
+        this.pendingDeletePet = null;
         this.pets = (this.pets || []).filter((p) => String(this.resolvePetId(p)) !== id);
         this.initImageLoadState();
         this.toast.success('Pet excluído.');
@@ -96,6 +110,10 @@ export class MeusPetsComponent implements OnChanges {
         this.toast.error(msg, 'Erro');
       }
     });
+  }
+
+  pendingDeleteName(): string {
+    return (this.pendingDeletePet && this.pendingDeletePet.nome) || 'este pet';
   }
 
   // When edit is requested from a pet card

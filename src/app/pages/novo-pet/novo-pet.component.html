@@ -9,56 +9,38 @@
     <div class="form-card">
       <div class="form-grid">
         <aside class="pet-card">
-          <div class="pet-photo">
-            <p class="photo-hint muted small">Pode enviar várias fotos (até 12 novas por vez, 3MB cada).</p>
-            <div *ngIf="isEditMode" class="colecao-bar">
-              <p class="muted small">Coleções: junte várias fotos num álbum; na galeria pública aparecem com carrossel. Fotos fora de coleção entram no feed como fotos avulsas.</p>
-              <div class="colecao-bar__row">
-                <input class="colecao-bar__input" type="text" [(ngModel)]="novoTituloColecao" placeholder="Nome da nova coleção" />
-                <button type="button" class="btn-sec" (click)="criarColecao()">+ Coleção</button>
-                <button type="button" class="btn-sec" (click)="carregarColecoes()">Atualizar lista</button>
-              </div>
+          <div class="pet-summary__media">
+            <div class="pet-summary__cover" *ngIf="existingGalleryUrls[0] || fotoPreviews[0]; else noFotoResumo">
+              <img [src]="fotoPreviews[0] || existingGalleryUrls[0]" alt="Foto principal do pet" />
             </div>
-            <div class="gallery-preview-grid" *ngIf="existingGalleryUrls.length || fotoPreviews.length || galeriaItens.length; else noFoto">
-              <ng-container *ngIf="galeriaItens.length; else gUrlsLegacy">
-                <div class="g-thumb g-thumb--colecao" *ngFor="let g of galeriaItens">
-                  <img [src]="g.url" alt="Foto guardada" />
-                  <span class="g-badge">Guardada</span>
-                  <div *ngIf="isEditMode" class="g-colecao-select">
-                    <label class="sr-only" [attr.for]="'cl-'+g.id">Coleção</label>
-                    <select
-                      [id]="'cl-'+g.id"
-                      [ngModel]="g.colecao_id ?? null"
-                      (ngModelChange)="onColecaoImagemChange(g, $event)"
-                    >
-                      <option [ngValue]="null">No feed (foto avulsa)</option>
-                      <option *ngFor="let c of colecoes" [ngValue]="c.id">{{ c.titulo }}</option>
-                    </select>
-                  </div>
-                </div>
-              </ng-container>
-              <ng-template #gUrlsLegacy>
-                <div class="g-thumb" *ngFor="let u of existingGalleryUrls">
-                  <img [src]="u" alt="Foto já guardada" />
-                  <span class="g-badge">Guardada</span>
-                </div>
-              </ng-template>
-              <div class="g-thumb g-thumb--new" *ngFor="let p of fotoPreviews; let i = index">
-                <img [src]="p" alt="Nova foto" />
-                <button type="button" class="g-remove" (click)="removerNovaFoto(i)" aria-label="Remover nova foto">×</button>
-              </div>
-            </div>
-            <ng-template #noFoto>
+            <ng-template #noFotoResumo>
               <div class="placeholder">Sem fotos</div>
             </ng-template>
-            <label class="btn file-btn">
-              <input type="file" accept="image/*" multiple (change)="onFileChange($event)" hidden />
-              Adicionar fotos
-            </label>
-            <button *ngIf="fotoPreviews.length" type="button" class="btn-sec small" (click)="removerTodasNovas()">Limpar novas</button>
           </div>
 
-          <h2 class="pet-name">{{ nome || '—' }}</h2>
+          <div class="pet-summary__content">
+            <div class="pet-summary__eyebrow">Resumo do pet</div>
+            <h2 class="pet-name">{{ nome || 'Sem nome' }}</h2>
+            <p class="pet-summary__subline">
+              {{ especie || 'Espécie não definida' }}
+              <span *ngIf="raca">· {{ raca }}</span>
+            </p>
+
+            <div class="pet-summary__stats">
+              <div class="summary-stat">
+                <span class="summary-stat__value">{{ (galeriaItens.length || existingGalleryUrls.length || 0) }}</span>
+                <span class="summary-stat__label">salvas</span>
+              </div>
+              <div class="summary-stat">
+                <span class="summary-stat__value">{{ fotoPreviews.length }}</span>
+                <span class="summary-stat__label">novas</span>
+              </div>
+              <div class="summary-stat">
+                <span class="summary-stat__value">{{ colecoes.length }}</span>
+                <span class="summary-stat__label">coleções</span>
+              </div>
+            </div>
+          </div>
 
           <div class="pet-meta">
             <div class="meta-item"><strong>Espécie</strong><div>{{ especie || '—' }}</div></div>
@@ -78,76 +60,208 @@
         </aside>
 
         <section class="main-form">
-          <div class="grid">
-            <div class="field">
-              <label>Nome *</label>
-              <input type="text" [(ngModel)]="nome" placeholder="Ex: Rex" />
+          <section class="management-section management-section--gallery">
+            <div class="management-section__head">
+              <div>
+                <div class="management-section__eyebrow">Galeria</div>
+                <h3 class="management-section__title">Fotos e coleções</h3>
+                <p class="management-section__desc">Adicione novas fotos, organize o que já está salvo e decida se cada imagem entra como foto avulsa no feed ou dentro de uma coleção.</p>
+              </div>
+              <div class="management-pills">
+                <span class="management-pill">{{ (galeriaItens.length || existingGalleryUrls.length || 0) }} salvas</span>
+                <span class="management-pill">{{ fotoPreviews.length }} novas</span>
+              </div>
             </div>
-            <div class="field">
-              <label>Espécie *</label>
-              <select [(ngModel)]="especie">
-                <option value="" disabled selected>Selecione</option>
-                <option *ngFor="let e of especies" [value]="e">{{ e }}</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Raça</label>
-              <input type="text" [(ngModel)]="raca" placeholder="Ex: Labrador" />
-            </div>
-            <div class="field">
-              <label>Sexo *</label>
-              <select [(ngModel)]="sexo">
-                <option value="" disabled selected>Selecione</option>
-                <option *ngFor="let s of sexos" [value]="s">{{ s }}</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Peso (kg)</label>
-              <input type="number" step="0.1" min="0" [(ngModel)]="pesoKg" placeholder="Ex: 12.5" />
-            </div>
-            <div class="field">
-              <label>Idade (anos)</label>
-              <input type="number" min="0" [(ngModel)]="idadeAnos" placeholder="Ex: 5" />
-            </div>
-          </div>
 
-          <div class="field">
-            <label>Observações</label>
-            <textarea [(ngModel)]="observacoes" rows="3" placeholder="Alergias, comportamento, preferências..."></textarea>
-          </div>
-
-          <div class="field field--checkbox">
-            <label class="checkbox-row">
-              <input type="checkbox" [(ngModel)]="exibirGaleriaPublica" name="exibirGaleriaPublica" />
-              <span>Exibir na galeria pública do site</span>
-            </label>
-            <p class="field-hint">Só será visível para todos após aprovação da equipe. Você pode alterar isso a qualquer momento ao editar o pet.</p>
-          </div>
-
-          <div class="field">
-            <label>Alergias (pré-definidas)</label>
-            <div class="alergias-row">
-              <input type="text" [(ngModel)]="alergiaBusca" (input)="filtrarSugestoes()" placeholder="Busque e selecione..." />
+            <div class="gallery-toolbar">
+              <div class="gallery-toolbar__copy">
+                <p class="photo-hint muted small">Pode enviar várias fotos, até 12 novas por vez, com 3MB cada.</p>
+                <p class="gallery-toolbar__subhint">Clique em uma foto salva para abrir a configuração da imagem, ajustar legenda e definir se ela entra na galeria pública.</p>
+              </div>
+              <div class="gallery-toolbar__actions">
+                <label class="btn file-btn">
+                  <input type="file" accept="image/*" multiple (change)="onFileChange($event)" hidden />
+                  Adicionar fotos
+                </label>
+                <button *ngIf="fotoPreviews.length" type="button" class="btn btn-sec" (click)="removerTodasNovas()">Limpar novas</button>
+              </div>
             </div>
-            <div class="dropdown" *ngIf="showSugestoes">
-              <div class="option" *ngFor="let s of sugestoes" (click)="adicionarSugestao(s)">{{ s.nome }}</div>
-            </div>
-            <div class="ativos-badges" *ngIf="alergiasSelecionadas.length">
-              <span class="badge" *ngFor="let sel of alergiasSelecionadas; let i = index">
-                {{ sel.nome }}
-                <button type="button" class="badge-remove" (click)="alergiasSelecionadas.splice(i,1)">x</button>
-              </span>
-            </div>
-          </div>
 
-          <div class="acoes" *ngIf="isEditMode">
-            <button
-              type="button"
-              class="btn btn-danger-ghost"
-              (click)="excluirPet()"
-              [disabled]="carregando"
-            >Excluir pet</button>
-          </div>
+            <div class="gallery-section-grid">
+              <div class="gallery-panel gallery-panel--saved">
+                <div class="gallery-panel__head">
+                  <h4>Fotos salvas</h4>
+                  <span>{{ (galeriaItens.length || existingGalleryUrls.length || 0) }} item(ns)</span>
+                </div>
+                <p class="gallery-panel__hint" *ngIf="isEditMode">Use a coleção para definir se a foto aparece no feed como avulsa ou agrupada num álbum.</p>
+
+                <div class="colecao-box" *ngIf="isEditMode">
+                  <div class="colecao-box__head">
+                    <strong>Gerenciar coleções</strong>
+                    <button type="button" class="btn btn-sec btn-sec--small" (click)="carregarColecoes()">Atualizar lista</button>
+                  </div>
+                  <p class="colecao-box__desc">Crie álbuns para montar carrosséis na galeria pública. Fotos sem coleção continuam entrando como fotos avulsas.</p>
+                  <div class="colecao-bar__row">
+                    <input class="colecao-bar__input" type="text" [(ngModel)]="novoTituloColecao" placeholder="Nome da nova coleção" />
+                    <button type="button" class="btn btn-sec" (click)="criarColecao()">+ Coleção</button>
+                  </div>
+                </div>
+
+                <div class="gallery-list" *ngIf="galeriaItens.length || existingGalleryUrls.length; else noFotoSalva">
+                  <ng-container *ngIf="galeriaItens.length; else gUrlsLegacy">
+                    <article class="gallery-item-card gallery-item-card--clickable" *ngFor="let g of galeriaItens" (click)="openGalleryItemSettings(g)" (keydown.enter)="openGalleryItemSettings(g)" tabindex="0">
+                      <div class="gallery-item-card__media">
+                        <img [src]="g.url" alt="Foto guardada" />
+                        <span class="g-badge">Salva</span>
+                      </div>
+                      <div class="gallery-item-card__body">
+                        <div class="gallery-item-card__title">Foto da galeria</div>
+                        <div class="gallery-item-card__status">{{ galleryItemStatus(g) }}</div>
+                        <div class="gallery-item-card__meta" *ngIf="g.legenda">{{ g.legenda }}</div>
+                        <div class="gallery-item-card__cta">Clique para configurar esta foto</div>
+                      </div>
+                    </article>
+                  </ng-container>
+                  <ng-template #gUrlsLegacy>
+                    <article class="gallery-item-card gallery-item-card--legacy" *ngFor="let u of existingGalleryUrls">
+                      <div class="gallery-item-card__media">
+                        <img [src]="u" alt="Foto já guardada" />
+                        <span class="g-badge">Salva</span>
+                      </div>
+                      <div class="gallery-item-card__body">
+                        <div class="gallery-item-card__title">Foto existente</div>
+                        <div class="gallery-item-card__status">Essa foto já está vinculada ao pet.</div>
+                      </div>
+                    </article>
+                  </ng-template>
+                </div>
+                <ng-template #noFotoSalva>
+                  <div class="gallery-empty">Nenhuma foto salva ainda.</div>
+                </ng-template>
+              </div>
+
+              <div class="gallery-panel gallery-panel--new">
+                <div class="gallery-panel__head">
+                  <h4>Novas fotos</h4>
+                  <span>{{ fotoPreviews.length }} pronta(s)</span>
+                </div>
+                <p class="gallery-panel__hint">As novas fotos entram no próximo salvamento deste pet.</p>
+
+                <div class="gallery-list gallery-list--new" *ngIf="fotoPreviews.length; else noFotoNova">
+                  <article class="gallery-item-card gallery-item-card--new" *ngFor="let p of fotoPreviews; let i = index">
+                    <div class="gallery-item-card__media">
+                      <img [src]="p" alt="Nova foto" />
+                    </div>
+                    <div class="gallery-item-card__body">
+                      <div class="gallery-item-card__title">Nova foto {{ i + 1 }}</div>
+                      <div class="gallery-item-card__status">Será enviada ao salvar.</div>
+                      <button type="button" class="btn btn-sec btn-sec--small" (click)="removerNovaFoto(i)">Remover desta edição</button>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #noFotoNova>
+                  <div class="gallery-empty">Nenhuma nova foto selecionada.</div>
+                </ng-template>
+              </div>
+            </div>
+          </section>
+
+          <section class="management-section">
+            <div class="management-section__head">
+              <div>
+                <div class="management-section__eyebrow">Dados principais</div>
+                <h3 class="management-section__title">Informações do pet</h3>
+                <p class="management-section__desc">Atualize os campos principais que aparecem no perfil e facilitam a identificação do pet.</p>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label>Nome *</label>
+                <input type="text" [(ngModel)]="nome" placeholder="Ex: Rex" />
+              </div>
+              <div class="field">
+                <label>Espécie *</label>
+                <select [(ngModel)]="especie">
+                  <option value="" disabled selected>Selecione</option>
+                  <option *ngFor="let e of especies" [value]="e">{{ e }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Raça</label>
+                <input type="text" [(ngModel)]="raca" placeholder="Ex: Labrador" />
+              </div>
+              <div class="field">
+                <label>Sexo *</label>
+                <select [(ngModel)]="sexo">
+                  <option value="" disabled selected>Selecione</option>
+                  <option *ngFor="let s of sexos" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Peso (kg)</label>
+                <input type="number" step="0.1" min="0" [(ngModel)]="pesoKg" placeholder="Ex: 12.5" />
+              </div>
+              <div class="field">
+                <label>Idade (anos)</label>
+                <input type="number" min="0" [(ngModel)]="idadeAnos" placeholder="Ex: 5" />
+              </div>
+            </div>
+          </section>
+
+          <section class="management-section">
+            <div class="management-section__head">
+              <div>
+                <div class="management-section__eyebrow">Cuidados e visibilidade</div>
+                <h3 class="management-section__title">Saúde, observações e exibição</h3>
+                <p class="management-section__desc">Concentre aqui as informações clínicas e a decisão sobre exibir ou não o pet na galeria pública.</p>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Observações</label>
+              <textarea [(ngModel)]="observacoes" rows="3" placeholder="Alergias, comportamento, preferências..."></textarea>
+            </div>
+
+            <div class="field field--checkbox field--visibility">
+              <label class="checkbox-row">
+                <input type="checkbox" [(ngModel)]="exibirGaleriaPublica" name="exibirGaleriaPublica" />
+                <span>Exibir na galeria pública do site</span>
+              </label>
+              <p class="field-hint">Com a opção ativa, as fotos salvas desse pet podem aparecer na galeria pública. Você pode mudar isso quando quiser.</p>
+            </div>
+
+            <div class="field">
+              <label>Alergias (pré-definidas)</label>
+              <div class="alergias-row">
+                <input type="text" [(ngModel)]="alergiaBusca" (input)="filtrarSugestoes()" placeholder="Busque e selecione..." />
+              </div>
+              <div class="dropdown" *ngIf="showSugestoes">
+                <div class="option" *ngFor="let s of sugestoes" (click)="adicionarSugestao(s)">{{ s.nome }}</div>
+              </div>
+              <div class="ativos-badges" *ngIf="alergiasSelecionadas.length">
+                <span class="badge" *ngFor="let sel of alergiasSelecionadas; let i = index">
+                  {{ sel.nome }}
+                  <button type="button" class="badge-remove" (click)="alergiasSelecionadas.splice(i,1)">x</button>
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="management-section management-section--danger" *ngIf="isEditMode">
+            <div class="management-section__head">
+              <div>
+                <div class="management-section__eyebrow">Zona de risco</div>
+                <h3 class="management-section__title">Excluir cadastro</h3>
+                <p class="management-section__desc">Remova este pet apenas se você realmente não precisar mais do cadastro.</p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-danger-ghost"
+                (click)="excluirPet()"
+                [disabled]="carregando"
+              >Excluir pet</button>
+            </div>
+          </section>
 
           <div class="acoes">
             <button type="button" class="btn btn-sec" *ngIf="!modal" routerLink="/area-cliente" [disabled]="carregando">Cancelar</button>
@@ -158,4 +272,96 @@
       </div>
     </div>
   </main>
+
+  <div
+    *ngIf="showDeleteConfirm"
+    class="delete-modal__backdrop"
+    role="presentation"
+    (click)="cancelarExclusaoPet()"
+  >
+    <div
+      class="delete-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-pet-manage-title"
+      aria-describedby="delete-pet-manage-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="delete-pet-manage-title" class="delete-modal__title">Excluir pet?</h2>
+      <p id="delete-pet-manage-desc" class="delete-modal__text">
+        Você está prestes a excluir <strong>{{ nome || 'este pet' }}</strong>. Esta ação não pode ser desfeita.
+      </p>
+      <div class="delete-modal__actions">
+        <button type="button" class="delete-modal__btn delete-modal__btn--ghost" (click)="cancelarExclusaoPet()" [disabled]="carregando">
+          Cancelar
+        </button>
+        <button type="button" class="delete-modal__btn delete-modal__btn--danger" (click)="confirmarExclusaoPet()" [disabled]="carregando">
+          {{ carregando ? 'Excluindo…' : 'Excluir pet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    *ngIf="selectedGalleryItem"
+    class="image-config-modal__backdrop"
+    role="presentation"
+    (click)="closeGalleryItemSettings()"
+  >
+    <div
+      class="image-config-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="image-config-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="image-config-modal__head">
+        <div>
+          <div class="image-config-modal__eyebrow">Configuração da imagem</div>
+          <h2 id="image-config-title" class="image-config-modal__title">Editar foto da galeria</h2>
+        </div>
+        <button type="button" class="image-config-modal__close" (click)="closeGalleryItemSettings()" [disabled]="savingGalleryItem">×</button>
+      </div>
+
+      <div class="image-config-modal__grid">
+        <div class="image-config-modal__preview">
+          <img [src]="selectedGalleryItem.url" alt="Prévia da foto" />
+        </div>
+
+        <div class="image-config-modal__form">
+          <label class="field">
+            <span>Galeria pública</span>
+            <label class="checkbox-row checkbox-row--config">
+              <input type="checkbox" [(ngModel)]="galleryDraft.galeria_publica" />
+              <span>Permitir que esta foto apareça na galeria pública</span>
+            </label>
+          </label>
+
+          <label class="field">
+            <span>Legenda</span>
+            <textarea [(ngModel)]="galleryDraft.legenda" rows="4" maxlength="500" placeholder="Escreva uma legenda curta para esta foto."></textarea>
+          </label>
+
+          <label class="field">
+            <span>Coleção</span>
+            <select [(ngModel)]="galleryDraft.colecao_id">
+              <option [ngValue]="null">No feed como foto avulsa</option>
+              <option *ngFor="let c of colecoes" [ngValue]="c.id">{{ c.titulo }}</option>
+            </select>
+          </label>
+
+          <div class="image-config-modal__hint">
+            A foto só aparece publicamente quando o pet também estiver com exibição pública ativa.
+          </div>
+
+          <div class="image-config-modal__actions">
+            <button type="button" class="btn btn-sec" (click)="closeGalleryItemSettings()" [disabled]="savingGalleryItem">Cancelar</button>
+            <button type="button" class="btn btn-primary" (click)="saveGalleryItemSettings()" [disabled]="savingGalleryItem">
+              {{ savingGalleryItem ? 'Salvando...' : 'Salvar configuração' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

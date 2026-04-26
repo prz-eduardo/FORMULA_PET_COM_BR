@@ -2,7 +2,7 @@ import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit } f
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { ApiService, ClienteMeResponse } from '../../services/api.service';
+import { ApiService, ClienteMeResponse, PetImagemPatchPayload } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { NavmenuComponent } from '../../navmenu/navmenu.component';
@@ -48,13 +48,17 @@ export class NovoPetComponent implements OnInit {
   /** URLs já salvas no servidor (edição). */
   existingGalleryUrls: string[] = [];
   /** Itens de galeria com id (para coleções) */
-  galeriaItens: Array<{ id: number; url: string; colecao_id?: number | null }> = [];
+  galeriaItens: Array<{ id: number; url: string; colecao_id?: number | null; legenda?: string | null; galeria_publica?: number | boolean | string | null }> = [];
   colecoes: Array<{ id: number; titulo: string }> = [];
   novoTituloColecao = '';
   /** Novos ficheiros a enviar (até 12). */
   fotoFiles: File[] = [];
   /** Previews data URL dos novos ficheiros. */
   fotoPreviews: string[] = [];
+  showDeleteConfirm = false;
+  selectedGalleryItem: { id: number; url: string; colecao_id?: number | null; legenda?: string | null; galeria_publica?: number | boolean | string | null } | null = null;
+  galleryDraft: { colecao_id: number | null; legenda: string; galeria_publica: boolean } = { colecao_id: null, legenda: '', galeria_publica: true };
+  savingGalleryItem = false;
 
   carregando = false;
   clienteMe: ClienteMeResponse | null = null;
@@ -123,7 +127,9 @@ export class NovoPetComponent implements OnInit {
                   .map((x: any) => ({
                     id: Number(x.id),
                     url: x.url,
-                    colecao_id: x.colecao_id != null ? Number(x.colecao_id) : null
+                    colecao_id: x.colecao_id != null ? Number(x.colecao_id) : null,
+                    legenda: x.legenda ?? null,
+                    galeria_publica: x.galeria_publica ?? 1,
                   }))
                   .filter((x: any) => x.url && String(x.url).trim() && !isNaN(x.id));
                 this.existingGalleryUrls = this.galeriaItens.map((x) => x.url);
@@ -192,16 +198,28 @@ export class NovoPetComponent implements OnInit {
       this.toast.error('Não é possível excluir: sessão inválida ou pet não carregado.', 'Erro');
       return;
     }
-    const ok = confirm(
-      `Excluir ${this.nome || 'este pet'}? Esta ação não pode ser desfeita.`
-    );
-    if (!ok) return;
+    this.showDeleteConfirm = true;
+  }
+
+  cancelarExclusaoPet() {
+    if (this.carregando) return;
+    this.showDeleteConfirm = false;
+  }
+
+  confirmarExclusaoPet() {
+    const effectiveEditId = this.getEffectiveEditId();
+    if (!effectiveEditId || !this.token || !this.getClienteIdNum()) {
+      this.showDeleteConfirm = false;
+      this.toast.error('Não é possível excluir: sessão inválida ou pet não carregado.', 'Erro');
+      return;
+    }
     const cid = this.getClienteIdNum()!;
     this.carregando = true;
     this.api.deletePet(cid, effectiveEditId, this.token).subscribe({
       next: () => {
         this.toast.success('Pet excluído.');
         this.carregando = false;
+        this.showDeleteConfirm = false;
         this.petDeleted.emit();
         if (this.modal) {
           return;
@@ -210,6 +228,7 @@ export class NovoPetComponent implements OnInit {
       },
       error: (err: any) => {
         this.carregando = false;
+        this.showDeleteConfirm = false;
         const st = err?.status;
         const body = err?.error;
         const msg =
@@ -348,6 +367,67 @@ export class NovoPetComponent implements OnInit {
         this.carregarColecoes();
       },
       error: (e: any) => this.toast.error(e?.error?.error || 'Não foi possível criar a coleção', 'Erro')
+    });
+  }
+
+  openGalleryItemSettings(item: { id: number; url: string; colecao_id?: number | null; legenda?: string | null; galeria_publica?: number | boolean | string | null }) {
+    if (!item?.id) return;
+    this.selectedGalleryItem = item;
+    this.galleryDraft = {
+      colecao_id: item.colecao_id != null ? Number(item.colecao_id) : null,
+      legenda: item.legenda ? String(item.legenda) : '',
+      galeria_publica: item.galeria_publica === false || item.galeria_publica === 0 || item.galeria_publica === '0' ? false : true,
+    };
+  }
+
+  closeGalleryItemSettings() {
+    if (this.savingGalleryItem) return;
+    this.selectedGalleryItem = null;
+  }
+
+  galleryItemStatus(item: { colecao_id?: number | null; galeria_publica?: number | boolean | string | null }): string {
+    const visivel = !(item.galeria_publica === false || item.galeria_publica === 0 || item.galeria_publica === '0');
+    if (item.colecao_id && visivel) return 'Pública em coleção';
+    if (item.colecao_id && !visivel) return 'Privada em coleção';
+    if (visivel) return 'Pública no feed';
+    return 'Privada';
+  }
+
+  saveGalleryItemSettings() {
+    const petId = this.getEffectiveEditId();
+    const token = this.token;
+    const item = this.selectedGalleryItem;
+    if (!petId || !token || !item?.id) return;
+
+    const payload: PetImagemPatchPayload = {
+      colecao_id: this.galleryDraft.colecao_id,
+      legenda: this.galleryDraft.legenda.trim() || null,
+      galeria_publica: this.galleryDraft.galeria_publica ? 1 : 0,
+    };
+
+    this.savingGalleryItem = true;
+    this.api.patchPetImagem(petId, item.id, payload, token).subscribe({
+      next: (res) => {
+        const imagem = (res as any)?.imagem;
+        if (imagem) {
+          const idx = this.galeriaItens.findIndex((g) => g.id === item.id);
+          if (idx >= 0) {
+            this.galeriaItens[idx] = {
+              ...this.galeriaItens[idx],
+              colecao_id: imagem.colecao_id != null ? Number(imagem.colecao_id) : null,
+              legenda: imagem.legenda ?? null,
+              galeria_publica: imagem.galeria_publica ?? 1,
+            };
+          }
+        }
+        this.savingGalleryItem = false;
+        this.toast.success('Configuração da foto salva.');
+        this.selectedGalleryItem = null;
+      },
+      error: (err: any) => {
+        this.savingGalleryItem = false;
+        this.toast.error(err?.error?.error || 'Não foi possível salvar a configuração da foto.', 'Erro');
+      }
     });
   }
 

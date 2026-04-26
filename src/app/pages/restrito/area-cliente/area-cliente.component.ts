@@ -14,6 +14,7 @@ import { StoreService } from '../../../services/store.service';
 import { Subscription } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { MARCA_NOME } from '../../../constants/loja-public';
+import { ClienteAreaModalService, ClienteAreaModalView } from '../../../services/cliente-area-modal.service';
 interface Pet {
   id: string;
   nome: string;
@@ -31,6 +32,7 @@ interface Pet {
 export class AreaClienteComponent implements OnInit, OnDestroy {
   readonly marcaNome = MARCA_NOME;
   @Input() modal: boolean = false;
+  @Input() initialView: ClienteAreaModalView = null;
   @ViewChild('internalHost', { read: ViewContainerRef }) internalHost?: ViewContainerRef;
   @ViewChild('overlayHost', { read: ViewContainerRef }) overlayHost?: ViewContainerRef;
   // Render gating and auth state (storage-based)
@@ -48,9 +50,10 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private lastProfileToken?: string | null = null;
 
   // Internal navigation state when in modal
-  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | null = null;
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto' | null = null;
   // track which internal view originated the last navigation (used to return)
   private lastInternalOrigin: string | null = null;
+  private pendingInitialView: ClienteAreaModalView = null;
 
   modalLoginAberto = false;
   modalCadastroAberto = false;
@@ -88,7 +91,10 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
 
   onLogin() {
     this.hasAuth = !!this.auth.getToken() && !!this.getStoredUserType();
-    if (this.hasAuth) this.loadProfile(this.auth.getToken()!);
+    if (this.hasAuth) {
+      this.loadProfile(this.auth.getToken()!);
+      this.queueInitialViewOpen();
+    }
   }
 
   logout() {
@@ -118,7 +124,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private router: Router,
     private el: ElementRef,
     private store: StoreService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private clienteAreaModal: ClienteAreaModalService
   ) {
     if (isPlatformBrowser(this.platformId)) {
       document.addEventListener('click', this.onDocClick);
@@ -155,8 +162,10 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     const utype = this.getStoredUserType();
     this.hasAuth = !!token && !!utype;
     this.ready = true;
+    this.pendingInitialView = this.initialView;
     if (this.hasAuth && token) {
       this.loadProfile(token);
+      this.queueInitialViewOpen();
     }
 
     // Cross-sync with global auth: react when login/logout happens elsewhere (e.g., Loja popover)
@@ -167,6 +176,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       if (this.hasAuth && tokenNow) {
         // refresh profile quickly
         this.loadProfile(tokenNow);
+        this.queueInitialViewOpen();
       } else {
         // reflect logout immediately in the modal
         this.clienteData = null;
@@ -317,7 +327,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
 
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto') {
     if (view === 'suporte') {
       if (!this.hasAuth) {
         this.toast.error('Faça login para usar o atendimento por chat.', 'Atendimento');
@@ -430,6 +440,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       'meus-pets': 'Meus Pets',
       'novo-pet': 'Cadastrar Pet',
       'perfil': 'Perfil',
+      'postar-foto': 'Postar foto',
     };
     this.titulo = titles[view] || 'Área do Cliente';
     if (!this.internalHost) return;
@@ -519,6 +530,22 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           (ref.instance as any).modal = true;
           try { (ref.instance as any).clienteDataInjected = this.clienteData; } catch {}
           this.wireNovoPetModalListeners(ref.instance);
+        }
+      } else if (view === 'postar-foto') {
+        const mod = await import('../../galeria-publica/galeria-post-foto-modal/galeria-post-foto-modal.component');
+        const Cmp = (mod as any).GaleriaPostFotoModalComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).open = true;
+          (ref.instance as any).embedded = true;
+          if ((ref.instance as any).closeModal) {
+            (ref.instance as any).closeModal.subscribe(() => this.goBack());
+          }
+          if ((ref.instance as any).posted) {
+            (ref.instance as any).posted.subscribe(() => {
+              this.clienteAreaModal.notifyGaleriaFotosChanged();
+            });
+          }
         }
       } else if (view === 'perfil') {
         const mod = await import('../../../pages/perfil/perfil.component');
@@ -626,6 +653,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       instance.petSaved.subscribe(() => {
         const t = this.auth.getToken();
         if (t) this.refreshPetsForCliente(t);
+        this.clienteAreaModal.notifyPetsChanged();
         this.open('meus-pets');
       });
     }
@@ -633,8 +661,25 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       instance.petDeleted.subscribe(() => {
         const t = this.auth.getToken();
         if (t) this.refreshPetsForCliente(t);
+        this.clienteAreaModal.notifyPetsChanged();
         this.open('meus-pets');
       });
     }
+  }
+
+  private queueInitialViewOpen(): void {
+    if (!this.modal) return;
+    const view = this.pendingInitialView ?? this.initialView;
+    if (!view) return;
+    if (!this.hasAuth) {
+      this.pendingInitialView = view;
+      return;
+    }
+    this.pendingInitialView = null;
+    setTimeout(() => {
+      if (!this.internalView) {
+        this.open(view as any);
+      }
+    });
   }
 }

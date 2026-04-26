@@ -1,7 +1,7 @@
 import { environment } from '../../environments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError, throwError } from 'rxjs';
+import { Observable, of, catchError, map, switchMap, throwError } from 'rxjs';
 
 export interface Ativo {
   id: string;
@@ -51,6 +51,24 @@ export interface Cliente {
 export interface ClienteMeResponse {
   user: Cliente;
   tokenExp?: number;
+}
+
+export interface ClienteGaleriaFoto {
+  id: number;
+  pet_imagem_id: number;
+  pet_id?: number;
+  url: string;
+  ativo?: number | boolean;
+  created_at?: string;
+  pet_ids?: number[];
+  pets?: Array<{ id: number; nome: string; especie?: string; raca?: string }>;
+}
+
+export interface PetImagemPatchPayload {
+  colecao_id?: number | null;
+  ordem?: number;
+  legenda?: string | null;
+  galeria_publica?: boolean | number;
 }
 
 export interface AlergiaLookup {
@@ -341,6 +359,76 @@ export class ApiService {
     });
   }
 
+  getMinhaGaleriaFotos(token: string) {
+    return this.http.get<ClienteGaleriaFoto[]>(`${this.baseUrl}/clientes/me/galeria-fotos`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).pipe(
+      catchError((err) => {
+        if (err?.status !== 404) return throwError(() => err);
+        return this.getClienteMe(token).pipe(
+          switchMap((me) => {
+            const clienteId = Number(me?.user?.id ?? 0);
+            if (!clienteId) return of([] as ClienteGaleriaFoto[]);
+            return this.getPetsByCliente(clienteId, token).pipe(
+              map((pets: any[] | null | undefined) => this.mapMinhaGaleriaFotosFromPets(pets))
+            );
+          })
+        );
+      })
+    );
+  }
+
+  private mapMinhaGaleriaFotosFromPets(pets: any[] | null | undefined): ClienteGaleriaFoto[] {
+    const fotos = new Map<number, ClienteGaleriaFoto>();
+
+    for (const pet of Array.isArray(pets) ? pets : []) {
+      const petId = Number(pet?.id);
+      const petResumo = {
+        id: petId,
+        nome: pet?.nome || '',
+        especie: pet?.especie,
+        raca: pet?.raca,
+      };
+
+      for (const imagem of Array.isArray(pet?.galeria_imagens) ? pet.galeria_imagens : []) {
+        const imagemId = Number(imagem?.id ?? imagem?.pet_imagem_id);
+        const url = typeof imagem?.url === 'string' ? imagem.url.trim() : '';
+        if (!imagemId || !url) continue;
+
+        const existente = fotos.get(imagemId);
+        if (existente) {
+          const petIds = new Set<number>([...(existente.pet_ids || []), petId].filter((id) => !isNaN(id) && id > 0));
+          const petsLista = [...(existente.pets || [])];
+          if (petId > 0 && !petsLista.some((item) => Number(item?.id) === petId)) {
+            petsLista.push(petResumo);
+          }
+          existente.pet_ids = [...petIds];
+          existente.pets = petsLista;
+          if (!existente.pet_id && petId > 0) existente.pet_id = petId;
+          continue;
+        }
+
+        fotos.set(imagemId, {
+          id: imagemId,
+          pet_imagem_id: imagemId,
+          pet_id: petId > 0 ? petId : undefined,
+          url,
+          ativo: imagem?.ativo,
+          created_at: imagem?.created_at,
+          pet_ids: petId > 0 ? [petId] : [],
+          pets: petId > 0 ? [petResumo] : [],
+        });
+      }
+    }
+
+    return [...fotos.values()].sort((a, b) => {
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return (b.id || 0) - (a.id || 0);
+    });
+  }
+
   getPetsByCliente(id: number, token: string) {
     return this.http.get<any[]>(`${this.baseUrl}/clientes/${id}/pets`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -557,7 +645,7 @@ export class ApiService {
     );
   }
 
-  patchPetImagem(petId: string | number, imagemId: string | number, body: { colecao_id?: number | null; ordem?: number }, token: string) {
+  patchPetImagem(petId: string | number, imagemId: string | number, body: PetImagemPatchPayload, token: string) {
     return this.http.patch<any>(
       `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/imagens/${encodeURIComponent(String(imagemId))}`,
       body,

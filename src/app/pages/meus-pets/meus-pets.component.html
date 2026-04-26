@@ -61,11 +61,6 @@
                 <span class="pet-stat__k">anos</span>
               </li>
             </ul>
-            <div class="pet-card__ribbons">
-              <span *ngIf="p.aprovado_por_admin" class="pet-card__pill pet-card__pill--ok" title="Perfil aprovado">Aprovado</span>
-              <span *ngIf="!p.aprovado_por_admin" class="pet-card__pill pet-card__pill--pend">Pendente</span>
-              <span *ngIf="p.exibir_galeria_publica" class="pet-card__pill pet-card__pill--gal">Galeria pública</span>
-            </div>
           </div>
 
           <div class="pet-card__body">
@@ -107,4 +102,33 @@
       aria-label="Cadastrar novo pet"
     >＋</a>
   </main>
+
+  <div
+    *ngIf="pendingDeletePet"
+    class="delete-modal__backdrop"
+    role="presentation"
+    (click)="cancelDelete()"
+  >
+    <div
+      class="delete-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-pet-title"
+      aria-describedby="delete-pet-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="delete-pet-title" class="delete-modal__title">Excluir pet?</h2>
+      <p id="delete-pet-desc" class="delete-modal__text">
+        Você está prestes a excluir <strong>{{ pendingDeleteName() }}</strong>. Esta ação não pode ser desfeita.
+      </p>
+      <div class="delete-modal__actions">
+        <button type="button" class="delete-modal__btn delete-modal__btn--ghost" (click)="cancelDelete()" [disabled]="!!deletingPetId">
+          Cancelar
+        </button>
+        <button type="button" class="delete-modal__btn delete-modal__btn--danger" (click)="confirmDelete()" [disabled]="!!deletingPetId">
+          {{ deletingPetId ? 'Excluindo…' : 'Excluir' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
