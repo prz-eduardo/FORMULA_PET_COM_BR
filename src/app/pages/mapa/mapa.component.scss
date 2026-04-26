@@ -5,6 +5,14 @@
 /* Tokens locais (fallback caso variáveis globais sumam) */
 :host {
   /* Altura útil: nav (styles.scss) + dock móvel ~80px + safe areas */
+  --mapa-mobile-dock-height: 64px;
+  --mapa-mobile-dock-bottom-gap: 12px;
+  --mapa-mobile-panel-gap: 5px;
+  --mapa-mobile-dock-total-offset: calc(
+    var(--mapa-mobile-dock-height) + var(--mapa-mobile-dock-bottom-gap) + env(safe-area-inset-bottom, 0px)
+  );
+  --mapa-mobile-results-head-height: -36px;
+  --mapa-mobile-results-open-extra: 0px;
   --mapa-mobile-vh: calc(
     100dvh - var(--nav-height, 64px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 80px
   );
@@ -703,7 +711,7 @@
 
 /* Legenda mobile: chips flutuantes (acima da barra Resultados + dock) */
 .map-legend--mobile {
-  z-index: 4;
+  z-index: 6;
   top: auto;
   right: auto;
   left: 10px;
@@ -850,7 +858,6 @@
     display: flex;
     flex-direction: column;
   }
-
   .map-frame-wrap {
     flex: 1;
     min-height: 0;
@@ -868,7 +875,15 @@
 
   /* Legenda acima da faixa “Resultados” + dock */
   .map-legend--mobile {
-    bottom: calc(10px + 80px + env(safe-area-inset-bottom, 0px) + 52px);
+    bottom: calc(
+      var(--mapa-mobile-dock-total-offset) + var(--mapa-mobile-results-head-height) + var(--mapa-mobile-results-open-extra) + 10px
+    );
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .map-legend--mobile.map-legend--mobile-open {
+    /* Acompanha a abertura sem "sumir" para fora da tela */
+    --mapa-mobile-results-open-extra: 56px;
   }
 
   /* Sidebar = só camada flutuante; o mapa fica 100% por baixo */
@@ -907,7 +922,6 @@
     background: rgba(255, 255, 255, 0.94);
     border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 999px;
-    box-shadow: 0 4px 22px rgba(15, 23, 42, 0.12);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
   }
@@ -1032,6 +1046,11 @@
     gap: 2px;
     margin-left: auto;
   }
+  .mapa-top-fab-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .mapa-search-fab {
     flex: 0 0 auto;
     display: flex;
@@ -1047,6 +1066,24 @@
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1), 0 1px 3px rgba(15, 23, 42, 0.06);
     cursor: pointer;
   }
+  .mapa-config-fab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    color: #475569;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1), 0 1px 3px rgba(15, 23, 42, 0.06);
+    cursor: pointer;
+  }
+  .mapa-config-fab:active {
+    transform: scale(0.96);
+  }
   .mapa-search-fab:active {
     transform: scale(0.96);
   }
@@ -1061,34 +1098,11 @@
     min-height: 14px;
   }
 
-  .map-mapa-config-fab {
-    position: absolute;
-    right: 8px;
-    top: max(4px, env(safe-area-inset-top, 0px));
-    z-index: 10;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.96);
-    color: #475569;
-    box-shadow: 0 3px 14px rgba(15, 23, 42, 0.12);
-    cursor: pointer;
-  }
-  .map-mapa-config-backdrop {
-    position: absolute;
-    inset: 0;
-    z-index: 12;
-    background: rgba(15, 23, 42, 0.35);
-  }
   .map-mapa-config-panel {
     position: absolute;
-    right: 8px;
-    top: 56px;
-    z-index: 13;
+    right: 6px;
+    top: calc(max(4px, env(safe-area-inset-top, 0px)) + 50px);
+    z-index: 20;
     width: min(300px, calc(100% - 16px));
     padding: 12px 14px 14px;
     background: #fff;
@@ -1191,13 +1205,17 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
+  .map-sidebar-top:has(.map-mapa-config-panel) {
+    max-height: none;
+    overflow: visible;
+  }
 
   .map-sidebar-bottom {
-    position: absolute;
+    position: fixed;
     left: 8px;
     right: 8px;
     width: auto;
-    bottom: calc(8px + 80px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--mapa-mobile-dock-total-offset) + var(--mapa-mobile-panel-gap));
     z-index: 5;
     min-height: 0;
     display: flex;
