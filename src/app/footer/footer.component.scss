@@ -196,6 +196,8 @@
   gap: 2px;
   color: var(--fp-footer-ink-soft);
   margin: 0 0 4px;
+  /* Evita rótulos muito colados na borda em viewports estreitas */
+  max-width: 100%;
 }
 
 .map-link {
@@ -280,20 +282,39 @@
 }
 
 @media (max-width: 560px) {
-  .footer-container { padding: 22px 18px 26px; }
+  .footer-container {
+    padding: 24px max(20px, 5vw) 40px;
+  }
 
   .footer-grid {
     grid-template-columns: 1fr;
-    gap: 22px;
+    gap: 0;
   }
 
   .footer-col {
     text-align: center;
+    /* Bloco alinhado: títulos com largura do texto + traço sob a palavra (evita “sublinhado” no meio da tela) */
+    h3 {
+      display: inline-block;
+      width: max-content;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      text-align: center;
 
-    h3::after {
-      left: 50%;
-      transform: translateX(-50%);
+      /* Barra alinhada ao centro do título (caixa = largura do texto) */
+      &::after {
+        left: 50%;
+        transform: translateX(-50%);
+        width: 28px;
+      }
     }
+  }
+
+  .brand .description {
+    max-width: 36ch;
   }
 
   .brand-logo { margin: 0 auto 10px; width: 88px; }
@@ -303,11 +324,51 @@
   .cta-row,
   .map-link { justify-content: center; }
 
-  .address-block { align-items: center; }
+  /* Ritmo vertical uniforme: Contato → ícones → Horário */
+  .footer-col.contact {
+    .contact-row {
+      margin: 0 auto 10px;
+    }
+    .cta-row {
+      margin: 0 auto 20px;
+      justify-content: center;
+    }
+    .hours-title {
+      margin-top: 0;
+    }
+  }
 
-  /* Subtle divider between stacked sections on mobile */
+  .footer-col.address h3 {
+    margin-bottom: 12px;
+  }
+
+  .address-block {
+    align-items: center;
+    margin: 0 auto 4px;
+    padding: 0 max(0px, 2vw);
+    text-align: center;
+
+    span {
+      text-wrap: balance;
+      max-width: 38ch;
+      margin-inline: auto;
+      line-height: 1.55;
+    }
+  }
+
+  .map-link {
+    margin-top: 16px;
+    margin-bottom: 2px;
+  }
+
+  /* Subtle divider between stacked sections on mobile (espaçamento simétrico) */
   .footer-col + .footer-col {
-    padding-top: 22px;
+    margin-top: 24px;
+    padding-top: 24px;
     border-top: 1px solid var(--fp-footer-border);
+  }
+
+  .footer-copyright {
+    padding: 16px max(20px, 5vw) 20px;
   }
 }
