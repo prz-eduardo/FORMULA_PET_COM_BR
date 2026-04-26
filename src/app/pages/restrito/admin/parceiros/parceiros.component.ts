@@ -172,9 +172,15 @@ export class ParceirosAdminComponent implements OnInit {
     const v = this.tipoForm.getRawValue();
     const editing = this.editingTipo();
     if (editing) {
-      this.api.updateTipoParceiro(editing.id, v).subscribe(() => { this.loadTipos(); this.editingTipo.set(null); });
+      this.api.updateTipoParceiro(editing.id, v).subscribe({
+        next: () => { this.loadTipos(); this.editingTipo.set(null); },
+        error: (e) => alert(e?.error?.error || 'Erro ao atualizar tipo')
+      });
     } else {
-      this.api.createTipoParceiro(v).subscribe(() => { this.loadTipos(); this.tipoForm.reset(); });
+      this.api.createTipoParceiro(v).subscribe({
+        next: () => { this.loadTipos(); this.tipoForm.reset(); },
+        error: (e) => alert(e?.error?.error || 'Erro ao criar tipo')
+      });
     }
   }
 

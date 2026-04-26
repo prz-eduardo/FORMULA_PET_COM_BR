@@ -255,43 +255,8 @@
       </fieldset>
     </section>
 
-    <!-- ===== STEP 5: Escolha do plano ===== -->
+    <!-- ===== STEP 5: Resumo e confirmação ===== -->
     <section *ngIf="currentStep === 5">
-      <div class="section">
-        <p class="section-legend">ESCOLHA SEU PLANO</p>
-        <p class="step-description">Escolha o plano que melhor atende ao seu negócio. Você poderá alterar depois.</p>
-
-        <div class="planos-grid">
-          <div
-            *ngFor="let p of planos"
-            class="plano-card"
-            [class.plano-card--destaque]="p.destaque"
-            [class.plano-card--selecionado]="planoSelecionado === p.id"
-            (click)="selecionarPlano(p.id)"
-            role="button"
-            [attr.aria-pressed]="planoSelecionado === p.id">
-
-            <div class="plano-badge" *ngIf="p.destaque">Mais popular</div>
-            <h3 class="plano-nome">{{ p.nome }}</h3>
-            <div class="plano-preco">
-              <span class="plano-valor">{{ p.preco }}</span>
-              <span class="plano-periodo" *ngIf="p.periodo">{{ p.periodo }}</span>
-            </div>
-            <ul class="plano-recursos">
-              <li *ngFor="let r of p.recursos">{{ r }}</li>
-            </ul>
-            <div class="plano-select-btn">
-              {{ planoSelecionado === p.id ? 'Selecionado ✓' : 'Selecionar' }}
-            </div>
-          </div>
-        </div>
-
-        <p class="plano-aviso">Os planos pagos ainda não estão disponíveis para contratação — você pode selecionar agora e ajustar após a aprovação do cadastro.</p>
-      </div>
-    </section>
-
-    <!-- ===== STEP 6: Resumo e confirmação ===== -->
-    <section *ngIf="currentStep === 6">
       <div class="section resumo">
         <p class="section-legend">RESUMO DO CADASTRO</p>
 
@@ -312,11 +277,6 @@
         <div class="resumo-grupo">
           <h4>E-mail</h4>
           <div class="resumo-linha"><span>E-mail</span><strong>{{ emailValue }}</strong></div>
-        </div>
-
-        <div class="resumo-grupo" *ngIf="planoSelecionado">
-          <h4>Plano escolhido</h4>
-          <div class="resumo-linha"><span>Plano</span><strong class="plano-nome-resumo">{{ planoSelecionado }}</strong></div>
         </div>
 
         <div class="server-error" *ngIf="serverError">{{ serverError }}</div>

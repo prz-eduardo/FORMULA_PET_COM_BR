@@ -19,7 +19,7 @@
     </div>
 
     <div class="v2-card" *ngIf="product" style="width:100%" [style.max-width]="defaultCardWidth">
-      <app-product-card-v2 [product]="product" [disableLink]="true" [cardWidth]="defaultCardWidth" [extraClass]="'review-preview'"></app-product-card-v2>
+      <app-product-card-renderer [product]="product" [themeConfig]="themeConfig" [disableLink]="true" [cardWidth]="defaultCardWidth" [supportsFavorites]="false" [supportsRatings]="false"></app-product-card-renderer>
     </div>
   </div>
 </div>

@@ -6,8 +6,8 @@ import { Subscription } from 'rxjs';
 import { ButtonDirective, ButtonComponent } from '../../../../shared/button';
 import { AdminApiService, ProdutoDto, TaxonomyType, UnitDto, ProductFormDto, EstoqueAtivoDto, PromocaoDto, FormulaAvailabilityResponse, OmniChannelDefDto, ProdutoOmniPublicacaoDto } from '../../../../services/admin-api.service';
 import { EMBALAGENS } from '../../../../constants/embalagens';
-import { ProductCardSalesComponent } from '../../../../product-card-sales/product-card-sales.component';
-import { ShopProduct } from '../../../../services/store.service';
+import { ProductCardRendererComponent } from '../../../../product-cards/product-card-renderer.component';
+import { ShopProduct, StoreService, StoreMeta } from '../../../../services/store.service';
 import { DEFAULT_PRODUCT_CARD_WIDTH } from '../../../../constants/card.constants';
 
 interface AtivoBasic { id: number | string; nome: string; descricao?: string }
@@ -15,7 +15,7 @@ interface AtivoBasic { id: number | string; nome: string; descricao?: string }
 @Component({
   selector: 'app-produto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardSalesComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonDirective, ButtonComponent, ProductCardRendererComponent],
   templateUrl: './produto.component.html',
   styleUrls: ['./produto.component.scss']
 })
@@ -46,6 +46,9 @@ export class ProdutoComponent implements OnInit {
   public router = inject(Router);
   private zone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
+  private store = inject(StoreService);
+
+  storeMeta: StoreMeta | null = null;
 
   form!: FormGroup;
   private imagesSub: Subscription | null = null;
@@ -137,6 +140,7 @@ export class ProdutoComponent implements OnInit {
   omniPick = signal<Record<string, boolean>>({});
 
   ngOnInit() {
+      this.store.meta$.subscribe(m => this.storeMeta = m);
       // Inicializa destaqueHome e imagemPrincipal
       this.destaqueHome = false;
       this.imagemPrincipal = null;
@@ -576,13 +580,9 @@ export class ProdutoComponent implements OnInit {
     } as ShopProduct;
   }
 
-  /** JSON mínimo para preview dos cards no admin (sem chamar API). */
-  get previewThemeConfig(): Record<string, unknown> {
-    return {
-      version: 2,
-      cardSales: { imageRatio: '1/1', showMarca: true, showSku: true },
-      catalog: { columnsMobile: 2, columnsDesktop: 4 },
-    };
+  /** Configuração do tema ativo da loja para o preview do card. */
+  get previewThemeConfig(): Record<string, unknown> | null {
+    return (this.storeMeta?.activeTheme?.config as Record<string, unknown> | undefined) ?? null;
   }
 
   // helpers for template display

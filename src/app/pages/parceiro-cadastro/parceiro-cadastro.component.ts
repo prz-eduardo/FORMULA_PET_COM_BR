@@ -65,7 +65,7 @@ const strongPasswordValidator: ValidatorFn = (ctrl: AbstractControl): Validation
 export class ParceiroCadastroComponent implements OnInit, OnDestroy {
   // ---- Wizard state ----
   currentStep = 1;
-  readonly TOTAL_STEPS = 6;
+  readonly TOTAL_STEPS = 5;
 
   // ---- Forms per step ----
   formBasico!: FormGroup;
@@ -101,63 +101,6 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
   codeSuccess = '';
   resendCountdown = 0;
   private resendTimer: any = null;
-
-  // ---- Plan selection (step 5) ----
-  planoSelecionado: string | null = null;
-  readonly planos = [
-    {
-      id: 'basico',
-      nome: 'Básico',
-      preco: 'Gratuito',
-      periodo: '',
-      destaque: false,
-      recursos: [
-        'Perfil público no mapa',
-        'Até 1 tipo de serviço',
-        'Contato por telefone',
-      ],
-    },
-    {
-      id: 'essencial',
-      nome: 'Essencial',
-      preco: 'R$ 49',
-      periodo: '/ mês',
-      destaque: false,
-      recursos: [
-        'Tudo do Básico',
-        'Até 3 tipos de serviço',
-        'Fotos do estabelecimento',
-        'Destaque nos resultados',
-      ],
-    },
-    {
-      id: 'profissional',
-      nome: 'Profissional',
-      preco: 'R$ 99',
-      periodo: '/ mês',
-      destaque: true,
-      recursos: [
-        'Tudo do Essencial',
-        'Tipos de serviço ilimitados',
-        'Atributos personalizados',
-        'Badge "Verificado"',
-        'Relatórios de visitas',
-      ],
-    },
-    {
-      id: 'premium',
-      nome: 'Premium',
-      preco: 'R$ 199',
-      periodo: '/ mês',
-      destaque: false,
-      recursos: [
-        'Tudo do Profissional',
-        'Posição prioritária no topo',
-        'Suporte dedicado',
-        'Integrações exclusivas',
-      ],
-    },
-  ];
 
   // ---- Prefill (Google Maps) ----
   claimSource: 'google' | null = null;
@@ -224,7 +167,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
 
   // ------------------------------ Step labels ------------------------------
   get stepLabels(): string[] {
-    return ['Dados básicos', 'Endereço', 'E-mail', 'Senha', 'Plano', 'Confirmar'];
+    return ['Dados básicos', 'Endereço', 'E-mail', 'Senha', 'Confirmar'];
   }
 
   // ------------------------------ Navigation ------------------------------
@@ -320,12 +263,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
     if (raw.length === 6 && !this.codeVerified) this.verifyCode(raw);
   }
 
-  // ------------------------------ Step 5: Plan selection ------------------------------
-  selecionarPlano(id: string): void {
-    this.planoSelecionado = id;
-  }
-
-  // ------------------------------ Final submit (step 6) ------------------------------
+  // ------------------------------ Final submit (step 5) ------------------------------
   submit(): void {
     this.serverError = '';
     this.serverFieldErrors = {};
@@ -354,7 +292,6 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
       latitude: e.latitude ? Number(e.latitude) : undefined,
       longitude: e.longitude ? Number(e.longitude) : undefined,
       senha: s.senha,
-      plano: this.planoSelecionado || undefined,
       origem_mapa: this.claimSource || undefined,
       origem_place_id: this.claimPlaceId || undefined,
     };

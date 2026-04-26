@@ -1,14 +1,18 @@
+:host { display: block; height: 100%; }
+
 .v1 {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
   overflow: hidden;
   background: #000;
   color: #333;
   border-radius: 12px;
   text-decoration: none;
 }
-.thumb { position: relative; }
+.thumb { position: relative; flex-shrink: 0; overflow: hidden; max-height: 260px; }
 .thumb-img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; }
 .info { position: relative; background: #fff; padding: 14px 14px 46px; }
 .info h3 { position: absolute; bottom: 100%; left: 0; margin: 0; background: var(--fp-store-primary, #111); color: #fff; padding: 0 12px; line-height: 36px; font-size: 13px; }

@@ -42,9 +42,9 @@ export interface LojaIdentidade {
 export const LOJA_IDENTIDADE: LojaIdentidade = {
   marca: {
     nome: 'PetSphere',
-    tagline: 'Cuidados e produtos para pets',
+    tagline: 'Plataforma completa para o mercado pet',
     descricao:
-      'Seleção de itens e serviços pensados para o bem-estar dos animais de estimação.',
+      'Conectamos gestão, visibilidade e relacionamento em um único ecossistema digital para petshops, clínicas e prestadores de serviço.',
     logoPath: '/imagens/logo-marca.svg',
   },
   contato: {
