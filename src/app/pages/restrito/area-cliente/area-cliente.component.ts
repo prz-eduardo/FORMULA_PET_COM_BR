@@ -326,6 +326,10 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.toast.info(`Detalhes do pet: ${pet.nome}`);
   }
 
+  goToGaleria(): void {
+    void this.router.navigateByUrl('/galeria');
+  }
+
   // ---- Internal modal navigation helpers ----
   async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto') {
     if (view === 'suporte') {
@@ -536,6 +540,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
         const Cmp = (mod as any).GaleriaPostFotoModalComponent;
         const ref = this.internalHost.createComponent(Cmp);
         if (ref?.instance) {
+          try { (ref.instance as any).initialPets = Array.isArray(this.pets) ? [...this.pets] : []; } catch {}
+          try { (ref.instance as any).initialClienteId = Number(this.clienteData?.id) || null; } catch {}
           (ref.instance as any).open = true;
           (ref.instance as any).embedded = true;
           if ((ref.instance as any).closeModal) {

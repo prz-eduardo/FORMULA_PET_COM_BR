@@ -24,33 +24,53 @@
       <div class="gpf-section">
         <span class="gpf-label">Quem aparece na foto?</span>
         <div *ngIf="loadingPets" class="gpf-loading">Carregando seus pets…</div>
-        <ul *ngIf="!loadingPets" class="gpf-pet-list" role="list">
+        <ul *ngIf="!loadingPets && pets.length" class="gpf-pet-list" role="list">
           <li *ngFor="let p of pets" class="gpf-pet-item">
-            <label class="gpf-pet-label">
-              <input
-                type="checkbox"
-                [checked]="isSelected(p.id)"
-                (change)="togglePet(p.id)"
-              />
-              <span class="gpf-pet-nome">{{ p.nome || 'Sem nome' }}</span>
-              <span class="gpf-pet-raca" *ngIf="p.raca || p.especie">{{ p.raca || p.especie }}</span>
-            </label>
+            <button
+              type="button"
+              class="gpf-pet-chip"
+              [class.gpf-pet-chip--selected]="isSelected(p.id)"
+              [attr.aria-pressed]="isSelected(p.id)"
+              [attr.aria-label]="(isSelected(p.id) ? 'Remover ' : 'Selecionar ') + (p.nome || 'pet')"
+              (click)="togglePet(p.id)"
+            >
+              <span class="gpf-pet-bubble" aria-hidden="true">
+                <ng-container *ngIf="resolvePetAvatar(p) as petAvatar; else petInitial">
+                  <img [src]="petAvatar" alt="" />
+                </ng-container>
+                <ng-template #petInitial>
+                  <span class="gpf-pet-bubble__initials">{{ petInitials(p.nome) }}</span>
+                </ng-template>
+                <span *ngIf="selectionIndex(p.id)" class="gpf-pet-bubble__order">{{ selectionIndex(p.id) }}</span>
+              </span>
+              <span class="gpf-pet-copy">
+                <span class="gpf-pet-nome">{{ p.nome || 'Sem nome' }}</span>
+                <span class="gpf-pet-raca" *ngIf="petMeta(p)">{{ petMeta(p) }}</span>
+              </span>
+            </button>
           </li>
         </ul>
-        <p *ngIf="!loadingPets && !pets.length" class="gpf-empty">Nenhum pet cadastrado.</p>
+        <div *ngIf="!loadingPets && !pets.length" class="gpf-empty-card">
+          <p class="gpf-empty">Você ainda não tem pets cadastrados para marcar na foto.</p>
+          <button type="button" class="gpf-inline-cta" (click)="openNovoPet()">Cadastrar meu primeiro pet</button>
+        </div>
         <p *ngIf="selectedOrder.length" class="gpf-order-hint">Ordem: {{ orderNames() }} (o primeiro é o pet principal no feed)</p>
       </div>
 
       <div class="gpf-section">
-        <label class="gpf-label" for="gpf-file">Imagem</label>
+        <label class="gpf-label" [attr.for]="fileInputId()">Imagem</label>
+        <div class="gpf-file-row">
+          <label class="gpf-file-picker" [attr.for]="fileInputId()">Escolher imagem</label>
+          <span class="gpf-filename" [class.gpf-filename--placeholder]="!file">{{ fileLabel() }}</span>
+        </div>
         <input
-          [attr.id]="'gpf-file-' + fileInputReset"
+          class="gpf-file-input"
+          [attr.id]="fileInputId()"
           [attr.name]="'foto-' + fileInputReset"
           type="file"
           accept="image/*"
           (change)="onFileInput($event)"
         />
-        <span class="gpf-filename" *ngIf="file">{{ file.name }}</span>
       </div>
 
       <div class="gpf-actions">

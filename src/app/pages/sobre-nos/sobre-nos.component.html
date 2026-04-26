@@ -3,36 +3,58 @@
   <section class="sobre-hero" aria-labelledby="sobre-hero-title">
     <div class="hero-shell">
       <div class="hero-copy">
+        <span class="hero-kicker">
+          <i class="fa-solid fa-sparkles" aria-hidden="true"></i>
+          Valor prático para o mercado pet
+        </span>
         <h1 id="sobre-hero-title" class="hero-title">
-          {{ marcaNome }} · <span class="hero-accent">Quem somos</span>
+          {{ marcaNome }}<br />
+          <span class="hero-accent">Plataforma completa para o mercado pet</span>
         </h1>
         <h2 class="hero-lead">
-          Cuidar de pets é a nossa missão, conectar o ecossistema é o nosso propósito.
+          Gerencie clientes, pets, agenda e vendas em um so lugar, enquanto atrai novos
+          clientes atraves do mapa e da presenca digital integrada.
         </h2>
         <p class="hero-subtitle">
-          A {{ marcaNome }} é uma plataforma digital que conecta todo o universo pet em um
-          só lugar.
+          Nao e apenas um sistema de gestao. Nao e apenas uma loja.
         </p>
         <p class="hero-subtitle hero-subtitle-tight">
-          Reunimos tutores, petshops, veterinários e prestadores de serviço em um ambiente
-          único, onde é possível cuidar, encontrar e oferecer serviços para pets de forma
-          simples, organizada e inteligente.
+          A {{ marcaNome }} e a infraestrutura digital que conecta operacao, descoberta e
+          relacionamento em todo o ecossistema pet.
         </p>
         <p class="hero-subtitle hero-subtitle-tight">
-          Não somos apenas um sistema de gestão e não somos apenas uma loja. Somos a
-          infraestrutura digital que organiza a relação entre pessoas e o universo pet.
+          Para petshops, clinicas e prestadores, isso significa menos bagunca interna e
+          mais chance de crescer com visibilidade real.
         </p>
 
         <div class="hero-actions">
-          <a routerLink="/loja" class="btn btn-primary">
-            <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
-            Ver produtos
+          <a routerLink="/parceiro/cadastrar" class="btn btn-primary">
+            <i class="fa-solid fa-store" aria-hidden="true"></i>
+            Criar minha loja gratis
           </a>
-          <a routerLink="/mapa" class="btn btn-secondary">
-            <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-            Ver mapa
+          <a href="#como-funciona" class="btn btn-secondary">
+            <i class="fa-solid fa-compass" aria-hidden="true"></i>
+            Ver como funciona
           </a>
         </div>
+
+        <ul class="hero-trust" aria-label="Principais beneficios da plataforma">
+          <li>
+            <span class="trust-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+            <span class="trust-value">Agenda + CRM</span>
+            <span class="trust-label">Rotina operacional organizada em um unico fluxo</span>
+          </li>
+          <li>
+            <span class="trust-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+            <span class="trust-value">Mapa e vitrine</span>
+            <span class="trust-label">Clientes encontram seu negocio pela regiao e pelo servico</span>
+          </li>
+          <li>
+            <span class="trust-icon"><i class="fa-solid fa-notes-medical" aria-hidden="true"></i></span>
+            <span class="trust-value">Historico do pet</span>
+            <span class="trust-label">Mais contexto para tutor, clinica e estabelecimento</span>
+          </li>
+        </ul>
       </div>
 
       <div class="hero-visual">
@@ -50,11 +72,11 @@
         </div>
         <div class="hero-chip chip-a" aria-hidden="true">
           <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
-          Gestão integrada
+          Gestao integrada
         </div>
         <div class="hero-chip chip-b" aria-hidden="true">
-          <i class="fa-solid fa-network-wired" aria-hidden="true"></i>
-          Ecossistema conectado
+          <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+          Visibilidade local
         </div>
       </div>
     </div>
@@ -67,9 +89,9 @@
     <div class="section-inner">
       <div class="section-head">
         <span class="eyebrow">O que fazemos</span>
-        <h2 id="pilares-title" class="section-title">O que fazemos</h2>
+        <h2 id="pilares-title" class="section-title">Tres pilares que geram valor de verdade</h2>
         <p class="section-lead">
-          A {{ marcaNome }} integra três pilares principais:
+          A {{ marcaNome }} conecta gestao, visibilidade e contexto operacional em uma unica plataforma.
         </p>
       </div>
 
@@ -89,13 +111,41 @@
 
   <hr class="sobre-divider" aria-hidden="true" />
 
+  <!-- COMO FUNCIONA -->
+  <section id="como-funciona" class="sobre-como-funciona sobre-bloco" aria-labelledby="como-funciona-title">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow">Como funciona</span>
+        <h2 id="como-funciona-title" class="section-title">Uma jornada simples para operar melhor e vender mais</h2>
+        <p class="section-lead">
+          Em vez de separar sistema, vitrine e relacionamento, a {{ marcaNome }} junta tudo no mesmo fluxo.
+        </p>
+      </div>
+
+      <div class="etapas-grid">
+        <article class="etapa-card" *ngFor="let etapa of etapas">
+          <div class="etapa-icon" aria-hidden="true">
+            <i [class]="etapa.icon"></i>
+          </div>
+          <h3 class="pilar-title">{{ etapa.title }}</h3>
+          <p class="pilar-lead">{{ etapa.lead }}</p>
+          <ul class="pilar-list">
+            <li *ngFor="let item of etapa.items">{{ item }}</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <hr class="sobre-divider" aria-hidden="true" />
+
   <!-- NOSSA VISÃO -->
   <section class="sobre-bloco" aria-labelledby="visao-title">
     <div class="section-inner section-inner--narrow">
       <h2 id="visao-title" class="section-title section-title--left">Nossa visão</h2>
       <p class="section-prose">
         Criar a principal rede digital do mercado pet, onde qualquer necessidade
-        relacionada a um animal possa ser resolvida em um único ambiente.
+        relacionada a um animal possa ser resolvida em um so lugar.
       </p>
     </div>
   </section>
@@ -105,12 +155,12 @@
   <!-- POR QUE EXISTIMOS -->
   <section class="sobre-bloco" aria-labelledby="porque-title">
     <div class="section-inner section-inner--narrow">
-      <h2 id="porque-title" class="section-title section-title--left">Por que existimos</h2>
-      <p class="section-prose">O mercado pet é fragmentado.</p>
+      <h2 id="porque-title" class="section-title section-title--left">Por que a {{ marcaNome }} existe</h2>
+      <p class="section-prose">O mercado pet hoje e desorganizado.</p>
       <p class="section-prose">
-        Informações estão espalhadas, serviços desconectados e a experiência do tutor é
-        desorganizada. A {{ marcaNome }} nasce para centralizar, simplificar e conectar
-        tudo isso.
+        Informacoes ficam espalhadas, servicos se desconectam e a presenca digital de muitos
+        negocios ainda e fraca. A {{ marcaNome }} resolve isso centralizando operacao,
+        descoberta e historico em um unico sistema.
       </p>
     </div>
   </section>
@@ -122,9 +172,8 @@
     <div class="section-inner section-inner--narrow">
       <h2 id="futuro-title" class="section-title section-title--left">O futuro</h2>
       <p class="section-prose">
-        Um ecossistema onde cada pet possui um histórico digital vivo, cada serviço é
-        facilmente acessível e cada profissional do setor pode ser encontrado e
-        contratado com poucos cliques.
+        Um ecossistema onde cada pet possui um historico digital vivo, cada servico e
+        facilmente acessivel e cada profissional pode ser encontrado rapidamente.
       </p>
     </div>
   </section>
@@ -135,19 +184,19 @@
       <div class="cta-shell">
         <div class="cta-copy">
           <span class="eyebrow light">Próximo passo</span>
-          <h2 id="cta-title">Explore a {{ marcaNome }}</h2>
+          <h2 id="cta-title">Comece agora e faca parte do ecossistema {{ marcaNome }}</h2>
           <p>
-            Conheça a loja, descubra prestadores no mapa e conecte-se ao ecossistema pet
-            em um só lugar.
+            Estruture sua operacao, ganhe presenca digital e entre em uma rede pensada para
+            o mercado pet funcionar melhor.
           </p>
           <div class="cta-actions">
-            <a routerLink="/loja" class="btn btn-primary lg">
+            <a routerLink="/parceiro/cadastrar" class="btn btn-primary lg">
               <i class="fa-solid fa-store" aria-hidden="true"></i>
-              Ir à loja
+              Criar minha loja gratis
             </a>
-            <a routerLink="/mapa" class="btn btn-ghost lg">
-              <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-              Ver mapa
+            <a href="#como-funciona" class="btn btn-ghost lg">
+              <i class="fa-solid fa-circle-play" aria-hidden="true"></i>
+              Ver como funciona
             </a>
           </div>
         </div>

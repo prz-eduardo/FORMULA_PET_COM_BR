@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
+import { ClienteAreaModalService } from '../../../services/cliente-area-modal.service';
 
 @Component({
   selector: 'app-galeria-post-foto-modal',
@@ -14,6 +15,8 @@ import { ToastService } from '../../../services/toast.service';
 export class GaleriaPostFotoModalComponent implements OnChanges {
   @Input() open = false;
   @Input() embedded = false;
+  @Input() initialPets: any[] | null = null;
+  @Input() initialClienteId: number | null = null;
   @Output() closeModal = new EventEmitter<void>();
   @Output() posted = new EventEmitter<void>();
 
@@ -30,19 +33,23 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
     private api: ApiService,
     private auth: AuthService,
     private toast: ToastService,
+    private clienteAreaModal: ClienteAreaModalService,
     @Inject(PLATFORM_ID) private platformId: object
   ) {}
 
   ngOnChanges(ch: SimpleChanges): void {
     if (ch['open'] && this.open && isPlatformBrowser(this.platformId)) {
-      this.loadPets();
+      void this.loadPets();
     }
     if (ch['open'] && !this.open) {
       this.resetForm();
     }
   }
 
-  private loadPets(): void {
+  private async loadPets(): Promise<void> {
+    if (this.applyInitialPets()) {
+      return;
+    }
     const token = this.auth.getToken();
     if (!token) {
       this.toast.info('Sessão expirada. Faça login novamente.');
@@ -52,36 +59,43 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
     this.loadingPets = true;
     this.pets = [];
     this.clienteId = null;
-    this.api.getClienteMe(token).subscribe({
-      next: (me) => {
-        const cid = Number((me as any)?.user?.id ?? (me as any)?.id);
-        if (isNaN(cid) || cid <= 0) {
-          this.loadingPets = false;
-          this.toast.error('Não foi possível identificar o seu cadastro.');
-          this.close();
-          return;
-        }
-        this.clienteId = cid;
-        this.api.getPetsByCliente(cid, token).subscribe({
-          next: (list) => {
-            this.pets = list || [];
-            this.selectedOrder = [];
-            this.loadingPets = false;
-            if (!this.pets.length) {
-              this.toast.info('Cadastre um pet em Meus Pets para publicar fotos.');
-            }
-          },
-          error: () => {
-            this.loadingPets = false;
-            this.toast.error('Não foi possível carregar seus pets.');
-          },
-        });
-      },
-      error: () => {
-        this.loadingPets = false;
-        this.toast.error('Não foi possível carregar o perfil.');
-      },
-    });
+    try {
+      const cid = await this.resolveClienteId(token);
+      if (!cid) {
+        this.toast.error('Não foi possível identificar o seu cadastro.');
+        this.close();
+        return;
+      }
+      this.clienteId = cid;
+      const list = await this.api.getPetsByCliente(cid, token).toPromise();
+      this.pets = Array.isArray(list) ? list : [];
+      this.selectedOrder = [];
+      if (!this.pets.length) {
+        this.toast.info('Cadastre um pet em Meus Pets para publicar fotos.');
+      }
+    } catch (error) {
+      console.warn('Falha ao carregar pets para postagem na galeria', error);
+      this.toast.error('Não foi possível carregar seus pets.');
+    } finally {
+      this.loadingPets = false;
+    }
+  }
+
+  private applyInitialPets(): boolean {
+    if (!Array.isArray(this.initialPets) || !this.initialPets.length) {
+      return false;
+    }
+    this.pets = [...this.initialPets];
+    this.clienteId = this.initialClienteId ?? this.clienteId;
+    this.selectedOrder = [];
+    this.loadingPets = false;
+    return true;
+  }
+
+  private async resolveClienteId(token: string): Promise<number | null> {
+    const me: any = await this.api.getClienteMe(token).toPromise();
+    const cid = Number(me?.user?.id ?? me?.id ?? 0);
+    return !isNaN(cid) && cid > 0 ? cid : null;
   }
 
   isSelected(petId: number): boolean {
@@ -97,10 +111,59 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
     }
   }
 
+  resolvePetAvatar(pet: any): string | null {
+    try {
+      const raw = String(pet?.photoURL || pet?.foto || pet?.photo || pet?.photo_url || '').trim();
+      return raw ? this.normalizeImgUrl(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeImgUrl(raw: string): string {
+    if (!raw || typeof raw !== 'string') return '/imagens/image.png';
+    let url = raw.trim();
+    if (url.startsWith('//')) {
+      url = (typeof window !== 'undefined' ? window.location.protocol : 'https:') + url;
+    }
+    if (!/^https?:\/\//i.test(url) && /^[\w\-]+\.[\w\-]+/.test(url)) {
+      url = 'https://' + url;
+    }
+    return url || '/imagens/image.png';
+  }
+
+  petInitials(nome?: string): string {
+    const base = String(nome || 'Pet').trim();
+    if (!base) return 'P';
+    const parts = base.split(/\s+/).filter(Boolean);
+    return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'P';
+  }
+
+  petMeta(pet: any): string {
+    return String(pet?.raca || pet?.especie || pet?.tipo || '').trim();
+  }
+
+  selectionIndex(petId: number): number {
+    return this.selectedOrder.indexOf(petId) + 1;
+  }
+
+  openNovoPet(): void {
+    this.close();
+    setTimeout(() => this.clienteAreaModal.open('novo-pet'), 0);
+  }
+
   onFileInput(ev: Event): void {
     const input = ev.target as HTMLInputElement;
     const f = input.files && input.files[0];
     this.file = f || null;
+  }
+
+  fileInputId(): string {
+    return `gpf-file-${this.fileInputReset}`;
+  }
+
+  fileLabel(): string {
+    return this.file?.name || 'Nenhum arquivo escolhido';
   }
 
   private resetForm(): void {
