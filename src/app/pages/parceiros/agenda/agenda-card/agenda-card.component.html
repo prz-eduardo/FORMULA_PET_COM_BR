@@ -1,0 +1,49 @@
+<div
+  class="agenda-card"
+  [class]="statusClass"
+  [class.compact]="compact"
+  (click)="onCardClick()"
+  role="button"
+  tabindex="0"
+  [attr.aria-label]="agendamento.pet.nome + ' — ' + agendamento.servico.nome"
+>
+  <!-- Status indicator stripe is done via CSS left border -->
+
+  <div class="card-main">
+    <div class="card-top">
+      <span class="pet-name">{{ agendamento.pet.nome }}</span>
+      <span class="status-badge">{{ statusLabel }}</span>
+    </div>
+
+    <div class="card-service" *ngIf="!compact">
+      <span class="service-dot" [style.background]="agendamento.servico.cor"></span>
+      {{ agendamento.servico.nome }}
+    </div>
+
+    <div class="card-meta">
+      <span class="meta-time">
+        {{ formatTime(agendamento.inicio) }}
+        <span *ngIf="!compact">– {{ formatTime(agendamento.fim) }}</span>
+      </span>
+      <span class="meta-prof" *ngIf="!compact">{{ agendamento.profissional.nome }}</span>
+    </div>
+
+    <div class="card-icons" *ngIf="!compact">
+      <span *ngIf="agendamento.pet.temAlimentacaoEspecial" title="Alimentação especial" class="icon-chip">🦴</span>
+      <span *ngIf="agendamento.pet.temRestricao" title="Restrição" class="icon-chip warn">⚠️</span>
+      <span *ngIf="agendamento.pet.temMedicacao" title="Medicação" class="icon-chip info">💊</span>
+      <span *ngIf="agendamento.recorrente" title="Recorrente" class="icon-chip">🔁</span>
+    </div>
+  </div>
+
+  <div class="card-actions" *ngIf="nextActions.length && !compact" (click)="$event.stopPropagation()">
+    <button
+      *ngFor="let a of nextActions"
+      class="action-btn"
+      [class.danger]="a === 'CANCELAR'"
+      (click)="onAction(a, $event)"
+    >
+      {{ actionLabel[a] }}
+    </button>
+  </div>
+</div>

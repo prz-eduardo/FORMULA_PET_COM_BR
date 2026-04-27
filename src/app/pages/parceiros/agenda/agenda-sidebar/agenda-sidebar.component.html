@@ -1,0 +1,128 @@
+<div class="sidebar-overlay" (click)="close.emit()"></div>
+
+<div class="sidebar">
+  <header class="sidebar-header">
+    <h2>Novo Agendamento</h2>
+    <button class="close-btn" (click)="close.emit()" aria-label="Fechar">✕</button>
+  </header>
+
+  <div class="sidebar-body">
+
+    <!-- Sugestão de horário -->
+    <div class="sugestao" *ngIf="sugeridoHorario() && !slot">
+      <span class="sugestao-icon">🕐</span>
+      <span>Próximo slot livre: <strong>{{ sugeridoHorario() }}</strong></span>
+      <button class="sugestao-btn" (click)="useSugestao()">Usar</button>
+    </div>
+
+    <!-- Pet autocomplete -->
+    <div class="field">
+      <label>Pet *</label>
+      <div class="autocomplete-wrap">
+        <input
+          type="text"
+          placeholder="Buscar pet ou tutor..."
+          [ngModel]="searchPet()"
+          (ngModelChange)="searchPet.set($event); showPetDropdown.set(true)"
+          (blur)="showPetDropdown.set(false)"
+          [disabled]="!!selectedPet()"
+        />
+        <button class="clear-pet" *ngIf="selectedPet()" (click)="clearPet()">✕</button>
+
+        <div class="pet-dropdown" *ngIf="showPetDropdown() && filteredPets().length">
+          <div
+            *ngFor="let pet of filteredPets()"
+            class="pet-option"
+            (mousedown)="selectPet(pet)"
+          >
+            <div class="pet-opt-main">
+              <span class="pet-opt-name">{{ pet.nome }}</span>
+              <span class="pet-opt-race">{{ pet.raca }}</span>
+            </div>
+            <div class="pet-opt-tutor">👤 {{ pet.tutor.nome }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pet info (after selection) -->
+    <div class="pet-info" *ngIf="selectedPet()">
+      <div class="info-row">
+        <span class="info-label">Tutor</span>
+        <span>{{ selectedPet()!.tutor.nome }} · {{ selectedPet()!.tutor.telefone }}</span>
+      </div>
+      <div class="info-row" *ngIf="selectedPet()!.alergias.length">
+        <span class="info-label">Alergias</span>
+        <div class="tag-list">
+          <span *ngFor="let al of selectedPet()!.alergias" class="tag warn">⚠️ {{ al }}</span>
+        </div>
+      </div>
+      <div class="info-row" *ngIf="selectedPet()!.temMedicacao">
+        <span class="info-label">Medicação</span>
+        <span class="tag info">💊 Sim</span>
+      </div>
+      <div class="info-row" *ngIf="selectedPet()!.observacoes">
+        <span class="info-label">Obs.</span>
+        <span class="obs-text">{{ selectedPet()!.observacoes }}</span>
+      </div>
+      <div *ngIf="selectedPet()!.historicoRecente.length" class="historico">
+        <div class="historico-label">Últimas visitas</div>
+        <div class="historico-item" *ngFor="let h of selectedPet()!.historicoRecente">
+          <span class="hist-date">{{ h.data | date:'dd/MM/yy' }}</span>
+          <span>{{ h.servico }}</span>
+          <span class="hist-prof">{{ h.profissional }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Date + Time -->
+    <div class="field-row">
+      <div class="field">
+        <label>Data *</label>
+        <input type="date" [ngModel]="dateStr()" (ngModelChange)="dateStr.set($event)" />
+      </div>
+      <div class="field">
+        <label>Hora *</label>
+        <input type="time" [ngModel]="timeStr()" (ngModelChange)="timeStr.set($event)" />
+      </div>
+    </div>
+
+    <!-- Serviço -->
+    <div class="field">
+      <label>Serviço *</label>
+      <select [ngModel]="selectedServicoId()" (ngModelChange)="onServicoChange($event)">
+        <option *ngFor="let s of servicos" [value]="s.id">
+          {{ s.nome }} ({{ s.duracaoMin }}min — R${{ s.preco }})
+        </option>
+      </select>
+    </div>
+
+    <!-- Profissional -->
+    <div class="field" *ngIf="profissionais.length > 1">
+      <label>Profissional *</label>
+      <select [ngModel]="selectedProfId()" (ngModelChange)="selectedProfId.set($event)">
+        <option *ngFor="let p of profissionais" [value]="p.id">{{ p.nome }}</option>
+      </select>
+    </div>
+
+    <!-- Duração -->
+    <div class="field">
+      <label>Duração (min)</label>
+      <input type="number" min="15" step="15" [ngModel]="durMin()" (ngModelChange)="durMin.set($event)" />
+    </div>
+
+    <!-- Observações -->
+    <div class="field">
+      <label>Observações</label>
+      <textarea rows="3" placeholder="Observações para este atendimento..." [ngModel]="obs()" (ngModelChange)="obs.set($event)"></textarea>
+    </div>
+
+  </div>
+
+  <footer class="sidebar-footer">
+    <button class="btn-cancel" (click)="close.emit()">Cancelar</button>
+    <button class="btn-save" [disabled]="!canSave()" (click)="onSave()">
+      Agendar
+    </button>
+  </footer>
+</div>

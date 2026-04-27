@@ -1,0 +1,63 @@
+<div class="grid-wrap">
+
+  <!-- Header row: profissional columns -->
+  <div class="grid-header">
+    <div class="time-gutter"></div>
+    <div class="prof-header" *ngFor="let prof of profCols">
+      <span class="prof-name">{{ prof.nome }}</span>
+      <span class="prof-role" *ngIf="prof.especialidade">{{ prof.especialidade }}</span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="grid-body" [style.height.px]="gridHeight">
+
+    <!-- Time slots (background grid) -->
+    <div class="time-col">
+      <div
+        *ngFor="let slot of timeSlots"
+        class="time-label"
+        [class.half]="slot.minute === 30"
+        [style.height.px]="SLOT_HEIGHT_PX"
+      >
+        <span *ngIf="slot.minute === 0">{{ slot.label }}</span>
+      </div>
+    </div>
+
+    <!-- Per-profissional column -->
+    <div class="prof-col" *ngFor="let prof of profCols">
+
+      <!-- Clickable slots (background) -->
+      <div
+        *ngFor="let slot of timeSlots"
+        class="slot-bg"
+        [class.half]="slot.minute === 30"
+        [style.height.px]="SLOT_HEIGHT_PX"
+        (click)="onSlotClick(prof, slot)"
+      ></div>
+
+      <!-- Agendamento blocks -->
+      <div
+        *ngFor="let a of agendamentosForProf(prof.id)"
+        class="appt-block"
+        [style.top]="topPercent(a)"
+        [style.height]="heightPercent(a)"
+        [class]="'appt-' + a.status.toLowerCase().replace('_', '-')"
+      >
+        <app-agenda-card
+          [agendamento]="a"
+          [compact]="true"
+          (quickAction)="quickAction.emit($event)"
+          (openModal)="openModal.emit($event)"
+        ></app-agenda-card>
+      </div>
+
+    </div>
+
+    <!-- Now line -->
+    <div class="now-line" *ngIf="nowLineTop" [style.top]="nowLineTop">
+      <span class="now-dot"></span>
+    </div>
+
+  </div>
+</div>

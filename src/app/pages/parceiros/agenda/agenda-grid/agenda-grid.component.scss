@@ -1,0 +1,146 @@
+@use '../../../../shared/styles/admin-tokens' as *;
+
+:host { display: flex; flex-direction: column; flex: 1; overflow: auto; }
+
+.grid-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 600px;
+  flex: 1;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────
+
+.grid-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.time-gutter {
+  width: 56px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--admin-border);
+}
+
+.prof-header {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  border-right: 1px solid var(--admin-border);
+
+  &:last-child { border-right: none; }
+}
+
+.prof-name {
+  font-size: var(--admin-font-size-sm);
+  font-weight: var(--admin-font-weight-semibold);
+  color: var(--admin-text);
+}
+
+.prof-role {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-muted);
+}
+
+// ── Body ──────────────────────────────────────────────────────────────────
+
+.grid-body {
+  display: flex;
+  position: relative;
+  flex: 1;
+}
+
+.time-col {
+  width: 56px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--admin-border);
+}
+
+.time-label {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-right: 8px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--admin-border-soft);
+
+  span {
+    font-size: 10px;
+    color: var(--admin-muted);
+    font-variant-numeric: tabular-nums;
+    transform: translateY(-6px);
+  }
+
+  &.half { border-bottom-style: dashed; opacity: 0.5; }
+}
+
+// ── Profissional column ────────────────────────────────────────────────────
+
+.prof-col {
+  flex: 1;
+  position: relative;
+  border-right: 1px solid var(--admin-border);
+
+  &:last-child { border-right: none; }
+}
+
+.slot-bg {
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--admin-border-soft);
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover { background: rgba(13, 184, 222, 0.04); }
+  &.half { border-bottom-style: dashed; opacity: 0.7; }
+}
+
+// ── Appointment blocks ─────────────────────────────────────────────────────
+
+.appt-block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  min-height: 28px;
+  z-index: 2;
+
+  app-agenda-card {
+    display: block;
+    height: 100%;
+  }
+}
+
+// ── Now line ──────────────────────────────────────────────────────────────
+
+.now-line {
+  position: absolute;
+  left: 56px;
+  right: 0;
+  height: 2px;
+  background: var(--admin-danger);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.now-dot {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--admin-danger);
+}
+
+// ── Mobile ─────────────────────────────────────────────────────────────────
+
+@media (max-width: 768px) {
+  .grid-wrap { min-width: 480px; }
+  .time-gutter, .time-col { width: 40px; }
+  .time-label span { font-size: 9px; }
+}

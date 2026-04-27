@@ -1,0 +1,74 @@
+<div class="list-wrap">
+  <div *ngIf="!agendamentos.length" class="empty">
+    <span>📋</span>
+    <p>Nenhum agendamento encontrado.</p>
+  </div>
+
+  <div class="table-wrap" *ngIf="agendamentos.length">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" (click)="setSort('inicio')">Horário {{ sortIcon('inicio') }}</th>
+          <th class="sortable" (click)="setSort('pet')">Pet {{ sortIcon('pet') }}</th>
+          <th>Tutor</th>
+          <th class="sortable" (click)="setSort('servico')">Serviço {{ sortIcon('servico') }}</th>
+          <th class="sortable" (click)="setSort('profissional')">Profissional {{ sortIcon('profissional') }}</th>
+          <th class="sortable" (click)="setSort('status')">Status {{ sortIcon('status') }}</th>
+          <th class="actions-col">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let a of sorted"
+          [class]="'row-' + a.status.toLowerCase().replace('_', '-')"
+          (click)="openModal.emit(a.id)"
+        >
+          <td class="td-time">
+            {{ formatTime(a.inicio) }}
+            <span class="td-dur">
+              {{ formatTime(a.fim) }}
+            </span>
+          </td>
+          <td>
+            <div class="pet-cell">
+              <span class="pet-n">{{ a.pet.nome }}</span>
+              <span class="pet-race" *ngIf="a.pet.raca">{{ a.pet.raca }}</span>
+              <div class="pet-icons">
+                <span *ngIf="a.pet.temAlimentacaoEspecial" title="Alimentação especial">🦴</span>
+                <span *ngIf="a.pet.temRestricao" title="Restrição">⚠️</span>
+                <span *ngIf="a.pet.temMedicacao" title="Medicação">💊</span>
+              </div>
+            </div>
+          </td>
+          <td class="td-tutor">
+            <div class="tutor-cell">
+              <span>{{ a.pet.tutor.nome }}</span>
+              <span class="tutor-phone">{{ a.pet.tutor.telefone }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="service-badge" [style.border-left-color]="a.servico.cor">
+              {{ a.servico.nome }}
+            </span>
+          </td>
+          <td class="td-prof">{{ a.profissional.nome }}</td>
+          <td>
+            <span class="status-tag" [class]="'status-tag-' + a.status.toLowerCase().replace('_', '-')">
+              {{ STATUS_LABELS[a.status] }}
+            </span>
+          </td>
+          <td class="td-actions" (click)="$event.stopPropagation()">
+            <button
+              *ngFor="let act of nextActions(a)"
+              class="act-btn"
+              [class.danger]="act.danger"
+              (click)="onAction(a.id, act.type, $event)"
+            >
+              {{ act.label }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

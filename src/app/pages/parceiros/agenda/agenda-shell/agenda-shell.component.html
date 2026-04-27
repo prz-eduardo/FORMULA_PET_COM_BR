@@ -1,0 +1,120 @@
+<div class="shell">
+
+  <!-- ── Toolbar ─────────────────────────────────────────────────────── -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <!-- Date navigation -->
+      <div class="date-nav">
+        <button class="nav-btn" (click)="prevDate()" aria-label="Anterior">‹</button>
+        <button class="today-btn" [class.is-today]="isToday()" (click)="goToToday()">Hoje</button>
+        <button class="nav-btn" (click)="nextDate()" aria-label="Próximo">›</button>
+      </div>
+      <h2 class="date-label">{{ dateLabel() }}</h2>
+    </div>
+
+    <div class="toolbar-right">
+      <!-- KPIs -->
+      <div class="kpi-chips">
+        <span class="kpi-chip">{{ totalCount() }} agend.</span>
+        <span class="kpi-chip warn" *ngIf="atrasadosCount() > 0">
+          ⚠ {{ atrasadosCount() }} atrasado{{ atrasadosCount() > 1 ? 's' : '' }}
+        </span>
+      </div>
+
+      <!-- View mode toggle -->
+      <div class="view-toggle" role="group" aria-label="Modo de visualização">
+        <button
+          *ngFor="let m of ALL_MODES"
+          class="view-btn"
+          [class.active]="viewMode() === m"
+          [disabled]="!isViewAvailable(m)"
+          (click)="setViewMode(m)"
+          [attr.aria-pressed]="viewMode() === m"
+        >
+          {{ MODE_LABELS[m] }}
+        </button>
+      </div>
+
+      <!-- New appointment -->
+      <button class="btn-new" (click)="openSidebar()">
+        <span>+</span> Novo
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Filters ─────────────────────────────────────────────────────── -->
+  <app-agenda-filters
+    [agendamentos]="agendamentos()"
+    [profissionais]="profissionais()"
+    [servicos]="servicos()"
+    (filtersChange)="onFiltersChange($event)"
+  ></app-agenda-filters>
+
+  <!-- ── View ────────────────────────────────────────────────────────── -->
+  <div class="view-area">
+    @switch (viewMode()) {
+      @case ('DAY') {
+        <app-agenda-grid
+          [agendamentos]="filteredAgendamentos()"
+          [profissionais]="profissionais()"
+          [config]="config()!"
+          [selectedDate]="selectedDate()"
+          (slotClick)="openSidebar($event)"
+          (quickAction)="onQuickAction($event)"
+          (openModal)="openModal($event)"
+        ></app-agenda-grid>
+      }
+      @case ('TIMELINE') {
+        <app-agenda-timeline
+          [agendamentos]="filteredAgendamentos()"
+          [profissionais]="profissionais()"
+          [config]="config()!"
+          [selectedDate]="selectedDate()"
+          (slotClick)="openSidebar($event)"
+          (quickAction)="onQuickAction($event)"
+          (openModal)="openModal($event)"
+        ></app-agenda-timeline>
+      }
+      @case ('WEEK') {
+        <app-agenda-week
+          [agendamentos]="filteredAgendamentos()"
+          [selectedDate]="selectedDate()"
+          (daySelected)="onDaySelected($event)"
+          (quickAction)="onQuickAction($event)"
+          (openModal)="openModal($event)"
+        ></app-agenda-week>
+      }
+      @case ('LIST') {
+        <app-agenda-list
+          [agendamentos]="filteredAgendamentos()"
+          (quickAction)="onQuickAction($event)"
+          (openModal)="openModal($event)"
+        ></app-agenda-list>
+      }
+    }
+  </div>
+
+  <!-- ── FAB (mobile) ─────────────────────────────────────────────────── -->
+  <button class="fab" (click)="openSidebar()" aria-label="Novo agendamento">+</button>
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+  <app-agenda-sidebar
+    *ngIf="sidebarOpen()"
+    [slot]="sidebarSlot()"
+    [profissionais]="profissionais()"
+    [servicos]="servicos()"
+    [config]="config()!"
+    [existingAgendamentos]="agendamentos()"
+    (save)="onAgendamentoSaved($event)"
+    (close)="closeSidebar()"
+  ></app-agenda-sidebar>
+
+  <!-- ── Modal ────────────────────────────────────────────────────────── -->
+  <app-agenda-modal
+    *ngIf="modalAgendamento()"
+    [agendamento]="modalAgendamento()!"
+    (close)="closeModal()"
+    (statusChanged)="onStatusChanged($event)"
+  ></app-agenda-modal>
+
+</div>

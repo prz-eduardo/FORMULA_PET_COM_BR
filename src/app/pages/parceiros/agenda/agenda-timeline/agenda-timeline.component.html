@@ -1,0 +1,60 @@
+<div class="timeline-wrap">
+
+  <!-- Time axis (sticky top) -->
+  <div class="time-axis">
+    <div class="row-label-spacer"></div>
+    <div class="axis-track" [style.min-width.px]="timelineWidth">
+      <div
+        *ngFor="let h of hours"
+        class="hour-mark"
+        [style.width.px]="PX_PER_HOUR"
+      >
+        {{ h.label }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Swimlanes -->
+  <div class="swimlanes">
+    <div class="swimlane" *ngFor="let prof of profRows">
+
+      <!-- Row label -->
+      <div class="row-label">
+        <span class="row-name">{{ prof.nome }}</span>
+        <span class="row-role" *ngIf="prof.especialidade">{{ prof.especialidade }}</span>
+      </div>
+
+      <!-- Row track -->
+      <div class="row-track" [style.min-width.px]="timelineWidth" (click)="onSlotClick(prof, hours[0])">
+
+        <!-- Gap markers -->
+        <div
+          *ngFor="let gap of gapsForProf(prof.id)"
+          class="gap-slot"
+          [style.left]="gap.leftPx"
+          [style.width]="gap.widthPx"
+        ></div>
+
+        <!-- Now line -->
+        <div class="now-line" *ngIf="nowLeftPx" [style.left]="nowLeftPx"></div>
+
+        <!-- Appointment cards -->
+        <div
+          *ngFor="let a of agendamentosForProf(prof.id)"
+          class="tl-block"
+          [class]="'tl-' + a.status.toLowerCase().replace('_', '-')"
+          [style.left]="leftPx(a)"
+          [style.width]="widthPx(a)"
+        >
+          <app-agenda-card
+            [agendamento]="a"
+            [compact]="true"
+            (quickAction)="quickAction.emit($event)"
+            (openModal)="openModal.emit($event)"
+          ></app-agenda-card>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

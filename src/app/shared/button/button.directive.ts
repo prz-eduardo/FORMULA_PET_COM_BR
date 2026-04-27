@@ -18,7 +18,22 @@ export class ButtonDirective implements OnInit {
     // fallback
     this._variant = String(v);
   }
-  @Input() disabled = false;
+
+  // Use a setter so the disabled attribute is updated every time the binding changes,
+  // not just once at ngOnInit. Angular's [disabled] binding invokes this setter on
+  // every change detection cycle when the value changes.
+  @Input() set disabled(v: boolean) {
+    this._disabled = v;
+    if (this.el) {
+      if (v) {
+        this.renderer.setAttribute(this.el.nativeElement, 'disabled', 'true');
+      } else {
+        this.renderer.removeAttribute(this.el.nativeElement, 'disabled');
+      }
+    }
+  }
+  get disabled() { return this._disabled; }
+  private _disabled = false;
 
   @HostBinding('class.app-btn') base = true;
   @HostBinding('class.primary') get isPrimary() { return this._variant === 'primary'; }
@@ -38,13 +53,16 @@ export class ButtonDirective implements OnInit {
       else if (classList.contains('danger') || classList.contains('warn')) this._variant = 'danger';
       else if (classList.contains('secondary') || classList.contains('btn-sec' ) || classList.contains('btn-secundario')) this._variant = 'secondary';
       else if (classList.contains('primary') || classList.contains('btn') || classList.contains('btn-primary')) this._variant = 'primary';
-    } else {
-      // already normalized via setter
     }
 
     // ensure base class exists
     this.renderer.addClass(this.el.nativeElement, 'app-btn');
     if (this._variant) this.renderer.addClass(this.el.nativeElement, this._variant);
-    if (this.disabled) this.renderer.setAttribute(this.el.nativeElement, 'disabled', 'true');
+    // apply initial disabled state (setter may have fired before el was ready)
+    if (this._disabled) {
+      this.renderer.setAttribute(this.el.nativeElement, 'disabled', 'true');
+    } else {
+      this.renderer.removeAttribute(this.el.nativeElement, 'disabled');
+    }
   }
 }

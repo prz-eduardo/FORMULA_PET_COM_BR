@@ -1,6 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { AdminDrawerComponent } from '../shared/admin-drawer/admin-drawer.component';
 import { ButtonDirective } from '../../../../shared/button';
@@ -15,7 +16,7 @@ import { AdminAddressComponent, buildAddressGroup, flattenAddress } from '../../
   templateUrl: './parceiros.component.html',
   styleUrls: ['./parceiros.component.scss']
 })
-export class ParceirosAdminComponent implements OnInit {
+export class ParceirosAdminComponent implements OnInit, OnDestroy {
   q = signal('');
   statusFilter = signal<'all'|'pending'|'approved'|'rejected'>('all');
   page = signal(1);
@@ -32,6 +33,8 @@ export class ParceirosAdminComponent implements OnInit {
   showTypes = signal(false);
   editingTipo = signal<TipoProfissionalDto|null>(null);
   tipoForm!: FormGroup;
+  tipoFormValido = signal(false);
+  private tipoFormSub: Subscription | null = null;
 
   constructor(private api: AdminApiService, private publicApi: ApiService, private fb: FormBuilder) {}
 
@@ -159,12 +162,19 @@ export class ParceirosAdminComponent implements OnInit {
   }
 
   // Gerir Tipos
-  openTypes() { this.showTypes.set(true); this.editingTipo.set(null); this.tipoForm = this.fb.group({ nome: ['', Validators.required], slug: [''], icone: [''], descricao: [''] }); }
+  private setupTipoForm(fg: FormGroup) {
+    this.tipoFormSub?.unsubscribe();
+    this.tipoForm = fg;
+    this.tipoFormValido.set(fg.valid);
+    this.tipoFormSub = fg.statusChanges.subscribe(s => this.tipoFormValido.set(s === 'VALID'));
+  }
+
+  openTypes() { this.showTypes.set(true); this.editingTipo.set(null); this.setupTipoForm(this.fb.group({ nome: ['', Validators.required], slug: [''], icone: [''], descricao: [''] })); }
   closeTypes() { this.showTypes.set(false); this.editingTipo.set(null); }
 
   editTipo(t: TipoProfissionalDto) {
     this.editingTipo.set(t);
-    this.tipoForm = this.fb.group({ nome: [t.nome, Validators.required], slug: [t.slug || ''], icone: [t.icone || ''], descricao: [t.descricao || ''] });
+    this.setupTipoForm(this.fb.group({ nome: [t.nome, Validators.required], slug: [t.slug || ''], icone: [t.icone || ''], descricao: [t.descricao || ''] }));
   }
 
   saveTipo() {
@@ -184,7 +194,9 @@ export class ParceirosAdminComponent implements OnInit {
     }
   }
 
-  cancelEditTipo() { this.editingTipo.set(null); this.tipoForm = this.fb.group({ nome: ['', Validators.required], slug: [''], icone: [''], descricao: [''] }); }
+  cancelEditTipo() { this.editingTipo.set(null); this.setupTipoForm(this.fb.group({ nome: ['', Validators.required], slug: [''], icone: [''], descricao: [''] })); }
+
+  ngOnDestroy() { this.tipoFormSub?.unsubscribe(); }
 
   deleteTipo(t: TipoProfissionalDto) {
     if (!confirm(`Remover tipo "${t.nome}"?`)) return;

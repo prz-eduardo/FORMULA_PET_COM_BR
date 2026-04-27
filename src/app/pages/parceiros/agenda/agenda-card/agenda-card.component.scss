@@ -1,0 +1,168 @@
+@use '../../../../shared/styles/admin-tokens' as *;
+
+.agenda-card {
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  border-left: 3px solid var(--admin-muted);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  width: 100%;
+
+  &:hover {
+    border-color: var(--admin-border-strong);
+    box-shadow: var(--admin-shadow-md);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--admin-focus-ring);
+  }
+
+  // ── Status border colors ────────────────────────────────────────────────
+  &.status-agendado   { border-left-color: var(--admin-muted); }
+  &.status-confirmado { border-left-color: var(--admin-info); }
+  &.status-em-andamento { border-left-color: var(--admin-primary); }
+  &.status-atrasado {
+    border-left-color: var(--admin-warn);
+    animation: pulse-warn 2s ease-in-out infinite;
+  }
+  &.status-finalizado { border-left-color: var(--admin-ok); }
+  &.status-cancelado  { border-left-color: var(--admin-danger); opacity: 0.6; }
+
+  // ── Compact mode (GRID / TIMELINE) ──────────────────────────────────────
+  &.compact {
+    border-radius: var(--admin-radius-sm);
+    background: var(--admin-surface-3);
+
+    .card-main { padding: 4px 8px; }
+    .card-top { gap: 4px; }
+    .pet-name { font-size: 11px; }
+    .status-badge { display: none; }
+  }
+}
+
+.card-main {
+  padding: 10px 12px 8px;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.pet-name {
+  font-size: var(--admin-font-size-md);
+  font-weight: var(--admin-font-weight-semibold);
+  color: var(--admin-text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-badge {
+  font-size: 10px;
+  font-weight: var(--admin-font-weight-semibold);
+  padding: 2px 7px;
+  border-radius: var(--admin-radius-pill);
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  .status-agendado &   { background: rgba(156, 163, 175, 0.12); color: var(--admin-muted); }
+  .status-confirmado & { background: rgba(59, 130, 246, 0.12); color: var(--admin-info); }
+  .status-em-andamento & { background: rgba(13, 184, 222, 0.12); color: var(--admin-primary); }
+  .status-atrasado &   { background: rgba(245, 158, 11, 0.12); color: var(--admin-warn); }
+  .status-finalizado & { background: rgba(16, 185, 129, 0.12); color: var(--admin-ok); }
+  .status-cancelado &  { background: rgba(239, 68, 68, 0.12); color: var(--admin-danger); }
+}
+
+// Badge colors need to be applied per parent class
+.agenda-card.status-agendado .status-badge   { background: rgba(156, 163, 175, 0.12); color: var(--admin-muted); }
+.agenda-card.status-confirmado .status-badge { background: rgba(59, 130, 246, 0.12); color: var(--admin-info); }
+.agenda-card.status-em-andamento .status-badge { background: rgba(13, 184, 222, 0.12); color: var(--admin-primary); }
+.agenda-card.status-atrasado .status-badge   { background: rgba(245, 158, 11, 0.15); color: var(--admin-warn); }
+.agenda-card.status-finalizado .status-badge { background: rgba(16, 185, 129, 0.12); color: var(--admin-ok); }
+.agenda-card.status-cancelado .status-badge  { background: rgba(239, 68, 68, 0.12); color: var(--admin-danger); }
+
+.card-service {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-muted);
+  margin-bottom: 4px;
+}
+
+.service-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--admin-muted);
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-muted-2);
+}
+
+.meta-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.meta-prof {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-icons {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.icon-chip {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--admin-radius-xs);
+  padding: 2px 4px;
+
+  &.warn { background: rgba(245, 158, 11, 0.1); }
+  &.info { background: rgba(13, 184, 222, 0.08); }
+}
+
+.card-actions {
+  border-top: 1px solid var(--admin-border-soft);
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs);
+  font-weight: var(--admin-font-weight-medium);
+  padding: 4px 10px;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover { background: rgba(13, 184, 222, 0.1); color: var(--admin-primary); }
+  &.danger:hover { background: rgba(239, 68, 68, 0.1); color: var(--admin-danger); }
+}
+
+@keyframes pulse-warn {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50%       { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
+}

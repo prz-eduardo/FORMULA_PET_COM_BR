@@ -1,0 +1,118 @@
+<div class="modal-overlay" (click)="close.emit()"></div>
+
+<div class="modal-card" role="dialog" aria-modal="true">
+
+  <!-- Header -->
+  <header class="modal-header">
+    <div class="modal-pet-info">
+      <div class="pet-avatar">{{ agendamento.pet.especie === 'Gato' ? '🐱' : '🐶' }}</div>
+      <div>
+        <div class="pet-name">{{ agendamento.pet.nome }}</div>
+        <div class="pet-meta">
+          {{ agendamento.pet.especie }} · {{ agendamento.pet.raca }}
+          <span
+            class="status-badge"
+            [class]="'badge-' + agendamento.status.toLowerCase().replace('_','-')"
+          >
+            {{ STATUS_LABELS[agendamento.status] }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <button class="modal-close" (click)="close.emit()" aria-label="Fechar">✕</button>
+  </header>
+
+  <div class="modal-body">
+
+    <!-- Info row -->
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-lbl">Tutor</span>
+        <span>{{ agendamento.pet.tutor.nome }}</span>
+        <span class="info-sub">{{ agendamento.pet.tutor.telefone }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-lbl">Serviço</span>
+        <span>{{ agendamento.servico.nome }}</span>
+        <span class="info-sub">{{ duration }}min</span>
+      </div>
+      <div class="info-item">
+        <span class="info-lbl">Profissional</span>
+        <span>{{ agendamento.profissional.nome }}</span>
+        <span class="info-sub" *ngIf="agendamento.profissional.especialidade">{{ agendamento.profissional.especialidade }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-lbl">Horário</span>
+        <span>{{ formatTime(agendamento.inicio) }} – {{ formatTime(agendamento.fim) }}</span>
+        <span class="info-sub">{{ formatDateTime(agendamento.inicio) }}</span>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alerts" *ngIf="agendamento.pet.alergias.length || agendamento.pet.temMedicacao || agendamento.pet.temRestricao || agendamento.pet.temAlimentacaoEspecial">
+      <div class="alert-title">⚠️ Pré-check</div>
+      <div class="alert-tags">
+        <span *ngFor="let al of agendamento.pet.alergias" class="alert-tag warn">🦠 Alergia: {{ al }}</span>
+        <span *ngIf="agendamento.pet.temMedicacao" class="alert-tag info">💊 Usa medicação</span>
+        <span *ngIf="agendamento.pet.temRestricao" class="alert-tag warn">🚫 Tem restrição</span>
+        <span *ngIf="agendamento.pet.temAlimentacaoEspecial" class="alert-tag info">🦴 Alimentação especial</span>
+      </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="observacoes" *ngIf="agendamento.observacoes">
+      <div class="obs-lbl">Observações</div>
+      <p>{{ agendamento.observacoes }}</p>
+    </div>
+
+    <!-- Histórico -->
+    <div class="historico" *ngIf="agendamento.pet.historicoRecente.length">
+      <div class="hist-title">📋 Histórico recente</div>
+      <div class="hist-list">
+        <div class="hist-row" *ngFor="let h of agendamento.pet.historicoRecente">
+          <span class="hist-date">{{ h.data | date:'dd/MM/yy' }}</span>
+          <span class="hist-serv">{{ h.servico }}</span>
+          <span class="hist-prof">{{ h.profissional }}</span>
+          <span class="hist-obs" *ngIf="h.obs">{{ h.obs }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status stepper -->
+    <div class="stepper">
+      <div class="stepper-title">Progresso</div>
+      <div class="steps">
+        <div
+          *ngFor="let step of STEPS; let i = index"
+          class="step"
+          [class.done]="isStepDone(step)"
+          [class.active]="isStepActive(step)"
+        >
+          <div class="step-icon">{{ isStepDone(step) ? '✓' : step.icon }}</div>
+          <div class="step-lbl">{{ step.label }}</div>
+          <div class="step-line" *ngIf="i < STEPS.length - 1"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="modal-footer">
+    <button
+      class="btn-cancel-appt"
+      *ngIf="agendamento.status !== 'CANCELADO' && agendamento.status !== 'FINALIZADO'"
+      (click)="cancelAgendamento()"
+    >
+      Cancelar agendamento
+    </button>
+    <button
+      class="btn-advance"
+      *ngIf="nextStatus"
+      (click)="advanceStatus()"
+    >
+      → {{ nextStatusLabel }}
+    </button>
+  </footer>
+
+</div>

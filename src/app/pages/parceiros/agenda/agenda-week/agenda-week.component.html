@@ -1,0 +1,43 @@
+<div class="week-wrap">
+  <div class="week-grid">
+    <div class="day-col" *ngFor="let day of days">
+      <!-- Day header -->
+      <div
+        class="day-header"
+        [class.today]="day.isToday"
+        (click)="daySelected.emit(day.date)"
+        role="button"
+        tabindex="0"
+      >
+        <span class="day-wd">{{ day.dayLabel }}</span>
+        <span class="day-dt">{{ day.label }}</span>
+        <span class="day-count" *ngIf="day.agendamentos.length">
+          {{ day.agendamentos.length }}
+        </span>
+      </div>
+
+      <!-- Cards -->
+      <div class="day-body">
+        <ng-container *ngFor="let a of day.agendamentos">
+          <div
+            class="mini-card"
+            [class]="'mini-' + a.status.toLowerCase().replace('_', '-')"
+            (click)="openModal.emit(a.id)"
+            role="button"
+            tabindex="0"
+          >
+            <div class="mini-time">{{ formatTime(a.inicio) }}</div>
+            <div class="mini-pet">{{ a.pet.nome }}</div>
+            <div class="mini-service">{{ a.servico.nome }}</div>
+            <span *ngIf="a.pet.temRestricao" class="mini-icon">⚠️</span>
+            <span *ngIf="a.pet.temMedicacao" class="mini-icon">💊</span>
+          </div>
+        </ng-container>
+
+        <div class="day-empty" *ngIf="!day.agendamentos.length">
+          <span>—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

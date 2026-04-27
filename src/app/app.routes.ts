@@ -8,6 +8,7 @@ import { ListaProdutosComponent } from './pages/restrito/admin/lista-produtos/li
 import { AdminPedidosComponent } from './pages/restrito/admin/pedidos/pedidos.component';
 import { authGuard } from './guards/auth.guard';
 import { vetGuard } from './guards/vet.guard';
+import { parceiroGuard } from './guards/parceiro.guard';
 
 export const routes: Routes = [
   { path: '', loadChildren: () => import('./pages/loja/loja.module').then(m => m.LojaModule) }, // Página pública (loja)
@@ -135,6 +136,25 @@ export const routes: Routes = [
   { path: 'carrinho', loadComponent: () => import('./pages/carrinho/carrinho.component').then(m => m.CarrinhoComponent)},
   // Checkout: página dedicada de pagamento/resumo após criação do pedido
   { path: 'checkout', loadComponent: () => import('./pages/checkout/checkout.component').then(m => m.CheckoutComponent)},
- 
+
+  // ── PetSphere Parceiros ────────────────────────────────────────────────
+  { path: 'parceiros', redirectTo: 'parceiros/login', pathMatch: 'full' },
+  {
+    path: 'parceiros/login',
+    loadComponent: () => import('./pages/parceiros/login-parceiro/login-parceiro.component').then(m => m.LoginParceiroComponent),
+  },
+  {
+    path: 'parceiros',
+    loadComponent: () => import('./pages/parceiros/parceiro-shell/parceiro-shell.component').then(m => m.ParceiroShellComponent),
+    canActivate: [parceiroGuard],
+    children: [
+      {
+        path: 'agenda',
+        loadComponent: () => import('./pages/parceiros/agenda/agenda-shell/agenda-shell.component').then(m => m.AgendaShellComponent),
+      },
+      { path: '', redirectTo: 'agenda', pathMatch: 'full' },
+    ],
+  },
+
   { path: '**', redirectTo: '' }                        // Redireciona qualquer rota inválida pra home
 ];

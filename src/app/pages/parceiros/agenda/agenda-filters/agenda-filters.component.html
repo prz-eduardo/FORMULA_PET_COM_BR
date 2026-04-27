@@ -1,0 +1,80 @@
+<div class="filters-wrap">
+  <!-- Insight strip (always visible) -->
+  <div class="insights">
+    <div class="insight-chip">
+      <span class="insight-label">Ocupação</span>
+      <span class="insight-value" [class.high]="taxaOcupacao() >= 80">{{ taxaOcupacao() }}%</span>
+    </div>
+    <div class="insight-chip warn" *ngIf="atrasados() > 0">
+      <span>⚠️</span>
+      <span class="insight-value">{{ atrasados() }} atrasado{{ atrasados() !== 1 ? 's' : '' }}</span>
+    </div>
+    <div class="insight-chip ok" *ngIf="proximoLivre()">
+      <span>🕐</span>
+      <span class="insight-label">Próximo livre:</span>
+      <span class="insight-value">{{ proximoLivre() }}</span>
+    </div>
+
+    <button class="expand-btn" (click)="toggleExpanded()" [attr.aria-expanded]="expanded()">
+      Filtros
+      <span *ngIf="hasFilters" class="filter-count-badge">•</span>
+      <span class="caret">{{ expanded() ? '▴' : '▾' }}</span>
+    </button>
+
+    <button class="clear-btn" *ngIf="hasFilters" (click)="clearAll()">Limpar</button>
+  </div>
+
+  <!-- Expandable filter panel -->
+  <div class="filter-panel" *ngIf="expanded()">
+    <!-- Search -->
+    <div class="filter-group">
+      <input
+        type="text"
+        placeholder="Buscar pet, tutor, serviço..."
+        class="search-input"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event); onSearchChange()"
+      />
+    </div>
+
+    <!-- Profissional -->
+    <div class="filter-group" *ngIf="profissionais.length > 1">
+      <label>Profissional</label>
+      <select
+        [ngModel]="selectedProfId()"
+        (ngModelChange)="selectedProfId.set($event); onProfChange()"
+      >
+        <option value="">Todos</option>
+        <option *ngFor="let p of profissionais" [value]="p.id">{{ p.nome }}</option>
+      </select>
+    </div>
+
+    <!-- Serviço -->
+    <div class="filter-group" *ngIf="servicos.length">
+      <label>Serviço</label>
+      <select
+        [ngModel]="selectedServicoId()"
+        (ngModelChange)="selectedServicoId.set($event); onServicoChange()"
+      >
+        <option value="">Todos</option>
+        <option *ngFor="let s of servicos" [value]="s.id">{{ s.nome }}</option>
+      </select>
+    </div>
+
+    <!-- Status chips -->
+    <div class="filter-group chips-group">
+      <label>Status</label>
+      <div class="chips">
+        <button
+          *ngFor="let s of ALL_STATUSES"
+          class="chip"
+          [class]="'chip-' + s.toLowerCase().replace('_', '-')"
+          [class.active]="selectedStatuses().includes(s)"
+          (click)="toggleStatus(s)"
+        >
+          {{ STATUS_LABELS[s] }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
