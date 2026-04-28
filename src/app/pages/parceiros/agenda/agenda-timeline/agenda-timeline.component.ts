@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaConfig, Profissional, SlotInfo } from '../../../../types/agenda.types';
 import { AgendaCardComponent, QuickActionEvent } from '../agenda-card/agenda-card.component';
+import { toDate, getTime } from '../utils/date-helpers';
 
 interface TimeHour {
   label: string;
@@ -53,17 +54,18 @@ export class AgendaTimelineComponent {
   }
 
   agendamentosForProf(profId: string): Agendamento[] {
-    return this.agendamentos.filter(a => a.profissional.id === profId);
+    return this.agendamentos.filter(a => a.profissional?.id === profId);
   }
 
   leftPx(a: Agendamento): string {
-    const startMin = a.inicio.getHours() * 60 + a.inicio.getMinutes();
+    const date = toDate(a.inicio);
+    const startMin = date.getHours() * 60 + date.getMinutes();
     const offset = startMin - this.workStart * 60;
     return Math.max(0, (offset / 60) * this.PX_PER_HOUR) + 'px';
   }
 
   widthPx(a: Agendamento): string {
-    const dur = (a.fim.getTime() - a.inicio.getTime()) / 60000;
+    const dur = (getTime(a.fim) - getTime(a.inicio)) / 60000;
     return Math.max(60, (dur / 60) * this.PX_PER_HOUR) + 'px';
   }
 
@@ -79,14 +81,15 @@ export class AgendaTimelineComponent {
   gapsForProf(profId: string): Array<{ leftPx: string; widthPx: string }> {
     const busy = this.agendamentosForProf(profId)
       .filter(a => a.status !== 'CANCELADO')
-      .sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+      .sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
 
     const gaps: Array<{ leftPx: string; widthPx: string }> = [];
     let cursor = this.workStart * 60;
     const end = this.workEnd * 60;
 
     for (const a of busy) {
-      const aStart = a.inicio.getHours() * 60 + a.inicio.getMinutes();
+      const aStartDate = toDate(a.inicio);
+      const aStart = aStartDate.getHours() * 60 + aStartDate.getMinutes();
       if (aStart > cursor + 30) {
         const gapMin = aStart - cursor;
         gaps.push({
@@ -94,7 +97,8 @@ export class AgendaTimelineComponent {
           widthPx: (gapMin / 60 * this.PX_PER_HOUR) + 'px',
         });
       }
-      const aEnd = a.fim.getHours() * 60 + a.fim.getMinutes();
+      const aEndDate = toDate(a.fim);
+      const aEnd = aEndDate.getHours() * 60 + aEndDate.getMinutes();
       cursor = Math.max(cursor, aEnd);
     }
 

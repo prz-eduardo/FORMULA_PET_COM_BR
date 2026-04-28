@@ -8,6 +8,7 @@ import {
   Servico,
   TutorResumido,
 } from '../../../../types/agenda.types';
+import { getTime } from '../utils/date-helpers';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Static mock data pools
@@ -276,7 +277,7 @@ export class AgendaMockService {
       recorrente: false,
     });
 
-    return result.sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+    return result.sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
   }
 
   // ── CLINIC ──────────────────────────────────────────────────────────────
@@ -322,7 +323,7 @@ export class AgendaMockService {
       }
     }
 
-    return result.sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+    return result.sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
   }
 
   // ── SITTER ──────────────────────────────────────────────────────────────
@@ -352,7 +353,7 @@ export class AgendaMockService {
       }
     }
 
-    return result.sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+    return result.sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
   }
 
   // ── HOTEL ──────────────────────────────────────────────────────────────

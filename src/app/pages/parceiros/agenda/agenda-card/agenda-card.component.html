@@ -5,19 +5,19 @@
   (click)="onCardClick()"
   role="button"
   tabindex="0"
-  [attr.aria-label]="agendamento.pet.nome + ' — ' + agendamento.servico.nome"
+  [attr.aria-label]="(agendamento.pet?.nome || 'Pet') + ' — ' + (agendamento.servico?.nome || 'Serviço')"
 >
   <!-- Status indicator stripe is done via CSS left border -->
 
   <div class="card-main">
     <div class="card-top">
-      <span class="pet-name">{{ agendamento.pet.nome }}</span>
+      <span class="pet-name">{{ agendamento.pet?.nome }}</span>
       <span class="status-badge">{{ statusLabel }}</span>
     </div>
 
     <div class="card-service" *ngIf="!compact">
-      <span class="service-dot" [style.background]="agendamento.servico.cor"></span>
-      {{ agendamento.servico.nome }}
+      <span class="service-dot" [style.background]="agendamento.servico?.cor"></span>
+      {{ agendamento.servico?.nome }}
     </div>
 
     <div class="card-meta">
@@ -25,13 +25,13 @@
         {{ formatTime(agendamento.inicio) }}
         <span *ngIf="!compact">– {{ formatTime(agendamento.fim) }}</span>
       </span>
-      <span class="meta-prof" *ngIf="!compact">{{ agendamento.profissional.nome }}</span>
+      <span class="meta-prof" *ngIf="!compact">{{ agendamento.profissional?.nome }}</span>
     </div>
 
     <div class="card-icons" *ngIf="!compact">
-      <span *ngIf="agendamento.pet.temAlimentacaoEspecial" title="Alimentação especial" class="icon-chip">🦴</span>
-      <span *ngIf="agendamento.pet.temRestricao" title="Restrição" class="icon-chip warn">⚠️</span>
-      <span *ngIf="agendamento.pet.temMedicacao" title="Medicação" class="icon-chip info">💊</span>
+      <span *ngIf="agendamento.pet?.temAlimentacaoEspecial" title="Alimentação especial" class="icon-chip">🦴</span>
+      <span *ngIf="agendamento.pet?.temRestricao" title="Restrição" class="icon-chip warn">⚠️</span>
+      <span *ngIf="agendamento.pet?.temMedicacao" title="Medicação" class="icon-chip info">💊</span>
       <span *ngIf="agendamento.recorrente" title="Recorrente" class="icon-chip">🔁</span>
     </div>
   </div>

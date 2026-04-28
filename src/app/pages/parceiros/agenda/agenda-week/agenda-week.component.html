@@ -22,15 +22,16 @@
           <div
             class="mini-card"
             [class]="'mini-' + a.status.toLowerCase().replace('_', '-')"
-            (click)="openModal.emit(a.id)"
+            (click)="openModal.emit(asString(a.id))"
             role="button"
             tabindex="0"
           >
             <div class="mini-time">{{ formatTime(a.inicio) }}</div>
-            <div class="mini-pet">{{ a.pet.nome }}</div>
-            <div class="mini-service">{{ a.servico.nome }}</div>
-            <span *ngIf="a.pet.temRestricao" class="mini-icon">⚠️</span>
-            <span *ngIf="a.pet.temMedicacao" class="mini-icon">💊</span>
+            <div class="mini-pet" *ngIf="a.pet">{{ a.pet.nome }}</div>
+            <div class="mini-pet" *ngIf="!a.pet && a.pet_nome">{{ a.pet_nome }}</div>
+            <div class="mini-service" *ngIf="a.servico">{{ a.servico.nome }}</div>
+            <span *ngIf="a.pet?.temRestricao" class="mini-icon">⚠️</span>
+            <span *ngIf="a.pet?.temMedicacao" class="mini-icon">💊</span>
           </div>
         </ng-container>
 

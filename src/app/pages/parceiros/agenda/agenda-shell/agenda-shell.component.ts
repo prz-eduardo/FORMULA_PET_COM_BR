@@ -16,6 +16,7 @@ import { AgendaWeekComponent } from '../agenda-week/agenda-week.component';
 import { AgendaListComponent } from '../agenda-list/agenda-list.component';
 import { AgendaSidebarComponent } from '../agenda-sidebar/agenda-sidebar.component';
 import { AgendaModalComponent } from '../agenda-modal/agenda-modal.component';
+import { toDate } from '../utils/date-helpers';
 
 @Component({
   selector: 'app-agenda-shell',
@@ -58,7 +59,7 @@ export class AgendaShellComponent implements OnInit {
     const now = new Date();
     return this.rawAgendamentos().map(a => {
       if (
-        a.fim < now &&
+        toDate(a.fim) < now &&
         (a.status === 'AGENDADO' || a.status === 'CONFIRMADO')
       ) {
         return { ...a, status: 'ATRASADO' as AgendaStatus };
@@ -70,16 +71,16 @@ export class AgendaShellComponent implements OnInit {
   filteredAgendamentos = computed<Agendamento[]>(() => {
     const f = this.filters();
     return this.agendamentos().filter(a => {
-      if (f.profissionalId && a.profissional.id !== f.profissionalId) return false;
-      if (f.servicoId && a.servico.id !== f.servicoId) return false;
+      if (f.profissionalId && a.profissional?.id !== f.profissionalId) return false;
+      if (f.servicoId && a.servico?.id !== f.servicoId) return false;
       if (f.status?.length && !f.status.includes(a.status)) return false;
       if (f.search) {
         const q = f.search.toLowerCase();
         if (
-          !a.pet.nome.toLowerCase().includes(q) &&
-          !a.pet.tutor.nome.toLowerCase().includes(q) &&
-          !a.servico.nome.toLowerCase().includes(q) &&
-          !a.profissional.nome.toLowerCase().includes(q)
+          !a.pet?.nome?.toLowerCase().includes(q) &&
+          !a.pet?.tutor?.nome?.toLowerCase().includes(q) &&
+          !a.servico?.nome?.toLowerCase().includes(q) &&
+          !a.profissional?.nome?.toLowerCase().includes(q)
         ) return false;
       }
       return true;

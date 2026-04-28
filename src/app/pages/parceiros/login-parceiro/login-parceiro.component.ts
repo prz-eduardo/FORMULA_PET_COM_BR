@@ -29,15 +29,17 @@ export class LoginParceiroComponent {
       return;
     }
     this.loading.set(true);
-    // Simulate async — in production: call API
-    setTimeout(() => {
-      const ok = this.auth.loginMock(this.email, this.password);
-      this.loading.set(false);
-      if (ok) {
+    
+    // Call real login endpoint
+    this.auth.login(this.email, this.password)
+      .then(() => {
+        this.loading.set(false);
         this.router.navigate(['/parceiros/agenda']);
-      } else {
-        this.error.set('Credenciais inválidas.');
-      }
-    }, 600);
+      })
+      .catch((err) => {
+        this.loading.set(false);
+        console.error('Login error:', err);
+        this.error.set(err?.error?.error || 'Credenciais inválidas.');
+      });
   }
 }

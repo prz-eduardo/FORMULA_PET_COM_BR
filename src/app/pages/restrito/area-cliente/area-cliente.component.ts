@@ -7,6 +7,7 @@ import { LoginClienteComponent } from './login-cliente/login-cliente.component';
 import { CrieSuaContaClienteComponent } from './crie-sua-conta-cliente/crie-sua-conta-cliente.component';
 import { NotificationsBellComponent } from '../../../shared/notifications-bell/notifications-bell.component';
 import { ClienteSuportePanelComponent } from '../../../features/support-chat/cliente-suporte-panel/cliente-suporte-panel.component';
+import { GaleriaPetComponent } from './galeria-pet/galeria-pet.component';
 import { ToastService } from '../../../services/toast.service';
 import { AuthService } from '../../../services/auth.service';
 import { ApiService } from '../../../services/api.service';
@@ -25,7 +26,7 @@ interface Pet {
 @Component({
   selector: 'app-area-cliente',
   standalone: true, // <-- importante
-  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, LoginClienteComponent, CrieSuaContaClienteComponent, NotificationsBellComponent, ClienteSuportePanelComponent], // <-- importa o que usa no template
+  imports: [CommonModule, FormsModule, RouterModule, NavmenuComponent, LoginClienteComponent, CrieSuaContaClienteComponent, NotificationsBellComponent, ClienteSuportePanelComponent, GaleriaPetComponent], // <-- importa o que usa no template
   templateUrl: './area-cliente.component.html',
   styleUrls: ['./area-cliente.component.scss']
 })
@@ -50,7 +51,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private lastProfileToken?: string | null = null;
 
   // Internal navigation state when in modal
-  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto' | null = null;
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto' | 'minha-galeria' | null = null;
   // track which internal view originated the last navigation (used to return)
   private lastInternalOrigin: string | null = null;
   private pendingInitialView: ClienteAreaModalView = null;
@@ -326,12 +327,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.toast.info(`Detalhes do pet: ${pet.nome}`);
   }
 
-  goToGaleria(): void {
-    void this.router.navigateByUrl('/galeria');
-  }
-
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto' | 'minha-galeria') {
     if (view === 'suporte') {
       if (!this.hasAuth) {
         this.toast.error('Faça login para usar o atendimento por chat.', 'Atendimento');
@@ -403,6 +400,28 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       }
       return;
     }
+    if (view === 'minha-galeria') {
+      if (!this.modal) return this.router.navigateByUrl('/area-cliente?view=minha-galeria');
+      this.internalView = 'minha-galeria';
+      this.titulo = 'Minha Galeria';
+      if (!this.internalHost) return;
+      this.internalHost.clear();
+      try {
+        const ref = this.internalHost.createComponent(GaleriaPetComponent);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          try { (ref.instance as any).pets = this.pets || []; } catch {}
+          try { (ref.instance as any).clienteMe = this.clienteData; } catch {}
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      } catch (e) {
+        console.error('Falha ao abrir Minha Galeria', e);
+        this.toast.error('Não foi possível abrir agora');
+      }
+      return;
+    }
       if (view === 'meus-enderecos') {
       if (!this.modal) return this.router.navigateByUrl('/meus-enderecos');
       this.internalView = 'meus-enderecos';
@@ -445,6 +464,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       'novo-pet': 'Cadastrar Pet',
       'perfil': 'Perfil',
       'postar-foto': 'Postar foto',
+      'minha-galeria': 'Minha Galeria',
     };
     this.titulo = titles[view] || 'Área do Cliente';
     if (!this.internalHost) return;

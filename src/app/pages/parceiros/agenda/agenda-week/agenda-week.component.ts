@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Agendamento } from '../../../../types/agenda.types';
 import { AgendaCardComponent, QuickActionEvent } from '../agenda-card/agenda-card.component';
+import { toDateString, getTime, toDate } from '../utils/date-helpers';
 
 interface DayCol {
   date: Date;
@@ -37,8 +38,8 @@ export class AgendaWeekComponent {
     this.days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start.getTime() + i * 86400000);
       const dayAgendamentos = this._agendamentos.filter(
-        a => a.inicio.toDateString() === d.toDateString()
-      ).sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+        a => toDateString(a.inicio) === d.toDateString()
+      ).sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
       return {
         date: d,
         label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
@@ -58,7 +59,11 @@ export class AgendaWeekComponent {
     return s;
   }
 
-  formatTime(d: Date): string {
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  formatTime(d: Date | string): string {
+    return toDate(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  asString(value: string | number): string {
+    return String(value);
   }
 }

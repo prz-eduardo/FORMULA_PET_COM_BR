@@ -1,8 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { ParceiroAuthService } from '../../../services/parceiro-auth.service';
-import { Parceiro, PartnerType } from '../../../types/agenda.types';
+import { Colaborador } from '../../../types/agenda.types';
 
 @Component({
   selector: 'app-parceiro-shell',
@@ -12,18 +12,8 @@ import { Parceiro, PartnerType } from '../../../types/agenda.types';
   styleUrls: ['./parceiro-shell.component.scss'],
 })
 export class ParceiroShellComponent implements OnInit {
-  parceiro = signal<Parceiro | null>(null);
+  colaborador = signal<Colaborador | null>(null);
   showUserMenu = signal(false);
-
-  tipoLabel = computed(() => {
-    const map: Record<PartnerType, string> = {
-      PETSHOP: 'PetShop',
-      CLINIC: 'Clínica Vet.',
-      SITTER: 'Pet Sitter',
-      HOTEL: 'Hotel',
-    };
-    return map[this.parceiro()?.tipo ?? 'PETSHOP'];
-  });
 
   constructor(
     private auth: ParceiroAuthService,
@@ -31,7 +21,7 @@ export class ParceiroShellComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.parceiro.set(this.auth.getCurrentParceiro());
+    this.colaborador.set(this.auth.getCurrentColaborador());
   }
 
   toggleUserMenu(val?: boolean): void {
@@ -41,14 +31,5 @@ export class ParceiroShellComponent implements OnInit {
   logout(): void {
     this.auth.logout();
     this.router.navigate(['/parceiros/login']);
-  }
-
-  /** Demo: switch partner type from header */
-  switchTipo(tipo: PartnerType): void {
-    this.auth.setTipo(tipo);
-    this.parceiro.set(this.auth.getCurrentParceiro());
-    this.toggleUserMenu(false);
-    // reload agenda shell to re-apply config
-    this.router.navigate(['/parceiros/agenda'], { queryParams: { t: Date.now() } });
   }
 }

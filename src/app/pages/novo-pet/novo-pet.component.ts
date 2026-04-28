@@ -45,22 +45,12 @@ export class NovoPetComponent implements OnInit {
   // Item predefinido "Outras" (carregado do backend)
   outraPredefinida: { nome: string; alergia_id: string | number; ativo_id?: string | number } | null = null;
 
-  /** URLs já salvas no servidor (edição). */
-  existingGalleryUrls: string[] = [];
-  /** Itens de galeria com id (para coleções) */
-  galeriaItens: Array<{ id: number; url: string; colecao_id?: number | null; legenda?: string | null; galeria_publica?: number | boolean | string | null }> = [];
-  colecoes: Array<{ id: number; titulo: string }> = [];
-  novoTituloColecao = '';
-  /** Novos ficheiros a enviar (até 12). */
-  fotoFiles: File[] = [];
-  /** Previews data URL dos novos ficheiros. */
-  fotoPreviews: string[] = [];
   showDeleteConfirm = false;
-  selectedGalleryItem: { id: number; url: string; colecao_id?: number | null; legenda?: string | null; galeria_publica?: number | boolean | string | null } | null = null;
-  galleryDraft: { colecao_id: number | null; legenda: string; galeria_publica: boolean } = { colecao_id: null, legenda: '', galeria_publica: true };
-  savingGalleryItem = false;
 
   carregando = false;
+  fotoPreviews: string[] = [];
+  galeriaItens: any[] = [];
+  existingGalleryUrls: string[] = [];
   clienteMe: ClienteMeResponse | null = null;
 
   especies = ['Cachorro', 'Gato', 'Outro'];
@@ -121,29 +111,6 @@ export class NovoPetComponent implements OnInit {
               this.observacoes = pet.observacoes || '';
               const eg = pet.exibir_galeria_publica;
               this.exibirGaleriaPublica = !!(eg === 1 || eg === true || eg === '1' || String(eg).toLowerCase() === 'true');
-              const gi = pet.galeria_imagens;
-              if (Array.isArray(gi) && gi.length) {
-                this.galeriaItens = gi
-                  .map((x: any) => ({
-                    id: Number(x.id),
-                    url: x.url,
-                    colecao_id: x.colecao_id != null ? Number(x.colecao_id) : null,
-                    legenda: x.legenda ?? null,
-                    galeria_publica: x.galeria_publica ?? 1,
-                  }))
-                  .filter((x: any) => x.url && String(x.url).trim() && !isNaN(x.id));
-                this.existingGalleryUrls = this.galeriaItens.map((x) => x.url);
-              } else {
-                this.galeriaItens = [];
-                this.existingGalleryUrls = [];
-              }
-              const cover = pet.photoURL || pet.photoUrl || pet.foto || pet.photo || pet.photo_url || null;
-              if (cover && !this.existingGalleryUrls.length) {
-                this.existingGalleryUrls = [cover];
-              }
-              this.carregarColecoes();
-              this.fotoFiles = [];
-              this.fotoPreviews = [];
 
               // Se backend retornar alergias já estruturadas (alergias_predefinidas), use-as
               if (Array.isArray(pet.alergias_predefinidas) && pet.alergias_predefinidas.length) {
@@ -305,145 +272,6 @@ export class NovoPetComponent implements OnInit {
     this.filtrarSugestoes();
   }
 
-  private readonly maxNovasFotos = 12;
-  private readonly maxFotoBytes = 3 * 1024 * 1024;
-
-  onFileChange(ev: Event) {
-    if (!isPlatformBrowser(this.platformId)) return;
-    const input = ev.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    const remaining = this.maxNovasFotos - this.fotoFiles.length;
-    if (remaining <= 0) {
-      this.toast.info(`Máximo de ${this.maxNovasFotos} fotos novas por envio.`, 'Atenção');
-      input.value = '';
-      return;
-    }
-    const list = Array.from(input.files).slice(0, remaining);
-    for (const file of list) {
-      if (!file.type.startsWith('image/')) {
-        this.toast.info('Cada ficheiro deve ser uma imagem.', 'Atenção');
-        continue;
-      }
-      if (file.size > this.maxFotoBytes) {
-        this.toast.info('Cada imagem deve ter no máximo 3MB.', 'Atenção');
-        continue;
-      }
-      this.fotoFiles.push(file);
-      const reader = new FileReader();
-      reader.onload = () => this.fotoPreviews.push(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-    input.value = '';
-  }
-
-  removerNovaFoto(i: number) {
-    if (i < 0 || i >= this.fotoFiles.length) return;
-    this.fotoFiles.splice(i, 1);
-    this.fotoPreviews.splice(i, 1);
-  }
-
-  removerTodasNovas() {
-    this.fotoFiles = [];
-    this.fotoPreviews = [];
-  }
-
-  carregarColecoes() {
-    const id = this.getEffectiveEditId();
-    if (!id || !this.token) return;
-    this.api.listPetColecoes(id, this.token).subscribe({
-      next: (r) => { this.colecoes = Array.isArray(r) ? r : []; },
-      error: () => { this.colecoes = []; }
-    });
-  }
-
-  criarColecao() {
-    const petId = this.getEffectiveEditId();
-    if (!petId || !this.token) return;
-    const tit = (this.novoTituloColecao || '').trim() || 'Coleção';
-    this.api.createPetColecao(petId, { titulo: tit }, this.token).subscribe({
-      next: () => {
-        this.novoTituloColecao = '';
-        this.toast.success('Coleção criada. Atribua as fotos abaixo.');
-        this.carregarColecoes();
-      },
-      error: (e: any) => this.toast.error(e?.error?.error || 'Não foi possível criar a coleção', 'Erro')
-    });
-  }
-
-  openGalleryItemSettings(item: { id: number; url: string; colecao_id?: number | null; legenda?: string | null; galeria_publica?: number | boolean | string | null }) {
-    if (!item?.id) return;
-    this.selectedGalleryItem = item;
-    this.galleryDraft = {
-      colecao_id: item.colecao_id != null ? Number(item.colecao_id) : null,
-      legenda: item.legenda ? String(item.legenda) : '',
-      galeria_publica: item.galeria_publica === false || item.galeria_publica === 0 || item.galeria_publica === '0' ? false : true,
-    };
-  }
-
-  closeGalleryItemSettings() {
-    if (this.savingGalleryItem) return;
-    this.selectedGalleryItem = null;
-  }
-
-  galleryItemStatus(item: { colecao_id?: number | null; galeria_publica?: number | boolean | string | null }): string {
-    const visivel = !(item.galeria_publica === false || item.galeria_publica === 0 || item.galeria_publica === '0');
-    if (item.colecao_id && visivel) return 'Pública em coleção';
-    if (item.colecao_id && !visivel) return 'Privada em coleção';
-    if (visivel) return 'Pública no feed';
-    return 'Privada';
-  }
-
-  saveGalleryItemSettings() {
-    const petId = this.getEffectiveEditId();
-    const token = this.token;
-    const item = this.selectedGalleryItem;
-    if (!petId || !token || !item?.id) return;
-
-    const payload: PetImagemPatchPayload = {
-      colecao_id: this.galleryDraft.colecao_id,
-      legenda: this.galleryDraft.legenda.trim() || null,
-      galeria_publica: this.galleryDraft.galeria_publica ? 1 : 0,
-    };
-
-    this.savingGalleryItem = true;
-    this.api.patchPetImagem(petId, item.id, payload, token).subscribe({
-      next: (res) => {
-        const imagem = (res as any)?.imagem;
-        if (imagem) {
-          const idx = this.galeriaItens.findIndex((g) => g.id === item.id);
-          if (idx >= 0) {
-            this.galeriaItens[idx] = {
-              ...this.galeriaItens[idx],
-              colecao_id: imagem.colecao_id != null ? Number(imagem.colecao_id) : null,
-              legenda: imagem.legenda ?? null,
-              galeria_publica: imagem.galeria_publica ?? 1,
-            };
-          }
-        }
-        this.savingGalleryItem = false;
-        this.toast.success('Configuração da foto salva.');
-        this.selectedGalleryItem = null;
-      },
-      error: (err: any) => {
-        this.savingGalleryItem = false;
-        this.toast.error(err?.error?.error || 'Não foi possível salvar a configuração da foto.', 'Erro');
-      }
-    });
-  }
-
-  onColecaoImagemChange(g: { id: number; url: string; colecao_id?: number | null }, raw: any) {
-    const petId = this.getEffectiveEditId();
-    if (!petId || !this.token || !g?.id) return;
-    const v = raw == null || raw === '' || raw === 'null' || (typeof raw === 'string' && raw === '') ? null : Number(raw);
-    this.api.patchPetImagem(petId, g.id, { colecao_id: v as any }, this.token).subscribe({
-      next: (res) => {
-        g.colecao_id = (res as any)?.imagem?.colecao_id != null ? Number((res as any).imagem.colecao_id) : v;
-        this.toast.info('Coleção atualizada.');
-      },
-      error: (e: any) => this.toast.error(e?.error?.error || 'Falha ao mover foto', 'Erro')
-    });
-  }
-
   // Mapeia nomes livres vindos do backend para a lista predefinida quando possível
   private mapearAlergiasLivres(livres: string[]) {
     if (!Array.isArray(livres) || !livres.length) return;
@@ -488,9 +316,6 @@ export class NovoPetComponent implements OnInit {
     // Enviar alergias predefinidas completas (nome, alergia_id, ativo_id)
     if (this.alergiasSelecionadas.length) {
       fd.append('alergias_predefinidas', JSON.stringify(this.alergiasSelecionadas));
-    }
-    for (const f of this.fotoFiles) {
-      fd.append('foto', f);
     }
 
     this.carregando = true;

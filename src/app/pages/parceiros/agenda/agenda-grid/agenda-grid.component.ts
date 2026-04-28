@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaConfig, Profissional, SlotInfo } from '../../../../types/agenda.types';
 import { AgendaCardComponent, QuickActionEvent } from '../agenda-card/agenda-card.component';
+import { toDate, getTime } from '../utils/date-helpers';
 
 interface TimeSlot {
   label: string;   // '08:00'
@@ -56,18 +57,19 @@ export class AgendaGridComponent {
   }
 
   agendamentosForProf(profId: string): Agendamento[] {
-    return this.agendamentos.filter(a => a.profissional.id === profId);
+    return this.agendamentos.filter(a => a.profissional?.id === profId);
   }
 
   topPercent(a: Agendamento): string {
     const start = (this.config?.workStart ?? 8) * 60;
-    const startMin = a.inicio.getHours() * 60 + a.inicio.getMinutes();
+    const date = toDate(a.inicio);
+    const startMin = date.getHours() * 60 + date.getMinutes();
     const offset = Math.max(0, startMin - start);
     return ((offset / this.totalMinutes) * 100).toFixed(2) + '%';
   }
 
   heightPercent(a: Agendamento): string {
-    const dur = (a.fim.getTime() - a.inicio.getTime()) / 60000;
+    const dur = (getTime(a.fim) - getTime(a.inicio)) / 60000;
     return ((Math.min(dur, this.totalMinutes) / this.totalMinutes) * 100).toFixed(2) + '%';
   }
 

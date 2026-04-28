@@ -71,16 +71,17 @@ export class AgendaCardComponent {
     };
   }
 
-  formatTime(d: Date): string {
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  formatTime(d: Date | string): string {
+    const date = d instanceof Date ? d : new Date(d);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
   onAction(action: QuickActionType, event: Event): void {
     event.stopPropagation();
-    this.quickAction.emit({ id: this.agendamento.id, action });
+    this.quickAction.emit({ id: String(this.agendamento.id), action });
   }
 
   onCardClick(): void {
-    this.openModal.emit(this.agendamento.id);
+    this.openModal.emit(String(this.agendamento.id));
   }
 }

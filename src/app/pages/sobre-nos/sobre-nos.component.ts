@@ -39,6 +39,14 @@ interface Plano {
 })
 export class SobreNosComponent {
   readonly marcaNome = MARCA_NOME;
+
+  scrollToSection(id: string, event: Event): void {
+    event.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
   readonly ecossistemaImgPath = '/imagens/petsphere-ecossistema.png';
 
   readonly pilares: Pilar[] = [

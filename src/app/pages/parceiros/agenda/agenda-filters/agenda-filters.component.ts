@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import {
   Agendamento, AgendaFiltros, AgendaStatus, Profissional, Servico
 } from '../../../../types/agenda.types';
+import { getTime, toDate } from '../utils/date-helpers';
 
 @Component({
   selector: 'app-agenda-filters',
@@ -59,7 +60,7 @@ export class AgendaFiltersComponent implements OnInit {
     const now = new Date();
     const busy = this.agendamentos
       .filter(a => a.status !== 'CANCELADO')
-      .sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+      .sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
 
     for (let h = now.getHours(); h < 19; h++) {
       for (const m of [0, 30]) {

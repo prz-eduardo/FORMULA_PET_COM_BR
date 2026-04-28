@@ -21,7 +21,7 @@
         <tr
           *ngFor="let a of sorted"
           [class]="'row-' + a.status.toLowerCase().replace('_', '-')"
-          (click)="openModal.emit(a.id)"
+          (click)="openModal.emit(asString(a.id))"
         >
           <td class="td-time">
             {{ formatTime(a.inicio) }}
@@ -31,27 +31,27 @@
           </td>
           <td>
             <div class="pet-cell">
-              <span class="pet-n">{{ a.pet.nome }}</span>
-              <span class="pet-race" *ngIf="a.pet.raca">{{ a.pet.raca }}</span>
+              <span class="pet-n">{{ a.pet?.nome }}</span>
+              <span class="pet-race" *ngIf="a.pet?.raca">{{ a.pet?.raca }}</span>
               <div class="pet-icons">
-                <span *ngIf="a.pet.temAlimentacaoEspecial" title="Alimentação especial">🦴</span>
-                <span *ngIf="a.pet.temRestricao" title="Restrição">⚠️</span>
-                <span *ngIf="a.pet.temMedicacao" title="Medicação">💊</span>
+                <span *ngIf="a.pet?.temAlimentacaoEspecial" title="Alimentação especial">🦴</span>
+                <span *ngIf="a.pet?.temRestricao" title="Restrição">⚠️</span>
+                <span *ngIf="a.pet?.temMedicacao" title="Medicação">💊</span>
               </div>
             </div>
           </td>
           <td class="td-tutor">
             <div class="tutor-cell">
-              <span>{{ a.pet.tutor.nome }}</span>
-              <span class="tutor-phone">{{ a.pet.tutor.telefone }}</span>
+              <span>{{ a.pet?.tutor?.nome }}</span>
+              <span class="tutor-phone">{{ a.pet?.tutor?.telefone }}</span>
             </div>
           </td>
           <td>
-            <span class="service-badge" [style.border-left-color]="a.servico.cor">
-              {{ a.servico.nome }}
+            <span class="service-badge" [style.border-left-color]="a.servico?.cor">
+              {{ a.servico?.nome }}
             </span>
           </td>
-          <td class="td-prof">{{ a.profissional.nome }}</td>
+          <td class="td-prof">{{ a.profissional?.nome }}</td>
           <td>
             <span class="status-tag" [class]="'status-tag-' + a.status.toLowerCase().replace('_', '-')">
               {{ STATUS_LABELS[a.status] }}

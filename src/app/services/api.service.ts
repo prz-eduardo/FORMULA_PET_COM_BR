@@ -452,15 +452,23 @@ export class ApiService {
     const url = `${this.baseUrl}/anunciantes/register`;
     return this.http.post<any>(url, payload).pipe(
       catchError((err) => {
+        // Keep backend validation errors/status codes visible to the UI.
+        // Fallback is only for connectivity issues (status 0).
+        if (err && err.status && err.status !== 0) {
+          return throwError(() => err);
+        }
+
         if (typeof window !== 'undefined') {
           try {
             const fallback = `${window.location.protocol}//${window.location.hostname}:4000/anunciantes/register`;
-            return this.http.post<any>(fallback, payload).pipe(catchError(() => of(null)));
+            return this.http.post<any>(fallback, payload).pipe(
+              catchError(() => throwError(() => err))
+            );
           } catch (e) {
-            return of(null);
+            return throwError(() => err);
           }
         }
-        return of(null);
+        return throwError(() => err);
       }) as any
     );
   }

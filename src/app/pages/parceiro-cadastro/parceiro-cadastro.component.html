@@ -84,7 +84,13 @@
           </div>
           <div class="colspan2">
             <label>Logo (opcional)</label>
-            <input type="file" accept="image/*" (change)="onLogoSelected($event)" />
+            <div class="file-upload-wrap">
+              <label class="file-upload-btn">
+                📎 Escolher arquivo
+                <input type="file" accept="image/*" (change)="onLogoSelected($event)" />
+              </label>
+              <span class="file-upload-name">{{ logoFileName || 'Nenhum arquivo escolhido' }}</span>
+            </div>
             <div *ngIf="logoPreview" class="logo-preview">
               <img [src]="logoPreview" alt="Logo preview" />
             </div>
@@ -134,14 +140,6 @@
           <div>
             <label>Cidade</label>
             <input formControlName="cidade" />
-          </div>
-          <div>
-            <label>Latitude</label>
-            <input formControlName="latitude" readonly />
-          </div>
-          <div>
-            <label>Longitude</label>
-            <input formControlName="longitude" readonly />
           </div>
         </div>
       </fieldset>
@@ -207,7 +205,7 @@
     <section *ngIf="currentStep === 4">
       <fieldset class="section" [formGroup]="formSenha">
         <legend>Acesso ao painel</legend>
-        <div class="grid">
+        <div class="grid grid-senha">
           <div>
             <label>Senha *</label>
             <div class="pwd-wrap">
@@ -241,6 +239,9 @@
               </button>
             </div>
             <small class="err-msg" *ngIf="hasErrorSenha('confirmSenha','required')">Confirme a senha.</small>
+            <small class="err-msg" *ngIf="hasErrorSenha('confirmSenha','minLength')">Mínimo 8 caracteres.</small>
+            <small class="err-msg" *ngIf="hasErrorSenha('confirmSenha','needLetter')">Precisa conter letras.</small>
+            <small class="err-msg" *ngIf="hasErrorSenha('confirmSenha','needDigit')">Precisa conter números.</small>
             <small class="err-msg" *ngIf="passwordMismatch">As senhas não conferem.</small>
           </div>
         </div>

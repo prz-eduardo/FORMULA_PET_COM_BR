@@ -91,6 +91,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
 
   // ---- Logo ----
   logoPreview: string | null = null;
+  logoFileName: string | null = null;
 
   // ---- Email verification ----
   codeSent = false;
@@ -144,7 +145,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
     this.formSenha = this.fb.group(
       {
         senha: ['', [Validators.required, strongPasswordValidator]],
-        confirmSenha: ['', [Validators.required]],
+        confirmSenha: ['', [Validators.required, strongPasswordValidator]],
         aceitoTermos: [false, [Validators.requiredTrue]],
       },
       { validators: [passwordMatchValidator] }
@@ -273,6 +274,11 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
     const e = this.formEndereco.value;
     const email = this.emailValue;
     const s = this.formSenha.value;
+    const normalizedLogo = this.normalizeLogoForPayload(b.logo);
+
+    if (b.logo && !normalizedLogo) {
+      this.toast.info('Logo em arquivo sera ignorada neste cadastro inicial. Voce podera definir a logo apos aprovacao.');
+    }
 
     const payload: any = {
       nome: b.nome?.trim(),
@@ -287,7 +293,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
       cidade: e.cidade?.trim() || undefined,
       estado: e.estado ? String(e.estado).trim().toUpperCase() : undefined,
       descricao: b.descricao?.trim() || undefined,
-      logo: b.logo || undefined,
+      logo: normalizedLogo || undefined,
       cnpj: b.cnpj ? onlyDigitsFn(b.cnpj) : undefined,
       latitude: e.latitude ? Number(e.latitude) : undefined,
       longitude: e.longitude ? Number(e.longitude) : undefined,
@@ -425,6 +431,15 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
   // ------------------------------ Máscaras ------------------------------
   private onlyDigits(v: string) { return onlyDigitsFn(v); }
 
+  private normalizeLogoForPayload(value: any): string | null {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    // Backend field parceiros.logo_url is VARCHAR(255); base64 payloads break insertion.
+    if (raw.startsWith('data:')) return null;
+    if (raw.length > 255) return null;
+    return raw;
+  }
+
   formatCep(v: string) {
     const d = this.onlyDigits(v).slice(0, 8);
     if (!d) return '';
@@ -499,6 +514,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
     reader.onload = () => {
       const dataUrl = String(reader.result || '');
       this.logoPreview = dataUrl;
+      this.logoFileName = file.name;
       this.formBasico.get('logo')?.setValue(dataUrl);
     };
     reader.readAsDataURL(file);

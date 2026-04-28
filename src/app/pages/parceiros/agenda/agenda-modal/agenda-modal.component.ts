@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaStatus } from '../../../../types/agenda.types';
+import { getTime, toDate } from '../utils/date-helpers';
 
 interface StatusStep {
   status: AgendaStatus;
@@ -69,16 +70,17 @@ export class AgendaModalComponent {
 
   advanceStatus(): void {
     const ns = this.nextStatus;
-    if (ns) this.statusChanged.emit({ id: this.agendamento.id, status: ns });
+    if (ns) this.statusChanged.emit({ id: String(this.agendamento.id), status: ns });
   }
 
   cancelAgendamento(): void {
-    this.statusChanged.emit({ id: this.agendamento.id, status: 'CANCELADO' });
+    this.statusChanged.emit({ id: String(this.agendamento.id), status: 'CANCELADO' });
     this.close.emit();
   }
 
-  formatDateTime(d: Date): string {
-    return d.toLocaleString('pt-BR', {
+  formatDateTime(d: Date | string): string {
+    const date = d instanceof Date ? d : new Date(d);
+    return date.toLocaleString('pt-BR', {
       weekday: 'short',
       day: '2-digit',
       month: 'short',
@@ -87,11 +89,12 @@ export class AgendaModalComponent {
     });
   }
 
-  formatTime(d: Date): string {
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  formatTime(d: Date | string): string {
+    const date = d instanceof Date ? d : new Date(d);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
   get duration(): number {
-    return Math.round((this.agendamento.fim.getTime() - this.agendamento.inicio.getTime()) / 60000);
+    return Math.round((getTime(this.agendamento.fim) - getTime(this.agendamento.inicio)) / 60000);
   }
 }

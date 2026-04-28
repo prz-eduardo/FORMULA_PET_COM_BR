@@ -3,7 +3,6 @@
     <div class="header-brand">
       <span class="brand-icon">🐾</span>
       <span class="brand-name">PetSphere</span>
-      <span class="tipo-badge" *ngIf="parceiro()">{{ tipoLabel() }}</span>
     </div>
 
     <nav class="header-nav">
@@ -11,18 +10,16 @@
     </nav>
 
     <div class="header-actions">
-      <!-- Demo: switch partner type -->
-      <div class="tipo-switcher" [class.open]="showUserMenu()">
+      <div class="user-menu-wrapper">
         <button class="btn-user" (click)="toggleUserMenu()">
-          <span class="user-nome">{{ parceiro()?.nome ?? 'Parceiro' }}</span>
+          <span class="user-nome">{{ colaborador()?.nome ?? 'Colaborador' }}</span>
           <span class="caret">▾</span>
         </button>
         <div class="user-menu" *ngIf="showUserMenu()">
-          <div class="menu-section-label">Simular tipo</div>
-          <button (click)="switchTipo('PETSHOP')">🛁 PetShop</button>
-          <button (click)="switchTipo('CLINIC')">🩺 Clínica Vet.</button>
-          <button (click)="switchTipo('SITTER')">🏠 Pet Sitter</button>
-          <button (click)="switchTipo('HOTEL')">🏨 Hotel</button>
+          <div class="menu-user-info">
+            <div class="user-email">{{ colaborador()?.email }}</div>
+            <div class="user-role">{{ colaborador()?.role === 'master' ? '👑 Master' : '👤 Colaborador' }}</div>
+          </div>
           <div class="menu-divider"></div>
           <button class="danger" (click)="logout()">Sair</button>
         </div>

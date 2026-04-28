@@ -8,6 +8,7 @@ import {
   PetResumido, Profissional, Servico, SlotInfo
 } from '../../../../types/agenda.types';
 import { AgendaMockService } from '../services/agenda-mock.service';
+import { getTime } from '../utils/date-helpers';
 
 @Component({
   selector: 'app-agenda-sidebar',
@@ -48,7 +49,7 @@ export class AgendaSidebarComponent implements OnInit {
     const now = new Date();
     const busy = this.existingAgendamentos
       .filter(a => a.status !== 'CANCELADO')
-      .sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
+      .sort((a, b) => getTime(a.inicio) - getTime(b.inicio));
 
     for (let h = Math.max(now.getHours(), this.config?.workStart ?? 8); h < (this.config?.workEnd ?? 19); h++) {
       for (const m of [0, 30]) {

@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaStatus } from '../../../../types/agenda.types';
 import { QuickActionEvent } from '../agenda-card/agenda-card.component';
+import { getTime } from '../utils/date-helpers';
 
 type SortCol = 'inicio' | 'pet' | 'servico' | 'profissional' | 'status';
 type SortDir = 'asc' | 'desc';
@@ -39,10 +40,10 @@ export class AgendaListComponent {
     return [...this.agendamentos].sort((a, b) => {
       let va: string | number, vb: string | number;
       switch (col) {
-        case 'inicio':  va = a.inicio.getTime(); vb = b.inicio.getTime(); break;
-        case 'pet':     va = a.pet.nome; vb = b.pet.nome; break;
-        case 'servico': va = a.servico.nome; vb = b.servico.nome; break;
-        case 'profissional': va = a.profissional.nome; vb = b.profissional.nome; break;
+        case 'inicio':  va = getTime(a.inicio); vb = getTime(b.inicio); break;
+        case 'pet':     va = a.pet?.nome ?? ''; vb = b.pet?.nome ?? ''; break;
+        case 'servico': va = a.servico?.nome ?? ''; vb = b.servico?.nome ?? ''; break;
+        case 'profissional': va = a.profissional?.nome ?? ''; vb = b.profissional?.nome ?? ''; break;
         case 'status':  va = a.status; vb = b.status; break;
         default: va = 0; vb = 0;
       }
@@ -65,8 +66,9 @@ export class AgendaListComponent {
     return this.sortDir() === 'asc' ? '↑' : '↓';
   }
 
-  formatTime(d: Date): string {
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  formatTime(d: Date | string): string {
+    const date = d instanceof Date ? d : new Date(d);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
   nextActions(a: Agendamento): Array<{ type: string; label: string; danger: boolean }> {
@@ -84,8 +86,12 @@ export class AgendaListComponent {
     return map[a.status];
   }
 
-  onAction(id: string, type: string, event: Event): void {
+  onAction(id: string | number, type: string, event: Event): void {
     event.stopPropagation();
-    this.quickAction.emit({ id, action: type as QuickActionEvent['action'] });
+    this.quickAction.emit({ id: String(id), action: type as QuickActionEvent['action'] });
+  }
+
+  asString(value: string | number): string {
+    return String(value);
   }
 }

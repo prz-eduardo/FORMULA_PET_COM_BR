@@ -5,11 +5,11 @@
   <!-- Header -->
   <header class="modal-header">
     <div class="modal-pet-info">
-      <div class="pet-avatar">{{ agendamento.pet.especie === 'Gato' ? '🐱' : '🐶' }}</div>
+      <div class="pet-avatar">{{ agendamento.pet?.especie === 'Gato' ? '🐱' : '🐶' }}</div>
       <div>
-        <div class="pet-name">{{ agendamento.pet.nome }}</div>
+        <div class="pet-name">{{ agendamento.pet?.nome }}</div>
         <div class="pet-meta">
-          {{ agendamento.pet.especie }} · {{ agendamento.pet.raca }}
+          {{ agendamento.pet?.especie }} · {{ agendamento.pet?.raca }}
           <span
             class="status-badge"
             [class]="'badge-' + agendamento.status.toLowerCase().replace('_','-')"
@@ -28,18 +28,18 @@
     <div class="info-grid">
       <div class="info-item">
         <span class="info-lbl">Tutor</span>
-        <span>{{ agendamento.pet.tutor.nome }}</span>
-        <span class="info-sub">{{ agendamento.pet.tutor.telefone }}</span>
+        <span>{{ agendamento.pet?.tutor?.nome }}</span>
+        <span class="info-sub">{{ agendamento.pet?.tutor?.telefone }}</span>
       </div>
       <div class="info-item">
         <span class="info-lbl">Serviço</span>
-        <span>{{ agendamento.servico.nome }}</span>
+        <span>{{ agendamento.servico?.nome }}</span>
         <span class="info-sub">{{ duration }}min</span>
       </div>
       <div class="info-item">
         <span class="info-lbl">Profissional</span>
-        <span>{{ agendamento.profissional.nome }}</span>
-        <span class="info-sub" *ngIf="agendamento.profissional.especialidade">{{ agendamento.profissional.especialidade }}</span>
+        <span>{{ agendamento.profissional?.nome }}</span>
+        <span class="info-sub" *ngIf="agendamento.profissional?.especialidade">{{ agendamento.profissional?.especialidade }}</span>
       </div>
       <div class="info-item">
         <span class="info-lbl">Horário</span>
@@ -49,13 +49,13 @@
     </div>
 
     <!-- Alertas -->
-    <div class="alerts" *ngIf="agendamento.pet.alergias.length || agendamento.pet.temMedicacao || agendamento.pet.temRestricao || agendamento.pet.temAlimentacaoEspecial">
+    <div class="alerts" *ngIf="agendamento.pet?.alergias?.length || agendamento.pet?.temMedicacao || agendamento.pet?.temRestricao || agendamento.pet?.temAlimentacaoEspecial">
       <div class="alert-title">⚠️ Pré-check</div>
       <div class="alert-tags">
-        <span *ngFor="let al of agendamento.pet.alergias" class="alert-tag warn">🦠 Alergia: {{ al }}</span>
-        <span *ngIf="agendamento.pet.temMedicacao" class="alert-tag info">💊 Usa medicação</span>
-        <span *ngIf="agendamento.pet.temRestricao" class="alert-tag warn">🚫 Tem restrição</span>
-        <span *ngIf="agendamento.pet.temAlimentacaoEspecial" class="alert-tag info">🦴 Alimentação especial</span>
+        <span *ngFor="let al of agendamento.pet?.alergias || []" class="alert-tag warn">🦠 Alergia: {{ al }}</span>
+        <span *ngIf="agendamento.pet?.temMedicacao" class="alert-tag info">💊 Usa medicação</span>
+        <span *ngIf="agendamento.pet?.temRestricao" class="alert-tag warn">🚫 Tem restrição</span>
+        <span *ngIf="agendamento.pet?.temAlimentacaoEspecial" class="alert-tag info">🦴 Alimentação especial</span>
       </div>
     </div>
 
@@ -66,10 +66,10 @@
     </div>
 
     <!-- Histórico -->
-    <div class="historico" *ngIf="agendamento.pet.historicoRecente.length">
+    <div class="historico" *ngIf="agendamento.pet?.historicoRecente?.length">
       <div class="hist-title">📋 Histórico recente</div>
       <div class="hist-list">
-        <div class="hist-row" *ngFor="let h of agendamento.pet.historicoRecente">
+        <div class="hist-row" *ngFor="let h of agendamento.pet?.historicoRecente || []">
           <span class="hist-date">{{ h.data | date:'dd/MM/yy' }}</span>
           <span class="hist-serv">{{ h.servico }}</span>
           <span class="hist-prof">{{ h.profissional }}</span>

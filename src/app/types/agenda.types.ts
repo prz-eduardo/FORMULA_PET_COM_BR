@@ -15,6 +15,10 @@ export type AgendaStatus =
   | 'FINALIZADO'
   | 'CANCELADO';
 
+export type TipoRecurso = 'INDIVIDUAL' | 'COMPARTILHADO';
+
+export type RoleColaborador = 'master' | 'colaborador';
+
 export interface AgendaConfig {
   multiProfessional: boolean;
   allowOverlap: boolean;
@@ -23,6 +27,38 @@ export interface AgendaConfig {
   viewModes: ViewMode[];
   workStart: number; // hour (8 = 08:00)
   workEnd: number;   // hour (20 = 20:00)
+}
+
+export interface Colaborador {
+  id: number;
+  parceiroId: number;
+  nome: string;
+  email: string;
+  role: RoleColaborador;
+  ativo: boolean;
+  created_at?: string;
+  last_login_at?: string | null;
+}
+
+export interface Recurso {
+  id: number;
+  estabelecimentoId: number;
+  nome: string;
+  tipo: TipoRecurso;
+  ownerColaboradorId?: number | null;
+  ativo: boolean;
+  criado_em: string;
+  updated_at: string;
+}
+
+export interface PermissaoRecurso {
+  id: number;
+  recursoId: number;
+  colaboradorId: number;
+  podeVisualizar: boolean;
+  podeCriar: boolean;
+  podeEditar: boolean;
+  podeCancelar: boolean;
 }
 
 export interface Profissional {
@@ -71,20 +107,33 @@ export interface HistoricoItem {
 }
 
 export interface Agendamento {
-  id: string;
-  parceiroId: string;
-  pet: PetResumido;
-  profissional: Profissional;
-  servico: Servico;
-  inicio: Date;
-  fim: Date;
+  id: number | string; // Support both for backward compatibility
+  estabelecimentoId?: number;
+  parceiroId?: string; // Legacy
+  recursoId?: number;
+  criadoPor?: number;
+  criado_por?: number; // Backend naming
+  clienteNome?: string;
+  cliente_nome?: string; // Backend naming
+  clienteTelefone?: string | null;
+  cliente_telefone?: string | null; // Backend naming
+  petNome?: string | null;
+  pet_nome?: string | null; // Backend naming
+  inicio: Date | string;
+  fim: Date | string;
   status: AgendaStatus;
-  observacoes?: string;
-  recorrente: boolean;
-  recorrenciaInfo?: string; // 'semanal', 'quinzenal', 'mensal'
+  observacoes?: string | null;
+  criado_em?: string;
+  updated_at?: string;
+  // Legacy/optional fields for compatibility with mock data
+  pet?: PetResumido;
+  profissional?: Profissional;
+  servico?: Servico;
+  recorrente?: boolean;
+  recorrenciaInfo?: string;
   checkIn?: Date;
-  checkOut?: Date; // for SITTER/HOTEL
-  diaria?: boolean; // HOTEL mode
+  checkOut?: Date;
+  diaria?: boolean;
 }
 
 export interface AgendaFiltros {
@@ -93,6 +142,9 @@ export interface AgendaFiltros {
   status?: AgendaStatus[];
   especie?: string;
   search?: string;
+  recursoId?: number;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 export interface SlotInfo {
@@ -105,4 +157,10 @@ export interface Parceiro {
   nome: string;
   tipo: PartnerType;
   logoUrl?: string;
+}
+
+export interface SessionColaborador {
+  colaborador: Colaborador;
+  token: string;
+  expiresAt: number;
 }
