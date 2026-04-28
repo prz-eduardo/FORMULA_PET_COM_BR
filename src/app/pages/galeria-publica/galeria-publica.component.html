@@ -150,6 +150,7 @@
       <ng-container *ngIf="p.type === 'vet_ad'; else regularPet">
         <article
           class="pet-card pet-card--compact pet-card--compact--ad"
+          [class.pet-card--compact--ad-feed]="isMobileFeedOpen"
           role="article"
           [attr.aria-label]="'Anúncio: ' + (p.nome || p.name || 'Veterinário')"
         >
@@ -182,47 +183,58 @@
         </article>
       </ng-container>
       <ng-template #regularPet>
-        <button
-          type="button"
-          class="pet-card pet-card--compact"
-          (click)="openLightbox(p)"
-          (keydown.enter)="openLightbox(p)"
-          (keydown.space)="$event.preventDefault(); openLightbox(p)"
-          [attr.aria-label]="'Abrir em tamanho grande: ' + (p.nome || p.name || 'pet')"
-        >
-          <div class="pet-card--compact__media photo-wrap">
-            <div class="photo-skeleton" *ngIf="!p._imgLoaded" aria-hidden="true"></div>
-            <img
-              [src]="resolveImage(p)"
-              alt=""
-              class="pet-card--img"
-              [class.loaded]="p._imgLoaded"
-              (error)="onImgError($event.target, '/imagens/image.png')"
-              (load)="onImgLoad($event, p)"
-            />
-          </div>
-          <div class="pet-card--compact__footer">
-            <div class="pet-card--compact__titleblock">
-              <span class="pet-card--compact__name">{{ p.nome || p.name || 'Sem nome' }}</span>
-              <span *ngIf="p.colecao_titulo" class="pet-card--compact__colecao">{{ p.colecao_titulo }}</span>
+        <ng-container *ngIf="isMobileFeedOpen; else compactCard">
+          <app-pet-lightbox
+            class="galeria-inline-lightbox"
+            [pet]="p"
+            [isOpen]="true"
+            [inlineMode]="true"
+            (reactionSelect)="onInlineLightboxReaction(p, $event)"
+          ></app-pet-lightbox>
+        </ng-container>
+        <ng-template #compactCard>
+          <button
+            type="button"
+            class="pet-card pet-card--compact"
+            (click)="openLightbox(p)"
+            (keydown.enter)="openLightbox(p)"
+            (keydown.space)="$event.preventDefault(); openLightbox(p)"
+            [attr.aria-label]="'Abrir em tamanho grande: ' + (p.nome || p.name || 'pet')"
+          >
+            <div class="pet-card--compact__media photo-wrap">
+              <div class="photo-skeleton" *ngIf="!p._imgLoaded" aria-hidden="true"></div>
+              <img
+                [src]="resolveImage(p)"
+                alt=""
+                class="pet-card--img"
+                [class.loaded]="p._imgLoaded"
+                (error)="onImgError($event.target, '/imagens/image.png')"
+                (load)="onImgLoad($event, p)"
+              />
             </div>
-            <div class="pet-card--compact__end">
-              <span
-                class="pet-card--compact__species"
-                [attr.title]="(p.tipo || p.especie) || 'Pet'"
-                aria-hidden="true"
-              >{{ typeEmoji(p.tipo || p.especie) }}</span>
-              <span
-                class="pet-card--compact__stats"
-                *ngIf="(p.likes ?? 0) + (p.total_comentarios ?? 0) > 0"
-                aria-hidden="true"
-              >
-                <span *ngIf="(p.likes ?? 0) > 0" class="pet-card--compact__stat">❤️ {{ p.likes }}</span>
-                <span *ngIf="(p.total_comentarios ?? 0) > 0" class="pet-card--compact__stat">💬 {{ p.total_comentarios }}</span>
-              </span>
+            <div class="pet-card--compact__footer">
+              <div class="pet-card--compact__titleblock">
+                <span class="pet-card--compact__name">{{ p.nome || p.name || 'Sem nome' }}</span>
+                <span *ngIf="p.colecao_titulo" class="pet-card--compact__colecao">{{ p.colecao_titulo }}</span>
+              </div>
+              <div class="pet-card--compact__end">
+                <span
+                  class="pet-card--compact__species"
+                  [attr.title]="(p.tipo || p.especie) || 'Pet'"
+                  aria-hidden="true"
+                >{{ typeEmoji(p.tipo || p.especie) }}</span>
+                <span
+                  class="pet-card--compact__stats"
+                  *ngIf="(p.likes ?? 0) + (p.total_comentarios ?? 0) > 0"
+                  aria-hidden="true"
+                >
+                  <span *ngIf="(p.likes ?? 0) > 0" class="pet-card--compact__stat">❤️ {{ p.likes }}</span>
+                  <span *ngIf="(p.total_comentarios ?? 0) > 0" class="pet-card--compact__stat">💬 {{ p.total_comentarios }}</span>
+                </span>
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
+        </ng-template>
       </ng-template>
     </div>
   </div>

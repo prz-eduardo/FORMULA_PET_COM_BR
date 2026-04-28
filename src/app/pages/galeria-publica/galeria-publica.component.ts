@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, Inject, PLATFORM_ID, HostListener } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -51,6 +51,8 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
   // Lightbox: currently-open pet reference (or null). We keep a direct reference so
   // mutations made inside the lightbox (reaction/comment totals) reflect in the card.
   lightboxPet: any = null;
+  isMobileFeedOpen = false;
+  private readonly mobileFeedBreakpoint = 860;
 
   /** CTA: acordeão (fechado = só título + chevron). */
   ctaAccordionOpen = false;
@@ -253,6 +255,7 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
   ngOnInit(): void {
     // only perform fetches in the browser; avoids SSR Node fetch with relative URL
     if (isPlatformBrowser(this.platformId)) {
+      this.updateResponsiveViewState();
       // reset uid counter on fresh client render
       this._uidCounter = 1;
       this.loadPage(1);
@@ -307,6 +310,23 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
   ngOnDestroy(): void {
     if (this.observer) this.observer.disconnect();
     this.ctaSubscriptions.unsubscribe();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateResponsiveViewState();
+  }
+
+  private updateResponsiveViewState(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      this.isMobileFeedOpen = window.innerWidth <= this.mobileFeedBreakpoint;
+      if (this.isMobileFeedOpen && this.lightboxPet) {
+        this.lightboxPet = null;
+      }
+    } catch {
+      this.isMobileFeedOpen = false;
+    }
   }
 
   private resetClienteCtaContext(): void {
@@ -603,6 +623,11 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
   onLightboxReaction(ev: PetLightboxReaction) {
     if (!this.lightboxPet || !ev?.tipo) return;
     try { this.selectReaction(this.lightboxPet, ev.tipo); } catch (e) {}
+  }
+
+  onInlineLightboxReaction(pet: any, ev: PetLightboxReaction) {
+    if (!pet || !ev?.tipo) return;
+    try { this.selectReaction(pet, ev.tipo); } catch (e) {}
   }
 
   private async loadPage(pageNum: number) {

@@ -1,0 +1,262 @@
+<div class="painel-wrapper animate-fade">
+
+  <!-- ── Hero / Welcome ──────────────────────────────────────────────────── -->
+  <section class="hero-card" [class.collapsed]="isCollapsed('welcome')">
+    <header class="hero-card-head">
+      <div class="hero-greeting-titles">
+        <span *ngIf="!isCollapsed('welcome')" class="hero-eyebrow">{{ greeting }}</span>
+        <h2 class="hero-title">Bem-vindo ao <span class="gradient-text">Painel do Parceiro</span></h2>
+      </div>
+      <button
+        type="button"
+        class="hero-toggle"
+        (click)="toggleSection('welcome')"
+        [attr.aria-expanded]="!isCollapsed('welcome')"
+        [attr.aria-label]="isCollapsed('welcome') ? 'Expandir' : 'Recolher'"
+      >
+        <i class="fa fa-chevron-down hero-toggle-chevron"></i>
+      </button>
+    </header>
+
+    <div class="hero-main" *ngIf="!isCollapsed('welcome')">
+      <div class="hero-main-left">
+        <p class="hero-subtitle">Gerencie sua operação, consultas veterinárias e todos os serviços do seu negócio pet em um só lugar.</p>
+        <div class="hero-search">
+          <i class="fa fa-search"></i>
+          <input
+            type="text"
+            placeholder="Buscar atalho... (ex: agenda, receita, pacientes)"
+            [(ngModel)]="searchTerm"
+            (keydown.escape)="searchTerm = ''"
+            aria-label="Buscar atalhos do painel"
+          />
+          <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''" aria-label="Limpar busca">
+            <i class="fa fa-times"></i>
+          </button>
+          <kbd class="hero-kbd">/</kbd>
+        </div>
+      </div>
+
+      <div class="hero-stats">
+        <button class="stat" (click)="goToAgenda()">
+          <span class="stat-icon stat-icon--blue"><i class="fa fa-calendar"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Operação</span>
+            <span class="stat-value">Agenda</span>
+          </span>
+        </button>
+        <button class="stat" (click)="goToAreaVet()">
+          <span class="stat-icon stat-icon--teal"><i class="fa fa-flask"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Veterinário</span>
+            <span class="stat-value">Área Vet</span>
+          </span>
+        </button>
+        <button class="stat" (click)="goToPacientes()">
+          <span class="stat-icon stat-icon--purple"><i class="fa fa-paw"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Clínica</span>
+            <span class="stat-value">Pacientes</span>
+          </span>
+        </button>
+        <button class="stat" (click)="goToGerarReceita()">
+          <span class="stat-icon stat-icon--green"><i class="fa fa-file-text-o"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Receitas</span>
+            <span class="stat-value">Gerar</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Home Overview: KPIs, gráfico de vendas, fila de pedidos ─────────── -->
+  <app-admin-home-overview></app-admin-home-overview>
+
+  <!-- ── No results ──────────────────────────────────────────────────────── -->
+  <div *ngIf="searchTerm && !hasAnyMatch()" class="empty-search" role="status">
+    <i class="fa fa-search-minus"></i>
+    <span>Nenhum atalho encontrado para <strong>"{{ searchTerm }}"</strong>.</span>
+    <button class="link-btn" (click)="searchTerm = ''">Limpar busca</button>
+  </div>
+
+  <!-- ── Section cards ───────────────────────────────────────────────────── -->
+  <div class="painel-actions">
+
+    <!-- Operação -->
+    <section
+      class="section-card section--blue"
+      *ngIf="sectionHasMatches('operacao')"
+      [class.collapsed]="isCollapsed('operacao')"
+    >
+      <header
+        class="section-header"
+        role="button"
+        tabindex="0"
+        (click)="toggleSection('operacao')"
+        (keydown.enter)="toggleSection('operacao')"
+        (keydown.space)="toggleSection('operacao')"
+        [attr.aria-expanded]="!isCollapsed('operacao')"
+      >
+        <div class="sec-title-wrap">
+          <span class="sec-dot"></span>
+          <h3 class="sec-title">Operação</h3>
+          <span class="sec-count">{{ sectionCount('operacao') }}</span>
+        </div>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('operacao')">
+        <button class="item" *ngIf="matches('agenda horários atendimento')" (click)="goToAgenda()" tabindex="0">
+          <i class="fa fa-calendar"></i>
+          <span>Agenda</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item item--soon" *ngIf="matches('reservas hotel creche hospedagem')" tabindex="0" disabled>
+          <i class="fa fa-bed"></i>
+          <span>Reservas & Hotel</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+        <button class="item item--soon" *ngIf="matches('atendimento chat suporte omnichannel')" tabindex="0" disabled>
+          <i class="fa fa-comments"></i>
+          <span>Atendimento</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Área Veterinária -->
+    <section
+      class="section-card section--teal"
+      *ngIf="sectionHasMatches('vet')"
+      [class.collapsed]="isCollapsed('vet')"
+    >
+      <header
+        class="section-header"
+        role="button"
+        tabindex="0"
+        (click)="toggleSection('vet')"
+        (keydown.enter)="toggleSection('vet')"
+        (keydown.space)="toggleSection('vet')"
+        [attr.aria-expanded]="!isCollapsed('vet')"
+      >
+        <div class="sec-title-wrap">
+          <span class="sec-dot"></span>
+          <h3 class="sec-title">Área Veterinária</h3>
+          <span class="sec-count">{{ sectionCount('vet') }}</span>
+        </div>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('vet')">
+        <button class="item" *ngIf="matches('ativos formulas compostos ingredientes')" (click)="goToAreaVet()" tabindex="0">
+          <i class="fa fa-flask"></i>
+          <span>Ativos & Fórmulas</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item" *ngIf="matches('gerar receita prescricao veterinaria')" (click)="goToGerarReceita()" tabindex="0">
+          <i class="fa fa-file-text-o"></i>
+          <span>Gerar Receita</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item" *ngIf="matches('historico receitas')" (click)="goToHistorico()" tabindex="0">
+          <i class="fa fa-history"></i>
+          <span>Histórico de Receitas</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item" *ngIf="matches('pacientes pets clientes tutores')" (click)="goToPacientes()" tabindex="0">
+          <i class="fa fa-paw"></i>
+          <span>Pacientes</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Serviços SaaS (Em breve) -->
+    <section
+      class="section-card section--amber"
+      *ngIf="sectionHasMatches('saas')"
+      [class.collapsed]="isCollapsed('saas')"
+    >
+      <header
+        class="section-header"
+        role="button"
+        tabindex="0"
+        (click)="toggleSection('saas')"
+        (keydown.enter)="toggleSection('saas')"
+        (keydown.space)="toggleSection('saas')"
+        [attr.aria-expanded]="!isCollapsed('saas')"
+      >
+        <div class="sec-title-wrap">
+          <span class="sec-dot"></span>
+          <h3 class="sec-title">Serviços</h3>
+          <span class="sec-count">{{ sectionCount('saas') }}</span>
+          <span class="badge-roadmap">Roadmap</span>
+        </div>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('saas')">
+        <button class="item item--soon" *ngIf="matches('petshop online loja ecommerce')" tabindex="0" disabled>
+          <i class="fa fa-shopping-cart"></i>
+          <span>Petshop Online</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+        <button class="item item--soon" *ngIf="matches('hotel creche hospedagem pets')" tabindex="0" disabled>
+          <i class="fa fa-home"></i>
+          <span>Hotel & Creche</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+        <button class="item item--soon" *ngIf="matches('adestramento treinamento comportamento')" tabindex="0" disabled>
+          <i class="fa fa-graduation-cap"></i>
+          <span>Adestramento</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+        <button class="item item--soon" *ngIf="matches('planos assinatura financeiro cobranca')" tabindex="0" disabled>
+          <i class="fa fa-credit-card"></i>
+          <span>Planos & Assinatura</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+        <button class="item item--soon" *ngIf="matches('relatorios analytics dados')" tabindex="0" disabled>
+          <i class="fa fa-line-chart"></i>
+          <span>Relatórios</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Configurações -->
+    <section
+      class="section-card section--purple"
+      *ngIf="sectionHasMatches('config')"
+      [class.collapsed]="isCollapsed('config')"
+    >
+      <header
+        class="section-header"
+        role="button"
+        tabindex="0"
+        (click)="toggleSection('config')"
+        (keydown.enter)="toggleSection('config')"
+        (keydown.space)="toggleSection('config')"
+        [attr.aria-expanded]="!isCollapsed('config')"
+      >
+        <div class="sec-title-wrap">
+          <span class="sec-dot"></span>
+          <h3 class="sec-title">Configurações</h3>
+          <span class="sec-count">{{ sectionCount('config') }}</span>
+        </div>
+        <i class="fa fa-chevron-down chevron"></i>
+      </header>
+      <div class="items" *ngIf="!isCollapsed('config')">
+        <button class="item" *ngIf="matches('colaboradores equipe funcionarios')" (click)="goToColaboradores()" tabindex="0">
+          <i class="fa fa-users"></i>
+          <span>Colaboradores</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item item--soon" *ngIf="matches('perfil conta configuracoes')" tabindex="0" disabled>
+          <i class="fa fa-cog"></i>
+          <span>Perfil & Conta</span>
+          <span class="badge-soon">Em breve</span>
+        </button>
+      </div>
+    </section>
+
+  </div>
+</div>

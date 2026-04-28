@@ -815,13 +815,14 @@ export class ApiService {
   }
 
   // Comentários públicos de pets
-  getPetComentarios(petId: string | number, params?: { page?: number; pageSize?: number }) {
+  getPetComentarios(petId: string | number, params?: { page?: number; pageSize?: number }, token?: string) {
     const search = new URLSearchParams();
     if (params?.page) search.set('page', String(params.page));
     if (params?.pageSize) search.set('pageSize', String(params.pageSize));
     const qp = search.toString();
     const url = `${this.baseUrl}/pets/${encodeURIComponent(String(petId))}/comentarios${qp ? `?${qp}` : ''}`;
-    return this.http.get<any>(url);
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.get<any>(url, { headers });
   }
 
   postPetComentario(petId: string | number, comentario: string, token: string) {

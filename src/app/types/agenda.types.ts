@@ -36,6 +36,7 @@ export interface Colaborador {
   email: string;
   role: RoleColaborador;
   ativo: boolean;
+  parceiroNome?: string;
   created_at?: string;
   last_login_at?: string | null;
 }

@@ -437,10 +437,10 @@
 	width: 100%;
 	align-items: start;
 }
-@media (max-width: 480px) {
+@media (max-width: 860px) {
 	.galeria-feed {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 14px;
 	}
 }
 .galeria-feed__item {
@@ -449,6 +449,11 @@
 	position: relative;
 	width: 100%;
 	min-width: 0;
+}
+
+.galeria-inline-lightbox {
+  display: block;
+  width: 100%;
 }
 /* Cartão compacto: foto 4:5 (feed) + faixa de nome; clique abre o lightbox */
 .pet-card--compact {
@@ -653,6 +658,22 @@ article.pet-card--compact {
 .galeria-feed__item--ad:hover .pet-card--compact--ad {
 	transform: translateY(-3px);
 	box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
+}
+
+/* No modo feed mobile, o anúncio ocupa a largura total com imagem em proporção 4:5 */
+.pet-card--compact--ad-feed .pet-card--compact__media {
+  aspect-ratio: 4 / 5;
+  border-radius: 14px 14px 0 0;
+}
+.pet-card--compact--ad-feed .pet-card--img {
+  aspect-ratio: 4 / 5;
+}
+.pet-card--compact--ad-feed .pet-card--compact__footer {
+  padding: 14px 16px;
+  font-size: 15px;
+}
+.pet-card--compact--ad-feed .pet-card--compact__name {
+  font-size: 16px;
 }
 
 .loading-more{ text-align:center; padding:12px; color:#374151 }

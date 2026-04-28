@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
-const API_BASE = '/api';
+const API_BASE = environment.apiBaseUrl;
 
 type Step = 'email' | 'code' | 'password' | 'success';
 

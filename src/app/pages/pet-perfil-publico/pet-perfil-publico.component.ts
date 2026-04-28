@@ -23,6 +23,7 @@ export class PetPerfilPublicoComponent implements OnInit {
   comentarios: any[] = [];
   totalComentarios = 0;
   loadingComentarios = false;
+  comentariosError: string | null = null;
   novoComentario = '';
   sendingComentario = false;
   reactionTypes = [
@@ -48,7 +49,12 @@ export class PetPerfilPublicoComponent implements OnInit {
     this.route.paramMap.subscribe((p) => {
       const id = p.get('id');
       this.petId = id ? parseInt(id, 10) : null;
-      if (this.petId) this.load();
+      if (!this.petId || Number.isNaN(this.petId)) {
+        this.loading = false;
+        this.error = 'Perfil inválido.';
+        return;
+      }
+      this.load();
     });
   }
 
@@ -56,6 +62,7 @@ export class PetPerfilPublicoComponent implements OnInit {
     if (!this.petId) return;
     this.loading = true;
     this.error = null;
+    this.data = null;
     this.api.getPetPerfilPublico(this.petId, this.token || undefined).subscribe({
       next: (res) => {
         this.data = res;
@@ -71,6 +78,22 @@ export class PetPerfilPublicoComponent implements OnInit {
 
   get pet() {
     return this.data?.pet;
+  }
+
+  get isLogged(): boolean {
+    return !!this.token;
+  }
+
+  get petFotoUrl(): string {
+    return this.api.resolveMediaUrl(this.pet?.foto);
+  }
+
+  get tutorFotoUrl(): string {
+    return this.api.resolveMediaUrl(this.pet?.tutor_foto);
+  }
+
+  get charCount(): number {
+    return (this.novoComentario || '').length;
   }
 
   get userReactionTipo() {
@@ -122,19 +145,27 @@ export class PetPerfilPublicoComponent implements OnInit {
   private _loadComentarios() {
     if (!this.petId) return;
     this.loadingComentarios = true;
-    this.api.getPetComentarios(this.petId, { page: 1, pageSize: 100 }).subscribe({
+    this.comentariosError = null;
+    this.api.getPetComentarios(this.petId, { page: 1, pageSize: 100 }, this.token || undefined).subscribe({
       next: (r: any) => {
         this.comentarios = Array.isArray(r) ? r : (r?.data || []);
         this.totalComentarios = Number(r?.total ?? this.comentarios.length);
         this.loadingComentarios = false;
       },
-      error: () => { this.loadingComentarios = false; }
+      error: () => {
+        this.comentariosError = 'Não foi possível carregar os comentários deste perfil.';
+        this.loadingComentarios = false;
+      }
     });
   }
 
   async enviarComentario() {
     const t = (this.novoComentario || '').trim();
     if (!t || !this.petId || !this.token) return;
+    if (t.length > 500) {
+      this.toast.error('Comentário muito longo (máx 500 caracteres).');
+      return;
+    }
     this.sendingComentario = true;
     try {
       const res: any = await this.api.postPetComentario(this.petId, t, this.token).toPromise();
@@ -148,4 +179,53 @@ export class PetPerfilPublicoComponent implements OnInit {
       this.sendingComentario = false;
     }
   }
+
+  async removerComentario(c: any) {
+    if (!this.petId || !this.token || !c?.id || !this.canDeleteComment(c)) return;
+    if (!confirm('Remover este comentário?')) return;
+    try {
+      const res: any = await this.api.deletePetComentario(this.petId, c.id, this.token).toPromise();
+      this.comentarios = this.comentarios.filter((x) => x.id !== c.id);
+      this.totalComentarios = Number(res?.total_comentarios ?? Math.max(0, this.totalComentarios - 1));
+      this.toast.success('Comentário removido.');
+    } catch {
+      this.toast.error('Não foi possível remover o comentário.');
+    }
+  }
+
+  canDeleteComment(c: any): boolean {
+    return !!c?.can_delete;
+  }
+
+  formatDate(d: any): string {
+    try {
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return '';
+      const diff = Math.floor((Date.now() - dt.getTime()) / 1000);
+      if (diff < 60) return 'agora';
+      if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+      if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} d`;
+      return dt.toLocaleDateString('pt-BR');
+    } catch {
+      return '';
+    }
+  }
+
+  onImgError(ev: Event) {
+    const img = ev.target as HTMLImageElement;
+    if (!img) return;
+    if (img.src.indexOf('/imagens/image.png') !== -1) return;
+    img.src = '/imagens/image.png';
+  }
+
+  onAvatarError(ev: Event) {
+    const img = ev.target as HTMLImageElement;
+    if (!img) return;
+    if (img.src.indexOf('/imagens/image.png') !== -1) return;
+    img.src = '/imagens/image.png';
+  }
+
+  trackReaction = (_: number, r: any) => r?.tipo ?? _;
+  trackComentario = (_: number, c: any) => c?.id ?? _;
 }

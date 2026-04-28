@@ -2,9 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { Colaborador, SessionColaborador, RoleColaborador } from '../types/agenda.types';
+import { environment } from '../../environments/environment';
 
 const STORAGE_KEY = 'parceiro_token';
-const API_BASE = '/api'; // Adjust based on your config
+const API_BASE = environment.apiBaseUrl;
 
 @Injectable({ providedIn: 'root' })
 export class ParceiroAuthService {

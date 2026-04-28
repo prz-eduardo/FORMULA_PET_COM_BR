@@ -27,6 +27,7 @@ interface ImagemEngState {
 export class PetLightboxComponent implements OnChanges, OnDestroy {
   @Input() pet: any = null;
   @Input() isOpen = false;
+  @Input() inlineMode = false;
 
   @Output() close = new EventEmitter<void>();
   @Output() reactionSelect = new EventEmitter<PetLightboxReaction>();
@@ -42,11 +43,16 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
   loadingComentarios = false;
   sendingComentario = false;
   novoComentario = '';
+  commentsExpanded = false;
   totalComentarios = 0;
   comentariosError: string | null = null;
   lightboxImgIndex = 0;
   /** Reações e totais da foto visível (v2) */
   imagemState: ImagemEngState = { userReactionTipo: null, likes: 0, reactionTotals: { love: 0, haha: 0, sad: 0, angry: 0 }, totalComentarios: 0 };
+  private pointerStartX: number | null = null;
+  private pointerStartY: number | null = null;
+  private pointerId: number | null = null;
+  private readonly swipeThresholdPx = 52;
 
   private _escHandler = (ev: KeyboardEvent) => {
     if (ev.key === 'Escape') this.onClose();
@@ -134,6 +140,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
         this._onClose();
       }
     } else if (changes['pet'] && this.isOpen) {
+      this.commentsExpanded = false;
       if (this.galeriaFotoV2()) {
         this._loadSlideFoto();
       } else {
@@ -148,9 +155,12 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
 
   private _onOpen() {
     if (!isPlatformBrowser(this.platformId)) return;
-    try { document.body.style.overflow = 'hidden'; } catch {}
-    try { document.addEventListener('keydown', this._escHandler); } catch {}
+    if (!this.inlineMode) {
+      try { document.body.style.overflow = 'hidden'; } catch {}
+      try { document.addEventListener('keydown', this._escHandler); } catch {}
+    }
     this.novoComentario = '';
+    this.commentsExpanded = false;
     this.comentariosError = null;
     this.lightboxImgIndex = 0;
     if (this.galeriaFotoV2()) {
@@ -163,8 +173,11 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
 
   private _onClose() {
     if (!isPlatformBrowser(this.platformId)) return;
-    try { document.body.style.overflow = ''; } catch {}
-    try { document.removeEventListener('keydown', this._escHandler); } catch {}
+    if (!this.inlineMode) {
+      try { document.body.style.overflow = ''; } catch {}
+      try { document.removeEventListener('keydown', this._escHandler); } catch {}
+    }
+    this._resetPointerSwipe();
   }
 
   onClose() {
@@ -172,6 +185,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
   }
 
   onOverlayClick(ev: MouseEvent) {
+    if (this.inlineMode) return;
     const target = ev.target as HTMLElement;
     if (target && target.classList && target.classList.contains('pet-lightbox-overlay')) {
       this.onClose();
@@ -314,8 +328,17 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
     } catch { return '/imagens/image.png'; }
   }
 
-  prevLb(ev: MouseEvent) {
-    ev.stopPropagation();
+  prevLb(ev?: Event) {
+    if (ev) ev.stopPropagation();
+    this.goPrevSlide();
+  }
+
+  nextLb(ev?: Event) {
+    if (ev) ev.stopPropagation();
+    this.goNextSlide();
+  }
+
+  private goPrevSlide() {
     const urls = this.getGalleryUrls();
     if (urls.length < 2) return;
     let i = this.lightboxImgIndex - 1;
@@ -324,8 +347,7 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
     this._afterSlideChange();
   }
 
-  nextLb(ev: MouseEvent) {
-    ev.stopPropagation();
+  private goNextSlide() {
     const urls = this.getGalleryUrls();
     if (urls.length < 2) return;
     let i = this.lightboxImgIndex + 1;
@@ -334,10 +356,65 @@ export class PetLightboxComponent implements OnChanges, OnDestroy {
     this._afterSlideChange();
   }
 
-  goLb(i: number, ev: MouseEvent) {
-    ev.stopPropagation();
+  goLb(i: number, ev?: Event) {
+    if (ev) ev.stopPropagation();
     this.lightboxImgIndex = i;
     this._afterSlideChange();
+  }
+
+  toggleComments() {
+    this.commentsExpanded = !this.commentsExpanded;
+  }
+
+  onMediaPointerDown(ev: PointerEvent) {
+    if (!this.showCarouselNav()) return;
+    if (!this.isSwipeCandidateTarget(ev.target)) return;
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    this.pointerId = ev.pointerId;
+    this.pointerStartX = ev.clientX;
+    this.pointerStartY = ev.clientY;
+  }
+
+  onMediaPointerUp(ev: PointerEvent) {
+    if (!this.showCarouselNav()) {
+      this._resetPointerSwipe();
+      return;
+    }
+    if (this.pointerId == null || ev.pointerId !== this.pointerId || this.pointerStartX == null || this.pointerStartY == null) {
+      return;
+    }
+    const dx = ev.clientX - this.pointerStartX;
+    const dy = ev.clientY - this.pointerStartY;
+    if (Math.abs(dx) >= this.swipeThresholdPx && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) this.goNextSlide();
+      else this.goPrevSlide();
+    }
+    this._resetPointerSwipe();
+  }
+
+  onMediaPointerCancel() {
+    this._resetPointerSwipe();
+  }
+
+  onMediaWheel(ev: WheelEvent) {
+    if (!this.showCarouselNav()) return;
+    const ax = Math.abs(ev.deltaX);
+    const ay = Math.abs(ev.deltaY);
+    if (ax < 18 || ax <= ay) return;
+    ev.preventDefault();
+    if (ev.deltaX > 0) this.goNextSlide();
+    else this.goPrevSlide();
+  }
+
+  private isSwipeCandidateTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return true;
+    return !target.closest('button, a, textarea, input, [data-no-swipe]');
+  }
+
+  private _resetPointerSwipe() {
+    this.pointerId = null;
+    this.pointerStartX = null;
+    this.pointerStartY = null;
   }
 
   private _afterSlideChange() {

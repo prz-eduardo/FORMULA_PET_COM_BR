@@ -34,7 +34,7 @@ export class LoginParceiroComponent {
     this.auth.login(this.email, this.password)
       .then(() => {
         this.loading.set(false);
-        this.router.navigate(['/parceiros/agenda']);
+        this.router.navigate(['/parceiros/painel']);
       })
       .catch((err) => {
         this.loading.set(false);

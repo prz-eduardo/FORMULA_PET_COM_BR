@@ -19,6 +19,12 @@ export function app(): express.Express {
 
   // Example Express Rest API endpoints
   // server.get('/api/**', (req, res) => { });
+  // Block API-like paths from being rendered by SSR. Frontend API calls should
+  // target the backend host configured in environment.apiBaseUrl.
+  server.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'API endpoint is not served by the Angular SSR server' });
+  });
+
   // Public maps endpoint used by the frontend to fetch partner vets and maps API key.
   // Returns { partners: [...], mapsApiKey: string|null }
   server.get('/maps', (req, res) => {
@@ -46,7 +52,7 @@ export function app(): express.Express {
 
   // All regular routes use the Angular engine
   server.get('**', (req, res, next) => {
-    const { protocol, originalUrl, baseUrl, headers } = req;
+    const { protocol, originalUrl, headers } = req;
 
     commonEngine
       .render({
@@ -54,7 +60,7 @@ export function app(): express.Express {
         documentFilePath: indexHtml,
         url: `${protocol}://${headers.host}${originalUrl}`,
         publicPath: browserDistFolder,
-        providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
+        providers: [{ provide: APP_BASE_HREF, useValue: '/' }],
       })
       .then((html) => res.send(html))
       .catch((err) => next(err));

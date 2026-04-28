@@ -3,8 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { Recurso, Agendamento, Colaborador, PermissaoRecurso } from '../../../../types/agenda.types';
 import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
+import { environment } from '../../../../../environments/environment';
 
-const API_BASE = '/api'; // Adjust based on your environment config
+const API_BASE = environment.apiBaseUrl;
 
 @Injectable({ providedIn: 'root' })
 export class AgendaApiService {

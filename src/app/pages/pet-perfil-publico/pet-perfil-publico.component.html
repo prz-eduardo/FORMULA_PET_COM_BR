@@ -1,52 +1,124 @@
-<main class="container pet-perfil">
-  <a routerLink="/galeria" class="back">← Galeria</a>
-  <div *ngIf="loading" class="card">Carregando…</div>
-  <div *ngIf="error" class="card danger">{{ error }}</div>
+<main class="pet-perfil-wrap">
+  <section class="pet-perfil container">
+    <a routerLink="/galeria" class="back-link" aria-label="Voltar para galeria">← Voltar para galeria</a>
 
-  <article *ngIf="!loading && pet" class="perfil-hero">
-    <div class="perfil-hero__media">
-      <img [src]="pet.foto || '/imagens/image.png'" [alt]="'Foto de ' + (pet.nome || 'pet')" class="perfil-hero__img" />
+    <div *ngIf="loading" class="state-card">
+      <div class="state-spinner" aria-hidden="true"></div>
+      <p>Carregando perfil público...</p>
     </div>
-    <div class="perfil-hero__body">
-      <h1>{{ pet.nome || 'Pet' }}</h1>
-      <p class="meta" *ngIf="pet.especie || pet.raca">
-        <span *ngIf="pet.especie">{{ pet.especie }}</span>
-        <span *ngIf="pet.raca"> · {{ pet.raca }}</span>
-      </p>
-      <p class="meta" *ngIf="pet.idade != null">{{ pet.idade }} {{ pet.idade === 1 ? 'ano' : 'anos' }}
-        <span *ngIf="pet.sexo"> · {{ pet.sexo }}</span>
-        <span *ngIf="pet.pesoKg"> · {{ pet.pesoKg }} kg</span>
-      </p>
-      <p *ngIf="pet.observacoes" class="obs">{{ pet.observacoes }}</p>
-      <p *ngIf="pet.tutor_nome" class="tutor">Tutor: {{ pet.tutor_nome }}</p>
 
-      <section class="reactions" *ngIf="data">
-        <p class="reactions-total" *ngIf="getTotalReactions() > 0">{{ getTotalReactions() }} reações neste perfil</p>
-        <div class="reactions-bar">
-          <button *ngFor="let r of reactionTypes" type="button" class="r-chip" [class.active]="userReactionTipo === r.tipo" (click)="onReaction(r.tipo)">
-            <span class="e">{{ r.emoji }}</span>
-            <span class="c">{{ getReactionCount(r.tipo) }}</span>
-          </button>
+    <div *ngIf="error" class="state-card state-card--error">
+      <h2>Perfil indisponível</h2>
+      <p>{{ error }}</p>
+      <a routerLink="/galeria" class="state-link">Ver outros pets</a>
+    </div>
+
+    <ng-container *ngIf="!loading && !error && pet">
+      <article class="hero-card">
+        <div class="hero-media">
+          <img [src]="petFotoUrl" [alt]="'Foto de ' + (pet.nome || 'pet')" class="hero-photo" (error)="onImgError($event)" />
+          <div class="hero-media-shine" aria-hidden="true"></div>
         </div>
-        <p *ngIf="!token" class="muted small">Faça login para reagir ou comentar o perfil do pet.</p>
-      </section>
-    </div>
-  </article>
 
-  <section *ngIf="!loading && pet" class="perfil-coment">
-    <h2>Comentários no perfil ({{ totalComentarios }})</h2>
-    <p class="muted small">Estes comentários são sobre o pet. A galeria pública comenta cada foto em separado.</p>
-    <form *ngIf="token" (submit)="$event.preventDefault(); enviarComentario()">
-      <textarea [(ngModel)]="novoComentario" name="c" rows="2" maxlength="500" placeholder="Escreva para o pet…"></textarea>
-      <button type="submit" [disabled]="sendingComentario || !novoComentario.trim()">Enviar</button>
-    </form>
-    <div *ngIf="loadingComentarios" class="muted">Carregando comentários…</div>
-    <ul *ngIf="!loadingComentarios" class="c-list">
-      <li *ngFor="let c of comentarios" class="c-item">
-        <strong>{{ c.cliente?.nome || 'Anónimo' }}</strong>
-        <span class="c-time">{{ c.created_at }}</span>
-        <p>{{ c.comentario }}</p>
-      </li>
-    </ul>
+        <div class="hero-content">
+          <p class="eyebrow">Perfil público • {{ marca }}</p>
+          <h1>{{ pet.nome || 'Pet sem nome' }}</h1>
+
+          <div class="pet-meta-row" *ngIf="pet.especie || pet.raca || pet.idade != null || pet.sexo || pet.pesoKg">
+            <span class="meta-chip" *ngIf="pet.especie">{{ pet.especie }}</span>
+            <span class="meta-chip" *ngIf="pet.raca">{{ pet.raca }}</span>
+            <span class="meta-chip" *ngIf="pet.idade != null">{{ pet.idade }} {{ pet.idade === 1 ? 'ano' : 'anos' }}</span>
+            <span class="meta-chip" *ngIf="pet.sexo">{{ pet.sexo }}</span>
+            <span class="meta-chip" *ngIf="pet.pesoKg">{{ pet.pesoKg }} kg</span>
+          </div>
+
+          <p *ngIf="pet.observacoes" class="pet-obs">{{ pet.observacoes }}</p>
+
+          <div *ngIf="pet.tutor_nome" class="tutor-row">
+            <img *ngIf="pet.tutor_foto" [src]="tutorFotoUrl" alt="Foto do tutor" class="tutor-avatar" (error)="onAvatarError($event)" />
+            <span class="tutor-label">Tutor:</span>
+            <strong>{{ pet.tutor_nome }}</strong>
+          </div>
+
+          <section class="reactions-panel" *ngIf="data">
+            <header class="reactions-head">
+              <h2>Como a comunidade reagiu</h2>
+              <span class="reactions-total" *ngIf="getTotalReactions() > 0">{{ getTotalReactions() }} reações</span>
+              <span class="reactions-total" *ngIf="getTotalReactions() === 0">Sem reações ainda</span>
+            </header>
+
+            <div class="reactions-bar" role="group" aria-label="Reagir ao perfil do pet">
+              <button
+                *ngFor="let r of reactionTypes; trackBy: trackReaction"
+                type="button"
+                class="reaction-chip"
+                [class.active]="userReactionTipo === r.tipo"
+                [attr.aria-label]="r.label"
+                (click)="onReaction(r.tipo)"
+              >
+                <span class="emoji">{{ r.emoji }}</span>
+                <span class="count">{{ getReactionCount(r.tipo) }}</span>
+              </button>
+            </div>
+
+            <p *ngIf="!isLogged" class="muted">Faça login para reagir e comentar.</p>
+          </section>
+        </div>
+      </article>
+
+      <section class="comments-card">
+        <header class="comments-head">
+          <h2>Comentários do perfil</h2>
+          <span class="comments-total">{{ totalComentarios }}</span>
+        </header>
+
+        <p class="comments-subtitle">Esses comentários são sobre o pet como um todo. As fotos têm conversa própria na galeria.</p>
+
+        <form *ngIf="isLogged; else loginHint" class="comment-form" (submit)="$event.preventDefault(); enviarComentario()">
+          <textarea
+            [(ngModel)]="novoComentario"
+            name="comentario"
+            rows="3"
+            maxlength="500"
+            placeholder="Escreva uma mensagem carinhosa para este pet..."
+            [disabled]="sendingComentario"
+          ></textarea>
+          <div class="comment-form-footer">
+            <span class="char-count" [class.warn]="charCount > 450">{{ charCount }}/500</span>
+            <button type="submit" class="btn-send" [disabled]="sendingComentario || !novoComentario.trim()">
+              {{ sendingComentario ? 'Enviando…' : 'Comentar' }}
+            </button>
+          </div>
+        </form>
+
+        <ng-template #loginHint>
+          <div class="login-cta">Entre na sua conta para participar da conversa.</div>
+        </ng-template>
+
+        <div *ngIf="loadingComentarios" class="comments-loading">Carregando comentários...</div>
+        <div *ngIf="!loadingComentarios && comentariosError" class="comments-error">{{ comentariosError }}</div>
+
+        <ul *ngIf="!loadingComentarios && !comentariosError && comentarios.length" class="comment-list">
+          <li *ngFor="let c of comentarios; trackBy: trackComentario" class="comment-item">
+            <div class="comment-avatar">
+              <img *ngIf="c.cliente?.foto" [src]="c.cliente.foto" alt="Avatar" (error)="onAvatarError($event)" />
+              <span *ngIf="!c.cliente?.foto" class="comment-avatar-fallback">{{ (c.cliente?.nome || '?').charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="comment-content">
+              <div class="comment-headline">
+                <strong>{{ c.cliente?.nome || 'Usuário' }}</strong>
+                <span>{{ formatDate(c.created_at) }}</span>
+                <button *ngIf="canDeleteComment(c)" type="button" class="btn-delete" (click)="removerComentario(c)">Remover</button>
+              </div>
+              <p>{{ c.comentario }}</p>
+            </div>
+          </li>
+        </ul>
+
+        <div *ngIf="!loadingComentarios && !comentariosError && !comentarios.length" class="comments-empty">
+          Seja a primeira pessoa a deixar um comentário para este pet.
+        </div>
+      </section>
+    </ng-container>
   </section>
 </main>
