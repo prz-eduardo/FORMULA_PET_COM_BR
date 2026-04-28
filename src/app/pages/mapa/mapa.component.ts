@@ -10,6 +10,7 @@ import {
   ViewChild,
   ElementRef,
 } from '@angular/core';
+import { firstValueFrom, forkJoin, of } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -403,6 +404,55 @@ export class MapaComponent implements OnInit, OnDestroy {
     return true;
   }
 
+  private buildPartnerGeocodeAddress(p: any): string {
+    const endereco = String(p?.endereco ?? p?._raw?.endereco ?? '').trim();
+    const cidade = String(p?.cidade ?? p?._raw?.cidade ?? '').trim();
+    const estado = String(p?.estado ?? p?._raw?.estado ?? '').trim();
+    const cep = String(p?.cep ?? p?._raw?.cep ?? '').trim();
+    return [endereco, cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
+  }
+
+  private buildPartnerMergeKey(p: any): string {
+    const type = String(p?.partner_type ?? p?._raw?.partner_type ?? 'anunciante').toLowerCase();
+    const id = p?.id ?? p?.anuncio_id ?? p?._raw?.id ?? '';
+    const email = String(p?.email ?? p?._raw?.email ?? '').trim().toLowerCase();
+    if (id !== '' && id != null) return `${type}:${id}`;
+    if (email) return `${type}:email:${email}`;
+    return `${type}:rand:${Math.random().toString(36).slice(2)}`;
+  }
+
+  private async backfillPartnersCoordinates(partners: any[]): Promise<void> {
+    const missing = (partners || []).filter((p) => {
+      const lat = Number(p?.latitude ?? p?.lat);
+      const lng = Number(p?.longitude ?? p?.lng);
+      const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+      if (hasCoords) return false;
+      const address = this.buildPartnerGeocodeAddress(p);
+      return !!address;
+    });
+
+    for (const p of missing) {
+      const address = this.buildPartnerGeocodeAddress(p);
+      if (!address) continue;
+      try {
+        const geo = await firstValueFrom(this.api.geocodeAddress(address));
+        const first = Array.isArray(geo) ? geo[0] : null;
+        const lat = first?.lat != null ? Number(first.lat) : NaN;
+        const lng = first?.lon != null ? Number(first.lon) : NaN;
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          p.latitude = lat;
+          p.longitude = lng;
+          if (p._raw && typeof p._raw === 'object') {
+            p._raw.latitude = lat;
+            p._raw.longitude = lng;
+          }
+        }
+      } catch (e) {
+        // ignore geocode failures for individual partners and continue
+      }
+    }
+  }
+
   private rebuildQuickSearchList(): void {
     const ref = this.getQuickSearchReferencePoint();
     const base = (this.allPartners || []).filter(p => this.matchesForSidebarList(p));
@@ -514,10 +564,9 @@ export class MapaComponent implements OnInit, OnDestroy {
       this.initMobileLayoutListener();
       // attach global handlers to capture initialization errors so the app doesn't get left in a broken state
       try { window.addEventListener('error', this.__errHandler); window.addEventListener('unhandledrejection', this.__unhandledRejection); } catch (e) {}
-      // load available professional types first (to build tabs).
+      // load partners and types together from /maps endpoint
       // Defer heavy partner/map initialization until the app is stable to avoid
       // NG0506 hydration timeouts (don't start long-running async work during hydration).
-      this.loadProfessionalTypes();
       try {
         // wait until ApplicationRef reports stability (first true) and then start partners/map
         // but don't wait forever: fallback after a short timeout to avoid blocking map init
@@ -693,155 +742,6 @@ export class MapaComponent implements OnInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       try { this.applyFilters(); } catch (e) { console.warn('applyFilters on select failed', e); }
     }
-  }
-
-  private loadAnunciantes(tipo?: any){
-    // lightweight loading state for the anunciantes list
-    // normalize special 'todos' marker so backend receives undefined (meaning: all types)
-    if (String(tipo) === 'todos') tipo = undefined;
-    this.api.getAnunciantes(tipo).subscribe({
-      next: (res) => {
-        try {
-          // backend may return { filtros: [...], anuncios: [...] } or a raw array
-          let anuncios: any[] = [];
-          let filtros: any[] = [];
-          if (Array.isArray(res)) {
-            anuncios = res;
-          } else if (res && typeof res === 'object') {
-            anuncios = Array.isArray((res as any).anuncios) ? (res as any).anuncios : [];
-            filtros = Array.isArray((res as any).filtros) ? (res as any).filtros : [];
-          }
-
-          const key = this.active || String(tipo ?? 'todos');
-          try {
-            let availableAtributos: any[] = [];
-            if (filtros && filtros.length) {
-              availableAtributos = filtros.map((f: any) => ({ atributo_id: f.atributo_id ?? null, chave: f.chave ?? null, nome: f.nome ?? f.chave ?? '' }));
-            } else if (res && Array.isArray((res as any).atributos_disponiveis) && (res as any).atributos_disponiveis.length) {
-              availableAtributos = (res as any).atributos_disponiveis.map((a: any) => ({ atributo_id: a.atributo_id ?? null, chave: a.chave ?? null, nome: a.nome ?? a.chave ?? '' }));
-            } else {
-              const collect: { [k: string]: any } = {};
-              (anuncios || []).forEach((an: any) => {
-                if (Array.isArray(an.atributos_disponiveis)) {
-                  an.atributos_disponiveis.forEach((a: any) => { const keyk = a.chave ?? String(a.atributo_id ?? ''); if (!collect[keyk]) collect[keyk] = { atributo_id: a.atributo_id ?? null, chave: a.chave ?? keyk, nome: a.nome ?? a.chave ?? '' }; });
-                }
-                if (Array.isArray(an.atributos)) {
-                  an.atributos.forEach((a: any) => { const keyk = a.chave ?? String(a.atributo_id ?? ''); if (!collect[keyk]) collect[keyk] = { atributo_id: a.atributo_id ?? null, chave: a.chave ?? keyk, nome: a.nome ?? a.chave ?? '' }; });
-                }
-              });
-              availableAtributos = Object.values(collect || {});
-            }
-
-            if (availableAtributos && availableAtributos.length) {
-              const mapped = availableAtributos.map((f: any) => ({
-                id: f.chave ?? String(f.atributo_id ?? ''),
-                label: f.nome ?? f.chave ?? '',
-                on: false
-              }));
-              if (this.tabs.length) {
-                for (const t of this.tabs) {
-                  const prev = this.filtersByTab[t.id] || [];
-                  this.filtersByTab[t.id] = mapped.map(m => ({
-                    id: m.id,
-                    label: m.label,
-                    on: prev.find(o => o.id === m.id)?.on ?? false
-                  }));
-                }
-              } else {
-                this.filtersByTab[key] = mapped;
-              }
-            } else {
-              if (this.tabs.length) {
-                for (const t of this.tabs) {
-                  this.filtersByTab[t.id] = this.filtersByTab[t.id] || [];
-                }
-              } else {
-                this.filtersByTab[key] = this.filtersByTab[key] || [];
-              }
-            }
-          } catch (e) {
-            if (this.tabs.length) {
-              for (const t of this.tabs) {
-                this.filtersByTab[t.id] = this.filtersByTab[t.id] || [];
-              }
-            } else {
-              this.filtersByTab[key] = this.filtersByTab[key] || [];
-            }
-          }
-          this.initVisibleCategoryToggles();
-
-            // normalize anuncios into partner objects expected by the UI/map
-            this.allPartners = (anuncios || []).map((a: any) => {
-              const anuncio = a || {};
-              // try multiple field names used by backend
-              const latRaw = anuncio.anuncio_latitude ?? anuncio.latitude ?? anuncio.lat ?? anuncio.anunciante_latitude ?? null;
-              const lngRaw = anuncio.anuncio_longitude ?? anuncio.longitude ?? anuncio.lng ?? anuncio.anunciante_longitude ?? null;
-              const latitude = latRaw != null ? Number(latRaw) : (anuncio.lat ? Number(anuncio.lat) : undefined);
-              const longitude = lngRaw != null ? Number(lngRaw) : (anuncio.lng ? Number(anuncio.lng) : undefined);
-
-              // build filtros_selecionados from anuncio.atributos (if present) so computeFilteredPartners can use them
-              const filtros_map: any = {};
-              try {
-                if (Array.isArray(anuncio.atributos)) {
-                  anuncio.atributos.forEach((at: any) => {
-                    const k = at.chave ?? String(at.atributo_id ?? '');
-                    if (typeof at.valor_bool !== 'undefined') filtros_map[k] = !!at.valor_bool;
-                    else if (typeof at.valor_texto !== 'undefined' && at.valor_texto != null) filtros_map[k] = String(at.valor_texto);
-                    else if (typeof at.valor_numero !== 'undefined' && at.valor_numero != null) filtros_map[k] = at.valor_numero;
-                  });
-                }
-              } catch (e) { /* ignore attribute parsing errors */ }
-
-            return {
-              // primary identifiers
-              id: anuncio.anunciante_id ?? anuncio.anunciante_id ?? anuncio.anuncio_id ?? anuncio.id,
-              anuncio_id: anuncio.anuncio_id ?? undefined,
-              // display name: prefer anunciante_nome, fallback to titulo
-              nome: anuncio.anunciante_nome ?? anuncio.titulo ?? anuncio.nome ?? '',
-              // title/heading
-              titulo: anuncio.titulo ?? '',
-              // contact info
-              telefone: anuncio.anuncio_telefone ?? anuncio.anunciante_telefone ?? anuncio.telefone ?? '',
-              email: anuncio.anuncio_email ?? anuncio.anunciante_email ?? anuncio.email ?? '',
-              // address
-              endereco: anuncio.anuncio_endereco ?? anuncio.endereco ?? '',
-              cidade: anuncio.anunciante_cidade ?? anuncio.cidade ?? '',
-              estado: anuncio.anunciante_estado ?? anuncio.estado ?? '',
-              cep: anuncio.anunciante_cep ?? anuncio.cep ?? '',
-              // description
-              descricao: anuncio.anunciante_descricao ?? anuncio.anuncio_descricao ?? anuncio.descricao ?? '',
-              // media
-              logo_url: anuncio.logo_url ?? null,
-              // geographic
-              latitude: typeof latitude === 'number' && !isNaN(latitude) ? latitude : undefined,
-              longitude: typeof longitude === 'number' && !isNaN(longitude) ? longitude : undefined,
-              // filters selected for this anuncio (normalized from atributos array or fallback)
-              filtros_selecionados: Object.keys(filtros_map).length ? filtros_map : (anuncio.filtros_selecionados ?? {}),
-              // tipo normalization: backend may return `tipo` or `tipos` (array)
-              tipo: anuncio.tipo ?? (Array.isArray(anuncio.tipos) && anuncio.tipos[0]) ?? null,
-              tipos: Array.isArray(anuncio.tipos) ? anuncio.tipos : undefined,
-              // raw payload for debugging if needed
-              _raw: anuncio
-              };
-            });
-
-            // apply current filters to compute visible partners
-            try { this.applyFilters(); } catch (e) { console.warn('applyFilters after loadAnunciantes failed', e); }
-
-            // refresh map markers if map already initialized
-            try { this.refreshMarkers(); } catch (e) { /* ignore map refresh errors; may not be ready */ }
-        } catch (e) {
-          console.error('loadAnunciantes parse failed', e);
-          this.allPartners = [];
-          this.partners = [];
-          this.partnersForMap = [];
-        }
-      },
-      error: (err) => {
-        console.error('getAnunciantes failed', err);
-        this.toast.error('Erro ao carregar anunciantes');
-      }
-    });
   }
 
   private readonly clusterPartnerThreshold = 15;
@@ -1180,44 +1080,61 @@ export class MapaComponent implements OnInit, OnDestroy {
   loadPartners(){
     this.loading = true;
     this.error = null;
+    // Load all partners from the /maps endpoint (includes parceiros + vets, all registered partners)
     this.api.getMaps().subscribe({
-      next: (res) => {
-        // normalize partners coming from /maps so the UI and map code can use a
-        // consistent shape (same as loadAnunciantes normalization).
-        const rawPartners: any[] = Array.isArray(res.partners) ? res.partners : [];
+      next: async (mapsRes) => {
+        // Normalize partners from /maps endpoint
+        const rawPartners: any[] = Array.isArray(mapsRes.partners) ? mapsRes.partners : [];
+        
         this.allPartners = rawPartners.map((p: any) => {
-          const latitudeRaw = p.latitude ?? p.lat ?? p.anunciante?.latitude ?? null;
-          const longitudeRaw = p.longitude ?? p.lng ?? p.anunciante?.longitude ?? null;
-          const latitude = latitudeRaw != null ? Number(latitudeRaw) : undefined;
-          const longitude = longitudeRaw != null ? Number(longitudeRaw) : undefined;
-          const anunciante = p.anunciante ?? {};
+          const latitude = p.latitude != null ? Number(p.latitude) : undefined;
+          const longitude = p.longitude != null ? Number(p.longitude) : undefined;
+          
           return {
-            id: anunciante.id ?? p.id ?? undefined,
-            anuncio_id: p.id ?? undefined,
-            nome: anunciante.nome ?? p.titulo ?? p.nome ?? '',
+            id: p.id ?? undefined,
+            nome: p.nome ?? '',
             titulo: p.titulo ?? '',
-            telefone: p.telefone ?? anunciante.telefone ?? '',
-            email: p.email ?? anunciante.email ?? '',
-            endereco: p.endereco ?? p.anuncio_endereco ?? '',
+            telefone: p.telefone ?? '',
+            email: p.email ?? '',
+            endereco: p.endereco ?? '',
             cidade: p.cidade ?? '',
             estado: p.estado ?? '',
             cep: p.cep ?? '',
-            descricao: anunciante.descricao ?? p.descricao ?? p.anuncio_descricao ?? '',
-            logo_url: anunciante.logo_url ?? p.logo_url ?? null,
+            descricao: p.descricao ?? '',
+            logo_url: p.logo_url ?? null,
+            destaque: !!p.destaque,
             latitude: typeof latitude === 'number' && !isNaN(latitude) ? latitude : undefined,
             longitude: typeof longitude === 'number' && !isNaN(longitude) ? longitude : undefined,
             filtros_selecionados: p.filtros_selecionados ?? {},
-            // normalize tipo/tipos shapes: prefer explicit tipo, otherwise pick first from tipos array
-            tipo: p.tipo ?? (Array.isArray(p.tipos) && p.tipos[0]) ?? null,
+            // normalize tipo/tipos: backend returns tipos array
+            tipo: Array.isArray(p.tipos) && p.tipos[0] ? p.tipos[0] : null,
             tipos: Array.isArray(p.tipos) ? p.tipos : undefined,
-            partner_type: p.partner_type ?? null,
+            partner_type: p.partner_type ?? 'anunciante',
             _raw: p
           };
         });
+
+        // Populate professional types from the response
+        const tipos = Array.isArray(mapsRes.tipos) ? mapsRes.tipos : [];
+        if (tipos.length) {
+          this.tabs = tipos.map((t: any) => ({
+            id: t.slug ? String(t.slug) : String(t.id ?? t.nome ?? ''),
+            label: t.nome ?? t.label ?? '',
+            typeId: t.id,
+            icon: t.icone ?? undefined
+          }));
+          this.initVisibleCategoryToggles();
+          // build empty filters for each tab (will be populated if needed later)
+          for (const tab of this.tabs) {
+            this.filtersByTab[tab.id] = this.filtersByTab[tab.id] || [];
+          }
+        }
+
         // compute visible partners according to any current filters
         try { this.applyFilters(); } catch (e) { this.partners = this.allPartners.slice(); }
-        this.mapsApiKey = res.mapsApiKey ?? null;
+        this.mapsApiKey = mapsRes.mapsApiKey ?? null;
         this.loading = false;
+        
         // if we have a maps key, initialize the interactive map
         if (this.mapsApiKey && isPlatformBrowser(this.platformId)) {
           this.initInteractiveMapWithRetries(this.mapsApiKey, 3).catch(err => {
@@ -1231,7 +1148,7 @@ export class MapaComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        console.error('ApiService.getMaps failed', err);
+        console.error('getMaps failed', err);
         this.toast.error('Erro ao carregar parceiros');
         this.error = 'Erro ao carregar parceiros';
         this.loading = false;

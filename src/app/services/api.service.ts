@@ -1076,17 +1076,17 @@ export class ApiService {
     }
   }
 
-  // Public maps endpoint: returns partner vets and mapsApiKey (if backend exposes it)
-  getMaps(): Observable<{ partners: any[]; mapsApiKey?: string | null }> {
+  // Public maps endpoint: returns partners, professional types, and mapsApiKey
+  getMaps(): Observable<{ partners: any[]; tipos?: any[]; mapsApiKey?: string | null }> {
     const url = `${this.baseUrl}/maps`;
-    return this.http.get<{ partners: any[]; mapsApiKey?: string | null }>(url).pipe(
+    return this.http.get<{ partners: any[]; tipos?: any[]; mapsApiKey?: string | null }>(url).pipe(
       catchError((err) => {
         // If the call to configured baseUrl fails (common in local dev when
         // backend runs on another port), try a same-host fallback to port 4000.
         if (typeof window !== 'undefined') {
           try {
             const fallback = `${window.location.protocol}//${window.location.hostname}:4000/maps`;
-            return this.http.get<{ partners: any[]; mapsApiKey?: string | null }>(fallback).pipe(
+            return this.http.get<{ partners: any[]; tipos?: any[]; mapsApiKey?: string | null }>(fallback).pipe(
               catchError(() => of({ partners: [], mapsApiKey: null }))
             );
           } catch (e) {
