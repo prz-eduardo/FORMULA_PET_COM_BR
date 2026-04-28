@@ -144,6 +144,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/parceiros/login-parceiro/login-parceiro.component').then(m => m.LoginParceiroComponent),
   },
   {
+    path: 'parceiros/recuperar-senha',
+    loadComponent: () => import('./pages/parceiros/recuperar-senha-parceiro/recuperar-senha-parceiro.component').then(m => m.RecuperarSenhaParceiroComponent),
+  },
+  {
     path: 'parceiros',
     loadComponent: () => import('./pages/parceiros/parceiro-shell/parceiro-shell.component').then(m => m.ParceiroShellComponent),
     canActivate: [parceiroGuard],

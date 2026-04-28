@@ -1,0 +1,128 @@
+<div class="recovery-page">
+  <div class="recovery-card">
+    <div class="brand">
+      <span class="brand-icon">🐾</span>
+      <h1 class="brand-name">PetSphere</h1>
+      <p class="brand-sub">Recuperar Senha</p>
+    </div>
+
+    <!-- Step 1: Email -->
+    <div class="step" *ngIf="step() === 'email'">
+      <h2>Solicitar Código de Reset</h2>
+      <p class="step-desc">Digite seu email para receber um código de recuperação</p>
+
+      <form (ngSubmit)="requestCode()" novalidate>
+        <div class="field">
+          <label for="email-step1">E-mail</label>
+          <input
+            id="email-step1"
+            type="email"
+            placeholder="seu@petshop.com.br"
+            [(ngModel)]="email"
+            name="email"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <div class="error" *ngIf="error()">{{ error() }}</div>
+        <div class="success" *ngIf="success()">{{ success() }}</div>
+
+        <button type="submit" [disabled]="loading()">
+          <span *ngIf="!loading()">Enviar Código</span>
+          <span *ngIf="loading()" class="spinner"></span>
+        </button>
+      </form>
+
+      <p class="back-link">
+        <a href="javascript:void(0)" (click)="goBack()">← Voltar ao login</a>
+      </p>
+    </div>
+
+    <!-- Step 2: Code Validation -->
+    <div class="step" *ngIf="step() === 'code'">
+      <h2>Digite o Código</h2>
+      <p class="step-desc">Um código foi enviado para {{ email }}</p>
+      <p class="step-hint">O código é válido por 15 minutos</p>
+
+      <form (ngSubmit)="validateCode()" novalidate>
+        <div class="field">
+          <label for="code-input">Código</label>
+          <input
+            id="code-input"
+            type="text"
+            placeholder="000000"
+            maxlength="6"
+            [(ngModel)]="code"
+            name="code"
+            [disabled]="loading()"
+            class="code-input"
+          />
+        </div>
+
+        <div class="error" *ngIf="error()">{{ error() }}</div>
+        <div class="success" *ngIf="success()">{{ success() }}</div>
+
+        <button type="submit" [disabled]="loading()">
+          <span *ngIf="!loading()">Validar Código</span>
+          <span *ngIf="loading()" class="spinner"></span>
+        </button>
+      </form>
+
+      <p class="back-link">
+        <a href="javascript:void(0)" (click)="goBack()">← Voltar</a>
+      </p>
+    </div>
+
+    <!-- Step 3: New Password -->
+    <div class="step" *ngIf="step() === 'password'">
+      <h2>Nova Senha</h2>
+      <p class="step-desc">Digite sua nova senha</p>
+
+      <form (ngSubmit)="resetPassword()" novalidate>
+        <div class="field">
+          <label for="new-password">Nova Senha</label>
+          <input
+            id="new-password"
+            type="password"
+            placeholder="••••••••"
+            [(ngModel)]="newPassword"
+            name="newPassword"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <div class="field">
+          <label for="confirm-password">Confirmar Senha</label>
+          <input
+            id="confirm-password"
+            type="password"
+            placeholder="••••••••"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <div class="error" *ngIf="error()">{{ error() }}</div>
+        <div class="success" *ngIf="success()">{{ success() }}</div>
+
+        <button type="submit" [disabled]="loading()">
+          <span *ngIf="!loading()">Resetar Senha</span>
+          <span *ngIf="loading()" class="spinner"></span>
+        </button>
+      </form>
+
+      <p class="back-link">
+        <a href="javascript:void(0)" (click)="goBack()">← Voltar</a>
+      </p>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div class="step success-step" *ngIf="step() === 'success'">
+      <div class="success-icon">✅</div>
+      <h2>Senha Resetada!</h2>
+      <p class="success-message">Sua senha foi alterada com sucesso. Você será redirecionado para o login.</p>
+      <button (click)="goToLogin()">Ir para Login</button>
+    </div>
+  </div>
+</div>
