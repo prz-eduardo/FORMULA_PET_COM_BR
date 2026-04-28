@@ -222,7 +222,22 @@ export class AppComponent implements OnInit, OnDestroy {
   private syncShellVisibility(url?: string): void {
     const current = url ?? this.router.url ?? '';
     const path = (current.split('?')[0] || '').split('#')[0] || '';
-    const hide = current.startsWith('/restrito/admin') || current.startsWith('/restrito/produto');
+    const isLegacyVetArea =
+      path === '/area-vet' ||
+      path === '/gerar-receita' ||
+      path === '/historico-receitas' ||
+      path.startsWith('/historico-receitas/') ||
+      path === '/pacientes' ||
+      path.startsWith('/pacientes/');
+    const isParceirosAuthArea =
+      path.startsWith('/parceiros/') &&
+      path !== '/parceiros/login' &&
+      path !== '/parceiros/recuperar-senha';
+    const hide =
+      current.startsWith('/restrito/admin') ||
+      current.startsWith('/restrito/produto') ||
+      isLegacyVetArea ||
+      isParceirosAuthArea;
     const hideFooterMapa = path === '/mapa' && (this.mapaTopNavMql?.matches ?? false);
 
     this.showFooter = !hide && !hideFooterMapa;

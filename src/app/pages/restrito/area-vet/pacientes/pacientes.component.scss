@@ -1,44 +1,131 @@
-.area-vet-wrapper{padding:20px;min-height:100vh;background:linear-gradient(135deg,#0d151f,#1a2230);color:#ecf0f5;font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;overflow-x:hidden}
-.titulo{font-size:36px;text-align:center;color:#1abc9c;margin:10px 0 20px;padding-top:24px;text-shadow:0 2px 3px rgba(0,0,0,.4);line-height:1.2}
-.card{background:#1f2a38;border-radius:12px;padding:14px;margin:10px auto;box-shadow:0 6px 12px rgba(0,0,0,.35);max-width:900px;width:100%}
-.filtros{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.filtros .input{flex:1 1 200px}
-.input{background:#222a38;border:none;border-radius:8px;color:#ecf0f5;padding:10px 12px;min-width:180px;flex:1}
-.btn{background:#1abc9c;color:#0b151f;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
-.btn-sec{background:#2a364a;color:#fff;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 16px}
-.lista-cartoes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:900px;width:100%;margin:10px auto}
-@media (max-width:840px){.lista-cartoes{grid-template-columns:1fr}}
-.cartao{background:#16202a;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;cursor:pointer;transition:.2s ease;max-width:100%}
-.cartao:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,.35)}
-.topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.pet{font-weight:700;font-size:18px;color:#ecf0f5}
-.qtd{font-size:12px;color:#a8b3bf}
-.linha{font-size:13px;color:#a8b3bf;margin-top:4px}
-.ativos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.badge{display:inline-flex;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.08);background:#1f2a38;color:#dbe7ff}
-.acoes{display:flex;justify-content:flex-end;margin-top:8px}
-.btn-mini{background:#1abc9c;color:#0b151f;border:none;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer}
-.vazio{text-align:center;color:#9aa3ad;padding:16px}
-.paginacao{display:flex;gap:10px;justify-content:center;align-items:center;margin:10px auto;max-width:900px;width:100%}
-
-/* Responsividade */
-@media (max-width:720px){
-  .titulo{font-size:28px}
-  .card{padding:12px; width: 90%;}
-  .input{min-width:unset;width:100%}
-  .filtros{gap:6px}
-  .btn,.btn-sec{flex:1 1 150px}
-  .topo{flex-direction:column;align-items:flex-start;gap:2px}
-  .pet{font-size:16px}
-  .linha{font-size:12px}
+﻿/* ===== Pacientes — admin design tokens ===== */
+.area-vet-wrapper {
+  padding: 28px 32px;
+  color: var(--admin-text);
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  overflow-x: hidden;
+}
+.titulo {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--admin-text-strong);
+  text-align: left;
+  margin: 0 0 20px;
+  padding-top: 0;
+}
+.card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 14px;
+  margin: 10px auto;
+  max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.filtros .input { flex: 1 1 200px; }
+.input {
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  padding: 9px 12px;
+  min-width: 180px;
+  flex: 1;
+  font-size: 14px;
+  outline: none;
+}
+.input:focus { border-color: var(--admin-primary); }
+.btn {
+  background: var(--admin-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--admin-radius);
+  padding: 9px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.9; }
+.btn-sec {
+  background: var(--admin-surface-2);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 9px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-sec:hover { background: var(--admin-border); }
+.lista-cartoes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 900px;
+  width: 100%;
+  margin: 10px auto;
+}
+@media (max-width: 840px) { .lista-cartoes { grid-template-columns: 1fr; } }
+.cartao {
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 12px;
+  cursor: pointer;
+  transition: .2s ease;
+}
+.cartao:hover { transform: translateY(-2px); border-color: var(--admin-primary); }
+.topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.pet { font-weight: 700; font-size: 18px; color: var(--admin-text-strong); }
+.qtd { font-size: 12px; color: var(--admin-text-muted); }
+.linha { font-size: 13px; color: var(--admin-text-muted); margin-top: 4px; }
+.ativos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.badge {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+}
+.acoes { display: flex; justify-content: flex-end; margin-top: 8px; }
+.btn-mini {
+  background: var(--admin-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--admin-radius);
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.vazio { text-align: center; color: var(--admin-text-muted); padding: 16px; }
+.paginacao {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin: 10px auto;
+  max-width: 900px;
+  width: 100%;
 }
 
-@media (max-width:520px){
-  .titulo{font-size:24px}
-  .acoes{margin-top:10px}
-  .acoes .btn-mini{width:100%}
+@media (max-width: 720px) {
+  .area-vet-wrapper { padding: 16px; }
+  .titulo { font-size: 18px; }
+  .card { padding: 12px; }
+  .input { min-width: unset; width: 100%; }
+  .filtros { gap: 6px; }
+  .btn, .btn-sec { flex: 1 1 150px; }
+  .topo { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .pet { font-size: 16px; }
+  .linha { font-size: 12px; }
 }
-
-@media (max-width:400px){
-  .titulo{font-size:22px}
+@media (max-width: 520px) {
+  .acoes { margin-top: 10px; }
+  .acoes .btn-mini { width: 100%; }
 }
