@@ -19,6 +19,7 @@ import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-
   styleUrls: ['./checkout.component.scss']
 })
 export class CheckoutComponent implements OnInit, OnDestroy {
+  private readonly hideMobileBottomNavClass = 'checkout-hide-mobile-nav';
   carregando = false;
   pedidoCodigo?: string | number; // código/ID do pedido criado
   pagamentoStatus?: 'pendente'|'pago'|'falhou'|'aguardando';
@@ -197,6 +198,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.freteDestino = rawShip?.destino || (snapEntrega?.destino || null);
     }
     this.scheduleSyncPagamentoForma();
+    this.toggleMobileBottomNav(true);
   }
 
   get totalComFrete() {
@@ -552,5 +554,15 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopPixPolling();
+    this.toggleMobileBottomNav(false);
+  }
+
+  private toggleMobileBottomNav(hide: boolean): void {
+    if (typeof document === 'undefined') return;
+    if (hide) {
+      document.body.classList.add(this.hideMobileBottomNavClass);
+      return;
+    }
+    document.body.classList.remove(this.hideMobileBottomNavClass);
   }
 }

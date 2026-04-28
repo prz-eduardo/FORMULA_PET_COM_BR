@@ -375,7 +375,19 @@
 .ch-item .btn.add { padding: 8px 12px; border-radius: 10px; }
 
 /* Sticky mobile checkout bar */
-.checkout-bar { position: sticky; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.9); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); box-shadow: 0 -6px 18px rgba(0,0,0,0.08); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) 12px; border-top-left-radius: 16px; border-top-right-radius: 16px; }
+.checkout-bar {
+	position: fixed;
+	left: 8px;
+	right: 8px;
+	bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+	background: rgba(255,255,255,0.92);
+	-webkit-backdrop-filter: saturate(180%) blur(12px);
+	backdrop-filter: saturate(180%) blur(12px);
+	box-shadow: 0 -6px 18px rgba(0,0,0,0.08);
+	padding: 10px 12px;
+	border-radius: 16px;
+	z-index: 2000010;
+}
 .checkout-bar .bar-content { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 0 auto; }
 .checkout-bar .bar-total { display: grid; }
 .checkout-bar .bar-total strong { font-size: 12px; color: #6b7280; }
@@ -400,7 +412,7 @@
 	.frete .linha { flex-direction: column; gap: 6px; }
 	.frete .btn { width: 100%; }
 	.mobile-only { display: block; }
-	.carrinho-wrap { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+	.carrinho-wrap { padding-bottom: calc(210px + env(safe-area-inset-bottom)); }
 	/* Prevent long text overflow */
 	.nome, .preco, .file { word-wrap: anywhere; overflow-wrap: anywhere; }
 	.info, .item, .itens, .layout { min-width: 0; }
@@ -500,7 +512,7 @@
 	.frete .opt.loading { overflow: hidden; max-height: 84px; }
 	.frete .opt.loading .sk { height: 12px; }
 	/* Make main container scrollable and avoid extra bottom padding pushing content offscreen */
-	.carrinho-wrap { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+	.carrinho-wrap { padding-bottom: calc(210px + env(safe-area-inset-bottom)); }
 }
 
 /* Inline address cards inside entrega section */
