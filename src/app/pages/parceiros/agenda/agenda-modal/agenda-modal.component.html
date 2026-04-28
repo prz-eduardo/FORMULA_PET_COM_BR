@@ -100,6 +100,14 @@
   <!-- Footer -->
   <footer class="modal-footer">
     <button
+      class="btn-advance"
+      [disabled]="telemedicinaLoading || !telemedicinaDisponivelAgora"
+      (click)="entrarTelemedicina()"
+      title="Disponível somente durante o horário da consulta"
+    >
+      {{ telemedicinaLoading ? 'Conectando...' : 'Entrar em chamada' }}
+    </button>
+    <button
       class="btn-cancel-appt"
       *ngIf="agendamento.status !== 'CANCELADO' && agendamento.status !== 'FINALIZADO'"
       (click)="cancelAgendamento()"
@@ -114,5 +122,11 @@
       → {{ nextStatusLabel }}
     </button>
   </footer>
+
+  <div class="observacoes" *ngIf="telemedicinaInfo">
+    <div class="obs-lbl">Telemedicina pronta</div>
+    <p>Sala: <strong>{{ telemedicinaInfo.sala_codigo }}</strong></p>
+    <p>Canal de signaling: <strong>{{ telemedicinaInfo.signaling_channel }}</strong></p>
+  </div>
 
 </div>

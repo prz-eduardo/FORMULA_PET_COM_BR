@@ -210,6 +210,58 @@ export class AgendaApiService {
   }
 
   // ===========================================================================
+  // TELEMEDICINA
+  // ===========================================================================
+
+  async getTelemedicinaByAgendamento(agendamentoId: number) {
+    return await lastValueFrom(
+      this.http.get<{ consulta: any }>(
+        `${API_BASE}/parceiro/telemedicina/agendamentos/${agendamentoId}`,
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+
+  async createTelemedicinaConsulta(data: {
+    agendamento_id: number;
+    cliente_id?: number | null;
+    veterinario_id?: number | null;
+    telemedicina_habilitada?: boolean;
+    janela_inicio?: string | Date;
+    janela_fim?: string | Date;
+    observacoes?: string;
+    criar_video_chamada?: boolean;
+  }) {
+    const payload = {
+      ...data,
+      janela_inicio: data.janela_inicio instanceof Date ? data.janela_inicio.toISOString() : data.janela_inicio,
+      janela_fim: data.janela_fim instanceof Date ? data.janela_fim.toISOString() : data.janela_fim,
+    };
+    return await lastValueFrom(
+      this.http.post<{ consulta: any; video_chamada?: any }>(
+        `${API_BASE}/parceiro/telemedicina/consultas`,
+        payload,
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+
+  async joinTelemedicinaConsulta(consultaId: number) {
+    return await lastValueFrom(
+      this.http.post<{
+        consulta_id: number;
+        sala_codigo: string;
+        signaling_event: string;
+        signaling_channel: string;
+      }>(
+        `${API_BASE}/parceiro/telemedicina/consultas/${consultaId}/entrar`,
+        {},
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+
+  // ===========================================================================
   // COLABORADORES (master only)
   // ===========================================================================
 

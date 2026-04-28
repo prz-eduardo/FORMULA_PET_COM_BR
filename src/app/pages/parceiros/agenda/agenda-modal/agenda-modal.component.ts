@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaStatus } from '../../../../types/agenda.types';
 import { getTime, toDate } from '../utils/date-helpers';
+import { AgendaApiService } from '../services/agenda-api.service';
 
 interface StatusStep {
   status: AgendaStatus;
@@ -20,9 +21,13 @@ interface StatusStep {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AgendaModalComponent {
+  constructor(private agendaApi: AgendaApiService) {}
+
   @Input() agendamento!: Agendamento;
   @Output() close = new EventEmitter<void>();
   @Output() statusChanged = new EventEmitter<{ id: string; status: AgendaStatus }>();
+  telemedicinaLoading = false;
+  telemedicinaInfo: { sala_codigo: string; signaling_channel: string } | null = null;
 
   readonly STEPS: StatusStep[] = [
     { status: 'AGENDADO',    label: 'Agendado',    icon: '📅' },
@@ -96,5 +101,55 @@ export class AgendaModalComponent {
 
   get duration(): number {
     return Math.round((getTime(this.agendamento.fim) - getTime(this.agendamento.inicio)) / 60000);
+  }
+
+  get telemedicinaDisponivelAgora(): boolean {
+    const now = Date.now();
+    const inicio = new Date(this.agendamento.inicio).getTime();
+    const fim = new Date(this.agendamento.fim).getTime();
+    if (!Number.isFinite(inicio) || !Number.isFinite(fim)) return false;
+    return now >= inicio && now <= fim;
+  }
+
+  async entrarTelemedicina(): Promise<void> {
+    const agendamentoId = Number(this.agendamento.id);
+    if (!agendamentoId || this.telemedicinaLoading) return;
+
+    this.telemedicinaLoading = true;
+    try {
+      let consulta: any = null;
+      try {
+        const found = await this.agendaApi.getTelemedicinaByAgendamento(agendamentoId);
+        consulta = found?.consulta || null;
+      } catch (_) {
+        // 404/erro: tentamos criar a consulta com base no agendamento atual.
+      }
+
+      if (!consulta) {
+        const created = await this.agendaApi.createTelemedicinaConsulta({
+          agendamento_id: agendamentoId,
+          telemedicina_habilitada: true,
+          janela_inicio: this.agendamento.inicio,
+          janela_fim: this.agendamento.fim,
+          criar_video_chamada: true,
+          observacoes: this.agendamento.observacoes || undefined,
+        });
+        consulta = created?.consulta;
+      }
+
+      const consultaId = Number(consulta?.id);
+      if (!consultaId) throw new Error('Consulta inválida para telemedicina');
+
+      const joined = await this.agendaApi.joinTelemedicinaConsulta(consultaId);
+      this.telemedicinaInfo = {
+        sala_codigo: joined.sala_codigo,
+        signaling_channel: joined.signaling_channel,
+      };
+    } catch (err: any) {
+      const msg = err?.error?.error || err?.error?.message || err?.message || 'Não foi possível entrar na chamada.';
+      window.alert(msg);
+    } finally {
+      this.telemedicinaLoading = false;
+    }
   }
 }

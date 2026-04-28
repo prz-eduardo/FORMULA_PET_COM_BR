@@ -51,7 +51,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private lastProfileToken?: string | null = null;
 
   // Internal navigation state when in modal
-  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto' | 'minha-galeria' | null = null;
+  internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'telemedicina' | 'suporte' | 'postar-foto' | 'minha-galeria' | null = null;
   // track which internal view originated the last navigation (used to return)
   private lastInternalOrigin: string | null = null;
   private pendingInitialView: ClienteAreaModalView = null;
@@ -328,7 +328,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   }
 
   // ---- Internal modal navigation helpers ----
-  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'suporte' | 'postar-foto' | 'minha-galeria') {
+  async open(view: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'consultar-pedidos' | 'loja' | 'perfil' | 'favoritos' | 'carrinho' | 'meus-enderecos' | 'meus-cartoes' | 'telemedicina' | 'suporte' | 'postar-foto' | 'minha-galeria') {
     if (view === 'suporte') {
       if (!this.hasAuth) {
         this.toast.error('Faça login para usar o atendimento por chat.', 'Atendimento');
@@ -355,6 +355,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       if (view === 'favoritos') return this.router.navigateByUrl('/favoritos');
       if (view === 'carrinho') return this.router.navigateByUrl('/carrinho');
       if (view === 'meus-cartoes') return this.router.navigateByUrl('/meus-cartoes');
+      if (view === 'telemedicina') return this.router.navigateByUrl('/area-cliente?view=telemedicina');
       if (view === 'loja') return this.router.navigateByUrl('/loja');
       if (view === 'consultar-pedidos') {
         return this.router.navigate([{ outlets: { modal: ['consultar-pedidos'] } }], { relativeTo: this.route });
@@ -397,6 +398,27 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       } catch (e) {
         console.error('Falha ao abrir Meus Cartões', e);
         this.toast.error('Não foi possível abrir agora');
+      }
+      return;
+    }
+    if (view === 'telemedicina') {
+      this.internalView = 'telemedicina';
+      this.titulo = 'Telemedicina';
+      if (!this.internalHost) return;
+      this.internalHost.clear();
+      try {
+        const mod = await import('./telemedicina/telemedicina.component');
+        const Cmp = (mod as any).TelemedicinaComponent;
+        const ref = this.internalHost.createComponent(Cmp);
+        if (ref?.instance) {
+          (ref.instance as any).modal = true;
+          if ((ref.instance as any).close) {
+            (ref.instance as any).close.subscribe(() => this.goBack());
+          }
+        }
+      } catch (e) {
+        console.error('Falha ao abrir Telemedicina', e);
+        this.toast.error('Não foi possível abrir Telemedicina agora');
       }
       return;
     }
@@ -474,6 +496,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       'meus-pets': 'Meus Pets',
       'novo-pet': 'Cadastrar Pet',
       'perfil': 'Perfil',
+      'telemedicina': 'Telemedicina',
       'postar-foto': 'Postar foto',
       'minha-galeria': 'Minha Galeria',
     };

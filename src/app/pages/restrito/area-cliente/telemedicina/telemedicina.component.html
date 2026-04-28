@@ -1,0 +1,40 @@
+<section class="telemedicina">
+  <header class="telemedicina-header">
+    <h2>Telemedicina</h2>
+    <button type="button" class="btn-refresh" (click)="loadConsultas()" [disabled]="loading">
+      {{ loading ? 'Atualizando...' : 'Atualizar' }}
+    </button>
+  </header>
+
+  <p class="erro" *ngIf="erro">{{ erro }}</p>
+
+  <div class="chamada-info" *ngIf="chamadaAtiva">
+    <strong>Sala pronta:</strong> {{ chamadaAtiva.sala_codigo }}<br />
+    <small>Canal: {{ chamadaAtiva.signaling_channel }}</small>
+  </div>
+
+  <div class="vazio" *ngIf="!loading && !consultas.length">
+    Nenhuma consulta de telemedicina encontrada no momento.
+  </div>
+
+  <div class="lista" *ngIf="consultas.length">
+    <article class="consulta" *ngFor="let c of consultas">
+      <div class="consulta-main">
+        <div class="consulta-title">Consulta #{{ c.id }}</div>
+        <div class="consulta-meta">
+          {{ c.janela_inicio | date:'dd/MM/yyyy HH:mm' }} - {{ c.janela_fim | date:'HH:mm' }}
+        </div>
+        <div class="consulta-meta">Status: {{ c.status }}</div>
+      </div>
+      <button
+        type="button"
+        class="btn-entrar"
+        (click)="entrar(c)"
+        [disabled]="!janelaDisponivel(c) || joinLoadingId === c.id"
+        title="Disponível apenas durante o horário da consulta"
+      >
+        {{ joinLoadingId === c.id ? 'Conectando...' : 'Entrar na chamada' }}
+      </button>
+    </article>
+  </div>
+</section>

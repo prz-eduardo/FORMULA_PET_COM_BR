@@ -53,6 +53,19 @@ export interface ClienteMeResponse {
   tokenExp?: number;
 }
 
+export interface TelemedicinaConsulta {
+  id: number;
+  cliente_id?: number | null;
+  veterinario_id?: number | null;
+  status: string;
+  telemedicina_habilitada: number | boolean;
+  janela_inicio: string;
+  janela_fim: string;
+  video_chamada_id?: number | null;
+  sala_codigo?: string | null;
+  video_status?: string | null;
+}
+
 export type PlaceSource = 'google' | 'petsphere';
 
 export interface MapLayerType {
@@ -516,6 +529,26 @@ export class ApiService {
           })
         );
       })
+    );
+  }
+
+  listMyTelemedicina(token: string) {
+    return this.http.get<{ consultas: TelemedicinaConsulta[] }>(
+      `${this.baseUrl}/clientes/me/telemedicina`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
+  joinMyTelemedicina(token: string, consultaId: number | string) {
+    return this.http.post<{
+      consulta_id: number;
+      sala_codigo: string;
+      signaling_event: string;
+      signaling_channel: string;
+    }>(
+      `${this.baseUrl}/clientes/me/telemedicina/consultas/${encodeURIComponent(String(consultaId))}/entrar`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
     );
   }
 

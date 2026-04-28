@@ -1,0 +1,57 @@
+.telemedicina {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.telemedicina-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-refresh,
+.btn-entrar {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-refresh:disabled,
+.btn-entrar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.consulta {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.consulta-title {
+  font-weight: 700;
+}
+
+.consulta-meta {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.erro {
+  color: #b91c1c;
+}
+
+.chamada-info {
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  border-radius: 10px;
+  padding: 10px;
+}
