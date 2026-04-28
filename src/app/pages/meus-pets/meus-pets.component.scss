@@ -49,6 +49,41 @@
   line-height: 1.45;
 }
 
+.page-tools {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 18px;
+}
+
+.btn-new-pet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--ac-accent-ink);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, #c4d600, #a9bb00);
+  box-shadow: 0 10px 26px rgba(196, 214, 0, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.btn-new-pet:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(196, 214, 0, 0.3);
+}
+
+.btn-new-pet__plus {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+}
+
 .top-actions {
   display: flex;
   align-items: center;
@@ -133,25 +168,35 @@
 
 .pet-card__delete {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   z-index: 6;
-  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  min-width: 88px;
+  padding: 7px 11px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   font-family: inherit;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  color: #fecaca;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #ffe2e2;
+  background: rgba(98, 22, 37, 0.9);
+  border: 1px solid rgba(252, 165, 165, 0.5);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
+.pet-card__delete-icon {
+  flex: 0 0 auto;
+}
+
 .pet-card__delete:hover:not([disabled]) {
-  background: rgba(127, 29, 29, 0.9);
-  border-color: rgba(252, 165, 165, 0.7);
+  background: rgba(127, 29, 29, 0.98);
+  border-color: rgba(254, 202, 202, 0.85);
   color: #fff;
 }
 
@@ -194,7 +239,7 @@
 /* Mídia (foto + overlays legíveis) */
 .pet-card__image-wrap {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
   background: #0b0e14;
   overflow: hidden;
 }
@@ -550,6 +595,15 @@
     font-size: 28px;
     right: 14px;
     bottom: 14px;
+  }
+
+  .page-tools {
+    margin-bottom: 14px;
+  }
+
+  .btn-new-pet {
+    width: 100%;
+    max-width: 340px;
   }
 
   .delete-modal {

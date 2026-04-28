@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import { NavmenuComponent } from '../../navmenu/navmenu.component';
   styleUrls: ['./novo-pet.component.scss']
 })
 export class NovoPetComponent implements OnInit {
+  @ViewChild('fotoPrincipalInput') fotoPrincipalInput?: ElementRef<HTMLInputElement>;
   @Input() modal: boolean = false;
   // When embedded in the area-cliente modal, parent can set editId to open edit mode
   @Input() editId?: string | number | null;
@@ -31,8 +32,6 @@ export class NovoPetComponent implements OnInit {
   pesoKg: number | null = null;
   idadeAnos: number | null = null;
   observacoes = '';
-  /** Opt-in para aparecer na galeria pública (requer aprovação do admin). */
-  exibirGaleriaPublica = false;
   // alergias livres removidas em favor do search-select
   // Predefinidas (get_lista_alergias)
   listaAlergias: { nome: string; alergia_id: string | number; ativo_id?: string | number }[] = [];
@@ -46,11 +45,14 @@ export class NovoPetComponent implements OnInit {
   outraPredefinida: { nome: string; alergia_id: string | number; ativo_id?: string | number } | null = null;
 
   showDeleteConfirm = false;
+  showFotoPrincipalActionModal = false;
+  salvandoFotoPrincipal = false;
 
   carregando = false;
   fotoPreviews: string[] = [];
   galeriaItens: any[] = [];
   existingGalleryUrls: string[] = [];
+  existingFotoPrincipalUrl = '';
   clienteMe: ClienteMeResponse | null = null;
 
   especies = ['Cachorro', 'Gato', 'Outro'];
@@ -109,8 +111,16 @@ export class NovoPetComponent implements OnInit {
               const rawIdade = (pet.idadeAnos ?? pet.idade);
               this.idadeAnos = rawIdade != null && rawIdade !== '' ? Number(rawIdade) : null;
               this.observacoes = pet.observacoes || '';
-              const eg = pet.exibir_galeria_publica;
-              this.exibirGaleriaPublica = !!(eg === 1 || eg === true || eg === '1' || String(eg).toLowerCase() === 'true');
+              this.existingFotoPrincipalUrl = this.normalizarFotoUrl(
+                pet.photoURL || pet.foto || pet.photo || pet.photo_url || pet.imagem || ''
+              );
+              this.galeriaItens = Array.isArray(pet.galeria_imagens) ? pet.galeria_imagens : [];
+              this.existingGalleryUrls = this.galeriaItens
+                .map((item: any) => this.normalizarFotoUrl(item?.url))
+                .filter((url: string) => !!url);
+              if (!this.existingFotoPrincipalUrl && this.existingGalleryUrls.length) {
+                this.existingFotoPrincipalUrl = this.existingGalleryUrls[0];
+              }
 
               // Se backend retornar alergias já estruturadas (alergias_predefinidas), use-as
               if (Array.isArray(pet.alergias_predefinidas) && pet.alergias_predefinidas.length) {
@@ -157,6 +167,125 @@ export class NovoPetComponent implements OnInit {
 
   cancelar(){
     if (this.modal) this.close.emit();
+  }
+
+  get fotoPrincipalAtual(): string {
+    return this.fotoPreviews[0] || this.existingFotoPrincipalUrl || '';
+  }
+
+  onFotoPrincipalClick() {
+    if (this.carregando || this.salvandoFotoPrincipal) return;
+    if (this.fotoPrincipalAtual) {
+      this.showFotoPrincipalActionModal = true;
+      return;
+    }
+    this.abrirSeletorFotoPrincipal();
+  }
+
+  fecharModalFotoPrincipal() {
+    if (this.salvandoFotoPrincipal) return;
+    this.showFotoPrincipalActionModal = false;
+  }
+
+  selecionarSubstituirFotoPrincipal() {
+    if (this.salvandoFotoPrincipal) return;
+    this.showFotoPrincipalActionModal = false;
+    this.abrirSeletorFotoPrincipal();
+  }
+
+  private abrirSeletorFotoPrincipal() {
+    const input = this.fotoPrincipalInput?.nativeElement;
+    if (!input) return;
+    input.click();
+  }
+
+  onFotoPrincipalSelecionada(ev: Event) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const input = ev.target as HTMLInputElement;
+    const file = input.files && input.files.length ? input.files[0] : null;
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.toast.info('Selecione um arquivo de imagem válido.', 'Atenção');
+      input.value = '';
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      this.toast.info('A imagem deve ter no máximo 3MB.', 'Atenção');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.fotoPreviews = [reader.result as string];
+    };
+    reader.readAsDataURL(file);
+
+    const effectiveEditId = this.getEffectiveEditId();
+    const cid = this.getClienteIdNum();
+    if (!effectiveEditId || !this.token || !cid) {
+      this.toast.info('A nova foto principal será enviada ao salvar os dados do pet.', 'Atenção');
+      input.value = '';
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('foto', file);
+    this.salvandoFotoPrincipal = true;
+    this.carregando = true;
+    this.api.updatePet(cid, effectiveEditId, fd, this.token).subscribe({
+      next: () => {
+        this.existingFotoPrincipalUrl = this.fotoPreviews[0] || this.existingFotoPrincipalUrl;
+        this.toast.success('Foto principal atualizada com sucesso!');
+        this.salvandoFotoPrincipal = false;
+        this.carregando = false;
+      },
+      error: (err: any) => {
+        this.fotoPreviews = [];
+        const msg = err?.error?.message || err?.error?.error || err?.message || 'Erro ao atualizar foto principal';
+        this.toast.error(msg, 'Erro');
+        this.salvandoFotoPrincipal = false;
+        this.carregando = false;
+      }
+    });
+
+    input.value = '';
+  }
+
+  excluirFotoPrincipal() {
+    if (this.salvandoFotoPrincipal || this.carregando) return;
+    const effectiveEditId = this.getEffectiveEditId();
+    const cid = this.getClienteIdNum();
+    if (!effectiveEditId || !this.token || !cid) {
+      this.toast.error('Não foi possível excluir a foto principal neste momento.', 'Erro');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('photoURL', '');
+    this.salvandoFotoPrincipal = true;
+    this.carregando = true;
+    this.api.updatePet(cid, effectiveEditId, fd, this.token).subscribe({
+      next: () => {
+        this.existingFotoPrincipalUrl = '';
+        this.fotoPreviews = [];
+        this.showFotoPrincipalActionModal = false;
+        this.toast.success('Foto principal excluída.');
+        this.salvandoFotoPrincipal = false;
+        this.carregando = false;
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || err?.error?.error || err?.message || 'Erro ao excluir foto principal';
+        this.toast.error(msg, 'Erro');
+        this.salvandoFotoPrincipal = false;
+        this.carregando = false;
+      }
+    });
+  }
+
+  private normalizarFotoUrl(raw: any): string {
+    return typeof raw === 'string' ? raw.trim() : '';
   }
 
   excluirPet() {
@@ -312,7 +441,6 @@ export class NovoPetComponent implements OnInit {
     if (this.pesoKg != null) fd.append('pesoKg', String(this.pesoKg));
     if (this.idadeAnos != null) fd.append('idadeAnos', String(this.idadeAnos));
     if (this.observacoes) fd.append('observacoes', this.observacoes.trim());
-    fd.append('exibir_galeria_publica', this.exibirGaleriaPublica ? '1' : '0');
     // Enviar alergias predefinidas completas (nome, alergia_id, ativo_id)
     if (this.alergiasSelecionadas.length) {
       fd.append('alergias_predefinidas', JSON.stringify(this.alergiasSelecionadas));

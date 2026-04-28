@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, PetImagemPatchPayload } from '../../../../services/api.service';
@@ -12,7 +12,7 @@ import { ToastService } from '../../../../services/toast.service';
   templateUrl: './galeria-pet.component.html',
   styleUrls: ['./galeria-pet.component.scss']
 })
-export class GaleriaPetComponent implements OnInit, OnDestroy {
+export class GaleriaPetComponent implements OnInit, OnDestroy, OnChanges {
   @Input() modal: boolean = false;
   @Input() pets: any[] = [];
   @Input() clienteMe: any = null;
@@ -59,13 +59,37 @@ export class GaleriaPetComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Inicializar com primeiro pet se disponível
-    if (this.pets && this.pets.length > 0) {
-      this.onPetSelect(this.pets[0].id || this.pets[0]._id);
+    this.syncPetSelectionWithInputs();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['pets']) {
+      this.syncPetSelectionWithInputs();
     }
   }
 
   ngOnDestroy() {}
+
+  private syncPetSelectionWithInputs() {
+    const pets = Array.isArray(this.pets) ? this.pets : [];
+    if (!pets.length) {
+      this.selectedPetId = null;
+      this.selectedPet = null;
+      this.galeriaItens = [];
+      return;
+    }
+
+    if (this.selectedPetId) {
+      const keep = pets.find((p) => String(p.id || p._id) === String(this.selectedPetId));
+      if (keep) {
+        this.selectedPet = keep;
+        this.carregarGaleria();
+        return;
+      }
+    }
+
+    this.onPetSelect(pets[0].id || pets[0]._id);
+  }
 
   onPetSelect(petId: string | number | null | undefined) {
     if (!petId) return;

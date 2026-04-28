@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, Input, OnChanges, Output, PLATFORM_ID, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnChanges, OnInit, Output, PLATFORM_ID, SimpleChanges } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
@@ -12,7 +12,7 @@ import { ClienteAreaModalService } from '../../../services/cliente-area-modal.se
   templateUrl: './galeria-post-foto-modal.component.html',
   styleUrls: ['./galeria-post-foto-modal.component.scss'],
 })
-export class GaleriaPostFotoModalComponent implements OnChanges {
+export class GaleriaPostFotoModalComponent implements OnChanges, OnInit {
   @Input() open = false;
   @Input() embedded = false;
   @Input() initialPets: any[] | null = null;
@@ -36,6 +36,14 @@ export class GaleriaPostFotoModalComponent implements OnChanges {
     private clienteAreaModal: ClienteAreaModalService,
     @Inject(PLATFORM_ID) private platformId: object
   ) {}
+
+  ngOnInit(): void {
+    // Fallback for dynamically created instances where direct property assignment
+    // may not trigger ngOnChanges reliably.
+    if (this.open && isPlatformBrowser(this.platformId)) {
+      void this.loadPets();
+    }
+  }
 
   ngOnChanges(ch: SimpleChanges): void {
     if (ch['open'] && this.open && isPlatformBrowser(this.platformId)) {

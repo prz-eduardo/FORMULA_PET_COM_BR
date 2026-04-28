@@ -21,6 +21,7 @@ import {
   LOJA_MAPA_LAT,
   LOJA_MAPA_LNG,
   MARCA_NOME,
+  MARCA_LOGO_PATH,
 } from '../../constants/loja-public';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
@@ -69,6 +70,7 @@ export class MapaComponent implements OnInit, OnDestroy {
   private mapReadyResolver: (() => void) | null = null;
   readonly marcaNome = MARCA_NOME;
   readonly lojaEnderecoExibicao = `${LOJA_ENDERECO_TEXTO}, CEP ${LOJA_CEP}`;
+  readonly defaultPartnerLogoPath = MARCA_LOGO_PATH || '/imagens/logo-marca.svg';
   private defaultCenterAddress = `${LOJA_ENDERECO_TEXTO}, Curitiba, PR, CEP ${LOJA_CEP}`;
   private pharmacyAddress = `${LOJA_ENDERECO_TEXTO}, Curitiba, PR`;
   private pharmacyCoords: { lat: number; lng: number } | null = { lat: LOJA_MAPA_LAT, lng: LOJA_MAPA_LNG };
@@ -522,15 +524,13 @@ export class MapaComponent implements OnInit, OnDestroy {
         const stableSub = (this.appRef.isStable as any).pipe(filter((s: boolean) => s), take(1)).subscribe(() => {
           try { clearTimeout(stableTimer as any); } catch (e) {}
             this.loadPartners();
-            this.loadAnunciantes(undefined);
         });
         const stableTimer = setTimeout(() => {
           try { stableSub.unsubscribe(); } catch (e) {}
             this.loadPartners();
-            this.loadAnunciantes(undefined);
         }, 1500);
       } catch (e) {
-        setTimeout(() => { this.loadPartners(); this.loadAnunciantes(undefined); }, 0);
+        setTimeout(() => { this.loadPartners(); }, 0);
       }
     } else {
       this.loading = false;
@@ -1007,6 +1007,9 @@ export class MapaComponent implements OnInit, OnDestroy {
     const title = partner.titulo ?? '';
     const address = partner.endereco ?? partner._raw?.endereco ?? '';
     const phone = partner.telefone ?? partner._raw?.telefone ?? '';
+    const logoCandidate = String(partner.logo_url ?? partner._raw?.logo_url ?? '').trim();
+    const logoSrc = logoCandidate || this.defaultPartnerLogoPath;
+    const logoFallback = this.defaultPartnerLogoPath;
 
     const routeBtnId = `map-route-btn-${uid}`;
     const openBtnId = `map-open-btn-${uid}`;
@@ -1017,6 +1020,11 @@ export class MapaComponent implements OnInit, OnDestroy {
       <button id="${closeBtnId}" aria-label="Fechar" style="position:absolute;top:-20px;right:-20px;width:40px;height:40px;border-radius:50%;background:#111827;color:#fff;border:0;box-shadow:0 10px 28px rgba(0,0,0,.32);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0">✕</button>
 
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <img
+          src="${logoSrc}"
+          alt="Logo de ${name || 'parceiro'}"
+          style="width:46px;height:46px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb;background:#fff;flex:0 0 auto"
+          onerror="this.onerror=null;this.src='${logoFallback}';" />
         <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
         <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.2;word-break:break-word">${title}${address ? ' · ' + address : ''}</div>

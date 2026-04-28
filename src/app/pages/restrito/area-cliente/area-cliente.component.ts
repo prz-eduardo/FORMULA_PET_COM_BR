@@ -402,6 +402,17 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     }
     if (view === 'minha-galeria') {
       if (!this.modal) return this.router.navigateByUrl('/area-cliente?view=minha-galeria');
+
+      // Aguarda um curto período para evitar abrir a galeria com pets vazios enquanto o perfil ainda carrega.
+      if ((!this.clienteData || !this.pets || this.pets.length === 0) && this.profilePromise) {
+        try {
+          await Promise.race([
+            this.profilePromise,
+            new Promise(resolve => setTimeout(resolve, 2000))
+          ]);
+        } catch {}
+      }
+
       this.internalView = 'minha-galeria';
       this.titulo = 'Minha Galeria';
       if (!this.internalHost) return;
@@ -488,6 +499,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       } else if (view === 'meus-pets') {
         const mod = await import('../../../pages/meus-pets/meus-pets.component');
         const Cmp = (mod as any).MeusPetsComponent;
+        const pendingPetEditId = this.clienteAreaModal.consumePendingPetEditId();
 
         // If we are still loading profile, wait for it to finish (with a short timeout)
         if ((!this.clienteData || !this.pets || this.pets.length === 0) && this.profilePromise) {
@@ -519,24 +531,8 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           // If MeusPets requests editing a pet (emits id), open the NovoPetComponent
           // inside the modal and pass the `editId` so it loads the pet for editing.
           if ((ref.instance as any).editPet) {
-            (ref.instance as any).editPet.subscribe(async (petId: string | number) => {
-              try {
-                this.internalView = 'novo-pet';
-                this.titulo = 'Editar pet';
-                this.internalHost?.clear();
-                const mod2 = await import('../../../pages/novo-pet/novo-pet.component');
-                const Cmp2 = (mod2 as any).NovoPetComponent;
-                const ref2 = this.internalHost!.createComponent(Cmp2);
-                if (ref2?.instance) {
-                  (ref2.instance as any).modal = true;
-                  try { (ref2.instance as any).editId = petId; } catch {}
-                  try { (ref2.instance as any).clienteDataInjected = this.clienteData; } catch {}
-                  this.wireNovoPetModalListeners(ref2.instance);
-                }
-              } catch (e) {
-                console.error('Falha ao abrir editor de pet', e);
-                this.toast.error('Não foi possível abrir o editor do pet agora');
-              }
+            (ref.instance as any).editPet.subscribe((petId: string | number) => {
+              this.openPetEditorInModal(petId);
             });
           }
           if ((ref.instance as any).petDeleted) {
@@ -545,6 +541,9 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
               if (t) this.refreshPetsForCliente(t);
             });
           }
+        }
+        if (pendingPetEditId !== null && pendingPetEditId !== undefined && pendingPetEditId !== '') {
+          this.openPetEditorInModal(pendingPetEditId);
         }
       } else if (view === 'novo-pet') {
         const mod = await import('../../../pages/novo-pet/novo-pet.component');
@@ -556,14 +555,25 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
           this.wireNovoPetModalListeners(ref.instance);
         }
       } else if (view === 'postar-foto') {
+        if ((!this.clienteData || !this.pets || this.pets.length === 0) && this.profilePromise) {
+          try {
+            await Promise.race([
+              this.profilePromise,
+              new Promise(resolve => setTimeout(resolve, 2000))
+            ]);
+          } catch {}
+        }
+
         const mod = await import('../../galeria-publica/galeria-post-foto-modal/galeria-post-foto-modal.component');
         const Cmp = (mod as any).GaleriaPostFotoModalComponent;
         const ref = this.internalHost.createComponent(Cmp);
         if (ref?.instance) {
-          try { (ref.instance as any).initialPets = Array.isArray(this.pets) ? [...this.pets] : []; } catch {}
-          try { (ref.instance as any).initialClienteId = Number(this.clienteData?.id) || null; } catch {}
-          (ref.instance as any).open = true;
-          (ref.instance as any).embedded = true;
+          const initialPets = Array.isArray(this.pets) ? [...this.pets] : [];
+          const initialClienteId = Number(this.clienteData?.id) || null;
+          try { ref.setInput('initialPets', initialPets); } catch { try { (ref.instance as any).initialPets = initialPets; } catch {} }
+          try { ref.setInput('initialClienteId', initialClienteId); } catch { try { (ref.instance as any).initialClienteId = initialClienteId; } catch {} }
+          try { ref.setInput('embedded', true); } catch { (ref.instance as any).embedded = true; }
+          try { ref.setInput('open', true); } catch { (ref.instance as any).open = true; }
           if ((ref.instance as any).closeModal) {
             (ref.instance as any).closeModal.subscribe(() => this.goBack());
           }
@@ -667,6 +677,26 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     }
     this.internalView = null;
     this.titulo = 'Bem-vindo!';
+  }
+
+  private async openPetEditorInModal(petId: string | number): Promise<void> {
+    try {
+      this.internalView = 'novo-pet';
+      this.titulo = 'Editar pet';
+      this.internalHost?.clear();
+      const mod = await import('../../../pages/novo-pet/novo-pet.component');
+      const Cmp = (mod as any).NovoPetComponent;
+      const ref = this.internalHost?.createComponent(Cmp);
+      if (ref?.instance) {
+        (ref.instance as any).modal = true;
+        try { (ref.instance as any).editId = petId; } catch {}
+        try { (ref.instance as any).clienteDataInjected = this.clienteData; } catch {}
+        this.wireNovoPetModalListeners(ref.instance);
+      }
+    } catch (e) {
+      console.error('Falha ao abrir editor de pet', e);
+      this.toast.error('Não foi possível abrir o editor do pet agora');
+    }
   }
 
   /** close + petSaved / petDeleted do cadastro/edição de pet no modal */

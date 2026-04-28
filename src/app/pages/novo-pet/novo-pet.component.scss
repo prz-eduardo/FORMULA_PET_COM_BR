@@ -133,11 +133,50 @@
 .pet-summary__media {
   display: flex;
   justify-content: center;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.pet-summary__media:focus-visible {
+  outline: 2px solid rgba(196, 214, 0, 0.6);
+  outline-offset: 2px;
+}
+
+.pet-summary__cover-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.pet-summary__cover-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pet-summary__cover-btn:focus-visible {
+  outline: 2px solid rgba(196, 214, 0, 0.6);
+  outline-offset: 2px;
+}
+
+.pet-summary__cover-btn--empty .placeholder {
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.pet-summary__cover-btn--empty:hover:not(:disabled) .placeholder {
+  border-color: rgba(196, 214, 0, 0.45);
+  background: rgba(196, 214, 0, 0.06);
+}
+
+.pet-summary__cover {
+  width: 140px;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
 }
 
 .pet-summary__cover img {
-  width: 140px;
-  height: 140px;
+  width: 100%;
+  height: 100%;
   border-radius: 12px;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -145,7 +184,7 @@
 
 .placeholder {
   width: 140px;
-  height: 140px;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -858,6 +897,29 @@
   background: rgba(127, 29, 29, 0.95);
   color: #fff;
   border-color: rgba(248, 113, 113, 0.35);
+}
+
+.delete-modal__btn--primary {
+  background: linear-gradient(135deg, #c4d600, #a9bb00);
+  color: #1a1f00;
+  border-color: rgba(196, 214, 0, 0.45);
+}
+
+.delete-modal__actions--stacked {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 /* Modal: uma coluna — pré-visualização no topo */

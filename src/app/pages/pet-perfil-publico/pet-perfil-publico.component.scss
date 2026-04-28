@@ -1,7 +1,7 @@
 .pet-perfil { padding: 1.5rem 0 3rem; }
 .back { display: inline-block; margin-bottom: 1rem; }
 .perfil-hero { display: grid; gap: 1.5rem; grid-template-columns: 1fr; @media (min-width: 700px) { grid-template-columns: 280px 1fr; } }
-.perfil-hero__img { width: 100%; max-height: 320px; object-fit: cover; border-radius: 12px; }
+.perfil-hero__img { width: 100%; aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5); object-fit: cover; border-radius: 12px; }
 .perfil-hero h1 { margin: 0 0 0.5rem; }
 .meta, .tutor, .obs { margin: 0.35rem 0; }
 .tutor { color: #666; }

@@ -106,7 +106,7 @@
 }
 .thumb {
   width: 44px;
-  height: 44px;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
   border-radius: 8px;
   object-fit: cover;
   background: rgba(0, 0, 0, 0.2);

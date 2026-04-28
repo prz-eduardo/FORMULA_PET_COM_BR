@@ -22,6 +22,10 @@
   box-sizing: border-box;
 }
 
+.checkout-page * {
+  box-sizing: border-box;
+}
+
 .checkout-container {
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 40px;
   max-width: 1240px;
@@ -290,6 +294,9 @@
     width: 44px;
     height: 44px;
   }
+  .checkout-hero .hero-titles {
+    min-width: 0;
+  }
   .checkout-cta-card {
     flex-direction: column;
     align-items: stretch;
@@ -309,6 +316,11 @@
   grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
   gap: 20px;
   align-items: start;
+}
+
+.checkout-grid > .col,
+.card {
+  min-width: 0;
 }
 @media (max-width: 900px) {
   .checkout-grid {
@@ -355,6 +367,7 @@
 .items .n {
   font-weight: 600;
   color: var(--fp-ink);
+  overflow-wrap: anywhere;
 }
 .items .qtd {
   color: var(--fp-ink-soft);
@@ -381,6 +394,7 @@
   color: var(--fp-ink-soft);
   font-size: 14px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .frete {
   margin-top: 10px;
@@ -417,6 +431,7 @@
 }
 .cupom input {
   flex: 1;
+  min-width: 0;
   border: 1px solid var(--fp-border);
   border-radius: 12px;
   padding: 12px 14px;
@@ -776,6 +791,7 @@
 }
 .modal .copy input {
   flex: 1;
+  min-width: 0;
   border: 1px solid var(--fp-border);
   border-radius: 10px;
   padding: 10px;
@@ -823,6 +839,43 @@
   .checkout-page {
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
+
+  .cupom .row {
+    flex-wrap: wrap;
+  }
+
+  .cupom .row .btn {
+    width: 100%;
+  }
+
+  .items .row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'nome valor'
+      'qtd qtd';
+    row-gap: 6px;
+  }
+
+  .items .n {
+    grid-area: nome;
+  }
+
+  .items .qtd {
+    grid-area: qtd;
+  }
+
+  .items .val {
+    grid-area: valor;
+    text-align: right;
+  }
+
+  .modal .copy {
+    flex-direction: column;
+  }
+
+  .modal .copy .btn {
+    width: 100%;
+  }
 }
 
 .sticky-paybar {
@@ -846,6 +899,7 @@
 .sticky-paybar .sum {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .sticky-paybar .sum .lbl {
   font-size: 12px;
@@ -857,7 +911,8 @@
   color: var(--fp-ink);
 }
 .sticky-paybar .btn.cta {
-  min-width: 46%;
+  min-width: 0;
+  flex: 1;
   text-align: center;
 }
 @media (max-width: 640px) {

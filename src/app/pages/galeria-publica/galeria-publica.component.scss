@@ -450,7 +450,7 @@
 	width: 100%;
 	min-width: 0;
 }
-/* Cartão compacto: foto 1:1 + faixa de nome; clique abre o lightbox */
+/* Cartão compacto: foto 4:5 (feed) + faixa de nome; clique abre o lightbox */
 .pet-card--compact {
 	display: flex;
 	flex-direction: column;
@@ -486,7 +486,7 @@ article.pet-card--compact {
 }
 .pet-card--compact__media {
 	position: relative;
-	aspect-ratio: 1 / 1;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
 	border-radius: 12px 12px 0 0;
 	overflow: hidden;
 	background: linear-gradient(135deg, #f3f4f6, #e5e7eb);

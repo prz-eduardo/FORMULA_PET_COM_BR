@@ -115,9 +115,19 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
     }
   }
 
-  openClienteAreaView(view: 'novo-pet' | 'postar-foto'): void {
+  openClienteAreaView(view: 'meus-pets' | 'novo-pet' | 'postar-foto'): void {
     if (!isPlatformBrowser(this.platformId)) return;
     this.clienteAreaModal.open(view);
+  }
+
+  openClientePet(pet: any): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const petId = pet?.id;
+    if (petId === null || petId === undefined || petId === '') {
+      this.openClienteAreaView('meus-pets');
+      return;
+    }
+    this.clienteAreaModal.openPetEditor(petId);
   }
 
   hasClienteAuth(): boolean {

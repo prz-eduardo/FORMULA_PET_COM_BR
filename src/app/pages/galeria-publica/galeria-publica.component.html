@@ -99,7 +99,7 @@
               </div>
               <p class="galeria-cta-shelf__hint">{{ getCtaPetHint() }}</p>
               <div class="galeria-cta-bubbles" role="list">
-                <span *ngFor="let pet of ctaClientePets" class="galeria-cta-bubble" role="listitem" [attr.title]="pet.nome || 'Pet'" [attr.aria-label]="pet.nome || 'Pet'">
+                <span *ngFor="let pet of ctaClientePets" class="galeria-cta-bubble" role="listitem" [attr.title]="pet.nome || 'Pet'" [attr.aria-label]="pet.nome || 'Pet'" tabindex="0" (click)="openClientePet(pet)" (keydown.enter)="openClientePet(pet)" (keydown.space)="$event.preventDefault(); openClientePet(pet)">
                   <ng-container *ngIf="resolveClientePetAvatar(pet) as petAvatar; else petInitial">
                     <img [src]="petAvatar" alt="" aria-hidden="true" />
                   </ng-container>

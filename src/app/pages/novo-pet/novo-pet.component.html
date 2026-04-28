@@ -9,13 +9,28 @@
     <div class="form-card">
       <div class="form-grid">
         <aside class="pet-card">
-          <div class="pet-summary__media">
-            <div class="pet-summary__cover" *ngIf="existingGalleryUrls[0] || fotoPreviews[0]; else noFotoResumo">
-              <img [src]="fotoPreviews[0] || existingGalleryUrls[0]" alt="Foto principal do pet" />
+          <div
+            class="pet-summary__media"
+            role="button"
+            tabindex="0"
+            aria-label="Selecionar foto principal"
+            (click)="onFotoPrincipalClick()"
+            (keydown.enter)="onFotoPrincipalClick()"
+            (keydown.space)="onFotoPrincipalClick(); $event.preventDefault()"
+          >
+            <div class="pet-summary__cover" *ngIf="fotoPrincipalAtual; else noFotoResumo">
+              <img [src]="fotoPrincipalAtual" alt="Foto principal do pet" />
             </div>
             <ng-template #noFotoResumo>
               <div class="placeholder">Sem fotos</div>
             </ng-template>
+            <input
+              #fotoPrincipalInput
+              type="file"
+              accept="image/*"
+              class="sr-only"
+              (change)="onFotoPrincipalSelecionada($event)"
+            />
           </div>
 
           <div class="pet-summary__content">
@@ -112,14 +127,6 @@
               <textarea [(ngModel)]="observacoes" rows="3" placeholder="Alergias, comportamento, preferências..."></textarea>
             </div>
 
-            <div class="field field--checkbox field--visibility">
-              <label class="checkbox-row">
-                <input type="checkbox" [(ngModel)]="exibirGaleriaPublica" name="exibirGaleriaPublica" />
-                <span>Exibir na galeria pública do site</span>
-              </label>
-              <p class="field-hint">Com a opção ativa, as fotos salvas desse pet podem aparecer na galeria pública. Você pode mudar isso quando quiser.</p>
-            </div>
-
             <div class="field">
               <label>Alergias (pré-definidas)</label>
               <div class="alergias-row">
@@ -162,6 +169,38 @@
       </div>
     </div>
   </main>
+
+  <div
+    *ngIf="showFotoPrincipalActionModal"
+    class="delete-modal__backdrop"
+    role="presentation"
+    (click)="fecharModalFotoPrincipal()"
+  >
+    <div
+      class="delete-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pet-foto-manage-title"
+      aria-describedby="pet-foto-manage-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="pet-foto-manage-title" class="delete-modal__title">Foto principal</h2>
+      <p id="pet-foto-manage-desc" class="delete-modal__text">
+        O que você deseja fazer com a foto principal deste pet?
+      </p>
+      <div class="delete-modal__actions delete-modal__actions--stacked">
+        <button type="button" class="delete-modal__btn delete-modal__btn--ghost" (click)="fecharModalFotoPrincipal()" [disabled]="salvandoFotoPrincipal">
+          Cancelar
+        </button>
+        <button type="button" class="delete-modal__btn delete-modal__btn--danger" (click)="excluirFotoPrincipal()" [disabled]="salvandoFotoPrincipal">
+          {{ salvandoFotoPrincipal ? 'Excluindo…' : 'Excluir foto principal' }}
+        </button>
+        <button type="button" class="delete-modal__btn delete-modal__btn--primary" (click)="selecionarSubstituirFotoPrincipal()" [disabled]="salvandoFotoPrincipal">
+          Substituir foto principal
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div
     *ngIf="showDeleteConfirm"

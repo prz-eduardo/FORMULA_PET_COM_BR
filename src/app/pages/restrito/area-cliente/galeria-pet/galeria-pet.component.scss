@@ -1,5 +1,13 @@
 .galeria-pet-wrapper {
   position: relative;
+  isolation: isolate;
+  --np-bg: #0f141c;
+  --np-text: #e6eef8;
+  --np-text-dim: #94a3b8;
+  --np-border: rgba(255, 255, 255, 0.1);
+  --np-accent: #c4d600;
+  --np-accent-ink: #1a1f00;
+  color: var(--np-text);
 }
 
 .galeria-pet__header {
@@ -220,7 +228,7 @@
 .gallery-item-card__media {
   position: relative;
   width: 88px;
-  height: 88px;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
   border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
@@ -311,7 +319,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background:
+    radial-gradient(1000px 380px at 50% -10%, rgba(196, 214, 0, 0.08), transparent 72%),
+    rgba(1, 4, 10, 0.84);
+  -webkit-backdrop-filter: blur(4px) saturate(105%);
+  backdrop-filter: blur(4px) saturate(105%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,7 +332,7 @@
 }
 
 .gallery-settings-modal {
-  background: var(--np-bg);
+  background: linear-gradient(180deg, rgba(15, 20, 28, 0.98), rgba(9, 13, 20, 0.98));
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   max-width: 500px;
@@ -378,6 +390,7 @@
 
 .gallery-settings-modal__preview {
   margin-bottom: 20px;
+  aspect-ratio: var(--pet-photo-feed-ratio, 4 / 5);
   border-radius: 12px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.03);
@@ -385,9 +398,8 @@
 
   img {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
-    max-height: 300px;
     object-fit: cover;
   }
 }

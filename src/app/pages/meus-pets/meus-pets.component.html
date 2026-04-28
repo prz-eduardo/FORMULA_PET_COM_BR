@@ -8,6 +8,13 @@
     <h1 class="page-title" *ngIf="!modal">Meus pets</h1>
     <p class="page-lead" *ngIf="!modal && !carregando && pets.length > 0">Toque no card para editar. Use o + para cadastrar outro pet.</p>
 
+    <div class="page-tools" *ngIf="!carregando">
+      <a class="btn-new-pet" href="/novo-pet" (click)="onNewPetClick($event)" aria-label="Cadastrar novo pet">
+        <span class="btn-new-pet__plus" aria-hidden="true">+</span>
+        <span>Cadastrar novo pet</span>
+      </a>
+    </div>
+
     <div *ngIf="carregando" class="state state--loading" aria-live="polite">Carregando seus pets…</div>
 
     <div *ngIf="!carregando && !pets.length" class="state state--empty">
@@ -89,7 +96,12 @@
           [disabled]="deletingPetId != null && deletingPetId === (idFor(p) || '')"
           [attr.aria-label]="'Excluir ' + (p.nome || 'pet')"
           title="Excluir"
-        >Excluir</button>
+        >
+          <svg class="pet-card__delete-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M10 11v6M14 11v6M6 6l1 14h10l1-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Excluir</span>
+        </button>
         </div>
       </li>
     </ul>
