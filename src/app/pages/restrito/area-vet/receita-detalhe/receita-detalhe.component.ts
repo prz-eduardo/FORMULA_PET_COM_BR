@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService, Receita } from '../../../../services/api.service';
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 
@@ -14,6 +14,12 @@ import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 export class ReceitaDetalheComponent {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  get showSiteNav(): boolean {
+    const path = (this.router.url.split('?')[0] || '').split('#')[0] || '';
+    return !path.startsWith('/parceiros/');
+  }
 
   carregando = true;
   erro: string | null = null;

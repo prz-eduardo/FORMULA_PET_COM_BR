@@ -13,6 +13,9 @@
       <a routerLink="/parceiros/agenda" routerLinkActive="active">
         <i class="fa fa-calendar"></i> Agenda
       </a>
+      <a routerLink="/parceiros/colaboradores" routerLinkActive="active">
+        <i class="fa fa-users"></i> Colaboradores
+      </a>
       <div class="nav-group" [class.open]="showVetMenu()">
         <button class="nav-group-btn" (click)="toggleVetMenu()" [class.active]="isVetActive()">
           <i class="fa fa-flask"></i> Área Vet <i class="fa fa-chevron-down nav-caret"></i>
@@ -22,7 +25,7 @@
             <i class="fa fa-flask"></i> Ativos & Fórmulas
           </a>
           <a routerLink="/parceiros/gerar-receita" routerLinkActive="active" (click)="toggleVetMenu(false)">
-            <i class="fa fa-file-text-o"></i> Gerar Receita
+            <i class="fa fa-file-text-o"></i> Prontuário do Atendimento
           </a>
           <a routerLink="/parceiros/historico-receitas" routerLinkActive="active" (click)="toggleVetMenu(false)">
             <i class="fa fa-history"></i> Histórico
@@ -44,7 +47,9 @@
           <div class="menu-section-label">Conta</div>
           <div class="menu-user-info">
             <div class="user-email">{{ colaborador()?.email }}</div>
-            <div class="user-role">{{ colaborador()?.role === 'master' ? '👑 Master' : '👤 Colaborador' }}</div>
+            <div class="user-role">
+              {{ colaborador()?.role === 'master' ? '👑 Master' : '👤 Colaborador' }}
+            </div>
           </div>
           <div class="menu-divider"></div>
           <button (click)="goToPainel(); toggleUserMenu(false)"><i class="fa fa-th-large"></i> Painel</button>

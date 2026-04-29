@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef, NgZone, AfterViewInit } from 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
-import { ApiService, AlergiaLookup } from '../../../../services/api.service';
+import { ApiService, AlergiaLookup, CriarAtendimentoPayload } from '../../../../services/api.service';
 import { ToastService } from '../../../../services/toast.service';
 import { debounce, slice } from 'lodash-es';
 import jsPDF from 'jspdf';
@@ -57,6 +57,18 @@ interface Veterinario {
   crmv: string;
 }
 
+interface AtendimentoExame {
+  nome: string;
+  status: string;
+  observacoes: string;
+}
+
+interface AtendimentoFoto {
+  descricao: string;
+  base64: string;
+  nomeArquivo: string;
+}
+
 
 @Component({
   selector: 'app-gerar-receita',
@@ -79,6 +91,13 @@ export class GerarReceitaComponent implements OnInit, AfterViewInit {
   novosDadosPet: Pet = { nome: '', idade: 0, peso: 0, raca: '', sexo: 'Macho', alergias: [], especie:'' };
   private originalPetSnapshot: Pet | null = null;
   observacoes = '';
+  queixaPrincipal = '';
+  anamnese = '';
+  exameFisico = '';
+  diagnostico = '';
+  planoTerapeutico = '';
+  examesSolicitados: AtendimentoExame[] = [{ nome: '', status: 'solicitado', observacoes: '' }];
+  fotosAtendimento: AtendimentoFoto[] = [];
   veterinario: any;
 isBrowser: any;
   ativos: Ativo[] = [];
@@ -1084,7 +1103,7 @@ isBrowser: any;
     // Define alerta de alergia no momento do salvamento (há algum ativo selecionado que conflita?)
     const alertaAlergiaNoMomento = this.ativosSelecionados.some(id => this.isAtivoAlergenoParaPet(id));
 
-    const receitaPayload = {
+    const atendimentoPayload: CriarAtendimentoPayload = {
       tutor: {
         nome: tutor?.nome || '',
         cpf: tutor?.cpf || '',
@@ -1093,21 +1112,40 @@ isBrowser: any;
         endereco: tutor?.endereco || ''
       },
       pet: petParaReceita,
-      ativosSelecionados: this.ativosSelecionados,
-      alerta_alergia: alertaAlergiaNoMomento,
-      observacoes: this.observacoes,
-      assinatura: {
-        manual: this.assinaturaManual,
-        cursiva: this.assinaturaCursiva,
-        imagem: assinaturaImg,
-        icp: this.assinaturaICP
-      }
+      atendimento: {
+        queixaPrincipal: this.queixaPrincipal,
+        anamnese: this.anamnese,
+        exameFisico: this.exameFisico,
+        diagnostico: this.diagnostico,
+        planoTerapeutico: this.planoTerapeutico,
+        observacoes: this.observacoes,
+        examesSolicitados: this.examesSolicitados
+          .map((ex) => ({
+            nome: (ex.nome || '').trim(),
+            status: (ex.status || 'solicitado').trim().toLowerCase(),
+            observacoes: (ex.observacoes || '').trim(),
+          }))
+          .filter((ex) => ex.nome),
+        fotos: this.fotosAtendimento.map((foto) => ({ descricao: foto.descricao, base64: foto.base64 })),
+      },
+      receita: {
+        ativosSelecionados: this.ativosSelecionados,
+        alerta_alergia: alertaAlergiaNoMomento,
+        observacoes: this.observacoes,
+        assinatura: {
+          manual: this.assinaturaManual,
+          cursiva: this.assinaturaCursiva,
+          imagem: assinaturaImg,
+          icp: this.assinaturaICP
+        },
+        alergias: alergiasStrings,
+      },
     };
 
     try {
       const tokenReceita = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') || undefined : undefined;
-      await this.apiService.criarReceita(receitaPayload, tokenReceita).toPromise();
-      this.toastService.success('Receita salva com sucesso.');
+      await this.apiService.criarAtendimento(atendimentoPayload, tokenReceita).toPromise();
+      this.toastService.success('Prontuário do atendimento salvo com sucesso.');
       // Evita carregar o alerta de alergia para a próxima receita
       this.alerta_alergia = false;
     } catch (e: any) {
@@ -1118,6 +1156,48 @@ isBrowser: any;
         this.toastService.error(msg, 'Erro');
       }
     }
+  }
+
+  adicionarExameSolicitado() {
+    this.examesSolicitados.push({ nome: '', status: 'solicitado', observacoes: '' });
+  }
+
+  removerExameSolicitado(index: number) {
+    this.examesSolicitados.splice(index, 1);
+    if (!this.examesSolicitados.length) {
+      this.examesSolicitados.push({ nome: '', status: 'solicitado', observacoes: '' });
+    }
+  }
+
+  async onFotoAtendimentoSelecionada(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+    try {
+      const base64 = await this.fileToDataUrl(file);
+      this.fotosAtendimento.push({
+        descricao: '',
+        base64,
+        nomeArquivo: file.name || `foto-${Date.now()}.png`,
+      });
+    } catch {
+      this.toastService.error('Não foi possível carregar a foto selecionada.');
+    } finally {
+      if (input) input.value = '';
+    }
+  }
+
+  removerFotoAtendimento(index: number) {
+    this.fotosAtendimento.splice(index, 1);
+  }
+
+  private fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
   }
 
   // --- Resolução de alergias pré-definidas ---

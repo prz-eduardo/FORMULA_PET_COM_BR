@@ -17,6 +17,12 @@ export class HistoricoReceitasComponent {
   private api = inject(ApiService);
   private router = inject(Router);
 
+  /** Rota `/historico-receitas` (vet legado) precisa da navbar; em `/parceiros/...` o shell já cobre. */
+  get showSiteNav(): boolean {
+    const path = (this.router.url.split('?')[0] || '').split('#')[0] || '';
+    return !path.startsWith('/parceiros/');
+  }
+
   carregando = false;
   erro: string | null = null;
 
@@ -79,7 +85,8 @@ export class HistoricoReceitasComponent {
 
   abrirReceita(r: Receita) {
     if (!r?.id) return;
-    this.router.navigate(['/historico-receitas', r.id]);
+    const base = this.showSiteNav ? '/historico-receitas' : '/parceiros/historico-receitas';
+    this.router.navigate([base, r.id]);
   }
 
   paginaAnterior() { if (this.page > 1) { this.page--; this.load(); } }

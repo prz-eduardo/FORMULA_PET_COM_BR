@@ -39,6 +39,12 @@ export interface Colaborador {
   parceiroNome?: string;
   created_at?: string;
   last_login_at?: string | null;
+  /** Quando a API retorna em snake_case (listagem MySQL) */
+  parceiro_id?: number;
+  tem_vet?: number | boolean;
+  vet_id?: number | null;
+  vet_approved?: number | null;
+  vet_crmv?: string | null;
 }
 
 export interface Recurso {
@@ -164,4 +170,19 @@ export interface SessionColaborador {
   colaborador: Colaborador;
   token: string;
   expiresAt: number;
+}
+
+export interface ColaboradorInvite {
+  id: number;
+  parceiro_id: number;
+  email: string;
+  nome?: string | null;
+  role: RoleColaborador;
+  com_vet?: number | boolean;
+  status: 'pendente' | 'aceito' | 'cancelado' | 'expirado';
+  token_uuid: string;
+  expires_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  accepted_at?: string | null;
 }

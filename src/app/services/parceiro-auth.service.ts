@@ -46,6 +46,24 @@ export class ParceiroAuthService {
   }
 
   /**
+   * Solicita uma sessão JWT de veterinário vinculada ao colaborador logado.
+   * Usada para liberar recursos da área-vet no contexto do painel parceiro.
+   */
+  async getVetSession(): Promise<{
+    allowed: boolean;
+    token: string;
+    vet: { id: number; nome: string; email: string; crmv?: string | null };
+  }> {
+    return await lastValueFrom(
+      this.http.get<{
+        allowed: boolean;
+        token: string;
+        vet: { id: number; nome: string; email: string; crmv?: string | null };
+      }>(`${API_BASE}/parceiro/auth/vet-session`, { headers: this.getAuthHeaders() })
+    );
+  }
+
+  /**
    * Faz logout
    */
   logout(): void {

@@ -27,7 +27,7 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
     ],
     vet: [
       'ativos formulas compostos ingredientes',
-      'gerar receita prescricao veterinaria',
+      'prontuario atendimento gerar receita prescricao veterinaria',
       'historico receitas',
       'pacientes pets clientes tutores',
     ],
@@ -115,5 +115,5 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
   goToGerarReceita(): void   { this.router.navigate(['/parceiros/gerar-receita']); }
   goToHistorico(): void      { this.router.navigate(['/parceiros/historico-receitas']); }
   goToPacientes(): void      { this.router.navigate(['/parceiros/pacientes']); }
-  goToColaboradores(): void  { this.router.navigate(['/parceiros/agenda']); }
+  goToColaboradores(): void  { this.router.navigate(['/parceiros/colaboradores']); }
 }

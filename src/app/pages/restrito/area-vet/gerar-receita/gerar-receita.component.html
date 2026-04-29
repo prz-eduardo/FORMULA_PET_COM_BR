@@ -3,7 +3,7 @@
     <div class="acoes-row" style="justify-content: end; padding-top: 5px;">
     <button id="btnTutorialReceita" class="btn-help" type="button" (click)="startTour()" aria-label="Como funciona?">?</button>
   </div>
-  <h1 class="titulo">Gerar Receita</h1>
+  <h1 class="titulo">Prontuário do Atendimento</h1>
 
   <!-- CPF -->
   <div class="card receita-card">
@@ -134,15 +134,72 @@
     </div>
 
 
-  <!-- Observações -->
+  <!-- Prontuário -->
   <div class="card receita-card">
-    <h3>Observações</h3>
-    <textarea [(ngModel)]="observacoes" placeholder="Digite aqui observações da receita..." class="input-busca"></textarea>
+    <h3>Prontuário Clínico</h3>
+    <div class="grid-pet">
+      <div class="input-group">
+        <label>Queixa principal</label>
+        <input [(ngModel)]="queixaPrincipal" placeholder="Ex: vômito e apatia há 2 dias" class="input-busca" />
+      </div>
+      <div class="input-group full">
+        <label>Anamnese</label>
+        <textarea [(ngModel)]="anamnese" placeholder="Histórico relatado pelo tutor..." class="input-busca"></textarea>
+      </div>
+      <div class="input-group full">
+        <label>Exame físico</label>
+        <textarea [(ngModel)]="exameFisico" placeholder="Parâmetros clínicos e achados físicos..." class="input-busca"></textarea>
+      </div>
+      <div class="input-group full">
+        <label>Diagnóstico</label>
+        <textarea [(ngModel)]="diagnostico" placeholder="Hipóteses diagnósticas / diagnóstico conclusivo..." class="input-busca"></textarea>
+      </div>
+      <div class="input-group full">
+        <label>Plano terapêutico</label>
+        <textarea [(ngModel)]="planoTerapeutico" placeholder="Conduta e orientações clínicas..." class="input-busca"></textarea>
+      </div>
+    </div>
   </div>
 
-  <!-- Ativos -->
+  <div class="card receita-card">
+    <h3>Exames Solicitados</h3>
+    <div *ngFor="let exame of examesSolicitados; let i = index" class="grid-pet" style="margin-bottom: 10px;">
+      <input [(ngModel)]="exame.nome" placeholder="Nome do exame" class="input-busca" />
+      <select [(ngModel)]="exame.status" class="input-busca">
+        <option value="solicitado">Solicitado</option>
+        <option value="coletado">Coletado</option>
+        <option value="resultado">Resultado recebido</option>
+      </select>
+      <input [(ngModel)]="exame.observacoes" placeholder="Observações do exame" class="input-busca" />
+      <button class="btn-sec" type="button" (click)="removerExameSolicitado(i)">Remover</button>
+    </div>
+    <button class="btn-toggle" type="button" (click)="adicionarExameSolicitado()">+ Adicionar exame</button>
+  </div>
+
+  <div class="card receita-card">
+    <h3>Fotos do Atendimento</h3>
+    <div class="row" style="gap: 10px; align-items: center;">
+      <input type="file" accept="image/*" (change)="onFotoAtendimentoSelecionada($event)" />
+    </div>
+    <div *ngIf="fotosAtendimento.length" class="cards-da-letra" style="margin-top: 10px;">
+      <div *ngFor="let foto of fotosAtendimento; let i = index" class="ativo-item">
+        <div class="ativo-header">{{ foto.nomeArquivo }}</div>
+        <img [src]="foto.base64" alt="Foto do atendimento" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px;" />
+        <input [(ngModel)]="foto.descricao" placeholder="Descrição da foto" class="input-busca" style="margin-top: 8px;" />
+        <button class="btn-sec" type="button" (click)="removerFotoAtendimento(i)">Remover foto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Observações -->
+  <div class="card receita-card">
+    <h3>Observações Gerais do Atendimento</h3>
+    <textarea [(ngModel)]="observacoes" placeholder="Observações complementares do atendimento..." class="input-busca"></textarea>
+  </div>
+
+  <!-- Receita (parte do atendimento) -->
   <div class="card receita-card" id="ativosCard">
-    <h3>Selecionar Ativos</h3>
+    <h3>Receita do Atendimento - Selecionar Ativos</h3>
     <div class="ativos-controls">
       <input id="ativosSearch" type="text" [(ngModel)]="ativosSearch" (ngModelChange)="onAtivosSearchChange()" placeholder="Pesquisar ativo..." class="input-busca" />
       <div class="muted small">Total: {{ ativos.length }}</div>
@@ -232,7 +289,7 @@
 
   <!-- Salvar -->
   <div class="rodape">
-    <button id="salvarReceitaBtn" class="btn" (click)="salvarReceita()">Salvar Receita</button>
+    <button id="salvarReceitaBtn" class="btn" (click)="salvarReceita()">Salvar Prontuário do Atendimento</button>
   </div>
 
   <!-- Modal: Escolha de ação para edição do pet -->

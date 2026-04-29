@@ -1,0 +1,93 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #0a1320;
+}
+
+.invite-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.invite-card {
+  width: 100%;
+  max-width: 520px;
+  background: #111c2a;
+  border: 1px solid #21364b;
+  border-radius: 14px;
+  padding: 20px;
+  color: #e7edf5;
+  display: grid;
+  gap: 10px;
+}
+
+h2 {
+  margin: 0 0 6px;
+}
+
+h3.sub {
+  margin: 14px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+label {
+  font-size: 13px;
+  color: #a8b9cc;
+}
+
+input {
+  border: 1px solid #2d4861;
+  border-radius: 8px;
+  background: #0c1622;
+  color: #fff;
+  padding: 10px;
+}
+
+button {
+  margin-top: 8px;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #1d9ae9;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warn-box {
+  border: 1px solid rgba(255, 174, 0, 0.4);
+  background: rgba(255, 174, 0, 0.12);
+  color: #ffda8a;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.alert {
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.alert.error {
+  background: rgba(255, 82, 111, 0.14);
+  border: 1px solid rgba(255, 82, 111, 0.4);
+}
+
+.alert.success {
+  background: rgba(50, 215, 160, 0.14);
+  border: 1px solid rgba(50, 215, 160, 0.35);
+}

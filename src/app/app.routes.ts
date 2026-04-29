@@ -9,6 +9,7 @@ import { AdminPedidosComponent } from './pages/restrito/admin/pedidos/pedidos.co
 import { authGuard } from './guards/auth.guard';
 import { vetGuard } from './guards/vet.guard';
 import { parceiroGuard } from './guards/parceiro.guard';
+import { parceiroVetGuard } from './guards/parceiro-vet.guard';
 
 export const routes: Routes = [
   { path: '', loadChildren: () => import('./pages/loja/loja.module').then(m => m.LojaModule) }, // Página pública (loja)
@@ -148,6 +149,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/parceiros/recuperar-senha-parceiro/recuperar-senha-parceiro.component').then(m => m.RecuperarSenhaParceiroComponent),
   },
   {
+    path: 'parceiros/convite/:token',
+    loadComponent: () => import('./pages/parceiros/aceitar-convite/aceitar-convite.component').then(m => m.AceitarConviteComponent),
+  },
+  {
     path: 'parceiros',
     loadComponent: () => import('./pages/parceiros/parceiro-shell/parceiro-shell.component').then(m => m.ParceiroShellComponent),
     canActivate: [parceiroGuard],
@@ -161,6 +166,10 @@ export const routes: Routes = [
         path: 'agenda',
         loadComponent: () => import('./pages/parceiros/agenda/agenda-shell/agenda-shell.component').then(m => m.AgendaShellComponent),
       },
+      {
+        path: 'colaboradores',
+        loadComponent: () => import('./pages/parceiros/colaboradores/colaboradores.component').then(m => m.ColaboradoresComponent),
+      },
       // ── Área Vet centralizada no painel parceiro ─────────────────────────
       {
         path: 'area-vet',
@@ -169,27 +178,27 @@ export const routes: Routes = [
       {
         path: 'gerar-receita',
         loadComponent: () => import('./pages/restrito/area-vet/gerar-receita/gerar-receita.component').then(m => m.GerarReceitaComponent),
-        canActivate: [vetGuard],
+        canActivate: [parceiroVetGuard],
       },
       {
         path: 'historico-receitas',
         loadComponent: () => import('./pages/restrito/area-vet/historico-receitas/historico-receitas.component').then(m => m.HistoricoReceitasComponent),
-        canActivate: [vetGuard],
+        canActivate: [parceiroVetGuard],
       },
       {
         path: 'historico-receitas/:id',
         loadComponent: () => import('./pages/restrito/area-vet/receita-detalhe/receita-detalhe.component').then(m => m.ReceitaDetalheComponent),
-        canActivate: [vetGuard],
+        canActivate: [parceiroVetGuard],
       },
       {
         path: 'pacientes',
         loadComponent: () => import('./pages/restrito/area-vet/pacientes/pacientes.component').then(m => m.PacientesComponent),
-        canActivate: [vetGuard],
+        canActivate: [parceiroVetGuard],
       },
       {
         path: 'pacientes/:petId',
         loadComponent: () => import('./pages/restrito/area-vet/paciente-detalhe/paciente-detalhe.component').then(m => m.PacienteDetalheComponent),
-        canActivate: [vetGuard],
+        canActivate: [parceiroVetGuard],
       },
       { path: '', redirectTo: 'painel', pathMatch: 'full' },
     ],

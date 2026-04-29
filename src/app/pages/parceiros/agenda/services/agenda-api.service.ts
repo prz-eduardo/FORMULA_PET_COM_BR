@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
-import { Recurso, Agendamento, Colaborador, PermissaoRecurso } from '../../../../types/agenda.types';
+import { Recurso, Agendamento, Colaborador, ColaboradorInvite, PermissaoRecurso } from '../../../../types/agenda.types';
 import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { environment } from '../../../../../environments/environment';
 
@@ -299,6 +299,7 @@ export class AgendaApiService {
     email: string;
     senha: string;
     role: 'master' | 'colaborador';
+    desvincularParceiroAtual?: boolean;
   }): Promise<Colaborador> {
     const response = await lastValueFrom(
       this.http.post<{ colaborador: Colaborador }>(
@@ -315,7 +316,7 @@ export class AgendaApiService {
    */
   async updateColaborador(
     id: number,
-    data: Partial<{ nome: string; email: string; role: string }>
+    data: Partial<{ nome: string; email: string; role: 'master' | 'colaborador' }>
   ): Promise<Colaborador> {
     const response = await lastValueFrom(
       this.http.put<{ colaborador: Colaborador }>(
@@ -334,6 +335,41 @@ export class AgendaApiService {
     return await lastValueFrom(
       this.http.delete<{ message: string }>(
         `${API_BASE}/parceiro/colaboradores/${id}`,
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+
+  async getColaboradorInvites(): Promise<ColaboradorInvite[]> {
+    const response = await lastValueFrom(
+      this.http.get<{ invites: ColaboradorInvite[] }>(
+        `${API_BASE}/parceiro/colaboradores/invites`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.invites || [];
+  }
+
+  async inviteColaborador(data: {
+    email: string;
+    nome?: string;
+    role: 'master' | 'colaborador';
+    com_vet?: boolean;
+    expiresInHours?: number;
+  }): Promise<{ invite: ColaboradorInvite; inviteLink: string }> {
+    return await lastValueFrom(
+      this.http.post<{ invite: ColaboradorInvite; inviteLink: string }>(
+        `${API_BASE}/parceiro/colaboradores/invites`,
+        data,
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+
+  async cancelInvite(inviteId: number): Promise<{ ok: boolean }> {
+    return await lastValueFrom(
+      this.http.delete<{ ok: boolean }>(
+        `${API_BASE}/parceiro/colaboradores/invites/${inviteId}`,
         { headers: this.getHeaders() }
       )
     );

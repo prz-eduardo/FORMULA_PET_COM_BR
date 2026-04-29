@@ -216,6 +216,60 @@ export interface PagedReceitasResponse {
   totalPages: number;
 }
 
+export interface AtendimentoExamePayload {
+  nome: string;
+  status?: string;
+  observacoes?: string;
+}
+
+export interface AtendimentoFotoPayload {
+  descricao?: string;
+  url?: string;
+  base64?: string;
+}
+
+export interface CriarAtendimentoPayload {
+  tutor: {
+    nome?: string;
+    cpf?: string;
+    telefone?: string;
+    email?: string;
+    endereco?: string;
+  };
+  pet: {
+    id?: string | number;
+    nome?: string;
+    especie?: string;
+    raca?: string;
+    sexo?: string;
+    idade?: number;
+    peso?: number;
+    alergias?: string[];
+  };
+  atendimento: {
+    queixaPrincipal?: string;
+    anamnese?: string;
+    exameFisico?: string;
+    diagnostico?: string;
+    planoTerapeutico?: string;
+    observacoes?: string;
+    examesSolicitados?: AtendimentoExamePayload[];
+    fotos?: AtendimentoFotoPayload[];
+  };
+  receita?: {
+    ativosSelecionados?: Array<string | number | { id?: number | string; ativo_id?: number | string; nome?: string }>;
+    alerta_alergia?: boolean;
+    observacoes?: string;
+    assinatura?: {
+      manual?: string;
+      cursiva?: string;
+      imagem?: string | null;
+      icp?: string;
+    };
+    alergias?: string[];
+  };
+}
+
 // Pacientes (pets atendidos)
 export interface TopAtivoUso { nome: string; usos: number; ativo_id?: number; }
 
@@ -421,6 +475,11 @@ export class ApiService {
   criarReceita(receita: any, token?: string): Observable<any> {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
     return this.http.post(`${this.baseUrl}/receitas`, receita, { headers });
+  }
+
+  criarAtendimento(payload: CriarAtendimentoPayload, token?: string): Observable<any> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    return this.http.post(`${this.baseUrl}/atendimentos`, payload, { headers });
   }
 
   getVet(id: string, token?: string): Observable<Vet> {

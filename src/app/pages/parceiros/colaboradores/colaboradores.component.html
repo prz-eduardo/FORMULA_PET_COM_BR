@@ -1,0 +1,106 @@
+<div class="colaboradores-page">
+  <header class="page-head">
+    <h2>Colaboradores</h2>
+    <p>Gerencie funcionários, contas de acesso ao painel e convites por e-mail.</p>
+  </header>
+
+  <div class="alerts">
+    <div class="alert error" *ngIf="error">{{ error }}</div>
+    <div class="alert success" *ngIf="success">{{ success }}</div>
+  </div>
+
+  <section class="cards-grid" *ngIf="auth.isMaster(); else blocked">
+    <article class="card">
+      <h3>Convidar por e-mail</h3>
+      <label>Nome (opcional)</label>
+      <input [(ngModel)]="convite.nome" placeholder="Nome do convidado" />
+      <label>E-mail</label>
+      <input [(ngModel)]="convite.email" type="email" placeholder="email@empresa.com" />
+      <label>Perfil no painel</label>
+      <select [(ngModel)]="convite.role" (ngModelChange)="onConviteRoleChange($event)">
+        <option value="colaborador">Colaborador</option>
+        <option value="master">Master</option>
+      </select>
+      <label class="checkbox" *ngIf="convite.role === 'colaborador'">
+        <input type="checkbox" [(ngModel)]="convite.comVet" />
+        Incluir cadastro veterinário (vincula à tabela <code>vets</code> após aceitar o convite)
+      </label>
+      <label>Expira em (horas)</label>
+      <input [(ngModel)]="convite.expiresInHours" type="number" min="1" />
+      <button (click)="convidar()">Enviar convite</button>
+    </article>
+  </section>
+
+  <section class="list-card">
+    <div class="list-head">
+      <h3>Contas do parceiro</h3>
+      <button (click)="loadColaboradores()">Atualizar</button>
+    </div>
+    <div class="empty" *ngIf="!loading && colaboradores.length === 0">Nenhum colaborador cadastrado.</div>
+    <table *ngIf="colaboradores.length > 0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Perfil</th>
+          <th>Cadastro vet</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of colaboradores">
+          <td>{{ c.nome }}</td>
+          <td>{{ c.email }}</td>
+          <td>{{ c.role }}</td>
+          <td>
+            <span *ngIf="c.tem_vet">Sim<span *ngIf="c.vet_crmv"> ({{ c.vet_crmv }})</span></span>
+            <span *ngIf="!c.tem_vet">—</span>
+          </td>
+          <td>{{ c.ativo ? 'ativo' : 'inativo' }}</td>
+          <td>
+            <button class="danger" (click)="inativar(c)" [disabled]="!c.ativo">Inativar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="list-card">
+    <div class="list-head">
+      <h3>Convites enviados</h3>
+      <button (click)="loadInvites()">Atualizar</button>
+    </div>
+    <div class="empty" *ngIf="!loadingInvites && invites.length === 0">Nenhum convite enviado.</div>
+    <table *ngIf="invites.length > 0">
+      <thead>
+        <tr>
+          <th>E-mail</th>
+          <th>Perfil</th>
+          <th>Com vet</th>
+          <th>Status</th>
+          <th>Expira em</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let i of invites">
+          <td>{{ i.email }}</td>
+          <td>{{ i.role }}</td>
+          <td>{{ i.com_vet ? 'sim' : 'não' }}</td>
+          <td>{{ i.status }}</td>
+          <td>{{ i.expires_at ? (i.expires_at | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
+          <td>
+            <button class="danger" *ngIf="i.status === 'pendente'" (click)="cancelarInvite(i)">Cancelar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <ng-template #blocked>
+    <section class="list-card">
+      <div class="empty">Apenas conta master pode gerenciar colaboradores.</div>
+    </section>
+  </ng-template>
+</div>

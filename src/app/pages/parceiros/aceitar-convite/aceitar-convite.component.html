@@ -1,0 +1,62 @@
+<main class="invite-page">
+  <section class="invite-card" *ngIf="!loading; else loadingTpl">
+    <h2>Aceitar convite</h2>
+
+    <div class="alert error" *ngIf="error">{{ error }}</div>
+    <div class="alert success" *ngIf="success">{{ success }}</div>
+
+    <ng-container *ngIf="invite && !success">
+      <p>Você foi convidado para acessar o painel do parceiro <strong>{{ invite.parceiro_nome }}</strong>.</p>
+      <ul>
+        <li><strong>E-mail:</strong> {{ invite.email }}</li>
+        <li><strong>Perfil no painel:</strong> {{ invite.role }}</li>
+        <li *ngIf="comVet"><strong>Cadastro veterinário:</strong> sim (após criar a senha, preencha CPF, CRMV e telefone)</li>
+      </ul>
+
+      <div class="warn-box" *ngIf="precisaDesvincularConta">
+        Este e-mail já está vinculado ao parceiro <strong>{{ account?.parceiroNome }}</strong>.
+        Para aceitar este convite, confirme a desvinculação da conta do painel.
+      </div>
+
+      <label>Senha</label>
+      <input [(ngModel)]="senha" type="password" placeholder="Mínimo 8 caracteres" />
+
+      <label>Confirmar senha</label>
+      <input [(ngModel)]="confirmarSenha" type="password" placeholder="Repita a senha" />
+
+      <label class="checkbox" *ngIf="precisaDesvincularConta">
+        <input type="checkbox" [(ngModel)]="desvincularParceiroAtual" />
+        Sim, quero me desvincular do parceiro atual da conta do painel.
+      </label>
+
+      <ng-container *ngIf="comVet">
+        <h3 class="sub">Dados veterinários</h3>
+        <label>Nome (opcional, padrão: nome do convite)</label>
+        <input [(ngModel)]="vet.nome" placeholder="Nome completo" />
+        <label>CPF</label>
+        <input [(ngModel)]="vet.cpf" placeholder="000.000.000-00" />
+        <label>CRMV</label>
+        <input [(ngModel)]="vet.crmv" placeholder="SP-12345" />
+        <label>Telefone</label>
+        <input [(ngModel)]="vet.telefone" placeholder="DDD + número" />
+        <label class="checkbox">
+          <input type="checkbox" [(ngModel)]="desvincularVetDeOutroParceiro" />
+          Se meu cadastro vet já estiver em outro parceiro, confirmo a transferência para este parceiro.
+        </label>
+      </ng-container>
+
+      <button (click)="aceitar()" [disabled]="submitting">
+        {{ submitting ? 'Aceitando...' : 'Aceitar convite e criar acesso' }}
+      </button>
+    </ng-container>
+  </section>
+</main>
+
+<ng-template #loadingTpl>
+  <main class="invite-page">
+    <section class="invite-card">
+      <h2>Aceitar convite</h2>
+      <p>Carregando dados do convite...</p>
+    </section>
+  </main>
+</ng-template>
