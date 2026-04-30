@@ -8,6 +8,7 @@ import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { CardsService } from '../../services/cards.service';
 import { AuthService } from '../../services/auth.service';
+import { TenantLojaService } from '../../services/tenant-loja.service';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-public';
 
@@ -139,6 +140,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     private router: Router,
     private cardsService: CardsService,
     private auth: AuthService,
+    private tenantLoja: TenantLojaService,
   ){}
 
   ngOnInit(): void {
@@ -253,8 +255,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.syncingPagamento = true;
     try {
       const token = this.auth.getToken() || '';
+      const slug = this.tenantLoja.lojaSlug();
       const up = await this.api
-        .atualizarPedido(token, String(this.pedidoCodigo), { pagamento_forma: this._pagamentoMetodo })
+        .atualizarPedido(token, String(this.pedidoCodigo), { pagamento_forma: this._pagamentoMetodo }, slug ? { parceiro_slug: slug } : undefined)
         .toPromise();
       if (up && (up.id != null || up.codigo != null || up.numero != null)) {
         this.pedido = up;
@@ -273,7 +276,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     try {
       this.carregando = true;
       const token = this.auth.getToken() || '';
-      const up = await this.api.atualizarPedido(token, String(this.pedidoCodigo), { cupom: this.cupomCodigo.trim() }).toPromise();
+      const slug = this.tenantLoja.lojaSlug();
+      const up = await this.api.atualizarPedido(token, String(this.pedidoCodigo), { cupom: this.cupomCodigo.trim() }, slug ? { parceiro_slug: slug } : undefined).toPromise();
       // Alguns backends retornam o pedido atualizado; se vier, substitui
       if (up && (up.id || up.codigo || up.numero)) {
         this.pedido = up;
@@ -396,9 +400,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.showPixModal = true;
     this.carregandoPix = true;
     const token = this.auth.getToken() || undefined;
+    const slug = this.tenantLoja.lojaSlug();
     try {
       const res = await firstValueFrom(
-        this.api.iniciarPagamentoCheckout(token, this.pedidoCodigo!, { flow: 'pix' })
+        this.api.iniciarPagamentoCheckout(token, this.pedidoCodigo!, { flow: 'pix' }, slug ? { parceiro_slug: slug } : undefined)
       );
       if (res?.status === 'failed' || res?.errorMessage) {
         this.pixIniciarErro = res?.errorMessage || 'Não foi possível iniciar o PIX.';
@@ -472,12 +477,13 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private async pollPedidoAtePago(): Promise<void> {
     this.stopPixPolling();
     const token = this.auth.getToken() || undefined;
+    const slug = this.tenantLoja.lojaSlug();
     const id = String(this.pedidoCodigo || '');
     if (!id) return;
 
     const tick = async () => {
       try {
-        const up = await firstValueFrom(this.api.atualizarPedido(token, id, {}));
+        const up = await firstValueFrom(this.api.atualizarPedido(token, id, {}, slug ? { parceiro_slug: slug } : undefined));
         if (up && String(up.status || '').toLowerCase() === 'pago') {
           this.stopPixPolling();
           this.onPagamentoConfirmado(up);

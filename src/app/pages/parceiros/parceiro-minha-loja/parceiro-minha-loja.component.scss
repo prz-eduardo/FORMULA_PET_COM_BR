@@ -75,6 +75,16 @@ textarea {
   gap: 8px;
   margin-bottom: 12px;
 }
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 700px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
 .prod-list {
   list-style: none;
   padding: 0;

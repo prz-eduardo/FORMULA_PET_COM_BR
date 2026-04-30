@@ -62,6 +62,18 @@ export interface ClientePermissaoDadosParceiroRow {
   parceiro_nome?: string | null;
 }
 
+export interface ClienteConviteDadosParceiroRow {
+  id: number;
+  parceiro_id: number;
+  parceiro_nome?: string | null;
+  cliente_email: string;
+  escopo: string;
+  token: string;
+  status: string;
+  data_expiracao?: string | null;
+  created_at?: string;
+}
+
 export interface TelemedicinaConsulta {
   id: number;
   cliente_id?: number | null;
@@ -462,8 +474,11 @@ export class ApiService {
   }
 
   // Home - destaques
-  getHomeHighlights(token?: string): Observable<any> {
-    const url = `${this.baseUrl}/destaques-home`;
+  getHomeHighlights(token?: string, opts?: { parceiro_slug?: string | null }): Observable<any> {
+    const search = new URLSearchParams();
+    if (opts?.parceiro_slug) search.set('parceiro_slug', String(opts.parceiro_slug));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/destaques-home${qp ? `?${qp}` : ''}`;
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
     return this.http.get<any>(url, { headers });
   }
@@ -619,6 +634,14 @@ export class ApiService {
     );
   }
 
+  /** Tutor: lista convites pendentes de parceiros para compartilhamento de dados. */
+  listClienteConvitesDadosPendentes(token: string) {
+    return this.http.get<{ convites: ClienteConviteDadosParceiroRow[] }>(
+      `${this.baseUrl}/clientes/me/convites-dados-parceiros/pendentes`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
   getMinhaGaleriaFotos(token: string) {
     return this.http.get<ClienteGaleriaFoto[]>(`${this.baseUrl}/clientes/me/galeria-fotos`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -730,20 +753,32 @@ export class ApiService {
   criarPedido(token: string, body: any) {
     return this.http.post<any>(`${this.baseUrl}/pedidos`, body, { headers: { Authorization: `Bearer ${token}` } });
   }
-  atualizarPedido(token: string | null | undefined, codigoOuId: string | number, body: any) {
+  atualizarPedido(
+    token: string | null | undefined,
+    codigoOuId: string | number,
+    body: any,
+    opts?: { parceiro_slug?: string | null }
+  ) {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
-    return this.http.put<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(codigoOuId))}`, body, { headers });
+    const search = new URLSearchParams();
+    if (opts?.parceiro_slug) search.set('parceiro_slug', String(opts.parceiro_slug));
+    const qp = search.toString();
+    return this.http.put<any>(`${this.baseUrl}/pedidos/${encodeURIComponent(String(codigoOuId))}${qp ? `?${qp}` : ''}`, body, { headers });
   }
 
   /** Inicia cobrança no gateway (Preference ou PIX). */
   iniciarPagamentoCheckout(
     token: string | null | undefined,
     pedidoId: string | number,
-    body?: { flow?: 'pix' | 'preference'; metodo?: string }
+    body?: { flow?: 'pix' | 'preference'; metodo?: string },
+    opts?: { parceiro_slug?: string | null }
   ) {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
+    const search = new URLSearchParams();
+    if (opts?.parceiro_slug) search.set('parceiro_slug', String(opts.parceiro_slug));
+    const qp = search.toString();
     return this.http.post<any>(
-      `${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoId))}/pagamento/iniciar`,
+      `${this.baseUrl}/pedidos/${encodeURIComponent(String(pedidoId))}/pagamento/iniciar${qp ? `?${qp}` : ''}`,
       body || {},
       { headers }
     );
@@ -766,9 +801,16 @@ export class ApiService {
   }
 
   // Validação de carrinho (preços/estoque) — ajuste a rota conforme seu backend
-  validarCarrinho(token: string | undefined, body: { itens: Array<{ id: number; quantidade: number }> }) {
+  validarCarrinho(
+    token: string | undefined,
+    body: { itens: Array<{ id: number; quantidade: number; item_type?: 'produto' | 'servico' }> },
+    opts?: { parceiro_slug?: string | null }
+  ) {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
-    return this.http.post<any>(`${this.baseUrl}/carrinho/validar`, body, { headers });
+    const search = new URLSearchParams();
+    if (opts?.parceiro_slug) search.set('parceiro_slug', String(opts.parceiro_slug));
+    const qp = search.toString();
+    return this.http.post<any>(`${this.baseUrl}/carrinho/validar${qp ? `?${qp}` : ''}`, body, { headers });
   }
 
   // Favoritar/Desfavoritar produto (toggle). Backend deve reconhecer o token do cliente.
@@ -1189,9 +1231,16 @@ export class ApiService {
   }
 
   // Cálculo de frete (caso o backend exista)
-  cotarFrete(token: string | undefined, payload: { cep: string; itens: Array<{ id: number; qtd: number; preco?: number }> }): Observable<{ valor: number; prazo?: string }> {
+  cotarFrete(
+    token: string | undefined,
+    payload: { cep: string; itens: Array<{ id: number; qtd: number; preco?: number; item_type?: 'produto' | 'servico' }> },
+    opts?: { parceiro_slug?: string | null }
+  ): Observable<{ valor: number; prazo?: string }> {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
-    const url = `${this.baseUrl}/frete/cotar`;
+    const search = new URLSearchParams();
+    if (opts?.parceiro_slug) search.set('parceiro_slug', String(opts.parceiro_slug));
+    const qp = search.toString();
+    const url = `${this.baseUrl}/frete/cotar${qp ? `?${qp}` : ''}`;
     return this.http.post<{ valor: number; prazo?: string }>(url, payload, { headers });
   }
 

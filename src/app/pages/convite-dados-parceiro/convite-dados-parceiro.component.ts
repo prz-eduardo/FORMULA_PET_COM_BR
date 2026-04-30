@@ -97,10 +97,41 @@ export class ConviteDadosParceiroComponent implements OnInit {
         )
       );
       this.success.set(true);
+      const c = this.convite();
+      this.convite.set({ ...(c || {}), status: 'aceito' });
     } catch (e: unknown) {
       const msg =
         (e as { error?: { error?: string } })?.error?.error ??
         'Não foi possível aceitar o convite.';
+      this.error.set(msg);
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  async recusar(): Promise<void> {
+    const clienteId = this.getClienteIdFromSession();
+    if (!clienteId) {
+      void this.router.navigate(['/restrito/login'], {
+        queryParams: { returnUrl: `/convite-dados/${this.token}` },
+      });
+      return;
+    }
+    this.actionLoading.set(true);
+    this.error.set(null);
+    try {
+      await lastValueFrom(
+        this.http.post<{ ok?: boolean }>(
+          `${this.apiBase}/convites/reject`,
+          { token: this.token, cliente_id: clienteId }
+        )
+      );
+      const c = this.convite();
+      this.convite.set({ ...(c || {}), status: 'cancelado' });
+    } catch (e: unknown) {
+      const msg =
+        (e as { error?: { error?: string } })?.error?.error ??
+        'Não foi possível recusar o convite.';
       this.error.set(msg);
     } finally {
       this.actionLoading.set(false);

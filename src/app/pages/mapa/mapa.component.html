@@ -1,19 +1,22 @@
 <main class="mapa-container" [class.mapa-container--mobile-full]="isMobileMapLayout">
   <!-- Consentimento LGPD: localização no mapa (cookies fp_map_*) -->
-  <div *ngIf="mapLocationOptInVisible" class="mapa-loc-optin" role="region" aria-label="Uso de localização no mapa">
-    <p class="mapa-loc-optin__text">
-      Para <strong>centralizar o mapa na sua região</strong> e usar rotas a partir de onde você está, precisamos da sua
-      <strong>localização aproximada</strong> (coordenadas). Com sua permissão, guardamos a última posição e o endereço
-      aproximado em <strong>cookies</strong> do navegador, conforme a
-      <a routerLink="/politica-de-privacidade" class="mapa-loc-optin__link">política de privacidade</a>.
-    </p>
-    <div class="mapa-loc-optin__actions">
-      <button type="button" class="mapa-loc-optin__btn mapa-loc-optin__btn--secondary" (click)="declineMapLocation()">
-        Não usar minha posição
-      </button>
-      <button type="button" class="mapa-loc-optin__btn mapa-loc-optin__btn--primary" (click)="acceptMapLocation()">
-        Permitir e ver perto de mim
-      </button>
+  <div *ngIf="mapLocationOptInVisible" class="mapa-loc-optin-modal" role="dialog" aria-modal="true" aria-label="Permissão de localização no mapa">
+    <div class="mapa-loc-optin-modal__backdrop"></div>
+    <div class="mapa-loc-optin">
+      <p class="mapa-loc-optin__text">
+        Para <strong>centralizar o mapa na sua região</strong> e usar rotas a partir de onde você está, precisamos da sua
+        <strong>localização aproximada</strong> (coordenadas). Com sua permissão, guardamos a última posição e o endereço
+        aproximado em <strong>cookies</strong> do navegador, conforme a
+        <a routerLink="/politica-de-privacidade" class="mapa-loc-optin__link">política de privacidade</a>.
+      </p>
+      <div class="mapa-loc-optin__actions">
+        <button type="button" class="mapa-loc-optin__btn mapa-loc-optin__btn--secondary" (click)="declineMapLocation()">
+          Não usar minha posição
+        </button>
+        <button type="button" class="mapa-loc-optin__btn mapa-loc-optin__btn--primary" (click)="acceptMapLocation()">
+          Permitir e ver perto de mim
+        </button>
+      </div>
     </div>
   </div>
   <div *ngIf="mapLocationReopenBar" class="mapa-loc-reopen" role="status">
@@ -304,22 +307,6 @@
     <!-- ======================================================= MAPA -->
     <section class="map-area">
       <div class="map-frame-wrap">
-        <div *ngIf="tenantLoja.isTenantLoja()" class="map-vista-toggle" role="group" aria-label="Vista do mapa">
-          <button
-            type="button"
-            class="map-vista-toggle__btn"
-            [class.map-vista-toggle__btn--on]="mapSphereView === 'parceiros'"
-            (click)="setMapSphereView('parceiros')">
-            Parceiro
-          </button>
-          <button
-            type="button"
-            class="map-vista-toggle__btn"
-            [class.map-vista-toggle__btn--on]="mapSphereView === 'petsphere'"
-            (click)="setMapSphereView('petsphere')">
-            PetSphere
-          </button>
-        </div>
         <!-- Camadas do mapa: pills (desktop e mobile) -->
         <div
           *ngIf="!isMobileMapLayout"
@@ -330,22 +317,24 @@
             <button
               type="button"
               class="map-legend-pill"
-              [class.map-legend-pill--on]="mapShowPharmacy"
-              [attr.aria-pressed]="mapShowPharmacy"
-              (click)="toggleMapShowPharmacy()">
+              [class.map-legend-pill--on]="mapCategoryPillsVisible"
+              [attr.aria-pressed]="mapCategoryPillsVisible"
+              (click)="toggleMapCategoryPillsVisibility()">
               <img src="/icones/pin-pata.svg" alt="" />
-              <span class="map-legend-pill__text">{{ marcaNome }}</span>
+              <span class="map-legend-pill__text">{{ marcaNomeMapa }}</span>
             </button>
-            <button
-              *ngFor="let t of mapTabsForPills(); trackBy: trackTabId"
-              type="button"
-              class="map-legend-pill map-legend-pill--paw"
-              [class.map-legend-pill--on]="isCategoryMapVisible(t.id)"
-              [attr.aria-pressed]="isCategoryMapVisible(t.id)"
-              (click)="toggleMapCategory(t.id)">
-              <img [src]="getTabIcon(t)" alt="" />
-              <span class="map-legend-pill__text">{{ t.label }}</span>
-            </button>
+            <ng-container *ngIf="mapCategoryPillsVisible">
+              <button
+                *ngFor="let t of mapTabsForPills(); trackBy: trackTabId"
+                type="button"
+                class="map-legend-pill map-legend-pill--paw"
+                [class.map-legend-pill--on]="isCategoryMapVisible(t.id)"
+                [attr.aria-pressed]="isCategoryMapVisible(t.id)"
+                (click)="toggleMapCategory(t.id)">
+                <img [src]="getTabIcon(t)" alt="" />
+                <span class="map-legend-pill__text">{{ t.label }}</span>
+              </button>
+            </ng-container>
           </div>
         </div>
         <div *ngIf="isMobileMapLayout" class="map-legend map-legend--mobile" [class.map-legend--mobile-open]="resultsAccordionOpen" role="group" aria-label="Camadas do mapa">
@@ -353,22 +342,24 @@
             <button
               type="button"
               class="map-legend-pill"
-              [class.map-legend-pill--on]="mapShowPharmacy"
-              [attr.aria-pressed]="mapShowPharmacy"
-              (click)="toggleMapShowPharmacy()">
+              [class.map-legend-pill--on]="mapCategoryPillsVisible"
+              [attr.aria-pressed]="mapCategoryPillsVisible"
+              (click)="toggleMapCategoryPillsVisibility()">
               <img src="/icones/pin-pata.svg" alt="" />
-              <span class="map-legend-pill__text">{{ marcaNome }}</span>
+              <span class="map-legend-pill__text">{{ marcaNomeMapa }}</span>
             </button>
-            <button
-              *ngFor="let t of mapTabsForPills(); trackBy: trackTabId"
-              type="button"
-              class="map-legend-pill map-legend-pill--paw"
-              [class.map-legend-pill--on]="isCategoryMapVisible(t.id)"
-              [attr.aria-pressed]="isCategoryMapVisible(t.id)"
-              (click)="toggleMapCategory(t.id)">
-              <img [src]="getTabIcon(t)" alt="" />
-              <span class="map-legend-pill__text">{{ t.label }}</span>
-            </button>
+            <ng-container *ngIf="mapCategoryPillsVisible">
+              <button
+                *ngFor="let t of mapTabsForPills(); trackBy: trackTabId"
+                type="button"
+                class="map-legend-pill map-legend-pill--paw"
+                [class.map-legend-pill--on]="isCategoryMapVisible(t.id)"
+                [attr.aria-pressed]="isCategoryMapVisible(t.id)"
+                (click)="toggleMapCategory(t.id)">
+                <img [src]="getTabIcon(t)" alt="" />
+                <span class="map-legend-pill__text">{{ t.label }}</span>
+              </button>
+            </ng-container>
           </div>
         </div>
 

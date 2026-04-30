@@ -1,0 +1,120 @@
+<section class="clientes-page">
+  <header class="page-head">
+    <div>
+      <h1>Meus clientes</h1>
+      <p>Clientes vinculados a esta loja e status de permissao de dados.</p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="carregarClientes()" [disabled]="loading()">
+      {{ loading() ? 'Atualizando...' : 'Atualizar lista' }}
+    </button>
+  </header>
+
+  <div class="grid">
+    <article class="card">
+      <h2>Solicitar permissao de dados</h2>
+      <p class="muted">
+        Envie um convite para o cliente autorizar o acesso aos dados da conta no contexto da sua loja.
+      </p>
+
+      <label>
+        <span>Buscar cliente (e-mail, telefone ou CPF)</span>
+        <input
+          type="text"
+          [ngModel]="email()"
+          (ngModelChange)="onSearchChange($event)"
+          placeholder="Comece a digitar... (ex.: abc, 1199..., 12345678901)"
+        />
+      </label>
+      @if (searchLoading()) {
+        <p class="muted">Buscando clientes...</p>
+      }
+      @if (searchError()) {
+        <p class="feedback feedback--error">{{ searchError() }}</p>
+      }
+      @if (candidates().length) {
+        <div class="candidates">
+          @for (candidate of candidates(); track candidate.cliente_id) {
+            <button type="button" class="candidate-item" (click)="selectCandidate(candidate)">
+              <strong>{{ candidate.nome_masked }}</strong>
+              <span>
+                {{ candidate.email_masked || '-' }} • {{ candidate.telefone_masked || '-' }} • {{ candidate.cpf_masked || '-' }}
+              </span>
+              <small>
+                Status atual: {{ candidate.permissao_status || 'sem vínculo' }}
+              </small>
+            </button>
+          }
+        </div>
+      }
+
+      <label>
+        <span>Escopo do acesso</span>
+        <select [ngModel]="escopo()" (ngModelChange)="escopo.set($event)">
+          <option value="dados_basicos">Dados basicos (nome e contato)</option>
+          <option value="pets">Dados basicos + pets</option>
+          <option value="completo">Acesso completo</option>
+        </select>
+      </label>
+
+      <button type="button" class="primary-btn" (click)="solicitarPermissao()" [disabled]="submitting()">
+        {{ submitting() ? 'Enviando...' : 'Solicitar permissao' }}
+      </button>
+
+      @if (submitError()) {
+        <p class="feedback feedback--error">{{ submitError() }}</p>
+      }
+      @if (submitSuccess()) {
+        <p class="feedback feedback--ok">{{ submitSuccess() }}</p>
+      }
+      @if (tokenHint()) {
+        <p class="token">
+          Convite criado com token de rastreio: <code>{{ tokenHint() }}</code><br />
+          O cliente pode responder em: <code>/convite-dados/{{ tokenHint() }}</code>
+        </p>
+      }
+    </article>
+
+    <article class="card card--list">
+      <div class="list-head">
+        <h2>Clientes da loja</h2>
+        <input
+          type="text"
+          [ngModel]="filtro()"
+          (ngModelChange)="filtro.set($event)"
+          placeholder="Filtrar por nome, email ou status"
+        />
+      </div>
+
+      @if (error()) {
+        <p class="feedback feedback--error">{{ error() }}</p>
+      } @else if (loading()) {
+        <p class="muted">Carregando clientes...</p>
+      } @else if (!permissoesFiltradas().length) {
+        <p class="muted">Nenhum cliente encontrado para esta loja.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>E-mail</th>
+                <th>Status</th>
+                <th>Escopo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of permissoesFiltradas(); track trackByPermissao($index, row)) {
+                <tr>
+                  <td>{{ row.cliente_nome || '-' }}</td>
+                  <td>{{ row.cliente_email || '-' }}</td>
+                  <td><span class="status">{{ row.status || '-' }}</span></td>
+                  <td>{{ row.escopo || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  </div>
+</section>

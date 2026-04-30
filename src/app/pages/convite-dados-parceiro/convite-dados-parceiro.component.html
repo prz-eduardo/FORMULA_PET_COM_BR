@@ -11,10 +11,16 @@
       <strong>{{ convite()!.cliente_email }}</strong>
       (escopo: <code>{{ convite()!.escopo || 'dados_basicos' }}</code>).
     </p>
+    <p>
+      Status da solicitação:
+      <strong>{{ convite()!.status || 'pendente' }}</strong>
+    </p>
 
-    @if (success()) {
+    @if (success() || convite()!.status === 'aceito') {
       <p class="ok">Permissão registrada. Você pode fechar esta página ou voltar à área do cliente.</p>
       <a routerLink="/area-cliente">Ir para área do cliente</a>
+    } @else if (convite()!.status === 'cancelado') {
+      <p class="warn">Solicitação recusada. Você pode fechar esta página.</p>
     } @else {
       @if (!isClienteLogado) {
         <p class="warn">
@@ -27,9 +33,14 @@
         @if (error()) {
           <p class="err">{{ error() }}</p>
         }
-        <button type="button" class="primary" (click)="aceitar()" [disabled]="actionLoading()">
-          {{ actionLoading() ? 'Processando…' : 'Permitir acesso' }}
-        </button>
+        <div class="actions">
+          <button type="button" class="primary" (click)="aceitar()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Processando…' : 'Permitir acesso' }}
+          </button>
+          <button type="button" class="secondary" (click)="recusar()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Processando…' : 'Recusar' }}
+          </button>
+        </div>
       }
     }
   }

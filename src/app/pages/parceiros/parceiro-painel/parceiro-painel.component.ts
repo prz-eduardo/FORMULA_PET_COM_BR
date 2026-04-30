@@ -22,7 +22,8 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
   private sectionItems: Record<SectionKey, string[]> = {
     operacao: [
       'agenda horários atendimento',
-      'servicos cadastro preço duração banho tosa consulta loja vitrine',
+      'servicos cadastro preço duração banho tosa consulta loja vitrine produtos cupons promocoes',
+      'meus clientes loja permissao dados lgpd tutores',
       'telemedicina video atendimento',
       'reservas hotel creche hospedagem',
       'atendimento chat suporte omnichannel',
@@ -42,6 +43,7 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
     ],
     config: [
       'colaboradores equipe funcionarios',
+      'minha loja vitrine slug url subdominio site institucional pagamento',
       'perfil conta configuracoes',
     ],
   };
@@ -119,5 +121,9 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
   goToPacientes(): void      { this.router.navigate(['/parceiros/pacientes']); }
   goToColaboradores(): void  { this.router.navigate(['/parceiros/colaboradores']); }
   goToServicos(): void       { this.router.navigate(['/parceiros/servicos']); }
+  goToMeusClientes(): void   { this.router.navigate(['/parceiros/meus-clientes']); }
+  goToReservasHotel(): void  { this.router.navigate(['/parceiros/reservas-hotel']); }
+  goToMinhaLoja(): void      { this.router.navigate(['/parceiros/minha-loja']); }
+  goToComercial(): void      { this.router.navigate(['/parceiros/minha-loja']); }
   goToTelemedicina(): void { this.router.navigate(['/parceiros/agenda'], { queryParams: { view: 'telemedicina' } }); }
 }

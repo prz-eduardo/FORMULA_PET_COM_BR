@@ -6,11 +6,12 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ParceiroAuthService } from '../../../services/parceiro-auth.service';
 import { ToastService } from '../../../services/toast.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-parceiro-minha-loja',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './parceiro-minha-loja.component.html',
   styleUrls: ['./parceiro-minha-loja.component.scss'],
 })
@@ -19,8 +20,14 @@ export class ParceiroMinhaLojaComponent implements OnInit {
   loading = signal(false);
   saving = signal(false);
   vitrine = signal<any | null>(null);
-  vitrineProdutos = signal<any[]>([]);
-  novoProdutoId = signal('');
+  comercialProdutos = signal<any[]>([]);
+  comercialCupons = signal<any[]>([]);
+  comercialPromocoes = signal<any[]>([]);
+  comercialCategorias = signal<any[]>([]);
+  novoProduto = { nome: '', descricao: '', preco: '', categoria_id: '' };
+  novoCupom = { codigo: '', descricao: '', tipo: 'percentual', valor: '', validade: '' };
+  novaPromocao = { nome: '', descricao: '', tipo: 'percentual', valor: '', inicio: '', fim: '' };
+  novaCategoria = { nome: '', slug: '' };
 
   readonly form: FormGroup;
 
@@ -44,21 +51,36 @@ export class ParceiroMinhaLojaComponent implements OnInit {
   async reload(): Promise<void> {
     this.loading.set(true);
     try {
-      const [loja, prods] = await Promise.all([
-        firstValueFrom(this.http.get<any>(`${this.base}/parceiro/vitrine/loja`, { headers: this.auth.getAuthHeaders() })),
-        firstValueFrom(this.http.get<any>(`${this.base}/parceiro/vitrine/produtos`, { headers: this.auth.getAuthHeaders() })),
-      ]);
+      const loja = await firstValueFrom(this.http.get<any>(`${this.base}/parceiro/vitrine/loja`, { headers: this.auth.getAuthHeaders() }));
       this.vitrine.set(loja);
-      this.vitrineProdutos.set(prods?.data || []);
       this.form.patchValue({
         loja_slug: loja?.loja_slug || '',
         texto_institucional: loja?.texto_institucional || '',
         mercadopago_access_token: '',
       });
+      await this.reloadComercial();
     } catch {
       this.toast.error('Não foi possível carregar os dados da vitrine.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async reloadComercial(): Promise<void> {
+    try {
+      const [prod, cup, pro, cat] = await Promise.all([
+        firstValueFrom(this.http.get<any>(`${this.base}/parceiro/comercial/produtos`, { headers: this.auth.getAuthHeaders() })),
+        firstValueFrom(this.http.get<any>(`${this.base}/parceiro/comercial/cupons`, { headers: this.auth.getAuthHeaders() })),
+        firstValueFrom(this.http.get<any>(`${this.base}/parceiro/comercial/promocoes`, { headers: this.auth.getAuthHeaders() })),
+        firstValueFrom(this.http.get<any>(`${this.base}/parceiro/comercial/categorias`, { headers: this.auth.getAuthHeaders() })),
+      ]);
+      this.comercialProdutos.set(prod?.data || []);
+      this.comercialCupons.set(cup?.data || []);
+      this.comercialPromocoes.set(pro?.data || []);
+      this.comercialCategorias.set(cat?.data || []);
+    } catch (e: any) {
+      const msg = e?.error?.error || 'Não foi possível carregar produtos/cupons/promoções.';
+      this.toast.error(msg);
     }
   }
 
@@ -91,35 +113,129 @@ export class ParceiroMinhaLojaComponent implements OnInit {
     }
   }
 
-  async adicionarProduto(): Promise<void> {
+  async criarProdutoComercial(): Promise<void> {
     if (!this.auth.isMaster()) return;
-    const id = Number(this.novoProdutoId().replace(/\D/g, ''));
-    if (!id) {
-      this.toast.error('Informe o ID do produto do marketplace.');
-      return;
-    }
     try {
+      const preco = Number(String(this.novoProduto.preco || '').replace(',', '.'));
       await firstValueFrom(
-        this.http.post(`${this.base}/parceiro/vitrine/produtos`, { produto_id: id }, { headers: this.auth.getAuthHeaders() })
+        this.http.post(
+          `${this.base}/parceiro/comercial/produtos`,
+          {
+            nome: this.novoProduto.nome,
+            descricao: this.novoProduto.descricao,
+            preco,
+            categoria_id: this.novoProduto.categoria_id ? Number(this.novoProduto.categoria_id) : null,
+          },
+          { headers: this.auth.getAuthHeaders() }
+        )
       );
-      this.novoProdutoId.set('');
-      this.toast.success('Produto adicionado à vitrine.');
+      this.novoProduto = { nome: '', descricao: '', preco: '', categoria_id: '' };
+      this.toast.success('Produto cadastrado com sucesso.');
+      await this.reloadComercial();
       await this.reload();
     } catch (e: any) {
-      this.toast.error(e?.error?.error || 'Não foi possível adicionar o produto.');
+      this.toast.error(e?.error?.error || 'Não foi possível cadastrar produto.');
     }
   }
 
-  async removerProduto(produtoId: number): Promise<void> {
+  async excluirProdutoComercial(id: number): Promise<void> {
+    if (!this.auth.isMaster()) return;
+    try {
+      await firstValueFrom(this.http.delete(`${this.base}/parceiro/comercial/produtos/${id}`, { headers: this.auth.getAuthHeaders() }));
+      this.toast.success('Produto removido.');
+      await this.reloadComercial();
+      await this.reload();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível remover produto.');
+    }
+  }
+
+  async criarCupom(): Promise<void> {
+    if (!this.auth.isMaster()) return;
+    try {
+      const valor = Number(String(this.novoCupom.valor || '').replace(',', '.'));
+      await firstValueFrom(
+        this.http.post(
+          `${this.base}/parceiro/comercial/cupons`,
+          { ...this.novoCupom, valor },
+          { headers: this.auth.getAuthHeaders() }
+        )
+      );
+      this.novoCupom = { codigo: '', descricao: '', tipo: 'percentual', valor: '', validade: '' };
+      this.toast.success('Cupom cadastrado.');
+      await this.reloadComercial();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível cadastrar cupom.');
+    }
+  }
+
+  async excluirCupom(id: number): Promise<void> {
+    if (!this.auth.isMaster()) return;
+    try {
+      await firstValueFrom(this.http.delete(`${this.base}/parceiro/comercial/cupons/${id}`, { headers: this.auth.getAuthHeaders() }));
+      this.toast.success('Cupom removido.');
+      await this.reloadComercial();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível remover cupom.');
+    }
+  }
+
+  async criarPromocao(): Promise<void> {
+    if (!this.auth.isMaster()) return;
+    try {
+      const valor = Number(String(this.novaPromocao.valor || '').replace(',', '.'));
+      await firstValueFrom(
+        this.http.post(
+          `${this.base}/parceiro/comercial/promocoes`,
+          { ...this.novaPromocao, valor },
+          { headers: this.auth.getAuthHeaders() }
+        )
+      );
+      this.novaPromocao = { nome: '', descricao: '', tipo: 'percentual', valor: '', inicio: '', fim: '' };
+      this.toast.success('Promoção cadastrada.');
+      await this.reloadComercial();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível cadastrar promoção.');
+    }
+  }
+
+  async excluirPromocao(id: number): Promise<void> {
+    if (!this.auth.isMaster()) return;
+    try {
+      await firstValueFrom(this.http.delete(`${this.base}/parceiro/comercial/promocoes/${id}`, { headers: this.auth.getAuthHeaders() }));
+      this.toast.success('Promoção removida.');
+      await this.reloadComercial();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível remover promoção.');
+    }
+  }
+
+  async criarCategoria(): Promise<void> {
     if (!this.auth.isMaster()) return;
     try {
       await firstValueFrom(
-        this.http.delete(`${this.base}/parceiro/vitrine/produtos/${produtoId}`, { headers: this.auth.getAuthHeaders() })
+        this.http.post(
+          `${this.base}/parceiro/comercial/categorias`,
+          { nome: this.novaCategoria.nome, slug: this.novaCategoria.slug || null },
+          { headers: this.auth.getAuthHeaders() }
+        )
       );
-      this.toast.success('Removido da vitrine.');
-      await this.reload();
-    } catch {
-      this.toast.error('Erro ao remover.');
+      this.novaCategoria = { nome: '', slug: '' };
+      this.toast.success('Categoria cadastrada.');
+      await this.reloadComercial();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível cadastrar categoria.');
+    }
+  }
+
+  async excluirCategoria(id: number): Promise<void> {
+    if (!this.auth.isMaster()) return;
+    try {
+      await firstValueFrom(this.http.delete(`${this.base}/parceiro/comercial/categorias/${id}`, { headers: this.auth.getAuthHeaders() }));
+      this.toast.success('Categoria removida.');
+      await this.reloadComercial();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error || 'Não foi possível remover categoria.');
     }
   }
 }

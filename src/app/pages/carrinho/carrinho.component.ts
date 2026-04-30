@@ -169,9 +169,10 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
     try {
       this.validandoCarrinho = true;
   const token = this.getToken();
-      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, quantidade: ci.quantity }));
+      const slug = this.tenantLoja.lojaSlug();
+      const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, quantidade: ci.quantity, item_type: 'produto' as const }));
       if (!itens.length) return;
-      const res = await this.api.validarCarrinho(token, { itens }).toPromise();
+      const res = await this.api.validarCarrinho(token, { itens }, slug ? { parceiro_slug: slug } : undefined).toPromise();
       // Esperado do back (documentado pelo usuário):
       // ok, itens: [{ produto_id, nome, tipo, quantidade, price: { unit, final, discountUnit }, line: { subtotal, discount }, promotion, available, stockInfo, ok }],
       // totals: { subtotal, discount_total, total, item_count }, errors, timestamp
@@ -711,8 +712,9 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
       const cep = (this.cepInput || this.enderecoSelecionado?.cep || '').trim();
       if (!cep) { this.carregandoFrete = false; return; }
   const token = this.getToken();
-  const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product) }));
-      const resp = await this.api.cotarFrete(token, { cep, itens }).toPromise();
+      const slug = this.tenantLoja.lojaSlug();
+  const itens = this.store.cartSnapshot.map(ci => ({ id: ci.product.id, qtd: ci.quantity, preco: this.store.getPriceWithDiscount(ci.product), item_type: 'produto' as const }));
+      const resp = await this.api.cotarFrete(token, { cep, itens }, slug ? { parceiro_slug: slug } : undefined).toPromise();
       // Suporta tanto resposta antiga { valor, prazo } quanto nova com { origem, destino, pacote, opcoes }
       if (resp) {
         // Nova resposta com múltiplas opções

@@ -528,8 +528,19 @@ export class AgendaApiService {
     return response.permissoes || [];
   }
 
+  async discoverClientes(q: string): Promise<DiscoveryCandidateRow[]> {
+    const response = await lastValueFrom(
+      this.http.get<{ candidates: DiscoveryCandidateRow[] }>(
+        `${API_BASE}/parceiro/clientes/discovery`,
+        { headers: this.getHeaders(), params: { q } }
+      )
+    );
+    return response.candidates || [];
+  }
+
   async postConviteCliente(body: {
-    cliente_email: string;
+    cliente_id?: number;
+    cliente_email?: string;
     escopo?: 'dados_basicos' | 'pets' | 'completo';
     days_valid?: number;
   }): Promise<{ convite: ConviteClienteRow | null }> {
@@ -543,12 +554,175 @@ export class AgendaApiService {
   }
 
   async inviteClient(data: {
-    cliente_email: string;
+    cliente_id?: number;
+    cliente_email?: string;
     escopo?: 'dados_basicos' | 'pets' | 'completo';
     days_valid?: number;
   }): Promise<ConviteClienteRow | null> {
     const response = await this.postConviteCliente(data);
     return response.convite;
+  }
+
+  // ===========================================================================
+  // HOTEL / RESERVAS (multi-tenant)
+  // ===========================================================================
+
+  async listHotelReservas(filters?: {
+    status?: string;
+    data_inicio?: string;
+    data_fim?: string;
+    search?: string;
+  }): Promise<HotelReservaRow[]> {
+    const params: Record<string, string> = {};
+    if (filters?.status) params['status'] = filters.status;
+    if (filters?.data_inicio) params['data_inicio'] = filters.data_inicio;
+    if (filters?.data_fim) params['data_fim'] = filters.data_fim;
+    if (filters?.search) params['search'] = filters.search;
+
+    const response = await lastValueFrom(
+      this.http.get<{ reservas: HotelReservaRow[] }>(
+        `${API_BASE}/parceiro/hotel/reservas`,
+        { headers: this.getHeaders(), params }
+      )
+    );
+    return response.reservas || [];
+  }
+
+  async getHotelReserva(id: number): Promise<HotelReservaRow | null> {
+    const response = await lastValueFrom(
+      this.http.get<{ reserva: HotelReservaRow | null }>(
+        `${API_BASE}/parceiro/hotel/reservas/${id}`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.reserva || null;
+  }
+
+  async createHotelReserva(body: {
+    leito_id?: number | null;
+    cliente_id?: number | null;
+    pet_id?: number | null;
+    cliente_nome_snapshot?: string | null;
+    pet_nome_snapshot?: string | null;
+    check_in: string | Date;
+    check_out: string | Date;
+    status?: HotelReservaStatus;
+    valor_total?: number | null;
+    observacoes?: string | null;
+  }): Promise<HotelReservaRow | null> {
+    const payload: {
+      leito_id?: number | null;
+      cliente_id?: number | null;
+      pet_id?: number | null;
+      cliente_nome_snapshot?: string | null;
+      pet_nome_snapshot?: string | null;
+      check_in: string | Date;
+      check_out: string | Date;
+      status?: HotelReservaStatus;
+      valor_total?: number | null;
+      observacoes?: string | null;
+    } = {
+      ...body,
+      check_in: body.check_in instanceof Date ? body.check_in.toISOString() : body.check_in,
+      check_out: body.check_out instanceof Date ? body.check_out.toISOString() : body.check_out,
+    };
+    const response = await lastValueFrom(
+      this.http.post<{ reserva: HotelReservaRow | null }>(
+        `${API_BASE}/parceiro/hotel/reservas`,
+        payload,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.reserva || null;
+  }
+
+  async updateHotelReserva(
+    id: number,
+    body: Partial<{
+      leito_id: number | null;
+      cliente_id: number | null;
+      pet_id: number | null;
+      cliente_nome_snapshot: string | null;
+      pet_nome_snapshot: string | null;
+      check_in: string | Date;
+      check_out: string | Date;
+      status: HotelReservaStatus;
+      valor_total: number | null;
+      observacoes: string | null;
+    }>
+  ): Promise<HotelReservaRow | null> {
+    const payload = { ...body };
+    if (payload.check_in instanceof Date) payload.check_in = payload.check_in.toISOString();
+    if (payload.check_out instanceof Date) payload.check_out = payload.check_out.toISOString();
+    const response = await lastValueFrom(
+      this.http.put<{ reserva: HotelReservaRow | null }>(
+        `${API_BASE}/parceiro/hotel/reservas/${id}`,
+        payload,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.reserva || null;
+  }
+
+  async listHotelLeitos(): Promise<HotelLeitoRow[]> {
+    const response = await lastValueFrom(
+      this.http.get<{ leitos: HotelLeitoRow[] }>(
+        `${API_BASE}/parceiro/hotel/leitos`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.leitos || [];
+  }
+
+  async createHotelLeito(body: {
+    nome: string;
+    tipo?: string;
+    capacidade?: number;
+    foto_url?: string | null;
+    exibir_na_vitrine?: boolean | number;
+    preco_diaria?: number | null;
+    ativo?: boolean | number;
+  }): Promise<HotelLeitoRow | null> {
+    const response = await lastValueFrom(
+      this.http.post<{ leito: HotelLeitoRow | null }>(
+        `${API_BASE}/parceiro/hotel/leitos`,
+        body,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.leito || null;
+  }
+
+  async updateHotelLeito(
+    id: number,
+    body: Partial<{
+      nome: string;
+      tipo: string;
+      capacidade: number;
+      foto_url: string | null;
+      exibir_na_vitrine: boolean | number;
+      preco_diaria: number | null;
+      ativo: boolean | number;
+    }>
+  ): Promise<HotelLeitoRow | null> {
+    const response = await lastValueFrom(
+      this.http.put<{ leito: HotelLeitoRow | null }>(
+        `${API_BASE}/parceiro/hotel/leitos/${id}`,
+        body,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.leito || null;
+  }
+
+  async getHotelResumo(): Promise<HotelResumoRow | null> {
+    const response = await lastValueFrom(
+      this.http.get<{ resumo: HotelResumoRow | null }>(
+        `${API_BASE}/parceiro/hotel/resumo`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.resumo || null;
   }
 }
 
@@ -570,4 +744,66 @@ export interface ConviteClienteRow {
   status: string;
   escopo?: string | null;
   data_expiracao?: string | null;
+}
+
+export interface DiscoveryCandidateRow {
+  cliente_id: number;
+  nome_masked: string;
+  email_masked?: string | null;
+  telefone_masked?: string | null;
+  cpf_masked?: string | null;
+  permissao_status?: string | null;
+  permissao_escopo?: string | null;
+  convite_pendente_id?: number | null;
+}
+
+export type HotelReservaStatus =
+  | 'pendente'
+  | 'confirmada'
+  | 'checkin_hoje'
+  | 'em_hospedagem'
+  | 'checkout_concluido'
+  | 'cancelada';
+
+export interface HotelReservaRow {
+  id: number;
+  parceiro_id: number;
+  agendamento_v2_id?: number | null;
+  leito_id?: number | null;
+  cliente_id?: number | null;
+  pet_id?: number | null;
+  cliente_nome_snapshot?: string | null;
+  pet_nome_snapshot?: string | null;
+  check_in: string;
+  check_out: string;
+  status: HotelReservaStatus;
+  valor_total?: number | null;
+  observacoes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  leito_nome?: string | null;
+  leito_tipo?: string | null;
+}
+
+export interface HotelLeitoRow {
+  id: number;
+  nome: string;
+  tipo: string;
+  capacidade: number;
+  foto_url?: string | null;
+  exibir_na_vitrine?: number | boolean;
+  preco_diaria?: number | null;
+  servico_id?: number | null;
+  ativo: number | boolean;
+  ocupado: number | boolean;
+  proxima_reserva?: string | null;
+}
+
+export interface HotelResumoRow {
+  total_leitos: number;
+  leitos_ocupados: number;
+  ocupacao_percentual: number;
+  checkins_hoje: number;
+  reservas_pendentes: number;
+  reservas_confirmadas: number;
 }

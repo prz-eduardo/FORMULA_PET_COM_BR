@@ -52,6 +52,13 @@
             <span class="stat-value">Área Vet</span>
           </span>
         </button>
+        <button class="stat" (click)="goToMinhaLoja()">
+          <span class="stat-icon stat-icon--amber"><i class="fa fa-store"></i></span>
+          <span class="stat-info">
+            <span class="stat-label">Vitrine</span>
+            <span class="stat-value">Minha loja</span>
+          </span>
+        </button>
         <button class="stat" (click)="goToPacientes()">
           <span class="stat-icon stat-icon--purple"><i class="fa fa-paw"></i></span>
           <span class="stat-info">
@@ -116,15 +123,25 @@
           <span>Cadastro de serviços</span>
           <i class="fa fa-arrow-right item-arrow"></i>
         </button>
+        <button class="item" *ngIf="matches('produtos cupons promocoes loja vitrine comercial')" (click)="goToComercial()" tabindex="0">
+          <i class="fa fa-shopping-bag"></i>
+          <span>Produtos, cupons e promoções</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item" *ngIf="matches('meus clientes loja permissao dados lgpd tutores')" (click)="goToMeusClientes()" tabindex="0">
+          <i class="fa fa-address-book-o"></i>
+          <span>Meus clientes</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
         <button class="item" *ngIf="matches('telemedicina video atendimento')" (click)="goToTelemedicina()" tabindex="0">
           <i class="fa fa-video-camera"></i>
           <span>Telemedicina</span>
           <i class="fa fa-arrow-right item-arrow"></i>
         </button>
-        <button class="item item--soon" *ngIf="matches('reservas hotel creche hospedagem')" tabindex="0" disabled>
+        <button class="item" *ngIf="matches('reservas hotel creche hospedagem')" (click)="goToReservasHotel()" tabindex="0">
           <i class="fa fa-bed"></i>
           <span>Reservas & Hotel</span>
-          <span class="badge-soon">Em breve</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
         </button>
         <button class="item item--soon" *ngIf="matches('atendimento chat suporte omnichannel')" tabindex="0" disabled>
           <i class="fa fa-comments"></i>
@@ -258,6 +275,11 @@
         <button class="item" *ngIf="matches('colaboradores equipe funcionarios')" (click)="goToColaboradores()" tabindex="0">
           <i class="fa fa-users"></i>
           <span>Colaboradores</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
+        <button class="item" *ngIf="matches('minha loja vitrine slug url subdominio site institucional pagamento')" (click)="goToMinhaLoja()" tabindex="0">
+          <i class="fa fa-store"></i>
+          <span>Minha loja</span>
           <i class="fa fa-arrow-right item-arrow"></i>
         </button>
         <button class="item item--soon" *ngIf="matches('perfil conta configuracoes')" tabindex="0" disabled>

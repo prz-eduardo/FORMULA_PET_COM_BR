@@ -32,6 +32,7 @@ export const routes: Routes = [
     ]
   },
     { path: 'mapa', loadComponent: () => import('./pages/mapa/mapa.component').then(m => m.MapaComponent) },
+    { path: 'mapa/:slug', loadComponent: () => import('./pages/mapa/mapa.component').then(m => m.MapaComponent) },
     { path: 'parceiro/cadastrar', loadComponent: () => import('./pages/parceiro-cadastro/parceiro-cadastro.component').then(m => m.ParceiroCadastroComponent) },
   { path: 'restrito', redirectTo: 'restrito/login', pathMatch: 'full' },
   { path: 'restrito/login', component: LoginComponent },
@@ -186,6 +187,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/parceiros/servicos-parceiro/servicos-parceiro.component').then(m => m.ServicosParceiroComponent),
         data: { title: 'Serviços' },
+      },
+      {
+        path: 'meus-clientes',
+        loadComponent: () =>
+          import('./pages/parceiros/meus-clientes/meus-clientes.component').then(m => m.MeusClientesComponent),
+        data: { title: 'Meus clientes' },
+      },
+      {
+        path: 'reservas-hotel',
+        loadComponent: () =>
+          import('./pages/parceiros/reservas-hotel/reservas-hotel.component').then(m => m.ReservasHotelComponent),
+        data: { title: 'Reservas & Hotel' },
       },
       {
         path: 'minha-loja',

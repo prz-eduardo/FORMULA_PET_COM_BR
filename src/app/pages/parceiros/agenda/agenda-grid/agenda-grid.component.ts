@@ -136,11 +136,12 @@ export class AgendaGridComponent implements OnChanges, AfterViewInit {
         offsetMin = 0;
       }
 
-      const contentHeight = gridBody.scrollHeight;
-      const pixelOffset = (offsetMin / total) * contentHeight;
-      // Try to position the time a bit below the top for context
-      const preferred = Math.max(0, pixelOffset - gridBody.clientHeight * 0.18);
-      gridBody.scrollTo({ top: preferred, behavior: 'smooth' });
+      // The host (:host with overflow: auto) is the scroll container.
+      // Body is positioned below the sticky header, so include its offsetTop.
+      const bodyHeight = gridBody.clientHeight || this.gridHeight;
+      const pixelOffset = gridBody.offsetTop + (offsetMin / total) * bodyHeight;
+      const preferred = Math.max(0, pixelOffset - host.clientHeight * 0.18);
+      host.scrollTo({ top: preferred, behavior: 'smooth' });
     } catch {
       // ignore scroll errors
     }

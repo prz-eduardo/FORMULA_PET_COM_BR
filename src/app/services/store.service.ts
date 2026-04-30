@@ -267,7 +267,8 @@ export class StoreService {
   async loadHomeHighlights(): Promise<ShopProduct[]> {
     try {
       const token = this.getStoredJwt();
-      const res = await this.api.getHomeHighlights(token).toPromise();
+      const slug = this.tenantLoja.lojaSlug();
+      const res = await this.api.getHomeHighlights(token, slug ? { parceiro_slug: slug } : undefined).toPromise();
       const arr = Array.isArray(res) ? res : (res?.data || res?.items || []);
       const items = (arr || []).map((it: any) => ({
         id: it.id,
@@ -562,7 +563,8 @@ export class StoreService {
     try {
       const token = this.getStoredJwt();
       if (!token) return;
-      const res: any = await this.api.listStoreProducts({ myFavorites: true, page: 1, pageSize: 9999 }, token).toPromise();
+      const slug = this.tenantLoja.lojaSlug();
+      const res: any = await this.api.listStoreProducts({ myFavorites: true, page: 1, pageSize: 9999, ...(slug ? { parceiro_slug: slug } : {}) }, token).toPromise();
       const list = (res?.data || []) as any[];
       const favIds = list.map((it: any) => Number(it.id)).filter((n: any) => Number.isFinite(n));
       this.favoritesSubject.next(favIds);

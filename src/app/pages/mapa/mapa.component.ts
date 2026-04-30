@@ -13,7 +13,7 @@ import {
 import { firstValueFrom, forkJoin, of } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import {
@@ -70,8 +70,9 @@ export class MapaComponent implements OnInit, OnDestroy {
   private mapInitialized = false;
   private mapReadyPromise: Promise<void> | null = null;
   private mapReadyResolver: (() => void) | null = null;
-  readonly marcaNome = MARCA_NOME;
-  readonly lojaEnderecoExibicao = `${LOJA_ENDERECO_TEXTO}, CEP ${LOJA_CEP}`;
+  marcaNome = MARCA_NOME;
+  readonly marcaNomeMapa = MARCA_NOME;
+  lojaEnderecoExibicao = `${LOJA_ENDERECO_TEXTO}, CEP ${LOJA_CEP}`;
   readonly defaultPartnerLogoPath = MARCA_LOGO_PATH || '/imagens/logo-marca.svg';
   private defaultCenterAddress = `${LOJA_ENDERECO_TEXTO}, Curitiba, PR, CEP ${LOJA_CEP}`;
   private pharmacyAddress = `${LOJA_ENDERECO_TEXTO}, Curitiba, PR`;
@@ -99,6 +100,7 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   partnersForMap: any[] = [];
   visibleCategoryIds: { [tabId: string]: boolean } = {};
+  mapCategoryPillsVisible = true;
   mapShowPharmacy = false;
   mapConfigOpen = false;
   searchRadiusKm = DEFAULT_SEARCH_RADIUS_KM;
@@ -115,12 +117,15 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   private mobileLayoutMql: MediaQueryList | null = null;
   private mobileLayoutListener: (() => void) | null = null;
+  private requestedPartnerSlug: string | null = null;
+  private requestedPartnerId: number | null = null;
 
   constructor(
     private api: ApiService,
     private toast: ToastService,
     private mapLocationConsent: MapLocationConsentService,
     readonly tenantLoja: TenantLojaService,
+    private route: ActivatedRoute,
     @Inject(PLATFORM_ID) private platformId: Object,
     private appRef: ApplicationRef,
     private zone: NgZone
@@ -184,6 +189,26 @@ export class MapaComponent implements OnInit, OnDestroy {
     try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
   }
 
+  allMapCategoriesVisible(): boolean {
+    const nonTodos = this.tabs.filter((t) => t.id !== 'todos');
+    if (!nonTodos.length) return false;
+    return nonTodos.every((t) => !!this.visibleCategoryIds[t.id]);
+  }
+
+  toggleMapCategoriesVisibility(): void {
+    const nonTodos = this.tabs.filter((t) => t.id !== 'todos');
+    if (!nonTodos.length) return;
+    const shouldShowAll = !this.allMapCategoriesVisible();
+    for (const t of nonTodos) {
+      this.visibleCategoryIds[t.id] = shouldShowAll;
+    }
+    try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
+  }
+
+  toggleMapCategoryPillsVisibility(): void {
+    this.mapCategoryPillsVisible = !this.mapCategoryPillsVisible;
+  }
+
   isCategoryMapVisible(tabId: string): boolean {
     return !!this.visibleCategoryIds[tabId];
   }
@@ -214,7 +239,7 @@ export class MapaComponent implements OnInit, OnDestroy {
     const tid = this.tenantLoja.parceiroId();
     if (tid == null) return;
     const p = this.allPartners.find((x) => Number(x.id) === tid);
-    if (p) void this.centerOnPartner(p);
+    if (p) void this.centerOnPartner(p, { scrollPage: false });
   }
 
   onMapSettingsRadiusInput(ev: Event): void {
@@ -628,10 +653,58 @@ export class MapaComponent implements OnInit, OnDestroy {
     }
   }
 
+  private buildAddressPartsAddress(parts: { endereco?: any; cidade?: any; estado?: any; cep?: any }): string {
+    const endereco = String(parts.endereco ?? '').trim();
+    const cidade = String(parts.cidade ?? '').trim();
+    const estado = String(parts.estado ?? '').trim();
+    const cep = String(parts.cep ?? '').trim();
+    const local = [cidade, estado].filter(Boolean).join(' - ');
+    const formattedCep = cep ? `CEP ${cep}` : '';
+    return [endereco, local, formattedCep].filter(Boolean).join(', ');
+  }
+
+  private applyStoreAddressFromParts(
+    parts: { nome?: any; endereco?: any; cidade?: any; estado?: any; cep?: any; latitude?: any; longitude?: any } | null
+  ): void {
+    if (!parts) return;
+    const nome = String(parts.nome ?? '').trim();
+    if (nome) this.marcaNome = nome;
+    const fullDisplay = this.buildAddressPartsAddress(parts);
+    if (!fullDisplay) return;
+
+    this.lojaEnderecoExibicao = fullDisplay;
+    this.defaultCenterAddress = fullDisplay;
+    this.pharmacyAddress = [String(parts.endereco ?? '').trim(), String(parts.cidade ?? '').trim(), String(parts.estado ?? '').trim()]
+      .filter(Boolean)
+      .join(', ') || fullDisplay;
+
+    const lat = Number(parts.latitude);
+    const lng = Number(parts.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      this.pharmacyCoords = { lat, lng };
+    }
+  }
+
+  private applyStoreAddressFromTenantProfile(): void {
+    const profile = this.tenantLoja.profile();
+    if (!profile) return;
+    this.applyStoreAddressFromParts({
+      nome: (profile as any).nome,
+      endereco: (profile as any).endereco,
+      cidade: (profile as any).cidade,
+      estado: (profile as any).estado,
+      cep: (profile as any).cep,
+      latitude: (profile as any).latitude,
+      longitude: (profile as any).longitude,
+    });
+  }
+
   ngOnInit(): void {
     // follow the same pattern as other pages: only call API from the browser
     // to avoid SSR network errors.
     if (isPlatformBrowser(this.platformId)) {
+      this.capturePartnerFromRoute();
+      this.applyStoreAddressFromTenantProfile();
       if (this.tenantLoja.isTenantLoja()) {
         this.mapSphereView = 'parceiros';
       }
@@ -983,6 +1056,8 @@ export class MapaComponent implements OnInit, OnDestroy {
     const title = partner.titulo ?? '';
     const address = partner.endereco ?? partner._raw?.endereco ?? '';
     const phone = partner.telefone ?? partner._raw?.telefone ?? '';
+    const storeSlug = this.getPartnerStoreSlug(partner);
+    const storeUrl = this.buildPartnerStoreUrl(storeSlug);
     const logoCandidate = String(partner.logo_url ?? partner._raw?.logo_url ?? '').trim();
     const logoSrc = logoCandidate || this.defaultPartnerLogoPath;
     const logoFallback = this.defaultPartnerLogoPath;
@@ -1010,7 +1085,7 @@ export class MapaComponent implements OnInit, OnDestroy {
 
       <div style="display:flex;gap:8px;margin-top:10px">
         <button id="${routeBtnId}" style="flex:1;border:0;background:#0f172a;color:#fff;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Traçar rota</button>
-        <button id="${openBtnId}" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Abrir no Maps</button>
+        <button id="${openBtnId}" style="flex:1;border:1px solid #e5e7eb;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer">Ver produtos</button>
       </div>
       </div>
     `;
@@ -1054,9 +1129,14 @@ export class MapaComponent implements OnInit, OnDestroy {
               });
             }
             if (openBtn) {
-              openBtn.addEventListener('click', async (ev) => {
+              openBtn.addEventListener('click', (ev) => {
                 ev.preventDefault();
-                await this.openMapsWithRoute({ lat: Number(lat), lng: Number(lng) });
+                if (!storeUrl) return;
+                try {
+                  window.open(storeUrl, '_blank', 'noopener,noreferrer');
+                } catch (e) {
+                  try { window.location.href = storeUrl; } catch {}
+                }
               });
             }
             if (closeBtn) {
@@ -1067,6 +1147,39 @@ export class MapaComponent implements OnInit, OnDestroy {
         });
       } catch (e) {}
     });
+  }
+
+  private getPartnerStoreSlug(partner: any): string | null {
+    const rawSlug = String(
+      partner?.loja_slug ??
+      partner?._raw?.loja_slug ??
+      partner?.slug ??
+      partner?._raw?.slug ??
+      ''
+    ).trim().toLowerCase();
+    return rawSlug || null;
+  }
+
+  private buildPartnerStoreUrl(slug: string | null): string | null {
+    if (!slug) return null;
+    try {
+      const protocol = window.location.protocol || 'https:';
+      const host = String(window.location.hostname || '').trim().toLowerCase();
+      const port = String(window.location.port || '').trim();
+      if (!host) return null;
+
+      if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost')) {
+        const localHost = `${slug}.localhost${port ? `:${port}` : ''}`;
+        return `${protocol}//${localHost}`;
+      }
+
+      const normalizedHost = host.endsWith('.petsphere.com.br')
+        ? 'petsphere.com.br'
+        : (host.includes('.') ? host.replace(/^[^.]+\./, '') : host);
+      return `${protocol}//${slug}.${normalizedHost}`;
+    } catch (e) {
+      return null;
+    }
   }
 
   /**
@@ -1238,6 +1351,22 @@ export class MapaComponent implements OnInit, OnDestroy {
 
         // compute visible partners according to any current filters
         try { this.applyFilters(); } catch (e) { this.partners = this.allPartners.slice(); }
+        this.resolveRequestedPartnerIdFromLoadedPartners();
+        const targetId = this.requestedPartnerId ?? this.tenantLoja.parceiroId();
+        if (targetId != null) {
+          const target = this.allPartners.find((p) => Number(p.id) === Number(targetId));
+          if (target) {
+            this.applyStoreAddressFromParts({
+              nome: target.nome ?? target._raw?.nome,
+              endereco: target.endereco ?? target._raw?.endereco,
+              cidade: target.cidade ?? target._raw?.cidade,
+              estado: target.estado ?? target._raw?.estado,
+              cep: target.cep ?? target._raw?.cep,
+              latitude: target.latitude ?? target._raw?.latitude,
+              longitude: target.longitude ?? target._raw?.longitude,
+            });
+          }
+        }
         this.mapsApiKey = mapsRes.mapsApiKey ?? null;
         this.loading = false;
         
@@ -1378,6 +1507,7 @@ export class MapaComponent implements OnInit, OnDestroy {
       // Só centraliza no usuário após consentimento explícito e gravação conforme política (cookies).
       this.maybeCenterFromUserConsent();
       this.maybeCenterTenantFoco();
+      this.maybeCenterRequestedPartner();
 
       // If there is a saved destination from a previous session, do NOT auto-draw the route
       // (auto-drawing has caused navigation/lock issues on some environments). Instead,
@@ -1732,8 +1862,9 @@ export class MapaComponent implements OnInit, OnDestroy {
    * Center the map on a partner and open its info window.
    * If a marker with a matching partner id exists, trigger its click handler.
    */
-  async centerOnPartner(partner: any): Promise<void> {
+  async centerOnPartner(partner: any, options?: { scrollPage?: boolean }): Promise<void> {
     if (!isPlatformBrowser(this.platformId) || !(window as any).google || !this.map) return;
+    const shouldScrollPage = options?.scrollPage ?? true;
     try {
       await this.waitForMapReady(5000).catch(() => {});
       const google = (window as any).google;
@@ -1768,7 +1899,7 @@ export class MapaComponent implements OnInit, OnDestroy {
         try { if (this.map.setZoom) this.map.setZoom(Math.max(this.map.getZoom ? this.map.getZoom() : 15, 15)); } catch (e) {}
         try { google.maps.event.trigger(marker, 'click'); } catch (e) { /* ignore */ }
         // full-screen mobile map: map is always in view; avoid scrolling the page
-        if (!this.isMobileMapLayout) {
+        if (shouldScrollPage && !this.isMobileMapLayout) {
           try {
             const wrap = document.getElementById('gmap');
             if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1784,6 +1915,79 @@ export class MapaComponent implements OnInit, OnDestroy {
       }
     } catch (e) {
       console.warn('centerOnPartner failed', e);
+    }
+  }
+
+  private capturePartnerFromRoute(): void {
+    try {
+      const slug = String(this.route.snapshot.paramMap.get('slug') || '').trim().toLowerCase();
+      const tenantSlug = String(this.tenantLoja.lojaSlug() || '').trim().toLowerCase();
+      this.requestedPartnerSlug = slug || tenantSlug || null;
+      const queryParceiro = String(this.route.snapshot.queryParamMap.get('parceiro') || '').trim();
+      const queryParceiroId = Number(queryParceiro);
+      const tenantParceiroId = this.tenantLoja.parceiroId();
+      this.requestedPartnerId = Number.isFinite(queryParceiroId) && queryParceiroId > 0
+        ? queryParceiroId
+        : (tenantParceiroId != null ? Number(tenantParceiroId) : null);
+    } catch (e) {
+      this.requestedPartnerSlug = null;
+      this.requestedPartnerId = null;
+    }
+  }
+
+  private resolveRequestedPartnerIdFromLoadedPartners(): void {
+    if (this.requestedPartnerId == null) {
+      const tenantId = this.tenantLoja.parceiroId();
+      if (tenantId != null) this.requestedPartnerId = Number(tenantId);
+    }
+    if (!this.requestedPartnerSlug) {
+      const tenantSlug = String(this.tenantLoja.lojaSlug() || '').trim().toLowerCase();
+      if (tenantSlug) this.requestedPartnerSlug = tenantSlug;
+    }
+    if (this.requestedPartnerId != null || !this.requestedPartnerSlug) return;
+    const wanted = this.requestedPartnerSlug;
+    const direct = (this.allPartners || []).find((p) => {
+      const cand = String(
+        p?.loja_slug ??
+        p?._raw?.loja_slug ??
+        p?.slug ??
+        p?._raw?.slug ??
+        ''
+      ).trim().toLowerCase();
+      return !!cand && cand === wanted;
+    });
+    if (direct?.id != null) {
+      this.requestedPartnerId = Number(direct.id);
+    }
+  }
+
+  private async maybeCenterRequestedPartner(): Promise<void> {
+    if (this.requestedPartnerId == null && !this.requestedPartnerSlug) return;
+    let target: any | null = null;
+
+    if (this.requestedPartnerId != null) {
+      target = (this.allPartners || []).find((p) => Number(p.id) === Number(this.requestedPartnerId)) || null;
+    }
+
+    if (!target && this.requestedPartnerSlug) {
+      try {
+        const parceiro = await firstValueFrom(this.api.getParceiroPorSlugPublico(this.requestedPartnerSlug));
+        const pid = Number(parceiro?.id);
+        if (Number.isFinite(pid) && pid > 0) {
+          this.requestedPartnerId = pid;
+          target = (this.allPartners || []).find((p) => Number(p.id) === pid) || null;
+        }
+      } catch (e) {
+        // slug inválido/inexistente: segue fluxo normal do mapa
+      }
+    }
+
+    if (!target) return;
+
+    try {
+      await this.centerOnPartner(target, { scrollPage: false });
+    } catch (e) {
+      console.warn('maybeCenterRequestedPartner failed', e);
     }
   }
 

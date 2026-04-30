@@ -82,6 +82,11 @@ export class TenantLojaService {
       }
     }
 
+    if (!slug && host.endsWith('.localhost')) {
+      const sub = host.replace(/\.localhost$/i, '');
+      if (sub && sub !== 'www') slug = this.normalizeClientSlug(sub);
+    }
+
     if (!slug && (host === 'localhost' || host === '127.0.0.1')) {
       try {
         const q = new URLSearchParams(window.location.search).get('loja');
