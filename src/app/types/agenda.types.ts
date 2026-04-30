@@ -37,6 +37,10 @@ export interface Colaborador {
   role: RoleColaborador;
   ativo: boolean;
   parceiroNome?: string;
+  /** Slug da vitrine (loja_slug) vindo de GET /parceiro/auth/me */
+  parceiroLojaSlug?: string | null;
+  /** Slug vindo de GET /parceiro/auth/me (parceiro_tipos.slug) */
+  parceiroTipoSlug?: string | null;
   created_at?: string;
   last_login_at?: string | null;
   /** Quando a API retorna em snake_case (listagem MySQL) */
@@ -82,6 +86,17 @@ export interface Servico {
   duracaoMin: number;
   preco?: number;
   cor?: string; // hex
+}
+
+/** Linha da tabela `servicos` (API /parceiro/servicos). */
+export interface ParceiroServico {
+  id: number;
+  parceiro_id: number;
+  nome: string;
+  duracao_minutos: number;
+  preco: number;
+  ativo: number | boolean;
+  created_at?: string;
 }
 
 export interface PetResumido {
@@ -132,7 +147,7 @@ export interface Agendamento {
   observacoes?: string | null;
   criado_em?: string;
   updated_at?: string;
-  // Legacy/optional fields for compatibility with mock data
+  // Campos enriquecidos no front a partir da API (pet / profissional / serviço)
   pet?: PetResumido;
   profissional?: Profissional;
   servico?: Servico;

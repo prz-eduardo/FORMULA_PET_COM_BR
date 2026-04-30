@@ -10,6 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.component';
 import { LOJA_CEP, LOJA_ENDERECO_TEXTO, MARCA_NOME } from '../../constants/loja-public';
+import { TenantLojaService } from '../../services/tenant-loja.service';
 
 @Component({
   selector: 'app-carrinho',
@@ -93,7 +94,14 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
   private allergyAutoDismissDelayMs = 6000; // visible time before starting fade
   private allergyFadeDurationMs = 360; // fade animation duration (ms)
 
-  constructor(public store: StoreService, private api: ApiService, public router: Router, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    public store: StoreService,
+    private api: ApiService,
+    public router: Router,
+    private renderer: Renderer2,
+    private tenantLoja: TenantLojaService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   async ngOnInit() {
     await this.loadReceitasDisponiveis();
@@ -823,8 +831,10 @@ export class CarrinhoComponent implements OnInit, OnDestroy {
         endereco = null;
         freteSel = { servico: 'retirada_loja', nome: 'Retirar na loja', prazo_dias: 0, valor: 0, observacao: this.lojaInfo.endereco } as any;
       }
+      const slug = this.tenantLoja.lojaSlug();
       const payload: any = {
         itens,
+        ...(slug ? { loja_slug: slug } : {}),
         entrega: {
           modo,
           endereco,

@@ -1,6 +1,14 @@
 @use '../../../../shared/styles/admin-tokens' as *;
 
-:host { display: flex; flex-direction: column; flex: 1; overflow: auto; }
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  /* Scroll lives on parent .view-area so horizontal bar works on desktop */
+  overflow: visible;
+}
 
 .timeline-wrap {
   display: flex;
@@ -15,16 +23,21 @@
   display: flex;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 11;
   background: var(--admin-surface);
   border-bottom: 1px solid var(--admin-border);
   height: 32px;
 }
 
 .row-label-spacer {
+  position: sticky;
+  left: 0;
+  z-index: 12;
   width: 160px;
   flex-shrink: 0;
   border-right: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: 4px 0 12px -8px rgba(0, 0, 0, 0.45);
 }
 
 .axis-track {
@@ -55,6 +68,9 @@
 }
 
 .row-label {
+  position: sticky;
+  left: 0;
+  z-index: 4;
   width: 160px;
   flex-shrink: 0;
   border-right: 1px solid var(--admin-border);
@@ -62,6 +78,8 @@
   flex-direction: column;
   justify-content: center;
   padding: 8px 12px;
+  background: var(--admin-surface);
+  box-shadow: 4px 0 12px -8px rgba(0, 0, 0, 0.45);
 }
 
 .row-name {

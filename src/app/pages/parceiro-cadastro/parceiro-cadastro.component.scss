@@ -27,6 +27,32 @@
 }
 
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.slug-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.slug-preview input {
+  flex: 1 1 120px;
+  min-width: 100px;
+  border: 0 !important;
+  background: transparent;
+  padding: 6px 4px !important;
+}
+.slug-preview__host {
+  font-size: 13px;
+  color: #64748b;
+  white-space: nowrap;
+}
+.grid .hint {
+  font-size: 12px;
+  color: #64748b;
+}
 .grid > div{display:flex;flex-direction:column;gap:6px}
 .grid label{font-size:13px;color:#374151;font-weight:500}
 .grid input, .grid textarea, .grid select{

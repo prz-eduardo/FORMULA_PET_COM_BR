@@ -11,6 +11,7 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
 import { GaleriaPostFotoModalComponent } from './galeria-post-foto-modal/galeria-post-foto-modal.component';
 import { MARCA_NOME } from '../../constants/loja-public';
 import { ClienteAreaModalService } from '../../services/cliente-area-modal.service';
+import { TenantLojaService } from '../../services/tenant-loja.service';
 
 @Component({
   selector: 'app-galeria-publica',
@@ -41,7 +42,8 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
     private auth: AuthService,
     private toast: ToastService,
     private router: Router,
-    private clienteAreaModal: ClienteAreaModalService
+    private clienteAreaModal: ClienteAreaModalService,
+    private tenantLoja: TenantLojaService
   ) {}
   // placeholder mode when API returns empty: show curated random pet images
   placeholderMode = false;
@@ -640,8 +642,11 @@ export class GaleriaPublicaComponent implements OnInit, AfterViewInit, OnDestroy
     try {
       // use ApiService so baseUrl and headers are handled consistently
       // pass JWT when available so the gallery can return auth-aware data
-  const token = this.auth.getToken() ?? undefined;
-  const data = await this.api.getGaleriaPublica({ page: pageNum, pageSize: this.pageSize }, token).toPromise();
+      const token = this.auth.getToken() ?? undefined;
+      const slug = this.tenantLoja.lojaSlug();
+      const data = await this.api
+        .getGaleriaPublica({ page: pageNum, pageSize: this.pageSize, ...(slug ? { parceiro_slug: slug } : {}) }, token)
+        .toPromise();
       // support API returning { data: [], page, totalPages } or plain array
       const items = Array.isArray(data) ? data : (data?.data || []);
       // normalize items: ensure likes and userReacted fields exist

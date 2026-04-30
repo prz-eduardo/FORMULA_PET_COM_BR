@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
-import { Colaborador, SessionColaborador, RoleColaborador } from '../types/agenda.types';
+import { Colaborador, SessionColaborador, RoleColaborador, PartnerType } from '../types/agenda.types';
+
+function slugToPartnerType(slug: string | null | undefined): PartnerType {
+  const s = (slug || '').toLowerCase();
+  if (s === 'clinic') return 'CLINIC';
+  if (s === 'sitter') return 'SITTER';
+  if (s === 'hotel') return 'HOTEL';
+  return 'PETSHOP';
+}
 import { environment } from '../../environments/environment';
 
 const STORAGE_KEY = 'parceiro_token';
@@ -10,6 +18,7 @@ const API_BASE = environment.apiBaseUrl;
 @Injectable({ providedIn: 'root' })
 export class ParceiroAuthService {
   private session: SessionColaborador | null = null;
+  private cachedPartnerTipo: PartnerType | null = null;
 
   constructor(private http: HttpClient) {
     this.loadSessionFromStorage();
@@ -37,6 +46,8 @@ export class ParceiroAuthService {
 
       // Salva no localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.session));
+
+      void this.refreshPartnerProfile();
 
       return response;
     } catch (error) {
@@ -84,10 +95,40 @@ export class ParceiroAuthService {
   }
 
   /**
+   * Sincroniza tipo de estabelecimento a partir de GET /parceiro/auth/me.
+   */
+  async refreshPartnerProfile(): Promise<void> {
+    if (!this.getToken()) {
+      this.cachedPartnerTipo = null;
+      return;
+    }
+    try {
+      const response = await lastValueFrom(
+        this.http.get<{ colaborador: Colaborador }>(
+          `${API_BASE}/parceiro/auth/me`,
+          { headers: this.getAuthHeaders() }
+        )
+      );
+      if (this.session) {
+        this.session.colaborador = { ...this.session.colaborador, ...response.colaborador };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.session));
+        } catch {
+          /* ignore */
+        }
+      }
+      const slug = (response.colaborador as Colaborador).parceiroTipoSlug;
+      this.cachedPartnerTipo = slugToPartnerType(slug);
+    } catch {
+      this.cachedPartnerTipo = null;
+    }
+  }
+
+  /**
    * Retorna informações do parceiro atual (para compatibilidade com shell)
    */
-  getCurrentParceiro(): { tipo: 'PETSHOP' | 'CLINIC' | 'SITTER' | 'HOTEL' } | null {
-    return { tipo: 'PETSHOP' }; // Default partner type
+  getCurrentParceiro(): { tipo: PartnerType } | null {
+    return { tipo: this.cachedPartnerTipo ?? 'PETSHOP' };
   }
 
   /**
@@ -143,6 +184,7 @@ export class ParceiroAuthService {
         this.logout();
       } else {
         this.session = session;
+        void this.refreshPartnerProfile();
       }
     } catch {
       // Sessão corrompida, limpa

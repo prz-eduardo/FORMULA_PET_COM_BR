@@ -22,6 +22,7 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
   private sectionItems: Record<SectionKey, string[]> = {
     operacao: [
       'agenda horários atendimento',
+      'servicos cadastro preço duração banho tosa consulta loja vitrine',
       'reservas hotel creche hospedagem',
       'atendimento chat suporte omnichannel',
     ],
@@ -116,4 +117,5 @@ export class ParceiroPainelComponent implements OnInit, OnDestroy {
   goToHistorico(): void      { this.router.navigate(['/parceiros/historico-receitas']); }
   goToPacientes(): void      { this.router.navigate(['/parceiros/pacientes']); }
   goToColaboradores(): void  { this.router.navigate(['/parceiros/colaboradores']); }
+  goToServicos(): void       { this.router.navigate(['/parceiros/servicos']); }
 }

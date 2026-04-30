@@ -28,6 +28,7 @@ import { BannerSlotComponent } from '../../shared/banner-slot/banner-slot.compon
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { FP_MAP_STYLES } from './mapa-map-styles';
 import { MapLocationConsentService } from '../../services/map-location-consent.service';
+import { TenantLojaService } from '../../services/tenant-loja.service';
 
 const FP_MAPA_LS_PREFIX = 'fp_mapa_';
 const DEFAULT_SEARCH_RADIUS_KM = 15;
@@ -93,9 +94,12 @@ export class MapaComponent implements OnInit, OnDestroy {
   mapTextQuery = '';
   @ViewChild('mapSearchInput') mapSearchInput?: ElementRef<HTMLInputElement>;
 
+  /** PetSphere = ecossistema completo; Parceiros = foco na loja atual (subdomínio), quando houver tenant. */
+  mapSphereView: 'petsphere' | 'parceiros' = 'petsphere';
+
   partnersForMap: any[] = [];
   visibleCategoryIds: { [tabId: string]: boolean } = {};
-  mapShowPharmacy = true;
+  mapShowPharmacy = false;
   mapConfigOpen = false;
   searchRadiusKm = DEFAULT_SEARCH_RADIUS_KM;
   priceFilterMin: number | null = null;
@@ -116,6 +120,7 @@ export class MapaComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private toast: ToastService,
     private mapLocationConsent: MapLocationConsentService,
+    readonly tenantLoja: TenantLojaService,
     @Inject(PLATFORM_ID) private platformId: Object,
     private appRef: ApplicationRef,
     private zone: NgZone
@@ -194,6 +199,22 @@ export class MapaComponent implements OnInit, OnDestroy {
   toggleMapShowPharmacy(): void {
     this.mapShowPharmacy = !this.mapShowPharmacy;
     try { this.refreshMarkers(); } catch (e) { console.warn('refreshMarkers failed', e); }
+  }
+
+  setMapSphereView(mode: 'petsphere' | 'parceiros'): void {
+    if (this.mapSphereView === mode) return;
+    this.mapSphereView = mode;
+    try { this.applyFilters(); } catch (e) { console.warn('applyFilters failed', e); }
+    if (mode === 'parceiros') {
+      this.maybeCenterTenantFoco();
+    }
+  }
+
+  private maybeCenterTenantFoco(): void {
+    const tid = this.tenantLoja.parceiroId();
+    if (tid == null) return;
+    const p = this.allPartners.find((x) => Number(x.id) === tid);
+    if (p) void this.centerOnPartner(p);
   }
 
   onMapSettingsRadiusInput(ev: Event): void {
@@ -353,10 +374,51 @@ export class MapaComponent implements OnInit, OnDestroy {
     return false;
   }
 
+  /** Parceiro com tipo definido (id/slug/nome/icone em tipo ou em tipos[]). */
+  private partnerHasAnyTipo(p: any): boolean {
+    try {
+      const t = p?.tipo;
+      if (
+        t &&
+        typeof t === 'object' &&
+        (t.id != null ||
+          (t.slug && String(t.slug).trim()) ||
+          (t.nome && String(t.nome).trim()) ||
+          (t.icone && String(t.icone).trim()))
+      ) {
+        return true;
+      }
+      if (typeof t === 'string' && String(t).trim()) return true;
+      if (Array.isArray(p?.tipos)) {
+        return p.tipos.some(
+          (x: any) =>
+            x &&
+            (x.id != null ||
+              (x.slug && String(x.slug).trim()) ||
+              (x.nome && String(x.nome).trim()) ||
+              (x.icone && String(x.icone).trim()))
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+    return false;
+  }
+
+  /**
+   * Camadas do mapa (pills): parceiro visível se casa com alguma categoria ligada.
+   * Sem tipo: só no mapa quando todas as categorias estão ligadas (equivale a “Todos” com pills padrão).
+   */
   private partnerVisibleForMapCategories(p: any): boolean {
-    for (const t of this.tabs) {
-      if (t.id === 'todos') continue;
-      if (this.visibleCategoryIds[t.id] && this.partnerMatchesTabId(p, t.id)) return true;
+    const nonTodos = this.tabs.filter((t) => t.id !== 'todos');
+    if (!nonTodos.length) return true;
+    const visibleTabs = nonTodos.filter((t) => this.visibleCategoryIds[t.id]);
+    if (!visibleTabs.length) return false;
+    for (const t of visibleTabs) {
+      if (this.partnerMatchesTabId(p, t.id)) return true;
+    }
+    if (!this.partnerHasAnyTipo(p)) {
+      return nonTodos.every((t) => this.visibleCategoryIds[t.id]);
     }
     return false;
   }
@@ -470,7 +532,13 @@ export class MapaComponent implements OnInit, OnDestroy {
   }
 
   private applyFilters(){
-    const base = this.allPartners || [];
+    let base = this.allPartners || [];
+    if (this.mapSphereView === 'parceiros') {
+      const tid = this.tenantLoja.parceiroId();
+      if (tid != null) {
+        base = base.filter((p) => Number(p.id) === tid);
+      }
+    }
     this.partners = base.filter(p => this.matchesForSidebarList(p));
     this.partnersForMap = base.filter(p => this.matchesForMapView(p));
     try { this.rebuildQuickSearchList(); } catch (e) { console.warn('rebuildQuickSearchList failed', e); }
@@ -491,6 +559,11 @@ export class MapaComponent implements OnInit, OnDestroy {
    */
   getTabIcon(tab: { id?: string; label?: string; icon?: string }): string {
     try {
+      const ic = tab?.icon != null ? String(tab.icon).trim() : '';
+      if (ic && /\.(png|svg|webp)$/i.test(ic)) {
+        const base = ic.split(/[/\\]/).pop()!.toLowerCase().replace(/[^a-z0-9._-]/g, '');
+        if (base) return `/icones/${base}`;
+      }
       const raw = String(tab?.icon ?? tab?.id ?? tab?.label ?? '').toLowerCase();
       const key = raw.normalize('NFD').replace(/\p{Diacritic}/gu, '');
       if (!key) return '/icones/paw.png';
@@ -559,6 +632,9 @@ export class MapaComponent implements OnInit, OnDestroy {
     // follow the same pattern as other pages: only call API from the browser
     // to avoid SSR network errors.
     if (isPlatformBrowser(this.platformId)) {
+      if (this.tenantLoja.isTenantLoja()) {
+        this.mapSphereView = 'parceiros';
+      }
       this.loadMapLocalSettings();
       this.syncLocationOptInFromCookies();
       this.initMobileLayoutListener();
@@ -995,44 +1071,68 @@ export class MapaComponent implements OnInit, OnDestroy {
 
   /**
    * Determine an icon object for a partner based on its type.
-   * Tries several sources (partner.tipo.icone, partner.tipo.slug, partner.tipo.nome,
-   * tabs icons or active tab) and returns a Google Maps Icon object or undefined.
+   * Usa icone/slug do backend; se faltar, reutiliza a mesma heurística de `getTabIcon`.
    */
   private getIconForPartner(partner: any) {
     try {
       if (!(window as any).google) return undefined;
       const google = (window as any).google;
+      const firstTipo =
+        partner?.tipo ?? (Array.isArray(partner?.tipos) && partner.tipos[0] ? partner.tipos[0] : null);
       const candidates = [
-        // explicit tipo object
         partner?.tipo?.icone,
         partner?.tipo?.slug,
         partner?.tipo?.nome,
-        // if backend provides an array of tipos, prefer the first
-        (Array.isArray(partner?.tipos) && partner?.tipos[0]?.icone),
-        (Array.isArray(partner?.tipos) && partner?.tipos[0]?.slug),
-        (Array.isArray(partner?.tipos) && partner?.tipos[0]?.nome),
-        // raw payload fallbacks
+        Array.isArray(partner?.tipos) && partner?.tipos[0]?.icone,
+        Array.isArray(partner?.tipos) && partner?.tipos[0]?.slug,
+        Array.isArray(partner?.tipos) && partner?.tipos[0]?.nome,
         partner?._raw?.tipo?.icone,
         partner?._raw?.tipo?.slug,
         partner?._raw?.tipo?.nome,
         partner?._raw?.tipos && Array.isArray(partner._raw.tipos) ? partner._raw.tipos[0]?.icone : undefined,
         partner?._raw?.tipos && Array.isArray(partner._raw.tipos) ? partner._raw.tipos[0]?.slug : undefined,
         partner?._raw?.tipos && Array.isArray(partner._raw.tipos) ? partner._raw.tipos[0]?.nome : undefined,
-        // try active tab icon as last resort
-        (this.tabs.find(t => t.id === this.active)?.icon),
-        // try a tab by numeric typeId
-        (this.tabs.find(t => typeof t.typeId !== 'undefined' && partner?.tipo && partner.tipo.id === t.typeId)?.icon)
+        this.tabs.find((t) => t.id === this.active)?.icon,
+        this.tabs.find(
+          (t) => typeof t.typeId !== 'undefined' && firstTipo != null && Number(firstTipo.id) === Number(t.typeId)
+        )?.icon,
       ];
       let name: any = null;
-      for (const c of candidates) { if (c) { name = c; break; } }
-      if (!name) return undefined;
-      // sanitize filename: lowercase, remove diacritics, spaces -> -, remove invalid chars
-      let file = String(name).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, '-').replace(/[^a-z0-9\-_.]/g, '');
-      // ensure extension
-      if (!file.endsWith('.png') && !file.endsWith('.svg')) file = `${file}.png`;
-      const url = `/icones/${file}`;
+      for (const c of candidates) {
+        if (c) {
+          name = c;
+          break;
+        }
+      }
+      let url: string | null = null;
+      if (name) {
+        let file = String(name)
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9\-_.]/g, '');
+        if (!file.endsWith('.png') && !file.endsWith('.svg')) file = `${file}.png`;
+        url = `/icones/${file}`;
+      }
+      if (!url && firstTipo) {
+        url = this.getTabIcon({
+          id: String(firstTipo.slug ?? firstTipo.id ?? ''),
+          label: String(firstTipo.nome ?? firstTipo.label ?? ''),
+          icon: firstTipo.icone,
+        });
+      }
+      if (!url) {
+        const tab = this.tabs.find(
+          (t) => t.id !== 'todos' && typeof t.typeId !== 'undefined' && firstTipo != null && Number(firstTipo.id) === Number(t.typeId)
+        );
+        if (tab) url = this.getTabIcon(tab);
+      }
+      if (!url) return undefined;
       return { url, scaledSize: new google.maps.Size(32, 36), anchor: new google.maps.Point(16, 36) };
-    } catch (e) { return undefined; }
+    } catch (e) {
+      return undefined;
+    }
   }
 
   private loadProfessionalTypes(){
@@ -1128,6 +1228,12 @@ export class MapaComponent implements OnInit, OnDestroy {
           for (const tab of this.tabs) {
             this.filtersByTab[tab.id] = this.filtersByTab[tab.id] || [];
           }
+        }
+
+        try {
+          await this.backfillPartnersCoordinates(this.allPartners);
+        } catch (e) {
+          console.warn('backfillPartnersCoordinates failed', e);
         }
 
         // compute visible partners according to any current filters
@@ -1271,6 +1377,7 @@ export class MapaComponent implements OnInit, OnDestroy {
 
       // Só centraliza no usuário após consentimento explícito e gravação conforme política (cookies).
       this.maybeCenterFromUserConsent();
+      this.maybeCenterTenantFoco();
 
       // If there is a saved destination from a previous session, do NOT auto-draw the route
       // (auto-drawing has caused navigation/lock issues on some environments). Instead,

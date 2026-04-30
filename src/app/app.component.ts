@@ -18,6 +18,7 @@ import { CookiePreferencesService, CookiePreferences } from './services/cookie-p
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { BannedUserModalComponent } from './shared/banned-user-modal/banned-user-modal.component';
 import { MARCA_NOME } from './constants/loja-public';
+import { TenantLojaService } from './services/tenant-loja.service';
 import { register } from 'swiper/element/bundle';
 
 @Component({
@@ -60,7 +61,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private store: StoreService,
     private rastreio: RastreioLojaService,
     private cookiePreferences: CookiePreferencesService,
-    private titleService: Title
+    private titleService: Title,
+    private tenantLoja: TenantLojaService
   ) {
     register(); // Swiper
   }
@@ -68,9 +70,14 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.detectDevice();
     if (isPlatformBrowser(this.platformId)) {
-      try {
-        this.titleService.setTitle(MARCA_NOME);
-      } catch (e) {}
+      void this.tenantLoja.initFromLocation().then(() => {
+        const nome = this.tenantLoja.displayBrandName();
+        try {
+          this.titleService.setTitle(nome ? `${nome} | ${MARCA_NOME}` : MARCA_NOME);
+        } catch {
+          /* ignore */
+        }
+      });
       try {
         document.documentElement.classList.add('force-light');
         document.body.classList.add('force-light');
@@ -229,10 +236,8 @@ export class AppComponent implements OnInit, OnDestroy {
       path.startsWith('/historico-receitas/') ||
       path === '/pacientes' ||
       path.startsWith('/pacientes/');
-    const isParceirosAuthArea =
-      path.startsWith('/parceiros/') &&
-      path !== '/parceiros/login' &&
-      path !== '/parceiros/recuperar-senha';
+    /** Toda a área de parceiros (login, convite, painel) usa só o layout da feature — sem navbar/footer do site. */
+    const isParceirosAuthArea = path.startsWith('/parceiros/');
     const hide =
       current.startsWith('/restrito/admin') ||
       current.startsWith('/restrito/produto') ||

@@ -7,8 +7,8 @@ import {
   PartnerType, Profissional, Servico, SlotInfo, ViewMode
 } from '../../../../types/agenda.types';
 import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
-import { AgendaMockService } from '../services/agenda-mock.service';
 import { AgendaConfigService } from '../services/agenda-config.service';
+import { AgendaApiService } from '../services/agenda-api.service';
 import { AgendaFiltersComponent } from '../agenda-filters/agenda-filters.component';
 import { AgendaGridComponent } from '../agenda-grid/agenda-grid.component';
 import { AgendaTimelineComponent } from '../agenda-timeline/agenda-timeline.component';
@@ -16,13 +16,20 @@ import { AgendaWeekComponent } from '../agenda-week/agenda-week.component';
 import { AgendaListComponent } from '../agenda-list/agenda-list.component';
 import { AgendaSidebarComponent } from '../agenda-sidebar/agenda-sidebar.component';
 import { AgendaModalComponent } from '../agenda-modal/agenda-modal.component';
+import { AgendaConvitesDadosComponent } from '../agenda-convites-dados/agenda-convites-dados.component';
 import { toDate } from '../utils/date-helpers';
+import {
+  catalogPetsFromAgendamentos,
+  mapParceiroAgendamentoRow,
+  ParceiroAgendamentoApiRow,
+} from '../services/agenda-parceiro-mapper';
 
 @Component({
   selector: 'app-agenda-shell',
   standalone: true,
   imports: [
     CommonModule,
+    AgendaConvitesDadosComponent,
     AgendaFiltersComponent,
     AgendaGridComponent,
     AgendaTimelineComponent,
@@ -36,7 +43,6 @@ import { toDate } from '../utils/date-helpers';
 })
 export class AgendaShellComponent implements OnInit {
 
-  // ── State ──────────────────────────────────────────────────────────────
   viewMode = signal<ViewMode>('DAY');
   selectedDate = signal<Date>(new Date());
   filters = signal<AgendaFiltros>({});
@@ -44,7 +50,6 @@ export class AgendaShellComponent implements OnInit {
   sidebarSlot = signal<SlotInfo | null>(null);
   modalAgendamentoId = signal<string | null>(null);
 
-  // Raw agendamentos from mock
   rawAgendamentos = signal<Agendamento[]>([]);
 
   partnerType = signal<PartnerType>('PETSHOP');
@@ -52,9 +57,8 @@ export class AgendaShellComponent implements OnInit {
   profissionais = signal<Profissional[]>([]);
   servicos = signal<Servico[]>([]);
 
-  // ── Computed ───────────────────────────────────────────────────────────
+  catalogPets = computed(() => catalogPetsFromAgendamentos(this.agendamentos()));
 
-  /** Auto-apply ATRASADO status when time has passed */
   agendamentos = computed<Agendamento[]>(() => {
     const now = new Date();
     return this.rawAgendamentos().map(a => {
@@ -87,13 +91,23 @@ export class AgendaShellComponent implements OnInit {
     });
   });
 
+  /** Dia atual (DAY / TIMELINE); semana/lista usam o intervalo já carregado na API. */
+  agendamentosForView = computed(() => {
+    const vm = this.viewMode();
+    const base = this.filteredAgendamentos();
+    if (vm === 'WEEK' || vm === 'LIST') return base;
+    const d = this.selectedDate();
+    const target = d.toDateString();
+    return base.filter(a => toDate(a.inicio).toDateString() === target);
+  });
+
   totalCount = computed(() => this.agendamentos().filter(a => a.status !== 'CANCELADO').length);
   atrasadosCount = computed(() => this.agendamentos().filter(a => a.status === 'ATRASADO').length);
 
   modalAgendamento = computed(() => {
     const id = this.modalAgendamentoId();
     if (!id) return null;
-    return this.agendamentos().find(a => a.id === id) ?? null;
+    return this.agendamentos().find(a => String(a.id) === id) ?? null;
   });
 
   dateLabel = computed(() => {
@@ -112,7 +126,6 @@ export class AgendaShellComponent implements OnInit {
     return d.toDateString() === t.toDateString();
   });
 
-  // ── Labels ─────────────────────────────────────────────────────────────
   readonly MODE_LABELS: Record<ViewMode, string> = {
     DAY: 'Dia',
     WEEK: 'Semana',
@@ -124,34 +137,96 @@ export class AgendaShellComponent implements OnInit {
 
   constructor(
     private auth: ParceiroAuthService,
-    private mockSvc: AgendaMockService,
     private configSvc: AgendaConfigService,
+    private api: AgendaApiService,
   ) {
-    // Re-generate mock when date or type changes
     effect(() => {
+      this.partnerType();
+      this.selectedDate();
+      this.viewMode();
       const tipo = this.partnerType();
-      const date = this.selectedDate();
       const cfg = this.configSvc.getConfig(tipo);
       this.config.set(cfg);
-      this.profissionais.set(this.mockSvc.getProfissionais(tipo));
-      this.servicos.set(this.mockSvc.getServicos(tipo));
-      this.rawAgendamentos.set(this.mockSvc.generate(tipo, date));
+      this.servicos.set([{
+        id: 'srv-default',
+        nome: 'Atendimento',
+        duracaoMin: cfg.defaultDuration,
+      }]);
+      void this.reloadFromApi();
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    await this.auth.refreshPartnerProfile();
     const parceiro = this.auth.getCurrentParceiro();
     if (parceiro) {
       this.partnerType.set(parceiro.tipo);
     }
 
-    // On mobile default to LIST
-    if (window.innerWidth < 768) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
       this.viewMode.set('LIST');
     }
   }
 
-  // ── Navigation ──────────────────────────────────────────────────────────
+  private formatLocalYmd(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  private getWeekStart(d: Date): Date {
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    const start = new Date(d);
+    start.setDate(d.getDate() + diff);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  private getApiDateRange(): { data_inicio: string; data_fim: string } {
+    const d = this.selectedDate();
+    if (this.viewMode() === 'WEEK') {
+      const start = this.getWeekStart(d);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      return { data_inicio: this.formatLocalYmd(start), data_fim: this.formatLocalYmd(end) };
+    }
+    const one = this.formatLocalYmd(d);
+    return { data_inicio: one, data_fim: one };
+  }
+
+  private async reloadFromApi(): Promise<void> {
+    try {
+      const recursos = await this.api.getRecursos();
+      const ativos = (recursos || []).filter((r: { ativo?: boolean | number }) => r.ativo !== false && r.ativo !== 0);
+      const recursoById = new Map<number, { nome: string }>();
+      for (const r of ativos as { id: number; nome: string }[]) {
+        recursoById.set(Number(r.id), { nome: String(r.nome || 'Recurso') });
+      }
+      this.profissionais.set(ativos.map((r: { id: number; nome: string }) => ({
+        id: String(r.id),
+        nome: String(r.nome || 'Recurso'),
+        ativo: true,
+      })));
+
+      const range = this.getApiDateRange();
+      const raw = await this.api.getAgendamentos(range);
+      const defServ = this.servicos()[0] ?? {
+        id: 'srv-default',
+        nome: 'Atendimento',
+        duracaoMin: 60,
+      };
+      const mapped = (raw as ParceiroAgendamentoApiRow[]).map(row =>
+        mapParceiroAgendamentoRow(row, recursoById, defServ)
+      );
+      this.rawAgendamentos.set(mapped);
+    } catch (err) {
+      console.error('Agenda: falha ao carregar API', err);
+      this.rawAgendamentos.set([]);
+      this.profissionais.set([]);
+    }
+  }
 
   prevDate(): void {
     const d = new Date(this.selectedDate());
@@ -175,13 +250,9 @@ export class AgendaShellComponent implements OnInit {
     this.viewMode.set(m);
   }
 
-  // ── Filters ─────────────────────────────────────────────────────────────
-
   onFiltersChange(f: AgendaFiltros): void {
     this.filters.set(f);
   }
-
-  // ── Sidebar (new agendamento) ────────────────────────────────────────────
 
   openSidebar(slot?: SlotInfo): void {
     this.sidebarSlot.set(slot ?? null);
@@ -193,12 +264,29 @@ export class AgendaShellComponent implements OnInit {
     this.sidebarSlot.set(null);
   }
 
-  onAgendamentoSaved(novo: Agendamento): void {
-    this.rawAgendamentos.set([...this.rawAgendamentos(), novo]);
-    this.closeSidebar();
+  async onAgendamentoSaved(novo: Agendamento): Promise<void> {
+    const profId = Number(novo.profissional?.id);
+    if (!Number.isFinite(profId)) return;
+    const inicio = novo.inicio instanceof Date ? novo.inicio : new Date(novo.inicio);
+    const fim = novo.fim instanceof Date ? novo.fim : new Date(novo.fim);
+    const pet = novo.pet;
+    const clienteNome = (pet?.tutor?.nome ?? '').trim() || 'Cliente';
+    try {
+      await this.api.createAgendamento({
+        recurso_id: profId,
+        cliente_nome: clienteNome,
+        cliente_telefone: pet?.tutor?.telefone || undefined,
+        pet_nome: pet?.nome && pet.nome !== '—' ? pet.nome : undefined,
+        inicio,
+        fim,
+        observacoes: novo.observacoes || undefined,
+      });
+      await this.reloadFromApi();
+      this.closeSidebar();
+    } catch (e) {
+      console.error(e);
+    }
   }
-
-  // ── Modal ───────────────────────────────────────────────────────────────
 
   openModal(id: string): void {
     this.modalAgendamentoId.set(id);
@@ -207,8 +295,6 @@ export class AgendaShellComponent implements OnInit {
   closeModal(): void {
     this.modalAgendamentoId.set(null);
   }
-
-  // ── Quick actions ────────────────────────────────────────────────────────
 
   onQuickAction(evt: { id: string; action: string }): void {
     const nextStatus: Record<string, AgendaStatus> = {
@@ -219,29 +305,21 @@ export class AgendaShellComponent implements OnInit {
     };
     const newStatus = nextStatus[evt.action];
     if (!newStatus) return;
-    this.rawAgendamentos.set(
-      this.rawAgendamentos().map(a =>
-        a.id === evt.id ? { ...a, status: newStatus } : a
-      )
-    );
+    void this.patchAgendamentoStatus(Number(evt.id), newStatus);
   }
 
   onStatusChanged(evt: { id: string; status: AgendaStatus }): void {
-    this.rawAgendamentos.set(
-      this.rawAgendamentos().map(a =>
-        a.id === evt.id ? { ...a, status: evt.status } : a
-      )
-    );
+    void this.patchAgendamentoStatus(Number(evt.id), evt.status);
   }
 
-  // ── Week helper ─────────────────────────────────────────────────────────
-
-  private getWeekStart(d: Date): Date {
-    const day = d.getDay(); // 0=Sun
-    const diff = (day === 0 ? -6 : 1) - day;
-    const start = new Date(d);
-    start.setDate(d.getDate() + diff);
-    return start;
+  private async patchAgendamentoStatus(id: number, status: AgendaStatus): Promise<void> {
+    if (!Number.isFinite(id)) return;
+    try {
+      await this.api.patchStatus(id, status);
+      await this.reloadFromApi();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   onDaySelected(d: Date): void {

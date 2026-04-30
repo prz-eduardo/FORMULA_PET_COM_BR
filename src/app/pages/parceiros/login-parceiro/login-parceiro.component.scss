@@ -3,16 +3,32 @@
 :host {
   display: block;
   width: 100%;
-  height: 100%;
+  box-sizing: border-box;
+  /* main.no-nav já reserva safe-area no topo; altura = restante do viewport sem barra de rolagem extra */
+  min-height: calc(100vh - env(safe-area-inset-top, 0px));
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px));
+}
+
+@supports (height: 100svh) {
+  :host {
+    min-height: calc(100svh - env(safe-area-inset-top, 0px));
+  }
 }
 
 .login-page {
-  min-height: 100vh;
+  box-sizing: border-box;
+  min-height: 100%;
   background: var(--admin-bg-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--admin-space-5);
+  padding-left: max(var(--admin-space-5), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--admin-space-5), env(safe-area-inset-right, 0px));
+  padding-bottom: max(var(--admin-space-5), env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .login-card {
@@ -153,6 +169,72 @@
     text-decoration: none;
 
     &:hover { text-decoration: underline; }
+  }
+}
+
+.forgot-password {
+  text-align: center;
+  margin: 0;
+
+  a {
+    color: var(--admin-primary);
+    font-size: var(--admin-font-size-sm);
+    text-decoration: none;
+    padding: 6px 4px;
+    display: inline-block;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* Telefone deitado / viewport baixo: evita card “preso” no meio sem rolagem */
+@media (max-height: 520px) {
+  .login-page {
+    align-items: stretch;
+    justify-content: flex-start;
+    padding-top: max(var(--admin-space-3), env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (max-width: 767px) {
+  .login-page {
+    padding: var(--admin-space-4);
+    padding-left: max(var(--admin-space-4), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--admin-space-4), env(safe-area-inset-right, 0px));
+    padding-bottom: max(var(--admin-space-4), env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+  }
+
+  .login-card {
+    padding: 28px 20px 24px;
+    max-width: none;
+    border-radius: var(--admin-radius-lg);
+  }
+
+  .brand {
+    margin-bottom: 24px;
+
+    .brand-icon {
+      font-size: 36px;
+    }
+
+    .brand-name {
+      font-size: 22px;
+    }
+  }
+
+  .field input {
+    /* iOS não dá zoom ao focar se font-size ≥ 16px */
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+
+  .btn-login {
+    min-height: 48px;
+    height: auto;
+    padding-block: 12px;
   }
 }
 

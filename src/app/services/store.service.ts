@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
 import { StoreThemeService, LojaThemeActive } from './store-theme.service';
+import { TenantLojaService } from './tenant-loja.service';
 import { normalizeThemeConfig } from '../constants/loja-tema-card.config';
 
 /** Alinhado a cards e admin: dosagem, embalagem, opcionais de vitrine. */
@@ -171,7 +172,8 @@ export class StoreService {
     private api: ApiService,
     private toast: ToastService,
     private router: Router,
-    private storeTheme: StoreThemeService
+    private storeTheme: StoreThemeService,
+    private tenantLoja: TenantLojaService
   ) {}
     // --- Cliente me caching ---
     // Cache the last successful response and also dedupe in-flight requests so
@@ -292,7 +294,9 @@ export class StoreService {
     // Try server endpoint if available
     try {
       const token = this.getStoredJwt();
-  const res = await this.api.listStoreProducts(params, token).toPromise();
+      const slug = this.tenantLoja.lojaSlug();
+      const merged = { ...(params || {}), ...(slug ? { parceiro_slug: slug } : {}) };
+  const res = await this.api.listStoreProducts(merged, token).toPromise();
       const raw = Array.isArray(res) ? res : ((res as any)?.data || (res as any)?.items || []);
       const list: ShopProduct[] = (raw || []).map((it: any) => {
         const price = Number(it.priceOriginal ?? it.preco ?? it.price ?? (typeof it.price === 'string' ? parseFloat(it.price) : 0));
@@ -628,7 +632,8 @@ export class StoreService {
   async loadProductDetails(id: number | string): Promise<LoadProductDetailsResult> {
     try {
       const token = this.getStoredJwt();
-      const it = await this.api.getProductById(id, token).toPromise();
+      const slug = this.tenantLoja.lojaSlug();
+      const it = await this.api.getProductById(id, token, slug ? { parceiro_slug: slug } : undefined).toPromise();
       if (!it) return { product: null, error: 'unknown' };
       const basePrice = Number(it.preco ?? it.price ?? 0);
       const promoP = it.promoPrice != null ? Number(it.promoPrice) : (it.promo_price != null ? Number(it.promo_price) : null);

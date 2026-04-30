@@ -1,4 +1,7 @@
-import { Component, AfterViewInit, ChangeDetectorRef, Inject, PLATFORM_ID, HostListener, OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit } from '@angular/core';
+import {
+  Component, AfterViewInit, ChangeDetectorRef, Inject, PLATFORM_ID, HostListener,
+  OnDestroy, ViewChild, ViewContainerRef, ElementRef, OnInit
+} from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router, NavigationEnd, NavigationStart, NavigationCancel, NavigationError, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -7,110 +10,185 @@ import { StoreService } from '../services/store.service';
 import { AuthService } from '../services/auth.service';
 import { gsap } from 'gsap';
 import { ClienteAreaModalService, ClienteAreaModalView } from '../services/cliente-area-modal.service';
+import { HapticsService } from '../services/haptics.service';
+import { DockContextService, DockMode, DockActionId } from '../services/dock-context.service';
+import { PsIconComponent, PsIconName } from '../shared/icons/ps-icon.component';
 
 export interface NavMainItem {
   id: string;
   label: string;
-  /** Rótulo curto no dock móvel (opcional) */
   shortLabel?: string;
   link: string;
-  icon: string;
+  icon: string;       // legacy FontAwesome (mantido para desktop top bar)
+  psIcon?: PsIconName; // novo Petsphere icon family (mobile dock)
+}
+
+export interface QuickAction {
+  id: DockActionId;
+  label: string;
+  caption?: string;
+  link: string;
+  icon: PsIconName;
+  tone?: 'aurora' | 'aqua' | 'coral' | 'neutral';
 }
 
 @Component({
   selector: 'app-navmenu',
   standalone: true,
-  imports: [RouterLink, CommonModule],
+  imports: [RouterLink, CommonModule, PsIconComponent],
   templateUrl: './navmenu.component.html',
   styleUrls: ['./navmenu.component.scss']
 })
 export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
-  /**
-   * Abas principais (desktop + dock móvel) em todas as páginas onde a navbar global existe.
-   * Ocultas só em rotas sem nav global (admin / cadastro produto) — alinhado ao AppComponent.showNav.
-   */
+  // ─── Visibility / route signals ─────────────────────────────────────────────
   get showSlideMenu(): boolean {
     const url = this.currentRoute || '';
-    if (url.startsWith('/restrito/admin') || url.startsWith('/restrito/produto')) {
-      return false;
-    }
+    if (url.startsWith('/restrito/admin') || url.startsWith('/restrito/produto')) return false;
     return true;
   }
 
-  get isAreaVetRoute(): boolean {
-    return (this.currentRoute || '').includes('/area-vet');
-  }
+  get isAreaVetRoute(): boolean { return (this.currentRoute || '').includes('/area-vet'); }
 
   user: any = null;
   userFoto: string | null = null;
   previousScroll: number = 0;
   isVisible = true;
+  /** Compact mode (encolhe para pill) ao rolar — substitui o "hide" antigo no mobile. */
+  isCompact = false;
   currentRoute: string = '';
-  useGaleriaSvg = false;
   cartCount = 0;
-  /** Pulso do badge móvel quando a quantidade no carrinho sobe. */
+  cartTotal = 0;
   cartBadgeBumping = false;
   isCliente = false;
   showFullMenu = true;
-  /** Aba que o utilizador acabou de escolher (clique síncrono); limpa-se no fim da navegação. */
   selectedMainTabId: string | null = null;
 
+  // ─── Aurora Dock state ──────────────────────────────────────────────────────
+  /** Modo atual do dock: guest / cliente / vet / parceiro */
+  dockMode: DockMode = 'guest';
+  /** Cosmic mode (após 19h local) */
+  isNight = false;
+  /** Bottom sheet de ações rápidas (tap no FAB). */
+  isSheetOpen = false;
+  /** Radial menu (long-press no FAB) */
+  isRadialOpen = false;
+  /** Ações do radial — top 4 mais usadas (aprende com o tempo). */
+  radialActions: QuickAction[] = [];
+  /** Live Context Ribbon — visível quando há mensagem contextual relevante. */
+  liveRibbon: { kind: 'cart' | 'reminder' | 'order'; text: string; cta?: string; link?: string } | null = null;
+
+  // ─── Items: dock móvel = 4 abas + FAB ───────────────────────────────────────
   /**
-   * Ordem: Galeria → Mapa → Loja → (Carrinho se cliente) → Sobre.
-   * Carrinho é inserido em `visibleNavItems` após Loja.
-   * Dock móvel: ícones `fas` + `fa-fw` para largura e alinhamento uniformes.
+   * Top desktop bar — mantém as 4 abas + (carrinho condicional) + sobre.
+   * Carrinho desce para mini-bag em mobile, mas é mantido na lista
+   * desktop para não quebrar `visibleNavItems` no top bar.
    */
   readonly mainNavItems: NavMainItem[] = [
-    { id: 'galeria', label: 'Galeria', shortLabel: 'Fotos', link: '/galeria', icon: 'fas fa-fw fa-images' },
-    { id: 'mapa', label: 'Mapa', shortLabel: 'Mapa', link: '/mapa', icon: 'fas fa-fw fa-map-location-dot' },
-    { id: 'loja', label: 'Loja', shortLabel: 'Loja', link: '/', icon: 'fas fa-fw fa-store' },
-    { id: 'sobre', label: 'Sobre', shortLabel: 'Sobre', link: '/sobre-nos', icon: 'fas fa-fw fa-circle-info' },
+    { id: 'galeria', label: 'Galeria', shortLabel: 'Início', link: '/galeria', icon: 'fas fa-fw fa-images', psIcon: 'home' },
+    { id: 'mapa',    label: 'Mapa',    shortLabel: 'Mapa',   link: '/mapa',    icon: 'fas fa-fw fa-map-location-dot', psIcon: 'map' },
+    { id: 'loja',    label: 'Loja',    shortLabel: 'Loja',   link: '/',        icon: 'fas fa-fw fa-store', psIcon: 'shop' },
+    { id: 'sobre',   label: 'Sobre',   shortLabel: 'Sobre',  link: '/sobre-nos', icon: 'fas fa-fw fa-circle-info', psIcon: 'sparkle' },
   ];
 
   private readonly carrinhoNavItem: NavMainItem = {
-    id: 'carrinho',
-    label: 'Carrinho',
-    shortLabel: 'Carrinho',
-    link: '/carrinho',
-    icon: 'fas fa-fw fa-cart-shopping',
+    id: 'carrinho', label: 'Carrinho', shortLabel: 'Carrinho', link: '/carrinho',
+    icon: 'fas fa-fw fa-cart-shopping', psIcon: 'cart',
   };
 
-  get visibleNavItems(): NavMainItem[] {
-    if (this.isCliente) {
-      const i = this.mainNavItems.findIndex(x => x.id === 'loja') + 1;
-      return [...this.mainNavItems.slice(0, i), this.carrinhoNavItem, ...this.mainNavItems.slice(i)];
+  /**
+   * Mobile dock — Aurora: 4 abas (Início, Mapa, Loja, Eu) + FAB central.
+   * "Eu" vira "Entrar" para guest. Carrinho NÃO aparece como aba — vai pra mini-bag.
+   */
+  get mobileDockItems(): NavMainItem[] {
+    const homeId = 'galeria';
+    const left: NavMainItem[] = [
+      { id: homeId, label: 'Início', shortLabel: 'Início', link: '/galeria', icon: 'fas fa-fw fa-house', psIcon: 'home' },
+      { id: 'mapa', label: 'Mapa', shortLabel: 'Mapa', link: '/mapa', icon: 'fas fa-fw fa-map-location-dot', psIcon: 'map' },
+    ];
+    const right: NavMainItem[] = [
+      { id: 'loja', label: 'Loja', shortLabel: 'Loja', link: '/', icon: 'fas fa-fw fa-store', psIcon: 'shop' },
+    ];
+    if (this.dockMode === 'guest') {
+      right.push({ id: 'login', label: 'Entrar', shortLabel: 'Entrar', link: '#', icon: 'fas fa-fw fa-right-to-bracket', psIcon: 'login' });
+    } else {
+      right.push({ id: 'esfera', label: 'Minha Esfera', shortLabel: 'Eu', link: '#', icon: 'fas fa-fw fa-user', psIcon: 'person' });
     }
-    return this.mainNavItems;
+    return [...left, ...right];
   }
 
-  /** Dock móvel: carrinho sempre visível; deslogado fica desabilitado (sem navegação). */
-  get mobileNavItems(): NavMainItem[] {
-    const i = this.mainNavItems.findIndex(x => x.id === 'loja') + 1;
-    return [...this.mainNavItems.slice(0, i), this.carrinhoNavItem, ...this.mainNavItems.slice(i)];
-  }
-
-  isMobileCarrinhoDisabled(item: NavMainItem): boolean {
-    return item.id === 'carrinho' && !this.isCliente;
-  }
-
-  isMobileTabHighlighted(item: NavMainItem): boolean {
-    if (this.isMobileCarrinhoDisabled(item)) {
-      return false;
+  /** Dock para vet/parceiro — variante profissional, mesma linguagem visual. */
+  get mobileDockItemsProfessional(): NavMainItem[] {
+    if (this.dockMode === 'vet') {
+      return [
+        { id: 'pacientes', label: 'Pacientes', shortLabel: 'Pacientes', link: '/pacientes', icon: 'fas fa-fw fa-paw', psIcon: 'paw' },
+        { id: 'receitas', label: 'Receitas', shortLabel: 'Receitas', link: '/historico-receitas', icon: 'fas fa-fw fa-file-prescription', psIcon: 'sparkle' },
+        { id: 'gerar', label: 'Nova', shortLabel: 'Nova', link: '/gerar-receita', icon: 'fas fa-fw fa-plus', psIcon: 'sparkle' },
+        { id: 'esfera', label: 'Eu', shortLabel: 'Eu', link: '#', icon: 'fas fa-fw fa-user', psIcon: 'person' },
+      ];
     }
-    return this.isTabHighlighted(item);
+    if (this.dockMode === 'parceiro') {
+      return [
+        { id: 'painel', label: 'Painel', shortLabel: 'Painel', link: '/parceiros/painel', icon: 'fas fa-fw fa-gauge', psIcon: 'home' },
+        { id: 'agenda', label: 'Agenda', shortLabel: 'Agenda', link: '/parceiros/agenda', icon: 'fas fa-fw fa-calendar', psIcon: 'calendar' },
+        { id: 'colab', label: 'Equipe', shortLabel: 'Equipe', link: '/parceiros/colaboradores', icon: 'fas fa-fw fa-users', psIcon: 'person' },
+        { id: 'esfera', label: 'Eu', shortLabel: 'Eu', link: '#', icon: 'fas fa-fw fa-user', psIcon: 'person' },
+      ];
+    }
+    return this.mobileDockItems;
   }
+
+  get activeMobileItems(): NavMainItem[] {
+    return this.dockMode === 'vet' || this.dockMode === 'parceiro'
+      ? this.mobileDockItemsProfessional
+      : this.mobileDockItems;
+  }
+
+  // ─── Quick actions catalog (FAB sheet + radial) ─────────────────────────────
+  readonly quickActionCatalog: Record<DockActionId, QuickAction> = {
+    'agendar':      { id: 'agendar',      label: 'Agendar',         caption: 'Consulta com vet',          link: '/mapa?service=consulta', icon: 'calendar', tone: 'aqua' },
+    'telemedicina': { id: 'telemedicina', label: 'Telemedicina',    caption: 'Consulta online agora',     link: '/mapa?service=telemedicina', icon: 'video', tone: 'aqua' },
+    'buscar-vet':   { id: 'buscar-vet',   label: 'Buscar vet',      caption: 'Veterinários próximos',     link: '/mapa', icon: 'stethoscope', tone: 'aqua' },
+    'comprar':      { id: 'comprar',      label: 'Comprar',         caption: 'Loja Petsphere',            link: '/loja', icon: 'shop', tone: 'aurora' },
+    'hospedagem':   { id: 'hospedagem',   label: 'Hospedagem',      caption: 'Hotéis pet near you',       link: '/mapa?service=hospedagem', icon: 'bed', tone: 'aurora' },
+    'meus-pets':    { id: 'meus-pets',    label: 'Meus pets',       caption: 'Cadastros e carteirinhas',  link: '/meus-pets', icon: 'paw', tone: 'aurora' },
+    'galeria':      { id: 'galeria',      label: 'Galeria pet',     caption: 'Comunidade Petsphere',      link: '/galeria', icon: 'sparkle', tone: 'aurora' },
+  };
+
+  /** Sheet completa: 5 ações ordenadas. */
+  get sheetActions(): QuickAction[] {
+    const ids: DockActionId[] = this.isCliente
+      ? ['agendar', 'telemedicina', 'buscar-vet', 'comprar', 'hospedagem']
+      : ['buscar-vet', 'agendar', 'telemedicina', 'comprar', 'hospedagem'];
+    return ids.map(id => this.quickActionCatalog[id]);
+  }
+
+  // ─── Mini-bag (carrinho contextual flutuante) ───────────────────────────────
+  /** Mostra a mini-bag em rotas de compra com itens. */
+  get isShoppingRoute(): boolean {
+    const p = (this.currentRoute || '').split('?')[0] || '';
+    return p === '/' || p.startsWith('/loja') || p.startsWith('/produto/') || p.startsWith('/favoritos');
+  }
+
+  get showMiniBag(): boolean {
+    if (!this.isCliente) return false;
+    if (this.cartCount <= 0) return false;
+    if ((this.currentRoute || '').startsWith('/carrinho') || (this.currentRoute || '').startsWith('/checkout')) return false;
+    return this.isShoppingRoute;
+  }
+
+  // ─── Existing modal state (Área Cliente) ────────────────────────────────────
   showClienteModal = false;
   clienteLoading = false;
-  /** True while this modal applied overflow lock on html/body (see releaseClienteModalScrollLock). */
   private clienteModalScrollLockActive = false;
   private clienteModalClosing = false;
   private clienteModalCloseTimer: ReturnType<typeof setTimeout> | null = null;
   @ViewChild('clienteHost', { read: ViewContainerRef }) clienteHost?: ViewContainerRef;
   @ViewChild('userBtn', { read: ElementRef }) userBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('desktopTabsTrack', { read: ElementRef }) desktopTabsTrack?: ElementRef<HTMLElement>;
+  @ViewChild('fabBtn', { read: ElementRef }) fabBtn?: ElementRef<HTMLButtonElement>;
+
   private idleTimer: any = null;
-  private readonly idleTimeoutMs = 5000; // 5s sem scroll
-  /** Invalida timers de settle (ex.: após trocar de rota de novo). */
+  private readonly idleTimeoutMs = 5000;
   private tabPillLayoutGen = 0;
   private trackResize: ResizeObserver | null = null;
   private pillLayoutDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -119,11 +197,18 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private cartBadgeBumpTimer: ReturnType<typeof setTimeout> | null = null;
   private cartCountSeenFromStore = false;
   private clienteModalOpenSub?: Subscription;
-  /** Última geometria aplicada ao hori-selector (para diff + FLIP). */
+  private nightSub?: Subscription;
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private longPressFired = false;
   private lastPillMetrics: { left: number; top: number; width: number; height: number; key: string } | null = null;
   private static readonly CLIENTE_MODAL_ENTER_MS = 720;
   private static readonly CLIENTE_MODAL_EXIT_MS = 500;
   private static readonly PILL_DIFF_PX = 0.85;
+  private static readonly LONG_PRESS_MS = 360;
+  /** Histerese do compact: evita piscar com micro-scroll. */
+  private static readonly COMPACT_ENTER_SCROLL_Y = 96;
+  private static readonly COMPACT_EXIT_SCROLL_Y = 44;
+  private static readonly COMPACT_DIRECTION_DELTA_PX = 6;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -131,23 +216,18 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     private store: StoreService,
     private auth: AuthService,
     private cdr: ChangeDetectorRef,
-    private clienteAreaModal: ClienteAreaModalService
+    private clienteAreaModal: ClienteAreaModalService,
+    private haptics: HapticsService,
+    private dockCtx: DockContextService,
   ) {}
 
   ngOnInit(): void {
     this.setCurrentRoutePath(this.router.url);
     this.updateMenuMode();
-    // NavigationStart: atualiza aba e pill logo ao clicar, sem esperar chunk lazy nem APIs da página.
+    this.refreshDockMode();
+
     this.router.events
-      .pipe(
-        filter(
-          e =>
-            e instanceof NavigationStart ||
-            e instanceof NavigationEnd ||
-            e instanceof NavigationCancel ||
-            e instanceof NavigationError
-        )
-      )
+      .pipe(filter(e => e instanceof NavigationStart || e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError))
       .subscribe(event => {
         if (event instanceof NavigationCancel || event instanceof NavigationError) {
           this.selectedMainTabId = null;
@@ -156,12 +236,16 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         if (event instanceof NavigationStart) {
           this.setCurrentRoutePath(event.url);
           this.updateMenuMode();
+          this.refreshDockMode();
+          this.recomputeRibbon();
           this.cdr.detectChanges();
           this.scheduleTabPillUpdate();
         } else {
           const ne = event as NavigationEnd;
           this.setCurrentRoutePath(ne.urlAfterRedirects);
           this.updateMenuMode();
+          this.refreshDockMode();
+          this.recomputeRibbon();
           this.selectedMainTabId = null;
           this.scheduleTabPillUpdate();
         }
@@ -170,21 +254,48 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.store.cart$.subscribe(items => {
       const next = items.reduce((n, it) => n + it.quantity, 0);
       const prev = this.cartCount;
-      if (this.cartCountSeenFromStore && next > prev) {
-        this.triggerCartBadgeBump();
-      }
+      if (this.cartCountSeenFromStore && next > prev) this.triggerCartBadgeBump();
       this.cartCount = next;
+      try { this.cartTotal = this.store.getCartTotals().total || 0; } catch {}
       this.cartCountSeenFromStore = true;
+      this.recomputeRibbon();
       this.scheduleTabPillUpdate();
     });
 
-    this.clienteModalOpenSub = this.clienteAreaModal.openRequests$.subscribe((view) => {
+    this.clienteModalOpenSub = this.clienteAreaModal.openRequests$.subscribe(view => {
       this.abrirClienteModal(view || undefined);
     });
 
-    this.isCliente = false;
-    this.user = null;
-    this.userFoto = null;
+    this.nightSub = this.dockCtx.night$.subscribe(n => {
+      this.isNight = n;
+      this.cdr.detectChanges();
+    });
+
+    this.refreshUser();
+    this.auth.isLoggedIn$.subscribe(async ok => {
+      if (ok) {
+        this.isCliente = await this.store.isClienteLoggedSilent().catch(() => false);
+        this.refreshDockMode();
+        this.scheduleTabPillUpdate();
+        await this.loadUserProfileIfNeeded();
+      } else {
+        this.isCliente = false;
+        this.user = null;
+        this.userFoto = null;
+        if (typeof window !== 'undefined' && window.localStorage) localStorage.removeItem('cliente_me');
+        this.refreshDockMode();
+        this.scheduleTabPillUpdate();
+      }
+      this.recomputeRibbon();
+    });
+
+    this.radialActions = this.dockCtx
+      .topActions(4, ['agendar', 'telemedicina', 'buscar-vet', 'comprar'])
+      .map(id => this.quickActionCatalog[id]);
+  }
+
+  // ─── User load helpers ──────────────────────────────────────────────────────
+  private async loadUserProfileIfNeeded(): Promise<void> {
     let localUserLoaded = false;
     if (typeof window !== 'undefined' && window.localStorage) {
       const userStr = localStorage.getItem('cliente_me');
@@ -192,133 +303,12 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         try {
           const userObj = JSON.parse(userStr);
           this.user = userObj;
-          this.userFoto = userObj?.user?.foto || null;
+          this.userFoto = userObj?.user?.foto || userObj?.foto || null;
           localUserLoaded = true;
         } catch {}
       }
     }
-    this.store.isClienteLoggedSilent()
-      .then(ok => {
-        this.isCliente = ok;
-        this.scheduleTabPillUpdate();
-        if (ok && !localUserLoaded) {
-          this.store.getClienteMe().then(u => {
-            this.user = u;
-            this.userFoto = u?.foto || null;
-            if (typeof window !== 'undefined' && window.localStorage && u) {
-              localStorage.setItem('cliente_me', JSON.stringify(u));
-            }
-          }).catch(() => {
-            this.user = null;
-            this.userFoto = null;
-          });
-        }
-      })
-      .catch(() => {
-        this.isCliente = false;
-        this.user = null;
-        this.userFoto = null;
-        this.scheduleTabPillUpdate();
-      });
-    this.auth.isLoggedIn$.subscribe(async ok => {
-      if (ok) {
-        this.isCliente = await this.store.isClienteLoggedSilent().catch(() => false);
-        this.scheduleTabPillUpdate();
-        let localUserLoaded = false;
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const userStr = localStorage.getItem('cliente_me');
-          if (userStr) {
-            try {
-              const userObj = JSON.parse(userStr);
-              this.user = userObj;
-              this.userFoto = userObj?.user?.foto || null;
-              localUserLoaded = true;
-            } catch {}
-          }
-        }
-        if (this.isCliente && !localUserLoaded) {
-          this.store.getClienteMe().then(u => {
-            this.user = u;
-            this.userFoto = u?.foto || null;
-            if (typeof window !== 'undefined' && window.localStorage && u) {
-              localStorage.setItem('cliente_me', JSON.stringify(u));
-            }
-          }).catch(() => {
-            this.user = null;
-            this.userFoto = null;
-          });
-        }
-      } else {
-        this.isCliente = false;
-        this.user = null;
-        this.userFoto = null;
-        if (typeof window !== 'undefined' && window.localStorage) {
-          localStorage.removeItem('cliente_me');
-        }
-        this.scheduleTabPillUpdate();
-      }
-    });
-  }
-
-  /** path sem query; usado no Start e no End para a navbar não depender do fim do carregamento. */
-  private setCurrentRoutePath(url: string): void {
-    this.currentRoute = (url || '').split('?')[0] || '';
-  }
-
-  /** Clique síncrono na aba: destaque e pill antes do lazy load / API da página. */
-  onMainTabClick(tabId: string): void {
-    this.selectedMainTabId = tabId;
-    this.cdr.detectChanges();
-    this.scheduleTabPillUpdate();
-  }
-
-  private triggerCartBadgeBump(): void {
-    if (this.cartBadgeBumpTimer) {
-      clearTimeout(this.cartBadgeBumpTimer);
-    }
-    this.cartBadgeBumping = true;
-    this.cdr.detectChanges();
-    this.cartBadgeBumpTimer = setTimeout(() => {
-      this.cartBadgeBumping = false;
-      this.cartBadgeBumpTimer = null;
-      this.cdr.detectChanges();
-    }, 500);
-  }
-
-  /** Destaque da aba: intenção do utilizador tem prioridade sobre isNavActive até NavigationEnd. */
-  isTabHighlighted(item: NavMainItem): boolean {
-    if (this.selectedMainTabId != null && this.selectedMainTabId !== '') {
-      return item.id === this.selectedMainTabId;
-    }
-    return this.isNavActive(item);
-  }
-
-  isNavActive(item: NavMainItem): boolean {
-    const path = (this.currentRoute || '').split('?')[0] || '';
-    switch (item.id) {
-      case 'loja':
-        return (
-          path === '/' ||
-          path.startsWith('/loja') ||
-          path.startsWith('/produto/') ||
-          path.startsWith('/favoritos') ||
-          path.startsWith('/checkout')
-        );
-      case 'sobre':
-        return path.startsWith('/sobre-nos');
-      case 'mapa':
-        return path.startsWith('/mapa');
-      case 'galeria':
-        return path.startsWith('/galeria');
-      case 'carrinho':
-        return path.startsWith('/carrinho');
-      default:
-        return false;
-    }
-  }
-
-  async atualizarClienteMe() {
-    if (this.isCliente) {
+    if (this.isCliente && !localUserLoaded) {
       try {
         const u = await this.store.getClienteMe();
         this.user = u;
@@ -333,6 +323,241 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private refreshUser(): void {
+    this.isCliente = false;
+    this.user = null;
+    this.userFoto = null;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const userStr = localStorage.getItem('cliente_me');
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          this.user = userObj;
+          this.userFoto = userObj?.user?.foto || userObj?.foto || null;
+        } catch {}
+      }
+    }
+    this.store.isClienteLoggedSilent()
+      .then(async ok => {
+        this.isCliente = ok;
+        this.refreshDockMode();
+        this.scheduleTabPillUpdate();
+        if (ok) await this.loadUserProfileIfNeeded();
+        this.recomputeRibbon();
+      })
+      .catch(() => {
+        this.isCliente = false;
+        this.user = null;
+        this.userFoto = null;
+        this.refreshDockMode();
+        this.scheduleTabPillUpdate();
+      });
+  }
+
+  // ─── Mode resolution ────────────────────────────────────────────────────────
+  private refreshDockMode(): void {
+    const next = this.dockCtx.resolveModeFromRoute(this.currentRoute, this.isCliente);
+    if (next !== this.dockMode) {
+      this.dockMode = next;
+      this.dockCtx.setMode(next);
+      this.cdr.detectChanges();
+      this.scheduleTabPillUpdate();
+    }
+  }
+
+  // ─── Live Context Ribbon ────────────────────────────────────────────────────
+  private recomputeRibbon(): void {
+    if (this.dockMode === 'guest' || this.dockMode === 'vet' || this.dockMode === 'parceiro') {
+      this.liveRibbon = null;
+      return;
+    }
+    if (this.cartCount > 0 && this.isShoppingRoute) {
+      this.liveRibbon = {
+        kind: 'cart',
+        text: `${this.cartCount} ${this.cartCount === 1 ? 'item' : 'itens'} · ${this.formatCurrency(this.cartTotal)}`,
+        cta: 'Finalizar',
+        link: '/carrinho',
+      };
+      return;
+    }
+    this.liveRibbon = null;
+  }
+
+  private formatCurrency(v: number): string {
+    try {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    } catch {
+      return `R$ ${(v || 0).toFixed(2)}`;
+    }
+  }
+
+  onLiveRibbonClick(): void {
+    if (!this.liveRibbon?.link) return;
+    this.haptics.light();
+    this.router.navigateByUrl(this.liveRibbon.link);
+  }
+
+  // ─── Route helpers ──────────────────────────────────────────────────────────
+  private setCurrentRoutePath(url: string): void {
+    this.currentRoute = (url || '').split('?')[0] || '';
+  }
+
+  onMainTabClick(tabId: string): void {
+    this.selectedMainTabId = tabId;
+    this.haptics.selection();
+    this.cdr.detectChanges();
+    this.scheduleTabPillUpdate();
+  }
+
+  /** Item especial: Esfera (perfil) ou Login. Não navega — abre modal. */
+  onMobileItemActivate(item: NavMainItem, ev?: Event): void {
+    if (item.id === 'esfera' || item.id === 'login') {
+      ev?.preventDefault();
+      this.haptics.light();
+      this.abrirClienteModal();
+      return;
+    }
+    this.onMainTabClick(item.id);
+  }
+
+  isMobileTabHighlighted(item: NavMainItem): boolean {
+    if (item.id === 'esfera' || item.id === 'login') return false;
+    return this.isTabHighlighted(item);
+  }
+
+  isTabHighlighted(item: NavMainItem): boolean {
+    if (this.selectedMainTabId != null && this.selectedMainTabId !== '') return item.id === this.selectedMainTabId;
+    return this.isNavActive(item);
+  }
+
+  isNavActive(item: NavMainItem): boolean {
+    const path = (this.currentRoute || '').split('?')[0] || '';
+    switch (item.id) {
+      case 'loja':       return path === '/' || path.startsWith('/loja') || path.startsWith('/produto/') || path.startsWith('/favoritos') || path.startsWith('/checkout');
+      case 'sobre':      return path.startsWith('/sobre-nos');
+      case 'mapa':       return path.startsWith('/mapa');
+      case 'galeria':    return path.startsWith('/galeria');
+      case 'carrinho':   return path.startsWith('/carrinho');
+      case 'pacientes':  return path.startsWith('/pacientes');
+      case 'receitas':   return path.startsWith('/historico-receitas');
+      case 'gerar':      return path.startsWith('/gerar-receita');
+      case 'painel':     return path.startsWith('/parceiros/painel');
+      case 'agenda':     return path.startsWith('/parceiros/agenda');
+      case 'colab':      return path.startsWith('/parceiros/colaboradores');
+      default: return false;
+    }
+  }
+
+  /**
+   * Mantido para compatibilidade com top-bar desktop. Carrinho ainda aparece lá
+   * para clientes logados (entre Loja e Sobre).
+   */
+  get visibleNavItems(): NavMainItem[] {
+    if (this.isCliente) {
+      const i = this.mainNavItems.findIndex(x => x.id === 'loja') + 1;
+      return [...this.mainNavItems.slice(0, i), this.carrinhoNavItem, ...this.mainNavItems.slice(i)];
+    }
+    return this.mainNavItems;
+  }
+
+  // ─── FAB: tap → bottom sheet, long-press → radial menu ──────────────────────
+  onFabPointerDown(ev: PointerEvent): void {
+    ev.preventDefault();
+    this.longPressFired = false;
+    if (this.longPressTimer) clearTimeout(this.longPressTimer);
+    this.longPressTimer = setTimeout(() => {
+      this.longPressFired = true;
+      this.openRadial();
+    }, NavmenuComponent.LONG_PRESS_MS);
+  }
+
+  onFabPointerUp(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+    if (this.longPressFired) {
+      this.longPressFired = false;
+      return;
+    }
+    this.openSheet();
+  }
+
+  onFabPointerCancel(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+    this.longPressFired = false;
+  }
+
+  openSheet(): void {
+    if (this.isSheetOpen) return;
+    this.haptics.medium();
+    this.isSheetOpen = true;
+    this.applyBodyScrollLock();
+    this.cdr.detectChanges();
+  }
+
+  closeSheet(): void {
+    if (!this.isSheetOpen) return;
+    this.isSheetOpen = false;
+    this.releaseBodyScrollLock();
+    this.cdr.detectChanges();
+  }
+
+  openRadial(): void {
+    if (this.isRadialOpen) return;
+    this.haptics.heavy();
+    this.radialActions = this.dockCtx
+      .topActions(4, ['agendar', 'telemedicina', 'buscar-vet', 'comprar'])
+      .map(id => this.quickActionCatalog[id]);
+    this.isRadialOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeRadial(): void {
+    if (!this.isRadialOpen) return;
+    this.isRadialOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  triggerQuickAction(action: QuickAction, source: 'sheet' | 'radial'): void {
+    this.haptics.light();
+    this.dockCtx.registerAction(action.id);
+    if (source === 'sheet') this.closeSheet();
+    if (source === 'radial') this.closeRadial();
+    setTimeout(() => this.router.navigateByUrl(action.link), 60);
+  }
+
+  private applyBodyScrollLock(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try { document.body.style.overflow = 'hidden'; } catch {}
+  }
+  private releaseBodyScrollLock(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try { document.body.style.overflow = ''; } catch {}
+  }
+
+  // ─── Mini-bag ───────────────────────────────────────────────────────────────
+  onMiniBagClick(): void {
+    this.haptics.light();
+    this.router.navigateByUrl('/carrinho');
+  }
+
+  // ─── Cart badge bump ────────────────────────────────────────────────────────
+  private triggerCartBadgeBump(): void {
+    if (this.cartBadgeBumpTimer) clearTimeout(this.cartBadgeBumpTimer);
+    this.cartBadgeBumping = true;
+    this.cdr.detectChanges();
+    this.cartBadgeBumpTimer = setTimeout(() => {
+      this.cartBadgeBumping = false;
+      this.cartBadgeBumpTimer = null;
+      this.cdr.detectChanges();
+    }, 500);
+  }
+
+  // ─── Lifecycle ──────────────────────────────────────────────────────────────
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.initMetaBalls();
@@ -344,13 +569,29 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const currentScroll = window.scrollY;
-      this.isVisible = currentScroll < this.previousScroll || currentScroll <= 0;
-      this.previousScroll = currentScroll;
-      this.resetIdleTimer();
-      this.requestPillLayoutFromScroll();
+    if (!isPlatformBrowser(this.platformId)) return;
+    const currentScroll = window.scrollY;
+    const delta = currentScroll - this.previousScroll;
+    const goingDown = delta > NavmenuComponent.COMPACT_DIRECTION_DELTA_PX;
+    const goingUp = delta < -NavmenuComponent.COMPACT_DIRECTION_DELTA_PX;
+    // Top bar (desktop) — esconde como antes
+    this.isVisible = !goingDown || currentScroll <= 0;
+    // Mobile dock — histerese: entra só depois de descer bem, sai com folga.
+    if (!this.isCompact) {
+      if (goingDown && currentScroll >= NavmenuComponent.COMPACT_ENTER_SCROLL_Y) {
+        this.isCompact = true;
+      }
+    } else {
+      if (
+        currentScroll <= NavmenuComponent.COMPACT_EXIT_SCROLL_Y ||
+        (goingUp && currentScroll < NavmenuComponent.COMPACT_ENTER_SCROLL_Y)
+      ) {
+        this.isCompact = false;
+      }
     }
+    this.previousScroll = currentScroll;
+    this.resetIdleTimer();
+    this.requestPillLayoutFromScroll();
   }
 
   @HostListener('window:resize', [])
@@ -359,31 +600,28 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.requestPillLayoutFromScroll();
   }
 
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(_e: KeyboardEvent): void {
+    if (this.isSheetOpen) this.closeSheet();
+    else if (this.isRadialOpen) this.closeRadial();
+  }
+
   private updateMenuMode(): void {
     this.showFullMenu = this.showSlideMenu;
     this.scheduleTabPillUpdate();
-    if (isPlatformBrowser(this.platformId)) {
-      setTimeout(() => this.rebindTabsTrackResizeObserver(), 0);
-    }
+    if (isPlatformBrowser(this.platformId)) setTimeout(() => this.rebindTabsTrackResizeObserver(), 0);
   }
 
-  /** Chamar quando o track de desktop for criado/destroi (ex. *ngIf="showFullMenu"). */
   private rebindTabsTrackResizeObserver(): void {
     this.trackResize?.disconnect();
     this.trackResize = null;
     if (!isPlatformBrowser(this.platformId) || typeof ResizeObserver === 'undefined') return;
     const track = this.desktopTabsTrack?.nativeElement;
     if (!track) return;
-    this.trackResize = new ResizeObserver(() => {
-      this.requestPillLayoutFromScroll();
-    });
+    this.trackResize = new ResizeObserver(() => this.requestPillLayoutFromScroll());
     this.trackResize.observe(track);
   }
 
-  /**
-   * Scroll/resize/ResizeObserver: um único passo (debounce) e sem FLIP, para não reatribuir left/width
-   * ponto a ponto (evitava “recomeçar” a animação a cada 1px).
-   */
   private requestPillLayoutFromScroll(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     if (this.pillLayoutDebounce) clearTimeout(this.pillLayoutDebounce);
@@ -396,24 +634,14 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private scheduleTabPillUpdate(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     const session = ++this.tabPillLayoutGen;
-    if (this.menubarSettleTimer) {
-      clearTimeout(this.menubarSettleTimer);
-      this.menubarSettleTimer = null;
-    }
-    if (this.pillLayoutDebounce) {
-      clearTimeout(this.pillLayoutDebounce);
-      this.pillLayoutDebounce = null;
-    }
-    if (this.pillFlipClearTimer) {
-      clearTimeout(this.pillFlipClearTimer);
-      this.pillFlipClearTimer = null;
-    }
+    if (this.menubarSettleTimer) { clearTimeout(this.menubarSettleTimer); this.menubarSettleTimer = null; }
+    if (this.pillLayoutDebounce) { clearTimeout(this.pillLayoutDebounce); this.pillLayoutDebounce = null; }
+    if (this.pillFlipClearTimer) { clearTimeout(this.pillFlipClearTimer); this.pillFlipClearTimer = null; }
     setTimeout(() => {
       if (session !== this.tabPillLayoutGen) return;
       this.cdr.detectChanges();
       this.applyDesktopPillFromDom({ allowFlip: true, force: true });
     }, 0);
-    // Pós-anim. da menubar (.hidden) — re-medida com force, sem FLIP, para Sobre>Mapa etc.
     this.menubarSettleTimer = setTimeout(() => {
       this.menubarSettleTimer = null;
       if (session !== this.tabPillLayoutGen) return;
@@ -422,23 +650,17 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Posiciona o hori-selector: diff guard, FLIP em troca de aba, sem varrer left/width em rajada.
+   * Posiciona o hori-selector (desktop top bar) com FLIP. Mantida — funciona
+   * bem e dá identidade ao top bar. Agora estilizada como "liquid glass".
    */
   private applyDesktopPillFromDom(opts: { allowFlip: boolean; force: boolean }): void {
     const track = this.desktopTabsTrack?.nativeElement;
-    if (!track || !this.showFullMenu) {
-      this.lastPillMetrics = null;
-      return;
-    }
+    if (!track || !this.showFullMenu) { this.lastPillMetrics = null; return; }
     const selector = track.querySelector('.hori-selector') as HTMLElement | null;
-    if (!selector) {
-      return;
-    }
+    if (!selector) return;
     const active = track.querySelector('li.nav-tab-item.active a.nav-tab-link') as HTMLElement | null;
     if (!active) {
-      if (this.lastPillMetrics) {
-        selector.style.opacity = '0';
-      }
+      if (this.lastPillMetrics) selector.style.opacity = '0';
       this.lastPillMetrics = null;
       return;
     }
@@ -454,44 +676,20 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const last = this.lastPillMetrics;
     if (last) {
-      const d = Math.max(
-        Math.abs(last.left - left),
-        Math.abs(last.top - top),
-        Math.abs(last.width - w),
-        Math.abs(last.height - h)
-      );
-      if (!opts.force && d < NavmenuComponent.PILL_DIFF_PX && last.key === key) {
-        return;
-      }
+      const d = Math.max(Math.abs(last.left - left), Math.abs(last.top - top), Math.abs(last.width - w), Math.abs(last.height - h));
+      if (!opts.force && d < NavmenuComponent.PILL_DIFF_PX && last.key === key) return;
     }
 
     if (!opts.allowFlip) {
-      if (this.pillFlipClearTimer) {
-        clearTimeout(this.pillFlipClearTimer);
-        this.pillFlipClearTimer = null;
-      }
-      try {
-        selector.style.removeProperty('transform');
-        selector.style.removeProperty('transition');
-      } catch {
-        // ignore
-      }
+      if (this.pillFlipClearTimer) { clearTimeout(this.pillFlipClearTimer); this.pillFlipClearTimer = null; }
+      try { selector.style.removeProperty('transform'); selector.style.removeProperty('transition'); } catch {}
     }
 
-    if (
-      opts.allowFlip &&
-      last &&
-      key &&
-      last.key &&
-      key !== last.key
-    ) {
+    if (opts.allowFlip && last && key && last.key && key !== last.key) {
       const dx = last.left - left;
       const dy = last.top - top;
       if (Math.hypot(dx, dy) > 1) {
-        if (this.pillFlipClearTimer) {
-          clearTimeout(this.pillFlipClearTimer);
-          this.pillFlipClearTimer = null;
-        }
+        if (this.pillFlipClearTimer) { clearTimeout(this.pillFlipClearTimer); this.pillFlipClearTimer = null; }
         selector.style.transition = 'none';
         selector.style.left = `${left}px`;
         selector.style.top = `${top}px`;
@@ -506,28 +704,15 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
           selector.style.transform = 'translate(0, 0)';
           this.pillFlipClearTimer = setTimeout(() => {
             this.pillFlipClearTimer = null;
-            try {
-              selector.style.removeProperty('transform');
-              selector.style.removeProperty('transition');
-            } catch {
-              // ignore
-            }
+            try { selector.style.removeProperty('transform'); selector.style.removeProperty('transition'); } catch {}
           }, 500);
         });
         return;
       }
     }
 
-    if (this.pillFlipClearTimer) {
-      clearTimeout(this.pillFlipClearTimer);
-      this.pillFlipClearTimer = null;
-    }
-    try {
-      selector.style.removeProperty('transform');
-      selector.style.removeProperty('transition');
-    } catch {
-      // ignore
-    }
+    if (this.pillFlipClearTimer) { clearTimeout(this.pillFlipClearTimer); this.pillFlipClearTimer = null; }
+    try { selector.style.removeProperty('transform'); selector.style.removeProperty('transition'); } catch {}
     selector.style.left = `${left}px`;
     selector.style.top = `${top}px`;
     selector.style.width = `${w}px`;
@@ -536,6 +721,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.lastPillMetrics = { left, top, width: w, height: h, key: key || last?.key || '' };
   }
 
+  // ─── Cliente Modal (mantido) ────────────────────────────────────────────────
   private applyClienteModalScrollLock(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     try {
@@ -549,10 +735,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.clienteModalScrollLockActive) return;
     this.clienteModalScrollLockActive = false;
-    try {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    } catch {}
+    try { document.documentElement.style.overflow = ''; document.body.style.overflow = ''; } catch {}
   }
 
   private clearClienteModalCloseTimer(): void {
@@ -613,6 +796,7 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
       this.clienteLoading = false;
     }
   }
+
   fecharClienteModal() {
     if (!this.showClienteModal || this.clienteModalClosing) return;
     this.clienteModalClosing = true;
@@ -635,46 +819,36 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     try { this.clienteModalOpenSub?.unsubscribe(); } catch {}
+    try { this.nightSub?.unsubscribe(); } catch {}
     if (this.idleTimer) clearTimeout(this.idleTimer);
     if (this.pillLayoutDebounce) clearTimeout(this.pillLayoutDebounce);
     if (this.menubarSettleTimer) clearTimeout(this.menubarSettleTimer);
     if (this.pillFlipClearTimer) clearTimeout(this.pillFlipClearTimer);
-    if (this.cartBadgeBumpTimer) {
-      clearTimeout(this.cartBadgeBumpTimer);
-      this.cartBadgeBumpTimer = null;
-    }
+    if (this.cartBadgeBumpTimer) { clearTimeout(this.cartBadgeBumpTimer); this.cartBadgeBumpTimer = null; }
+    if (this.longPressTimer) clearTimeout(this.longPressTimer);
     this.trackResize?.disconnect();
     this.trackResize = null;
     this.tabPillLayoutGen += 1;
     this.clearClienteModalCloseTimer();
     this.releaseClienteModalScrollLock();
+    this.releaseBodyScrollLock();
   }
 
   private resetIdleTimer(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     if (this.idleTimer) clearTimeout(this.idleTimer);
     const currentScroll = window.scrollY || 0;
-    if (currentScroll <= 0){
-      this.isVisible = true;
-      return;
-    }
-    this.idleTimer = setTimeout(() => {
-      this.isVisible = false;
-    }, this.idleTimeoutMs);
+    if (currentScroll <= 0) { this.isVisible = true; this.isCompact = false; return; }
+    this.idleTimer = setTimeout(() => { this.isVisible = false; }, this.idleTimeoutMs);
   }
 
   private initMetaBalls(): void {
-  const wrapper = document.querySelector('.logo-container #wrapper') as HTMLElement | null;
-  if (!wrapper) return;
-  const ball = wrapper.querySelector('#ball') as HTMLElement | null;
+    const wrapper = document.querySelector('.logo-container #wrapper') as HTMLElement | null;
+    if (!wrapper) return;
+    const ball = wrapper.querySelector('#ball') as HTMLElement | null;
     if (!ball) return;
-
     let i = 0;
-    const raf = () => {
-      if (i % 25 === 0) createBall();
-      i++;
-      requestAnimationFrame(raf);
-    };
+    const raf = () => { if (i % 25 === 0) createBall(); i++; requestAnimationFrame(raf); };
     requestAnimationFrame(raf);
 
     function createBall() {
@@ -695,32 +869,12 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
         c = (c * 100 / 150) / 100;
         c = 1 - c;
         gsap.set(ball1, { x: 0, y: 0, scale: 1 });
-        gsap.to(ball1, {
-          duration: 3,
-          x: aleaX,
-          y: aleaY,
-          scale: c,
-          ease: 'bounce.in',
-          delay: 0.5,
-          onComplete: () => ballMove(ball1)
-        });
+        gsap.to(ball1, { duration: 3, x: aleaX, y: aleaY, scale: c, ease: 'bounce.in', delay: 0.5, onComplete: () => ballMove(ball1) });
       }, 300);
     }
-
-    function destroy(elem: HTMLElement) {
-      if (!wrapper) return;
-      if (elem.parentElement === wrapper) wrapper.removeChild(elem);
-    }
-
+    function destroy(elem: HTMLElement) { if (!wrapper) return; if (elem.parentElement === wrapper) wrapper.removeChild(elem); }
     function ballMove(elem: HTMLElement) {
-      gsap.to(elem, {
-        duration: 2,
-        x: 0,
-        y: 0,
-        scale: 0.7,
-        ease: 'power2.inOut',
-        onComplete: () => destroy(elem)
-      });
+      gsap.to(elem, { duration: 2, x: 0, y: 0, scale: 0.7, ease: 'power2.inOut', onComplete: () => destroy(elem) });
     }
   }
 }

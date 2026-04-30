@@ -10,6 +10,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -119,6 +120,10 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.formBasico = this.fb.group({
       nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
+      loja_slug: [
+        '',
+        [Validators.required, Validators.minLength(3), Validators.maxLength(63), Validators.pattern(/^[a-z0-9]+(-[a-z0-9]+)*$/)],
+      ],
       tipo: ['', Validators.required],
       cnpj: ['', [cnpjValidator]],
       telefone: ['', [Validators.required, Validators.minLength(14)]],
@@ -176,10 +181,24 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
     if (step < this.currentStep) this.currentStep = step;
   }
 
-  nextStep(): void {
+  async nextStep(): Promise<void> {
     if (this.currentStep === 1) {
       this.submittedBasico = true;
       if (this.formBasico.invalid) { this.formBasico.markAllAsTouched(); this.toast.error('Verifique os campos destacados.'); return; }
+      const slugRaw = String(this.formBasico.get('loja_slug')?.value || '').trim();
+      try {
+        const r = await firstValueFrom(this.api.checkLojaSlugDisponivel(slugRaw));
+        if (!r?.disponivel) {
+          this.toast.error(r?.motivo || 'Este endereço da loja já está em uso.');
+          return;
+        }
+        if (r.slugNormalizado) {
+          this.formBasico.patchValue({ loja_slug: r.slugNormalizado }, { emitEvent: false });
+        }
+      } catch {
+        this.toast.error('Não foi possível verificar o nome da loja. Tente novamente.');
+        return;
+      }
     }
     if (this.currentStep === 2) {
       this.submittedEndereco = true;
@@ -282,6 +301,7 @@ export class ParceiroCadastroComponent implements OnInit, OnDestroy {
 
     const payload: any = {
       nome: b.nome?.trim(),
+      loja_slug: String(b.loja_slug || '').trim().toLowerCase(),
       tipo: b.tipo,
       email,
       telefone: onlyDigitsFn(b.telefone),

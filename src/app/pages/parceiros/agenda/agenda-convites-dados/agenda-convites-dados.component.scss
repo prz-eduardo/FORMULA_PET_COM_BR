@@ -1,0 +1,84 @@
+.wrap {
+  margin-bottom: 0.75rem;
+}
+
+.toggle {
+  background: transparent;
+  border: 1px solid var(--ac-border, #ccc);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.panel {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ac-border, #ddd);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 420px;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--ac-muted, #666);
+  margin: 0;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+input,
+select {
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.primary {
+  align-self: flex-start;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--ac-primary, #2563eb);
+  color: #fff;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.err {
+  color: #b91c1c;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.token {
+  font-size: 0.8rem;
+  word-break: break-all;
+  margin: 0;
+}
+
+code {
+  font-size: 0.75rem;
+}
+
+.perm-list {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.perm-list ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}

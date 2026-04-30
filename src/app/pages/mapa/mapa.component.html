@@ -125,18 +125,6 @@
                 (click)="closeMapSearchUi()"
                 aria-label="Fechar busca">✕</button>
             </div>
-            <nav class="service-tabs" role="tablist" aria-label="Serviços">
-              <button *ngFor="let t of tabs"
-                (click)="select(t.id)"
-                [class.active]="active===t.id"
-                role="tab"
-                [attr.aria-selected]="(active===t.id) ? 'true' : 'false'"
-                [attr.aria-controls]="'panel-' + t.id">
-                <img [src]="getTabIcon(t)" class="tab-icon" alt="" aria-hidden="true" />
-                <span class="tab-label">{{ t.label }}</span>
-                <span class="tab-count" *ngIf="active===t.id && partners?.length">{{ partners.length }}</span>
-              </button>
-            </nav>
             <div class="mapa-search-fab-col" *ngIf="!mapSearchUiOpen">
               <div class="mapa-top-fab-row">
                 <button
@@ -316,16 +304,48 @@
     <!-- ======================================================= MAPA -->
     <section class="map-area">
       <div class="map-frame-wrap">
-        <!-- Legenda: desktop (topo) | mobile (chips no canto inferior do mapa) -->
-        <div *ngIf="!isMobileMapLayout" class="map-legend" aria-hidden="true">
-          <div class="legend-item">
-            <img src="/icones/pin-pata.svg" alt="" />
-            <span>{{ marcaNome }}</span>
-          </div>
-          <span class="legend-divider"></span>
-          <div class="legend-item paw">
-            <img src="/icones/paw.png" alt="" />
-            <span>Parceiros</span>
+        <div *ngIf="tenantLoja.isTenantLoja()" class="map-vista-toggle" role="group" aria-label="Vista do mapa">
+          <button
+            type="button"
+            class="map-vista-toggle__btn"
+            [class.map-vista-toggle__btn--on]="mapSphereView === 'parceiros'"
+            (click)="setMapSphereView('parceiros')">
+            Parceiro
+          </button>
+          <button
+            type="button"
+            class="map-vista-toggle__btn"
+            [class.map-vista-toggle__btn--on]="mapSphereView === 'petsphere'"
+            (click)="setMapSphereView('petsphere')">
+            PetSphere
+          </button>
+        </div>
+        <!-- Camadas do mapa: pills (desktop e mobile) -->
+        <div
+          *ngIf="!isMobileMapLayout"
+          class="map-legend map-legend--desktop"
+          role="group"
+          aria-label="Camadas do mapa">
+          <div class="map-legend-pills" role="toolbar">
+            <button
+              type="button"
+              class="map-legend-pill"
+              [class.map-legend-pill--on]="mapShowPharmacy"
+              [attr.aria-pressed]="mapShowPharmacy"
+              (click)="toggleMapShowPharmacy()">
+              <img src="/icones/pin-pata.svg" alt="" />
+              <span class="map-legend-pill__text">{{ marcaNome }}</span>
+            </button>
+            <button
+              *ngFor="let t of mapTabsForPills(); trackBy: trackTabId"
+              type="button"
+              class="map-legend-pill map-legend-pill--paw"
+              [class.map-legend-pill--on]="isCategoryMapVisible(t.id)"
+              [attr.aria-pressed]="isCategoryMapVisible(t.id)"
+              (click)="toggleMapCategory(t.id)">
+              <img [src]="getTabIcon(t)" alt="" />
+              <span class="map-legend-pill__text">{{ t.label }}</span>
+            </button>
           </div>
         </div>
         <div *ngIf="isMobileMapLayout" class="map-legend map-legend--mobile" [class.map-legend--mobile-open]="resultsAccordionOpen" role="group" aria-label="Camadas do mapa">

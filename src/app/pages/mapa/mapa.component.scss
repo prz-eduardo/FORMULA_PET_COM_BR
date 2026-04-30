@@ -754,6 +754,15 @@
 .map-legend--mobile.map-legend--mobile {
   pointer-events: auto;
 }
+
+/* Desktop: mesmas pills da legenda mobile (clicáveis) */
+.map-legend--desktop {
+  pointer-events: auto;
+  flex-wrap: wrap;
+  max-width: min(560px, calc(100% - 28px));
+  align-items: flex-start;
+}
+
 .map-legend-pills {
   display: flex;
   flex-wrap: wrap;
@@ -1172,12 +1181,6 @@
     border-radius: 8px;
   }
 
-  .map-sidebar-top .service-tabs,
-  .map-sidebar-toprow .service-tabs {
-    flex: 1;
-    min-width: 0;
-  }
-
   .map-sidebar-top .filters {
     margin-bottom: 0;
     padding: 0;
@@ -1393,6 +1396,31 @@
   .hero-title { font-size: 23px; }
   .farmacia-name { font-size: 16px; }
   .farmacia-address { font-size: 12.5px; }
+}
+
+.map-vista-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin: 0 0 10px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--fp-border, rgba(15, 23, 42, 0.08));
+}
+.map-vista-toggle__btn {
+  border: 0;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fp-ink-soft, #475569);
+  cursor: pointer;
+}
+.map-vista-toggle__btn--on {
+  background: #fff;
+  color: var(--fp-ink, #0f172a);
+  box-shadow: var(--fp-shadow-sm, 0 4px 12px rgba(15, 23, 42, 0.08));
 }
 
 /* ==========================================================================

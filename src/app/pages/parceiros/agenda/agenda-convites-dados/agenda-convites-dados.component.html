@@ -1,0 +1,48 @@
+<div class="wrap">
+  <button type="button" class="toggle" (click)="toggle()">
+    {{ expanded() ? 'Fechar' : 'Solicitar acesso aos dados do tutor' }}
+  </button>
+
+  @if (expanded()) {
+    <div class="panel">
+      <p class="hint">
+        Registra um convite por e-mail. O tutor aceita em uma página com o link que contém o token
+        (envio automático de e-mail pode estar pendente no servidor).
+      </p>
+      <label>
+        <span>E-mail do tutor</span>
+        <input type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" placeholder="tutor@email.com" />
+      </label>
+      <label>
+        <span>Escopo</span>
+        <select [ngModel]="escopo()" (ngModelChange)="escopo.set($event)">
+          <option value="dados_basicos">Dados básicos (nome e contato)</option>
+          <option value="pets">Incluir pets</option>
+          <option value="completo">Completo</option>
+        </select>
+      </label>
+      <button type="button" class="primary" (click)="enviar()" [disabled]="loading()">
+        {{ loading() ? 'Enviando…' : 'Registrar convite' }}
+      </button>
+      @if (error()) {
+        <p class="err">{{ error() }}</p>
+      }
+      @if (tokenHint()) {
+        <p class="token">
+          Token gerado (monte o link <code>/convite-dados/{{ tokenHint() }}</code> até o e-mail estar ativo).
+        </p>
+      }
+
+      @if (permissoes().length) {
+        <div class="perm-list">
+          <strong>Registros recentes</strong>
+          <ul>
+            @for (p of permissoes(); track p.id) {
+              <li>{{ p.cliente_email || p.cliente_nome || '—' }} — {{ p.status }} ({{ p.escopo }})</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  }
+</div>

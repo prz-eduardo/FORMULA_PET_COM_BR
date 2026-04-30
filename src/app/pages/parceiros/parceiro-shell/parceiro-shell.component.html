@@ -13,8 +13,14 @@
       <a routerLink="/parceiros/agenda" routerLinkActive="active">
         <i class="fa fa-calendar"></i> Agenda
       </a>
+      <a routerLink="/parceiros/servicos" routerLinkActive="active">
+        <i class="fa fa-scissors"></i> Serviços
+      </a>
       <a routerLink="/parceiros/colaboradores" routerLinkActive="active">
         <i class="fa fa-users"></i> Colaboradores
+      </a>
+      <a routerLink="/parceiros/minha-loja" routerLinkActive="active">
+        <i class="fa fa-store"></i> Minha loja
       </a>
       <div class="nav-group" [class.open]="showVetMenu()">
         <button class="nav-group-btn" (click)="toggleVetMenu()" [class.active]="isVetActive()">

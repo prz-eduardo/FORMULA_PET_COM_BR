@@ -53,6 +53,15 @@ export interface ClienteMeResponse {
   tokenExp?: number;
 }
 
+export interface ClientePermissaoDadosParceiroRow {
+  id: number;
+  cliente_id: number;
+  parceiro_id: number;
+  status: string;
+  escopo: string;
+  parceiro_nome?: string | null;
+}
+
 export interface TelemedicinaConsulta {
   id: number;
   cliente_id?: number | null;
@@ -401,7 +410,8 @@ export class ApiService {
         page?: number; pageSize?: number; q?: string; tipo?: 'manipulado'|'pronto';
         category?: string; categoryId?: string|number; categories?: string[]; tag?: string; tags?: (string|number)[];
         minPrice?: number; maxPrice?: number; myFavorites?: boolean; promoOnly?: boolean;
-        sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites'
+        sort?: 'relevance'|'newest'|'price_asc'|'price_desc'|'popularity'|'rating'|'my_favorites';
+        parceiro_slug?: string | null;
       },
       token?: string
     ): Observable<{
@@ -432,6 +442,7 @@ export class ApiService {
     if (params?.myFavorites) search.set('myFavorites', 'true');
   if (params?.sort) search.set('sort', params.sort);
   if (params?.promoOnly) search.set('promo', '1');
+    if (params?.parceiro_slug) search.set('parceiro_slug', String(params.parceiro_slug));
     const qp = search.toString();
       const url = `${this.baseUrl}/produtos${qp ? `?${qp}` : ''}`;
       const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
@@ -458,8 +469,11 @@ export class ApiService {
   }
 
   // Produto - detalhes completos por ID (novo endpoint)
-  getProductById(id: number | string, token?: string): Observable<any> {
-    const url = `${this.baseUrl}/products/${encodeURIComponent(String(id))}`;
+  getProductById(id: number | string, token?: string, opts?: { parceiro_slug?: string | null }): Observable<any> {
+    const qs = new URLSearchParams();
+    if (opts?.parceiro_slug) qs.set('parceiro_slug', String(opts.parceiro_slug));
+    const q = qs.toString();
+    const url = `${this.baseUrl}/products/${encodeURIComponent(String(id))}${q ? `?${q}` : ''}`;
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;
     return this.http.get<any>(url, { headers });
   }
@@ -507,6 +521,22 @@ export class ApiService {
   }
 
   // Cadastro de cliente
+  checkLojaSlugDisponivel(slug: string, exceptParceiroId?: number): Observable<{
+    disponivel: boolean;
+    slugNormalizado?: string;
+    motivo?: string;
+    code?: string;
+  }> {
+    const qs = new URLSearchParams();
+    qs.set('slug', slug);
+    if (exceptParceiroId != null) qs.set('except_parceiro_id', String(exceptParceiroId));
+    return this.http.get<any>(`${this.baseUrl}/anunciantes/loja-slug/disponivel?${qs.toString()}`);
+  }
+
+  getParceiroPorSlugPublico(slug: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/anunciantes/por-slug/${encodeURIComponent(slug)}`);
+  }
+
   cadastrarCliente(cliente: {
     nome: string;
     email: string;
@@ -570,6 +600,23 @@ export class ApiService {
     return this.http.get<ClienteMeResponse>(`${this.baseUrl}/clientes/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+  }
+
+  /** Tutor: consentimentos com parceiros (LGPD). */
+  listClientePermissoesDadosParceiros(token: string) {
+    return this.http.get<{ permissoes: ClientePermissaoDadosParceiroRow[] }>(
+      `${this.baseUrl}/clientes/me/permissoes-dados-parceiros`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
+
+  /** Tutor: revoga compartilhamento com um parceiro. */
+  revokeClientePermissaoParceiro(token: string, parceiroId: number) {
+    return this.http.patch<{ permissao: unknown }>(
+      `${this.baseUrl}/clientes/me/permissoes-dados-parceiros/${encodeURIComponent(String(parceiroId))}/revogar`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
   }
 
   getMinhaGaleriaFotos(token: string) {
@@ -793,10 +840,11 @@ export class ApiService {
 
   // Galeria pública de pets (paginação)
   // Accepts optional token so callers can request the gallery as an authenticated user
-  getGaleriaPublica(params?: { page?: number; pageSize?: number }, token?: string) {
+  getGaleriaPublica(params?: { page?: number; pageSize?: number; parceiro_slug?: string | null }, token?: string) {
     const search = new URLSearchParams();
     if (params?.page) search.set('page', String(params.page));
     if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    if (params?.parceiro_slug) search.set('parceiro_slug', String(params.parceiro_slug));
     const qp = search.toString();
     const url = `${this.baseUrl}/pets/galeria-publica${qp ? `?${qp}` : ''}`;
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined as any;

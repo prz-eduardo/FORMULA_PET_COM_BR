@@ -1,0 +1,36 @@
+<div class="page">
+  <h1>Compartilhamento de dados com parceiro</h1>
+
+  @if (loading()) {
+    <p>Carregando convite…</p>
+  } @else if (error() && !convite()) {
+    <p class="err">{{ error() }}</p>
+  } @else if (convite()) {
+    <p>
+      O parceiro solicitou permissão para acessar seus dados na conta
+      <strong>{{ convite()!.cliente_email }}</strong>
+      (escopo: <code>{{ convite()!.escopo || 'dados_basicos' }}</code>).
+    </p>
+
+    @if (success()) {
+      <p class="ok">Permissão registrada. Você pode fechar esta página ou voltar à área do cliente.</p>
+      <a routerLink="/area-cliente">Ir para área do cliente</a>
+    } @else {
+      @if (!isClienteLogado) {
+        <p class="warn">
+          Faça login como cliente (mesmo e-mail do convite) para aceitar.
+        </p>
+        <a [routerLink]="['/restrito/login']" [queryParams]="{ returnUrl: '/convite-dados/' + token }">
+          Entrar
+        </a>
+      } @else {
+        @if (error()) {
+          <p class="err">{{ error() }}</p>
+        }
+        <button type="button" class="primary" (click)="aceitar()" [disabled]="actionLoading()">
+          {{ actionLoading() ? 'Processando…' : 'Permitir acesso' }}
+        </button>
+      }
+    }
+  }
+</div>

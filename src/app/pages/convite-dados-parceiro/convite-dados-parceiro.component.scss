@@ -1,0 +1,37 @@
+.page {
+  max-width: 560px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.err {
+  color: #b91c1c;
+}
+
+.ok {
+  color: #15803d;
+}
+
+.warn {
+  color: #92400e;
+}
+
+.primary {
+  margin-top: 1rem;
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+a {
+  display: inline-block;
+  margin-top: 0.75rem;
+}

@@ -124,6 +124,13 @@ export const routes: Routes = [
   { path: 'meus-pets', loadComponent: () => import('./pages/meus-pets/meus-pets.component').then(m => m.MeusPetsComponent)},
   { path: 'galeria', component: GaleriaPublicaComponent },
   {
+    path: 'institucional-loja',
+    loadComponent: () =>
+      import('./pages/loja-publica/parceiro-institucional/parceiro-institucional.component').then(
+        (m) => m.ParceiroInstitucionalComponent
+      ),
+  },
+  {
     path: 'galeria/pet/:id',
     loadComponent: () =>
       import('./pages/pet-perfil-publico/pet-perfil-publico.component').then((m) => m.PetPerfilPublicoComponent)
@@ -153,6 +160,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/parceiros/aceitar-convite/aceitar-convite.component').then(m => m.AceitarConviteComponent),
   },
   {
+    path: 'convite-dados/:token',
+    loadComponent: () => import('./pages/convite-dados-parceiro/convite-dados-parceiro.component').then(m => m.ConviteDadosParceiroComponent),
+  },
+  {
     path: 'parceiros',
     loadComponent: () => import('./pages/parceiros/parceiro-shell/parceiro-shell.component').then(m => m.ParceiroShellComponent),
     canActivate: [parceiroGuard],
@@ -169,6 +180,18 @@ export const routes: Routes = [
       {
         path: 'colaboradores',
         loadComponent: () => import('./pages/parceiros/colaboradores/colaboradores.component').then(m => m.ColaboradoresComponent),
+      },
+      {
+        path: 'servicos',
+        loadComponent: () =>
+          import('./pages/parceiros/servicos-parceiro/servicos-parceiro.component').then(m => m.ServicosParceiroComponent),
+        data: { title: 'Serviços' },
+      },
+      {
+        path: 'minha-loja',
+        loadComponent: () =>
+          import('./pages/parceiros/parceiro-minha-loja/parceiro-minha-loja.component').then(m => m.ParceiroMinhaLojaComponent),
+        data: { title: 'Minha loja' },
       },
       // ── Área Vet centralizada no painel parceiro ─────────────────────────
       {

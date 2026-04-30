@@ -45,6 +45,23 @@
             <small class="err-msg" *ngIf="hasErrorBasico('nome','required')">Informe o nome.</small>
             <small class="err-msg" *ngIf="hasErrorBasico('nome','minlength')">Mínimo 2 caracteres.</small>
           </div>
+          <div class="colspan2">
+            <label>Endereço da sua loja na internet *</label>
+            <div class="slug-preview">
+              <span class="slug-preview__host">https://</span>
+              <input
+                formControlName="loja_slug"
+                [class.err]="hasErrorBasico('loja_slug')"
+                maxlength="63"
+                placeholder="minhaloja"
+                autocomplete="off" />
+              <span class="slug-preview__host">.petsphere.com.br</span>
+            </div>
+            <small class="hint">Apenas letras minúsculas, números e hífen (ex.: pet-shop-bairro).</small>
+            <small class="err-msg" *ngIf="hasErrorBasico('loja_slug','required')">Escolha o nome da URL da sua loja.</small>
+            <small class="err-msg" *ngIf="hasErrorBasico('loja_slug','pattern')">Use apenas letras minúsculas, números e hífen.</small>
+            <small class="err-msg" *ngIf="hasErrorBasico('loja_slug','minlength')">Mínimo 3 caracteres.</small>
+          </div>
           <div>
             <label>Tipo de parceiro *</label>
             <select formControlName="tipo" [class.err]="hasErrorBasico('tipo')">

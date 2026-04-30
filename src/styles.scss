@@ -7,6 +7,7 @@
 @import 'app/shared/styles/admin-tokens';
 @import 'app/shared/styles/admin-mixins';
 @import 'app/shared/styles/admin-drawer';
+@import 'app/shared/styles/aurora-tokens';
 html, body{
     margin: 0;
     padding: 0;
@@ -43,21 +44,23 @@ html, body{
     min-height: 0;
 }
 
-/* Dock móvel das abas principais (institucional / área vet): evita conteúdo sob a pílula */
+/* Aurora Dock móvel: reserva espaço para o dock flutuante (68px expanded + 12px gap + safe area) */
 @media (max-width: 767px) {
-    body:has(app-navmenu .nav-primary-tabs--mobile) .app-main:not(.no-nav) {
-        /* Dock móvel com mais padding vertical / pílula ativa (navmenu premium) */
-        padding-bottom: calc(80px + constant(safe-area-inset-bottom));
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    body:has(app-navmenu .ps-dock) .app-main:not(.no-nav) {
+        padding-bottom: calc(96px + constant(safe-area-inset-bottom));
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
     }
 
-    body.checkout-hide-mobile-nav .app-navbar .nav-primary-tabs--mobile {
+    body.checkout-hide-mobile-nav .app-navbar .ps-dock,
+    body.checkout-hide-mobile-nav .app-navbar .ps-fab,
+    body.checkout-hide-mobile-nav .app-navbar .ps-ribbon,
+    body.checkout-hide-mobile-nav .app-navbar .ps-minibag {
         display: none !important;
     }
 
     body.checkout-hide-mobile-nav .app-main:not(.no-nav) {
-        padding-bottom: calc(108px + constant(safe-area-inset-bottom));
-        padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(40px + constant(safe-area-inset-bottom));
+        padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -76,7 +79,10 @@ html, body{
     body.mapa-no-topnav .app-navbar {
         pointer-events: none;
     }
-    body.mapa-no-topnav .app-navbar .nav-primary-tabs--mobile {
+    body.mapa-no-topnav .app-navbar .ps-dock,
+    body.mapa-no-topnav .app-navbar .ps-fab,
+    body.mapa-no-topnav .app-navbar .ps-ribbon,
+    body.mapa-no-topnav .app-navbar .ps-minibag {
         pointer-events: auto;
     }
     body.mapa-no-topnav .app-navbar .menubar.navbar-mainbg {

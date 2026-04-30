@@ -1,0 +1,51 @@
+<div class="minha-loja">
+  <h1>Minha loja (vitrine)</h1>
+  <p class="lead">Configure o endereço público <strong>https://(nome).petsphere.com.br</strong>, textos e produtos exibidos na loja.</p>
+
+  <div *ngIf="loading()" class="muted">Carregando…</div>
+
+  <form *ngIf="!loading()" [formGroup]="form" (ngSubmit)="salvarLoja()" class="card">
+    <label>URL da loja</label>
+    <div class="slug-row">
+      <span class="muted">https://</span>
+      <input formControlName="loja_slug" maxlength="63" />
+      <span class="muted">.petsphere.com.br</span>
+    </div>
+    <small class="muted" *ngIf="vitrine()?.status !== 'approved'">Sua loja só ficará pública após aprovação do cadastro.</small>
+
+    <label>Institucional (HTML ou texto)</label>
+    <textarea formControlName="texto_institucional" rows="8" placeholder="Sobre nós, horários, diferenciais…"></textarea>
+
+    <ng-container *ngIf="auth.isMaster()">
+      <label>Mercado Pago — access token (opcional)</label>
+      <input type="password" formControlName="mercadopago_access_token" autocomplete="off" placeholder="Deixe em branco para não alterar; salve vazio para remover" />
+      <small class="muted">Pagamentos de pedidos desta vitrine usarão esta credencial quando configurada e ativa.</small>
+    </ng-container>
+
+    <div class="actions">
+      <button type="submit" class="btn-primary" [disabled]="saving() || !auth.isMaster()">
+        {{ saving() ? 'Salvando…' : 'Salvar' }}
+      </button>
+      <span *ngIf="!auth.isMaster()" class="muted">Somente o master pode editar.</span>
+    </div>
+  </form>
+
+  <section class="card" *ngIf="auth.isMaster()">
+    <h2>Produtos na vitrine</h2>
+    <p class="muted">Use o ID numérico do produto no marketplace PetSphere (catálogo central).</p>
+    <div class="add-row">
+      <input
+        type="text"
+        [value]="novoProdutoId()"
+        (input)="novoProdutoId.set(($any($event.target).value || '').toString())"
+        placeholder="ID do produto" />
+      <button type="button" class="btn-secondary" (click)="adicionarProduto()">Adicionar</button>
+    </div>
+    <ul class="prod-list">
+      <li *ngFor="let p of vitrineProdutos()">
+        <span>#{{ p.produto_id }} — {{ p.produto_nome }}</span>
+        <button type="button" class="link-danger" (click)="removerProduto(p.produto_id)">Remover</button>
+      </li>
+    </ul>
+  </section>
+</div>

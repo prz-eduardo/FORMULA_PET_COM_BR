@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
-import { Recurso, Agendamento, Colaborador, ColaboradorInvite, PermissaoRecurso } from '../../../../types/agenda.types';
+import {
+  Recurso,
+  Agendamento,
+  Colaborador,
+  ColaboradorInvite,
+  PermissaoRecurso,
+  AgendaStatus,
+  ParceiroServico,
+} from '../../../../types/agenda.types';
 import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { environment } from '../../../../../environments/environment';
 
@@ -197,7 +205,7 @@ export class AgendaApiService {
    */
   async patchStatus(
     id: number,
-    status: 'AGENDADO' | 'CONFIRMADO' | 'EM_ANDAMENTO' | 'FINALIZADO' | 'CANCELADO'
+    status: AgendaStatus
   ): Promise<Agendamento> {
     const response = await lastValueFrom(
       this.http.patch<{ agendamento: Agendamento }>(
@@ -256,6 +264,69 @@ export class AgendaApiService {
       }>(
         `${API_BASE}/parceiro/telemedicina/consultas/${consultaId}/entrar`,
         {},
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+
+  // ===========================================================================
+  // SERVIÇOS DO PARCEIRO (cadastro — agenda / loja)
+  // ===========================================================================
+
+  async getServicos(): Promise<ParceiroServico[]> {
+    const response = await lastValueFrom(
+      this.http.get<{ servicos: ParceiroServico[] }>(
+        `${API_BASE}/parceiro/servicos`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.servicos || [];
+  }
+
+  async getServico(id: number): Promise<ParceiroServico> {
+    const response = await lastValueFrom(
+      this.http.get<{ servico: ParceiroServico }>(
+        `${API_BASE}/parceiro/servicos/${id}`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.servico;
+  }
+
+  async createServico(data: {
+    nome: string;
+    duracao_minutos: number;
+    preco?: number;
+    ativo?: boolean;
+  }): Promise<ParceiroServico> {
+    const response = await lastValueFrom(
+      this.http.post<{ servico: ParceiroServico }>(
+        `${API_BASE}/parceiro/servicos`,
+        data,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.servico;
+  }
+
+  async updateServico(
+    id: number,
+    data: Partial<{ nome: string; duracao_minutos: number; preco: number; ativo: boolean }>
+  ): Promise<ParceiroServico> {
+    const response = await lastValueFrom(
+      this.http.put<{ servico: ParceiroServico }>(
+        `${API_BASE}/parceiro/servicos/${id}`,
+        data,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.servico;
+  }
+
+  async deleteServico(id: number): Promise<{ message: string }> {
+    return await lastValueFrom(
+      this.http.delete<{ message: string }>(
+        `${API_BASE}/parceiro/servicos/${id}`,
         { headers: this.getHeaders() }
       )
     );
@@ -427,4 +498,52 @@ export class AgendaApiService {
       )
     );
   }
+
+  // ===========================================================================
+  // CONSENTIMENTO DE DADOS (tutor ↔ parceiro)
+  // ===========================================================================
+
+  async listPermissoesDados(): Promise<PermissaoDadosRow[]> {
+    const response = await lastValueFrom(
+      this.http.get<{ permissoes: PermissaoDadosRow[] }>(
+        `${API_BASE}/parceiro/permissoes-dados`,
+        { headers: this.getHeaders() }
+      )
+    );
+    return response.permissoes || [];
+  }
+
+  async postConviteCliente(body: {
+    cliente_email: string;
+    escopo?: 'dados_basicos' | 'pets' | 'completo';
+    days_valid?: number;
+  }): Promise<{ convite: ConviteClienteRow | null }> {
+    return await lastValueFrom(
+      this.http.post<{ convite: ConviteClienteRow | null }>(
+        `${API_BASE}/parceiro/convites-clientes`,
+        body,
+        { headers: this.getHeaders() }
+      )
+    );
+  }
+}
+
+export interface PermissaoDadosRow {
+  id: number;
+  cliente_id: number;
+  parceiro_id: number;
+  status: string;
+  escopo: string;
+  cliente_nome?: string | null;
+  cliente_email?: string | null;
+}
+
+export interface ConviteClienteRow {
+  id: number;
+  parceiro_id: number;
+  cliente_email: string;
+  token: string;
+  status: string;
+  escopo?: string | null;
+  data_expiracao?: string | null;
 }

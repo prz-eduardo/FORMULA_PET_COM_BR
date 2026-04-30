@@ -1,5 +1,5 @@
-<nav class="app-navbar">
-  <!-- SVG Goo filter for slime effect -->
+<nav class="app-navbar" [class.is-night]="isNight" [class.is-compact]="isCompact" [attr.data-dock-mode]="dockMode">
+  <!-- SVG Goo filter (logo metaballs) -->
   <svg width="0" height="0" class="sr-abs">
     <defs>
       <filter id="goo">
@@ -11,10 +11,13 @@
     </defs>
   </svg>
 
+  <!-- ═════════════════════════════════════════════════════════════════════
+       DESKTOP TOP BAR (≥768px) — mantém estrutura mas com nova paleta
+       ═════════════════════════════════════════════════════════════════════ -->
   <div class="nav-menu">
     <div class="navbar-inner">
       <div class="menubar navbar-mainbg" [class.hidden]="!isVisible">
-        <a routerLink="/" class="navbar-brand-link" title="Ir para a loja" aria-label="Ir para a loja">
+        <a routerLink="/" class="navbar-brand-link" title="Petsphere" aria-label="Petsphere — ir para a loja">
           <div class="logo-container">
             <div id="wrapper" class="goo-wrapper">
               <div id="ball" class="ball-core"></div>
@@ -25,7 +28,7 @@
               <div class="ball-orbit ball-orbit-e"></div>
               <div class="ball-orbit ball-orbit-f"></div>
             </div>
-            <img src="/imagens/logo-marca.svg" alt="Loja Pet" class="imagem-navbar">
+            <img src="/imagens/logo-marca.svg" alt="Petsphere" class="imagem-navbar">
           </div>
         </a>
 
@@ -36,18 +39,14 @@
               <div class="hori-cap hori-cap--right"></div>
             </div>
             <ul class="navbar-nav-tabs" aria-label="Navegação principal">
-              <li
-                class="nav-tab-item"
-                *ngFor="let item of visibleNavItems"
-                [class.active]="isTabHighlighted(item)"
-                [attr.data-nav-id]="item.id"
-              >
-                <a
-                  class="nav-tab-link"
-                  [routerLink]="item.link"
-                  [attr.title]="item.label"
-                  (click)="onMainTabClick(item.id)"
-                >
+              <li class="nav-tab-item"
+                  *ngFor="let item of visibleNavItems"
+                  [class.active]="isTabHighlighted(item)"
+                  [attr.data-nav-id]="item.id">
+                <a class="nav-tab-link"
+                   [routerLink]="item.link"
+                   [attr.title]="item.label"
+                   (click)="onMainTabClick(item.id)">
                   <i [class]="item.icon" aria-hidden="true"></i>
                   <span class="nav-tab-label">{{ item.label }}</span>
                   <span class="nav-tab-badge" *ngIf="item.id === 'carrinho' && cartCount > 0">{{ cartCount }}</span>
@@ -58,63 +57,241 @@
         </div>
 
         <div class="navbar-actions">
-          <button *ngIf="!isAreaVetRoute" #userBtn class="user-trigger" type="button" (click)="abrirClienteModal()" title="Área do cliente" aria-label="Abrir área do cliente">
+          <button *ngIf="!isAreaVetRoute"
+                  #userBtn
+                  class="user-trigger"
+                  type="button"
+                  (click)="abrirClienteModal()"
+                  title="Área do cliente"
+                  aria-label="Abrir área do cliente">
             <ng-container *ngIf="userFoto; else defaultUserIcon">
               <img [src]="userFoto" alt="Foto do usuário" />
             </ng-container>
             <ng-template #defaultUserIcon>
-              <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="currentColor"/></svg>
+              <ps-icon name="person" variant="filled" [size]="19"></ps-icon>
             </ng-template>
           </button>
         </div>
       </div>
-
-      <ul
-        *ngIf="showFullMenu"
-        class="nav-primary-tabs nav-primary-tabs--mobile"
-        aria-label="Navegação principal"
-      >
-        <li
-          class="nav-tab-item"
-          *ngFor="let item of mobileNavItems"
-          [class.active]="isMobileTabHighlighted(item)"
-          [class.nav-tab-item--loja-anchor]="item.id === 'loja'"
-          [class.nav-tab-item--has-cart-items]="item.id === 'carrinho' && isCliente && cartCount > 0"
-          [class.nav-tab-item--carrinho-disabled]="isMobileCarrinhoDisabled(item)"
-          [attr.data-nav-id]="item.id"
-        >
-          <a
-            *ngIf="!isMobileCarrinhoDisabled(item)"
-            class="nav-tab-link"
-            [routerLink]="item.link"
-            [attr.title]="item.label"
-            (click)="onMainTabClick(item.id)"
-          >
-            <i [class]="item.icon" aria-hidden="true"></i>
-            <span class="nav-tab-label">{{ item.shortLabel || item.label }}</span>
-            <span
-              class="nav-tab-badge"
-              *ngIf="item.id === 'carrinho' && cartCount > 0"
-              [class.nav-tab-badge--bump]="item.id === 'carrinho' && cartBadgeBumping"
-            >{{ cartCount }}</span>
-          </a>
-          <span
-            *ngIf="isMobileCarrinhoDisabled(item)"
-            class="nav-tab-link nav-tab-link--disabled"
-            tabindex="-1"
-            aria-disabled="true"
-            title="Faça login para usar o carrinho"
-          >
-            <i [class]="item.icon" aria-hidden="true"></i>
-            <span class="nav-tab-label">{{ item.shortLabel || item.label }}</span>
-          </span>
-        </li>
-      </ul>
     </div>
   </div>
+
+  <!-- ═════════════════════════════════════════════════════════════════════
+       AURORA DOCK — Mobile (<768px)
+       Layout: Live Ribbon (opcional) + Mini-bag (opcional) + Dock flutuante
+                com 4 abas e FAB central
+       ═════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="showFullMenu">
+
+    <!-- Live Context Ribbon (Apple Live Activity-style) -->
+    <button
+      type="button"
+      class="ps-ribbon"
+      *ngIf="liveRibbon"
+      (click)="onLiveRibbonClick()"
+      [attr.aria-label]="liveRibbon.text + (liveRibbon.cta ? ' — ' + liveRibbon.cta : '')"
+    >
+      <span class="ps-ribbon__dot" aria-hidden="true"></span>
+      <span class="ps-ribbon__text">{{ liveRibbon.text }}</span>
+      <span class="ps-ribbon__cta" *ngIf="liveRibbon.cta">
+        {{ liveRibbon.cta }}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </button>
+
+    <!-- Mini-bag flutuante (canto inferior direito, contextual) -->
+    <button
+      type="button"
+      class="ps-minibag"
+      *ngIf="showMiniBag"
+      (click)="onMiniBagClick()"
+      [attr.aria-label]="'Carrinho com ' + cartCount + ' ' + (cartCount === 1 ? 'item' : 'itens')"
+    >
+      <ps-icon name="cart" variant="filled" [size]="20" class="ps-minibag__icon"></ps-icon>
+      <span class="ps-minibag__count" [class.ps-minibag__count--bump]="cartBadgeBumping">{{ cartCount }}</span>
+    </button>
+
+    <!-- Aurora Dock -->
+    <div
+      class="ps-dock"
+      [class.ps-dock--compact]="isCompact"
+      [class.ps-dock--professional]="dockMode === 'vet' || dockMode === 'parceiro'"
+      role="navigation"
+      aria-label="Navegação Petsphere"
+    >
+      <!-- Concave cutout para o FAB usando SVG mask (top do dock recortado) -->
+      <svg class="ps-dock__cutout" viewBox="0 0 200 30" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="psDockHairline" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </linearGradient>
+        </defs>
+        <!-- Topo: tangente horizontal no centro (sem bico); duas cúbicas com P2/P1 alinhados ao fundo do U -->
+        <path
+          d="M0 30 L0 9 L46 9 C68 9 88 24 100 24 C112 24 132 9 154 9 L200 9 L200 30 Z"
+          fill="currentColor"
+        />
+        <path
+          d="M0 9 L46 9 C68 9 88 24 100 24 C112 24 132 9 154 9 L200 9"
+          stroke="url(#psDockHairline)"
+          stroke-width="0.45"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+
+      <ul class="ps-dock__items">
+        <ng-container *ngFor="let item of activeMobileItems; let i = index">
+          <!-- Spacer onde fica o FAB (entre item 1 e item 2) -->
+          <li class="ps-dock__spacer" *ngIf="i === 2" aria-hidden="true"></li>
+
+          <li
+            class="ps-dock__item"
+            [class.is-active]="isMobileTabHighlighted(item)"
+            [attr.data-nav-id]="item.id"
+          >
+            <ng-container *ngIf="item.id === 'esfera' || item.id === 'login'; else linkTpl">
+              <button
+                type="button"
+                class="ps-dock__link"
+                (click)="onMobileItemActivate(item, $event)"
+                [attr.aria-label]="item.label"
+              >
+                <span class="ps-dock__label">{{ item.shortLabel || item.label }}</span>
+                <span class="ps-dock__icon">
+                  <ng-container *ngIf="item.id === 'esfera' && userFoto; else psIconTpl">
+                    <img [src]="userFoto" alt="" class="ps-dock__avatar" />
+                  </ng-container>
+                  <ng-template #psIconTpl>
+                    <ps-icon
+                      [name]="item.psIcon || 'person'"
+                      [variant]="isMobileTabHighlighted(item) ? 'filled' : 'outline'"
+                      [size]="22"
+                    ></ps-icon>
+                  </ng-template>
+                </span>
+                <span class="ps-dock__pill" aria-hidden="true"></span>
+              </button>
+            </ng-container>
+
+            <ng-template #linkTpl>
+              <a
+                class="ps-dock__link"
+                [routerLink]="item.link"
+                (click)="onMobileItemActivate(item, $event)"
+                [attr.aria-label]="item.label"
+                [attr.aria-current]="isMobileTabHighlighted(item) ? 'page' : null"
+              >
+                <span class="ps-dock__label">{{ item.shortLabel || item.label }}</span>
+                <span class="ps-dock__icon">
+                  <ps-icon
+                    [name]="item.psIcon || 'home'"
+                    [variant]="isMobileTabHighlighted(item) ? 'filled' : 'outline'"
+                    [size]="22"
+                  ></ps-icon>
+                  <span
+                    class="ps-dock__cart-dot"
+                    *ngIf="item.id === 'loja' && cartCount > 0 && !showMiniBag"
+                    aria-hidden="true"
+                  ></span>
+                </span>
+                <span class="ps-dock__pill" aria-hidden="true"></span>
+              </a>
+            </ng-template>
+          </li>
+        </ng-container>
+      </ul>
+
+      <!-- FAB Petsphere — núcleo de marca + central de ações -->
+      <button
+        #fabBtn
+        type="button"
+        class="ps-fab"
+        [class.ps-fab--open]="isSheetOpen || isRadialOpen"
+        (pointerdown)="onFabPointerDown($event)"
+        (pointerup)="onFabPointerUp()"
+        (pointerleave)="onFabPointerCancel()"
+        (pointercancel)="onFabPointerCancel()"
+        (contextmenu)="$event.preventDefault()"
+        aria-label="Petsphere — ações rápidas"
+      >
+        <span class="ps-fab__halo" aria-hidden="true"></span>
+        <span class="ps-fab__core">
+          <ps-icon name="sphere" variant="filled" [size]="28"></ps-icon>
+        </span>
+        <span class="ps-fab__pet-ring" *ngIf="userFoto && dockMode === 'cliente'" aria-hidden="true">
+          <img [src]="userFoto" alt="" />
+        </span>
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- ═════════════════════════════════════════════════════════════════════
+       BOTTOM SHEET — Ações rápidas (tap no FAB)
+       ═════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="isSheetOpen">
+    <div class="ps-sheet-backdrop" (click)="closeSheet()" aria-hidden="true"></div>
+    <div class="ps-sheet" role="dialog" aria-modal="true" aria-label="Ações rápidas Petsphere">
+      <div class="ps-sheet__handle" aria-hidden="true"></div>
+      <header class="ps-sheet__header">
+        <h2 class="ps-sheet__title">O que você quer fazer?</h2>
+        <p class="ps-sheet__subtitle">Atalhos rápidos do seu ecossistema pet</p>
+      </header>
+      <ul class="ps-sheet__list">
+        <li *ngFor="let action of sheetActions">
+          <button
+            type="button"
+            class="ps-sheet__action"
+            [attr.data-tone]="action.tone || 'aurora'"
+            (click)="triggerQuickAction(action, 'sheet')"
+          >
+            <span class="ps-sheet__action-icon">
+              <ps-icon [name]="action.icon" variant="filled" [size]="22"></ps-icon>
+            </span>
+            <span class="ps-sheet__action-text">
+              <span class="ps-sheet__action-label">{{ action.label }}</span>
+              <span class="ps-sheet__action-caption" *ngIf="action.caption">{{ action.caption }}</span>
+            </span>
+            <svg class="ps-sheet__action-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </li>
+      </ul>
+      <button type="button" class="ps-sheet__cancel" (click)="closeSheet()">Fechar</button>
+    </div>
+  </ng-container>
+
+  <!-- ═════════════════════════════════════════════════════════════════════
+       RADIAL MENU — long-press no FAB (top 4 ações aprendidas)
+       ═════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="isRadialOpen">
+    <div class="ps-radial-backdrop" (click)="closeRadial()" aria-hidden="true"></div>
+    <div class="ps-radial" role="menu" aria-label="Atalhos favoritos">
+      <button
+        *ngFor="let action of radialActions; let i = index"
+        type="button"
+        class="ps-radial__btn"
+        role="menuitem"
+        [attr.data-pos]="i"
+        [style.--ps-radial-i]="i"
+        (click)="triggerQuickAction(action, 'radial')"
+        [attr.aria-label]="action.label"
+      >
+        <span class="ps-radial__icon">
+          <ps-icon [name]="action.icon" variant="filled" [size]="22"></ps-icon>
+        </span>
+        <span class="ps-radial__label">{{ action.label }}</span>
+      </button>
+    </div>
+  </ng-container>
 </nav>
 
-<!-- Modal de Área do Cliente (renderiza o componente como modal) -->
+<!-- Modal Área do Cliente (mantido) -->
 <ng-container *ngIf="showClienteModal">
   <div class="cliente-overlay" (click)="fecharClienteModal()" aria-hidden="true"></div>
   <div class="cliente-modal" (click)="$event.stopPropagation()">

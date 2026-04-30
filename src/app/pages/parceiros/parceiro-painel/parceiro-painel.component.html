@@ -111,6 +111,11 @@
           <span>Agenda</span>
           <i class="fa fa-arrow-right item-arrow"></i>
         </button>
+        <button class="item" *ngIf="matches('servicos cadastro preço duração banho tosa consulta loja vitrine')" (click)="goToServicos()" tabindex="0">
+          <i class="fa fa-scissors"></i>
+          <span>Cadastro de serviços</span>
+          <i class="fa fa-arrow-right item-arrow"></i>
+        </button>
         <button class="item item--soon" *ngIf="matches('reservas hotel creche hospedagem')" tabindex="0" disabled>
           <i class="fa fa-bed"></i>
           <span>Reservas & Hotel</span>

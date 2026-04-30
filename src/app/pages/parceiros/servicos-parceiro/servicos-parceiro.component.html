@@ -1,0 +1,80 @@
+<div class="servicos-page">
+  <header class="page-head">
+    <h2>Serviços</h2>
+    <p>
+      Cadastre o que você oferece (banho, consulta, hospedagem etc.), com duração e preço de referência.
+      Esses dados alimentam a agenda e, em seguida, a vitrine da sua loja no PetSphere.
+    </p>
+  </header>
+
+  <div class="alerts">
+    <div class="alert error" *ngIf="error">{{ error }}</div>
+    <div class="alert success" *ngIf="success">{{ success }}</div>
+  </div>
+
+  <section class="cards-grid" *ngIf="auth.isMaster(); else somenteLeitura">
+    <article class="card">
+      <h3>{{ editingId != null ? 'Editar serviço' : 'Novo serviço' }}</h3>
+      <label>Nome</label>
+      <input [(ngModel)]="form.nome" placeholder="Ex.: Banho e tosa médio" maxlength="255" />
+      <label>Duração (minutos)</label>
+      <input [(ngModel)]="form.duracaoMin" type="number" min="5" max="1440" step="5" />
+      <label>Preço de referência (R$)</label>
+      <input [(ngModel)]="form.preco" type="number" min="0" step="0.01" />
+      <label class="checkbox">
+        <input type="checkbox" [(ngModel)]="form.ativo" />
+        Serviço ativo (visível para agendamento e catálogo)
+      </label>
+      <div class="form-actions">
+        <button type="button" (click)="salvar()" [disabled]="saving">
+          {{ saving ? 'Salvando…' : editingId != null ? 'Salvar alterações' : 'Cadastrar' }}
+        </button>
+        <button type="button" class="secondary" *ngIf="editingId != null" (click)="resetForm()" [disabled]="saving">
+          Cancelar edição
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <ng-template #somenteLeitura>
+    <section class="list-card hint-card">
+      <p>
+        <strong>Conta colaborador:</strong> você pode ver a lista de serviços. Apenas o perfil
+        <strong>master</strong> cadastra ou altera serviços.
+      </p>
+    </section>
+  </ng-template>
+
+  <section class="list-card">
+    <div class="list-head">
+      <h3>Seus serviços</h3>
+      <button type="button" (click)="load()" [disabled]="loading">Atualizar</button>
+    </div>
+    <div class="empty" *ngIf="!loading && servicos.length === 0">Nenhum serviço cadastrado ainda.</div>
+    <div class="empty" *ngIf="loading">Carregando…</div>
+    <table *ngIf="!loading && servicos.length > 0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Duração</th>
+          <th>Preço</th>
+          <th>Status</th>
+          <th *ngIf="auth.isMaster()"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of servicos" [class.row-inactive]="!isAtivo(s)">
+          <td>{{ s.nome }}</td>
+          <td>{{ s.duracao_minutos }} min</td>
+          <td>{{ formatPreco(s.preco) }}</td>
+          <td>{{ isAtivo(s) ? 'Ativo' : 'Inativo' }}</td>
+          <td class="actions" *ngIf="auth.isMaster()">
+            <button type="button" (click)="editar(s)" [disabled]="!isAtivo(s)">Editar</button>
+            <button type="button" class="danger" *ngIf="isAtivo(s)" (click)="inativar(s)">Inativar</button>
+            <button type="button" *ngIf="!isAtivo(s)" (click)="reativar(s)">Reativar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>

@@ -1,5 +1,5 @@
 import {
-  Component, Input, Output, EventEmitter, OnInit, signal, computed
+  Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, computed
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +7,6 @@ import {
   Agendamento, AgendaConfig, AgendaStatus,
   PetResumido, Profissional, Servico, SlotInfo
 } from '../../../../types/agenda.types';
-import { AgendaMockService } from '../services/agenda-mock.service';
 import { getTime } from '../utils/date-helpers';
 
 @Component({
@@ -17,11 +16,13 @@ import { getTime } from '../utils/date-helpers';
   templateUrl: './agenda-sidebar.component.html',
   styleUrls: ['./agenda-sidebar.component.scss'],
 })
-export class AgendaSidebarComponent implements OnInit {
+export class AgendaSidebarComponent implements OnInit, OnChanges {
   @Input() slot: SlotInfo | null = null;
   @Input() profissionais: Profissional[] = [];
   @Input() servicos: Servico[] = [];
   @Input() config!: AgendaConfig;
+  /** Pets derivados dos agendamentos retornados pela API (quando o tutor compartilhou dados). */
+  @Input() catalogPets: PetResumido[] = [];
   @Input() existingAgendamentos: Agendamento[] = [];
   @Output() save = new EventEmitter<Agendamento>();
   @Output() close = new EventEmitter<void>();
@@ -39,10 +40,10 @@ export class AgendaSidebarComponent implements OnInit {
   allPets = signal<PetResumido[]>([]);
   filteredPets = computed(() => {
     const q = this.searchPet().toLowerCase();
-    if (!q) return [];
+    if (!q) return this.allPets().slice(0, 8);
     return this.allPets().filter(p =>
       p.nome.toLowerCase().includes(q) || p.tutor.nome.toLowerCase().includes(q)
-    ).slice(0, 6);
+    ).slice(0, 8);
   });
 
   sugeridoHorario = computed(() => {
@@ -70,10 +71,14 @@ export class AgendaSidebarComponent implements OnInit {
 
   showPetDropdown = signal(false);
 
-  constructor(private mock: AgendaMockService) {}
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['catalogPets']) {
+      this.allPets.set(this.catalogPets || []);
+    }
+  }
 
   ngOnInit(): void {
-    this.allPets.set(this.mock.getPets());
+    this.allPets.set(this.catalogPets || []);
 
     // Pre-fill from slot
     if (this.slot) {
@@ -133,7 +138,15 @@ export class AgendaSidebarComponent implements OnInit {
   }
 
   canSave(): boolean {
-    return !!(this.selectedPet() && this.selectedProfId() && this.selectedServicoId() && this.dateStr() && this.timeStr());
+    const nomeCliente =
+      (this.selectedPet()?.tutor.nome ?? this.searchPet().trim());
+    return !!(
+      nomeCliente.length >= 2 &&
+      this.selectedProfId() &&
+      this.selectedServicoId() &&
+      this.dateStr() &&
+      this.timeStr()
+    );
   }
 
   onSave(): void {
@@ -149,10 +162,27 @@ export class AgendaSidebarComponent implements OnInit {
     const serv = this.getSelectedServico();
     if (!prof || !serv) return;
 
+    const nomeCliente =
+      (this.selectedPet()?.tutor.nome ?? this.searchPet().trim());
+    const pet: PetResumido = this.selectedPet() ?? {
+      id: 'manual',
+      nome: '—',
+      especie: 'Outro',
+      alergias: [],
+      temMedicacao: false,
+      temRestricao: false,
+      temAlimentacaoEspecial: false,
+      historicoRecente: [],
+      tutor: {
+        id: 'manual',
+        nome: nomeCliente,
+        telefone: '',
+      },
+    };
+
     const novo: Agendamento = {
       id: 'new-' + Date.now(),
-      parceiroId: 'mock-parceiro-1',
-      pet: this.selectedPet()!,
+      pet,
       profissional: prof,
       servico: serv,
       inicio,
