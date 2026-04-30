@@ -1137,6 +1137,11 @@ nav.app-navbar.is-night .ps-dock {
   &:active { transform: scale(0.96); }
 }
 
+body.notifications-overlay-open .cliente-close {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (max-width: 560px) {
   .cliente-close { top: 80px; right: 14px; }
 }

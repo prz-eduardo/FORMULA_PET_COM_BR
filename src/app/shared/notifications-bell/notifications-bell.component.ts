@@ -54,11 +54,16 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.updateClienteModalCloseState(false);
     this.subs.forEach(s => s.unsubscribe());
   }
 
   get overlayLayout(): boolean {
     return this.mobileLayout || this.insideClienteModal;
+  }
+
+  get modalEmbeddedLayout(): boolean {
+    return this.insideClienteModal && !this.mobileLayout;
   }
 
   get visible(): NotificationItem[] {
@@ -76,12 +81,14 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
     if (ev) ev.stopPropagation();
     this.syncViewportMode();
     this.open = !this.open;
+    this.updateClienteModalCloseState(this.open);
     if (this.open) this.svc.refreshUnread();
   }
 
   close(ev?: MouseEvent) {
     if (ev) ev.stopPropagation();
     this.open = false;
+    this.updateClienteModalCloseState(false);
   }
 
   handleClick(n: NotificationItem, ev?: MouseEvent) {
@@ -172,4 +179,9 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEsc() { this.close(); }
+
+  private updateClienteModalCloseState(isOpen: boolean) {
+    if (!this.insideClienteModal || typeof document === 'undefined') return;
+    document.body.classList.toggle('notifications-overlay-open', isOpen);
+  }
 }

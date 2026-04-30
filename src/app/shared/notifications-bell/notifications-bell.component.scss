@@ -86,6 +86,16 @@
   z-index: 2000060;
 }
 
+.panel--embedded-modal {
+  position: absolute;
+  inset: 12px;
+  width: auto;
+  max-height: none;
+  transform: none;
+  border-radius: 16px;
+  animation: fadeDown .15s ease-out;
+}
+
 .panel-backdrop {
   position: fixed;
   inset: 0;
@@ -94,6 +104,10 @@
   backdrop-filter: blur(4px);
   z-index: 2000059;
   animation: fadeBackdrop .18s ease-out;
+}
+
+.panel-backdrop--embedded {
+  position: absolute;
 }
 
 /* Celular / modal área do cliente: o host do sino é estreito e ancestrais com

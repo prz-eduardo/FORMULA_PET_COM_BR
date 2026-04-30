@@ -12,13 +12,20 @@
     </span>
   </button>
 
-  <div class="panel-backdrop" *ngIf="open && overlayLayout" (click)="close($event)" aria-hidden="true"></div>
+  <div
+    class="panel-backdrop"
+    *ngIf="open && overlayLayout"
+    [class.panel-backdrop--embedded]="modalEmbeddedLayout"
+    (click)="close($event)"
+    aria-hidden="true"
+  ></div>
 
   <div
     class="panel"
     *ngIf="open"
     [class.panel--mobile]="mobileLayout"
     [class.panel--overlay]="overlayLayout"
+    [class.panel--embedded-modal]="modalEmbeddedLayout"
     (click)="$event.stopPropagation()"
     [attr.aria-modal]="overlayLayout ? 'true' : null"
     [attr.role]="overlayLayout ? 'dialog' : null"
