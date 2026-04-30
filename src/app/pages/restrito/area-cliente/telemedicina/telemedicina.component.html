@@ -9,8 +9,22 @@
   <p class="erro" *ngIf="erro">{{ erro }}</p>
 
   <div class="chamada-info" *ngIf="chamadaAtiva">
-    <strong>Sala pronta:</strong> {{ chamadaAtiva.sala_codigo }}<br />
-    <small>Canal: {{ chamadaAtiva.signaling_channel }}</small>
+    <div class="call-header">
+      <div><strong>Sala:</strong> {{ chamadaAtiva.sala_codigo }}</div>
+      <div><small>Canal: {{ chamadaAtiva.signaling_channel }}</small></div>
+      <div>Status: {{ callState }}</div>
+    </div>
+
+    <div class="call-videos">
+      <video #remoteVideo class="remote-video" autoplay playsinline></video>
+      <video #localVideo class="local-video" autoplay playsinline muted></video>
+    </div>
+
+    <div class="call-controls">
+      <button type="button" (click)="toggleMute()">{{ muted ? 'Desmutar' : 'Mudo' }}</button>
+      <button type="button" (click)="toggleVideo()">{{ videoEnabled ? 'Desligar câmera' : 'Ligar câmera' }}</button>
+      <button type="button" class="btn-end" (click)="endCall()">Encerrar chamada</button>
+    </div>
   </div>
 
   <div class="vazio" *ngIf="!loading && !consultas.length">

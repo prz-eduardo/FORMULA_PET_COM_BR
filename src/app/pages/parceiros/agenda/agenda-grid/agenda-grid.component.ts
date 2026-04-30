@@ -1,5 +1,6 @@
 import {
-  Component, Input, Output, EventEmitter, ChangeDetectionStrategy, computed, signal
+  Component, Input, Output, EventEmitter, ChangeDetectionStrategy,
+  computed, signal, OnChanges, AfterViewInit, SimpleChanges, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaConfig, Profissional, SlotInfo } from '../../../../types/agenda.types';
@@ -20,10 +21,12 @@ interface TimeSlot {
   styleUrls: ['./agenda-grid.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AgendaGridComponent {
+export class AgendaGridComponent implements OnChanges, AfterViewInit {
   @Input() agendamentos: Agendamento[] = [];
   @Input() profissionais: Profissional[] = [];
   @Input() config!: AgendaConfig;
+  @Input() workStart?: number;
+  @Input() workEnd?: number;
   @Input() selectedDate!: Date;
   @Output() slotClick = new EventEmitter<SlotInfo>();
   @Output() quickAction = new EventEmitter<QuickActionEvent>();
@@ -31,9 +34,19 @@ export class AgendaGridComponent {
 
   readonly SLOT_HEIGHT_PX = 60; // pixels per 30 min slot
 
+  constructor(private el: ElementRef) {}
+
+  private get effectiveWorkStart(): number {
+    return this.workStart ?? this.config?.workStart ?? 8;
+  }
+
+  private get effectiveWorkEnd(): number {
+    return this.workEnd ?? this.config?.workEnd ?? 19;
+  }
+
   get timeSlots(): TimeSlot[] {
-    const start = this.config?.workStart ?? 8;
-    const end = this.config?.workEnd ?? 19;
+    const start = this.effectiveWorkStart;
+    const end = this.effectiveWorkEnd;
     const slots: TimeSlot[] = [];
     for (let h = start; h < end; h++) {
       slots.push({ label: `${String(h).padStart(2, '0')}:00`, hour: h, minute: 0 });
@@ -43,8 +56,8 @@ export class AgendaGridComponent {
   }
 
   get totalMinutes(): number {
-    const start = this.config?.workStart ?? 8;
-    const end = this.config?.workEnd ?? 19;
+    const start = this.effectiveWorkStart;
+    const end = this.effectiveWorkEnd;
     return (end - start) * 60;
   }
 
@@ -61,7 +74,7 @@ export class AgendaGridComponent {
   }
 
   topPercent(a: Agendamento): string {
-    const start = (this.config?.workStart ?? 8) * 60;
+    const start = (this.effectiveWorkStart) * 60;
     const date = toDate(a.inicio);
     const startMin = date.getHours() * 60 + date.getMinutes();
     const offset = Math.max(0, startMin - start);
@@ -76,7 +89,7 @@ export class AgendaGridComponent {
   get nowLineTop(): string | null {
     const now = new Date();
     if (now.toDateString() !== this.selectedDate?.toDateString()) return null;
-    const start = (this.config?.workStart ?? 8) * 60;
+    const start = (this.effectiveWorkStart) * 60;
     const nowMin = now.getHours() * 60 + now.getMinutes();
     const offset = nowMin - start;
     if (offset < 0 || offset > this.totalMinutes) return null;
@@ -87,5 +100,49 @@ export class AgendaGridComponent {
     const hora = new Date(this.selectedDate);
     hora.setHours(slot.hour, slot.minute, 0, 0);
     this.slotClick.emit({ hora, profissionalId: prof.id });
+  }
+
+  ngAfterViewInit(): void {
+    // initial auto-scroll after view is ready
+    setTimeout(() => this.scrollToInitial(), 0);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['selectedDate'] || changes['config']) {
+      setTimeout(() => this.scrollToInitial(), 0);
+    }
+  }
+
+  private scrollToInitial(): void {
+    try {
+      const host = this.el.nativeElement as HTMLElement;
+      const gridBody = host.querySelector('.grid-body') as HTMLElement | null;
+      if (!gridBody) return;
+
+      const total = this.totalMinutes;
+      if (!total || total <= 0) return;
+
+      const startMin = (this.effectiveWorkStart) * 60;
+      const now = new Date();
+      let offsetMin = 0;
+
+      if (this.selectedDate && now.toDateString() === this.selectedDate.toDateString()) {
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const off = nowMin - startMin;
+        if (off < 0) offsetMin = 0;
+        else if (off > total) offsetMin = total;
+        else offsetMin = off;
+      } else {
+        offsetMin = 0;
+      }
+
+      const contentHeight = gridBody.scrollHeight;
+      const pixelOffset = (offsetMin / total) * contentHeight;
+      // Try to position the time a bit below the top for context
+      const preferred = Math.max(0, pixelOffset - gridBody.clientHeight * 0.18);
+      gridBody.scrollTo({ top: preferred, behavior: 'smooth' });
+    } catch {
+      // ignore scroll errors
+    }
   }
 }

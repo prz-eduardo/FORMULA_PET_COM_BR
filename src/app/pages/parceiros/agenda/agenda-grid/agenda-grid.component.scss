@@ -66,6 +66,8 @@
   display: flex;
   position: relative;
   flex: 1;
+  overflow: auto; /* allow internal vertical scroll */
+  scroll-behavior: smooth;
 }
 
 .time-col {

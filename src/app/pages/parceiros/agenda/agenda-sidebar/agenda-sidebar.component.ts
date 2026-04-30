@@ -7,6 +7,7 @@ import {
   Agendamento, AgendaConfig, AgendaStatus,
   PetResumido, Profissional, Servico, SlotInfo
 } from '../../../../types/agenda.types';
+import { AgendaApiService } from '../services/agenda-api.service';
 import { getTime } from '../utils/date-helpers';
 
 @Component({
@@ -76,6 +77,15 @@ export class AgendaSidebarComponent implements OnInit, OnChanges {
       this.allPets.set(this.catalogPets || []);
     }
   }
+  // Permission request state
+  permissionStatus = signal<'pendente' | 'concedido' | 'revogado' | null>(null);
+  showRequestModal = signal(false);
+  requesting = signal(false);
+  inviteSent = signal(false);
+  inviteInfo: any = null;
+  emailInput = signal('');
+
+  constructor(private agendaApi: AgendaApiService) {}
 
   ngOnInit(): void {
     this.allPets.set(this.catalogPets || []);
@@ -110,6 +120,7 @@ export class AgendaSidebarComponent implements OnInit, OnChanges {
     this.selectedPet.set(pet);
     this.searchPet.set(pet.nome);
     this.showPetDropdown.set(false);
+    void this.loadPermissaoForSelectedPet();
   }
 
   clearPet(): void {
@@ -152,6 +163,17 @@ export class AgendaSidebarComponent implements OnInit, OnChanges {
   onSave(): void {
     if (!this.canSave()) return;
 
+    // If a pet was selected but partner doesn't have granted permission,
+    // prompt to request access instead of saving directly.
+    if (this.selectedPet() && this.permissionStatus() !== 'concedido') {
+      if (this.permissionStatus() === 'pendente') {
+        // Invitation already sent — do not create full pet-linked appointment
+        return;
+      }
+      this.openRequestModal();
+      return;
+    }
+
     const [year, month, day] = this.dateStr().split('-').map(Number);
     const [hour, min] = this.timeStr().split(':').map(Number);
 
@@ -193,5 +215,53 @@ export class AgendaSidebarComponent implements OnInit, OnChanges {
     };
 
     this.save.emit(novo);
+  }
+
+  async loadPermissaoForSelectedPet(): Promise<void> {
+    this.permissionStatus.set(null);
+    this.inviteSent.set(false);
+    this.inviteInfo = null;
+    const pet = this.selectedPet();
+    if (!pet) return;
+    this.emailInput.set(pet.tutor?.email || '');
+    try {
+      const permissoes = await this.agendaApi.listPermissoesDados();
+      let found: any = null;
+      if (pet.tutor?.email) {
+        found = permissoes.find((p: any) => p.cliente_email === pet.tutor.email || String(p.cliente_id) === String(p.tutor.id));
+      } else if (pet.tutor?.id) {
+        found = permissoes.find((p: any) => String(p.cliente_id) === String(p.tutor.id));
+      }
+      if (found) this.permissionStatus.set(found.status || null);
+      else this.permissionStatus.set(null);
+    } catch (e) {
+      this.permissionStatus.set(null);
+    }
+  }
+
+  openRequestModal(): void {
+    this.emailInput.set(this.selectedPet()?.tutor?.email || '');
+    this.showRequestModal.set(true);
+  }
+
+  closeRequestModal(): void {
+    this.showRequestModal.set(false);
+  }
+
+  async doInvite(): Promise<void> {
+    const email = this.emailInput().trim();
+    if (!email) return;
+    this.requesting.set(true);
+    try {
+      const convite = await this.agendaApi.inviteClient({ cliente_email: email, escopo: 'pets' });
+      this.inviteInfo = convite;
+      this.inviteSent.set(true);
+      this.permissionStatus.set('pendente');
+      this.showRequestModal.set(false);
+    } catch (err) {
+      console.error('inviteClient failed', err);
+    } finally {
+      this.requesting.set(false);
+    }
   }
 }

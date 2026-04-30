@@ -148,18 +148,26 @@ export class AgendaApiService {
    * POST /parceiro/agendamentos — criar novo agendamento
    */
   async createAgendamento(data: {
+    agenda_id?: number;
+    cliente_id?: number;
+    pet_id?: number;
+    servico_id?: number;
     recurso_id: number;
-    cliente_nome: string;
+    cliente_nome?: string;
     cliente_telefone?: string;
     pet_nome?: string;
-    inicio: string | Date;
-    fim: string | Date;
+    inicio?: string | Date;
+    fim?: string | Date;
+    data_hora_inicio?: string | Date;
+    data_hora_fim?: string | Date;
     observacoes?: string;
   }): Promise<Agendamento> {
+    const inicioValue = data.data_hora_inicio ?? data.inicio;
+    const fimValue = data.data_hora_fim ?? data.fim;
     const payload = {
       ...data,
-      inicio: data.inicio instanceof Date ? data.inicio.toISOString() : data.inicio,
-      fim: data.fim instanceof Date ? data.fim.toISOString() : data.fim,
+      data_hora_inicio: inicioValue instanceof Date ? inicioValue.toISOString() : inicioValue,
+      data_hora_fim: fimValue instanceof Date ? fimValue.toISOString() : fimValue,
     };
 
     const response = await lastValueFrom(
@@ -178,17 +186,25 @@ export class AgendaApiService {
   async updateAgendamento(
     id: number,
     data: Partial<{
+      agenda_id: number;
+      cliente_id: number | null;
+      pet_id: number | null;
+      servico_id: number | null;
       cliente_nome: string;
       cliente_telefone: string | null;
       pet_nome: string | null;
       inicio: string | Date;
       fim: string | Date;
+      data_hora_inicio: string | Date;
+      data_hora_fim: string | Date;
       observacoes: string | null;
     }>
   ): Promise<Agendamento> {
     const payload = { ...data };
     if (payload.inicio instanceof Date) payload.inicio = payload.inicio.toISOString();
     if (payload.fim instanceof Date) payload.fim = payload.fim.toISOString();
+    if (payload.data_hora_inicio instanceof Date) payload.data_hora_inicio = payload.data_hora_inicio.toISOString();
+    if (payload.data_hora_fim instanceof Date) payload.data_hora_fim = payload.data_hora_fim.toISOString();
 
     const response = await lastValueFrom(
       this.http.put<{ agendamento: Agendamento }>(
@@ -499,8 +515,7 @@ export class AgendaApiService {
     );
   }
 
-  // ===========================================================================
-  // CONSENTIMENTO DE DADOS (tutor ↔ parceiro)
+  // PERMISSÕES DE DADOS (clientes)
   // ===========================================================================
 
   async listPermissoesDados(): Promise<PermissaoDadosRow[]> {
@@ -525,6 +540,15 @@ export class AgendaApiService {
         { headers: this.getHeaders() }
       )
     );
+  }
+
+  async inviteClient(data: {
+    cliente_email: string;
+    escopo?: 'dados_basicos' | 'pets' | 'completo';
+    days_valid?: number;
+  }): Promise<ConviteClienteRow | null> {
+    const response = await this.postConviteCliente(data);
+    return response.convite;
   }
 }
 

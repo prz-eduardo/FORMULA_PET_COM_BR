@@ -6,5 +6,7 @@ export const parceiroGuard: CanActivateFn = () => {
   const auth = inject(ParceiroAuthService);
   const router = inject(Router);
   if (auth.isLoggedIn()) return true;
-  return router.parseUrl('/parceiros/login');
+  // Preserve attempted URL so login can redirect back
+  const returnUrl = router.url || '/parceiros/painel';
+  return router.parseUrl(`/parceiros/login?returnUrl=${encodeURIComponent(returnUrl)}`);
 };

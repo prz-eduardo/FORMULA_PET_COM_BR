@@ -491,6 +491,18 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     this.longPressFired = false;
   }
 
+  /** Fallback para devices/navegadores onde pointer events falham no FAB. */
+  onFabClick(ev: Event): void {
+    ev.preventDefault();
+    this.openSheet();
+  }
+
+  /** Acessibilidade: Enter/Espaço também abrem ações rápidas. */
+  onFabKeyboardActivate(ev: Event): void {
+    ev.preventDefault();
+    this.openSheet();
+  }
+
   openSheet(): void {
     if (this.isSheetOpen) return;
     this.haptics.medium();

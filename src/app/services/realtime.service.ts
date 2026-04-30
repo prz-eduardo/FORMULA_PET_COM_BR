@@ -50,11 +50,33 @@ export class RealtimeService implements OnDestroy {
     this.socket.on('disconnect', () => this.connected$.next(false));
     this.socket.on('connect_error', (err) => {
       this.connected$.next(false);
-      console.warn('[realtime] connect_error:', err?.message);
+      console.warn('[realtime] connect_error:', (err as any)?.message || String(err));
     });
 
     this.socket.onAny((event: string, payload: any) => {
       this.events.next({ event, payload });
+    });
+  }
+
+  /**
+   * Emite um evento para o servidor e aguarda ack (Promise).
+   * Retorna o conteúdo do ack ou um objeto { ok: false, error }
+   */
+  emit(event: string, payload: any = {}, timeoutMs = 10000): Promise<any> {
+    if (!this.socket) return Promise.reject(new Error('Socket não conectado'));
+    return new Promise((resolve) => {
+      try {
+        // socket.timeout retorna um emitter que aceita ack callback (err, resp)
+        (this.socket as any).timeout(timeoutMs).emit(event, payload, (err: any, resp: any) => {
+          if (err) {
+              resolve({ ok: false, error: 'timeout_or_error', details: ((err as any)?.message) || String(err) });
+            } else {
+              resolve(resp);
+            }
+        });
+      } catch (e) {
+        resolve({ ok: false, error: 'emit_failed', details: ((e as any)?.message) || String(e) });
+      }
     });
   }
 

@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ParceiroAuthService } from '../../../services/parceiro-auth.service';
 
 @Component({
@@ -20,6 +20,7 @@ export class LoginParceiroComponent {
   constructor(
     private auth: ParceiroAuthService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   onSubmit(): void {
@@ -34,7 +35,12 @@ export class LoginParceiroComponent {
     this.auth.login(this.email, this.password)
       .then(() => {
         this.loading.set(false);
-        this.router.navigate(['/parceiros/painel']);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        if (returnUrl) {
+          this.router.navigateByUrl(returnUrl);
+        } else {
+          this.router.navigate(['/parceiros/painel']);
+        }
       })
       .catch((err) => {
         this.loading.set(false);

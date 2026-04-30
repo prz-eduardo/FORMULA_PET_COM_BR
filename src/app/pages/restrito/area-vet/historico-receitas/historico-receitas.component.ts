@@ -3,6 +3,8 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { ApiService, PagedReceitasResponse, Receita } from '../../../../services/api.service';
+import { AuthService } from '../../../../services/auth.service';
+import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 import { AdminPaginationComponent } from '../../admin/shared/admin-pagination/admin-pagination.component';
 
@@ -16,6 +18,8 @@ import { AdminPaginationComponent } from '../../admin/shared/admin-pagination/ad
 export class HistoricoReceitasComponent {
   private api = inject(ApiService);
   private router = inject(Router);
+  private auth = inject(AuthService);
+  private parceiroAuth = inject(ParceiroAuthService);
 
   /** Rota `/historico-receitas` (vet legado) precisa da navbar; em `/parceiros/...` o shell já cobre. */
   get showSiteNav(): boolean {
@@ -47,7 +51,11 @@ export class HistoricoReceitasComponent {
   }
 
   get token(): string | null {
-    return localStorage.getItem('token') || sessionStorage.getItem('token');
+    try {
+      return this.auth.getToken() || this.parceiroAuth.getToken() || localStorage.getItem('token') || sessionStorage.getItem('token');
+    } catch {
+      return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
   }
 
   async load() {

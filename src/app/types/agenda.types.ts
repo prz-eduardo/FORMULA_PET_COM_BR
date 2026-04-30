@@ -15,6 +15,8 @@ export type AgendaStatus =
   | 'FINALIZADO'
   | 'CANCELADO';
 
+export type EscopoPermissaoDados = 'dados_basicos' | 'pets' | 'completo';
+
 export type TipoRecurso = 'INDIVIDUAL' | 'COMPARTILHADO';
 
 export type RoleColaborador = 'master' | 'colaborador';
@@ -130,13 +132,22 @@ export interface HistoricoItem {
 
 export interface Agendamento {
   id: number | string; // Support both for backward compatibility
+  agenda_id?: number;
+  cliente_id?: number | null;
+  pet_id?: number | null;
+  servico_id?: number | null;
+  data_hora_inicio?: string;
+  data_hora_fim?: string;
+  cliente_nome_snapshot?: string | null;
+  cliente_telefone_snapshot?: string | null;
+  pet_nome_snapshot?: string | null;
   estabelecimentoId?: number;
   parceiroId?: string; // Legacy
   recursoId?: number;
   criadoPor?: number;
   criado_por?: number; // Backend naming
   clienteNome?: string;
-  cliente_nome?: string; // Backend naming
+  cliente_nome?: string | null; // Backend naming
   clienteTelefone?: string | null;
   cliente_telefone?: string | null; // Backend naming
   petNome?: string | null;
@@ -144,6 +155,7 @@ export interface Agendamento {
   inicio: Date | string;
   fim: Date | string;
   status: AgendaStatus;
+  escopoPermissao?: EscopoPermissaoDados | null;
   observacoes?: string | null;
   criado_em?: string;
   updated_at?: string;

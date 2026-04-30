@@ -73,6 +73,30 @@
           <span class="hist-prof">{{ h.profissional }}</span>
         </div>
       </div>
+      <div class="perm-request">
+        <div *ngIf="permissionStatus() === 'concedido'" class="perm-hint">Acesso concedido: você pode ver e selecionar pets.</div>
+        <div *ngIf="permissionStatus() === 'pendente'" class="perm-hint">Convite enviado — aguardando resposta do cliente.</div>
+        <div *ngIf="permissionStatus() === 'revogado'" class="perm-hint">Acesso revogado.</div>
+        <div *ngIf="permissionStatus() === null" class="perm-actions">
+          <button class="btn" (click)="openRequestModal()">Solicitar acesso aos pets do cliente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solicitar acesso modal -->
+    <div class="request-modal-overlay" *ngIf="showRequestModal()">
+      <div class="request-modal" role="dialog" aria-modal="true">
+        <h3>Solicitar acesso aos dados e pets?</h3>
+        <p>Ao solicitar, o cliente receberá um e-mail com um convite para permitir o acesso.</p>
+        <div *ngIf="!selectedPet()?.tutor?.email" class="field">
+          <label>E-mail do cliente</label>
+          <input type="email" [ngModel]="emailInput()" (ngModelChange)="emailInput.set($event)" />
+        </div>
+        <div class="actions">
+          <button class="btn" (click)="closeRequestModal()">Cancelar</button>
+          <button class="btn primary" (click)="doInvite()" [disabled]="requesting()">Solicitar</button>
+        </div>
+      </div>
     </div>
 
     <!-- Date + Time -->

@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { ParceiroAuthService } from '../../../services/parceiro-auth.service';
 import { ApiService, Ativo } from '../../../services/api.service';
 import { LoginVetComponent } from './login-vet/login-vet.component';
 import { CrieSuaContaComponent } from './crie-sua-conta/crie-sua-conta.component';
@@ -37,52 +38,81 @@ export class AreaVetComponent implements OnInit, AfterViewInit {
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private authService: AuthService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private parceiroAuth: ParceiroAuthService
   ) {}
+
+  getEffectiveToken(): string | null {
+    try { const t = this.authService?.getToken && this.authService.getToken(); if (t) return t; } catch {}
+    try { const pt = this.parceiroAuth?.getToken && this.parceiroAuth.getToken(); if (pt) return pt; } catch {}
+    if (isPlatformBrowser(this.platformId)) {
+      try { return localStorage.getItem('token') || sessionStorage.getItem('token') || null; } catch {}
+    }
+    return null;
+  }
 
 ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-    const token = localStorage.getItem('token') || undefined;
-    if (!token) return;
-    const payload: any = JSON.parse(atob(token.split('.')[1]));
-    this.isLoggedIn = true;
-    this.modalLoginAberto = false;
-    this.modalCadastroAberto = false;
-    this.carregarVet(payload.id);
-  }
-      this.authService.isLoggedIn$.subscribe((status) => {
+      const token = this.getEffectiveToken();
+      if (token) {
+        try {
+          const payload: any = JSON.parse(atob(String(token).split('.')[1]));
+          // If token belongs to a vet, try loading vet data
+          const role = payload?.tipo || payload?.role;
+          if (payload?.id && (role === 'vet' || role === 'veterinario' || role === undefined)) {
+            this.carregarVet(String(payload.id), token);
+          } else {
+            // Partner token or non-vet token: mark as logged (partner) but no vet data
+            const colaborador = this.parceiroAuth.getCurrentColaborador();
+            if (colaborador) {
+              this.isLoggedIn = true;
+              this.modalLoginAberto = false;
+              this.modalCadastroAberto = false;
+              this.vetData = null;
+              this.vetApproved = true;
+            }
+          }
+        } catch {
+          // ignore token parsing errors
+        }
+      }
+    }
+
+    this.authService.isLoggedIn$.subscribe((status) => {
       this.isLoggedIn = status;
     });
-  this.authService.isLoggedIn$.subscribe(logged => {
-    this.isLoggedIn = logged;
+    this.authService.isLoggedIn$.subscribe(logged => {
+      this.isLoggedIn = logged;
 
-    if (logged) {
-      const token = this.authService.getToken();
-      if (!token) return;
-      const payload: any = JSON.parse(atob(token.split('.')[1]));
-      this.carregarVet(payload.id);
-      this.modalLoginAberto = false;
-      this.modalCadastroAberto = false;
-    } else {
-      this.vetData = null;
-    }
-  });
+      if (logged) {
+        const token = this.authService.getToken();
+        if (!token) return;
+        try {
+          const payload: any = JSON.parse(atob(String(token).split('.')[1]));
+          this.carregarVet(String(payload.id), token);
+        } catch {}
+        this.modalLoginAberto = false;
+        this.modalCadastroAberto = false;
+      } else {
+        this.vetData = null;
+      }
+    });
 }
 
 
 // função de carregar vet
-carregarVet(vetId: string) {
-  const token: string | undefined =
-    isPlatformBrowser(this.platformId) ? localStorage.getItem('token') || undefined : undefined;
+carregarVet(vetId: string, token?: string) {
+  const effective = token || (isPlatformBrowser(this.platformId) ? this.authService.getToken() || undefined : undefined);
 
-  this.apiService.getVet(vetId, token).toPromise()
+  this.apiService.getVet(vetId, effective).toPromise()
     .then(vet => {
       this.vetData = vet;
       this.vetApproved = vet?.approved || false;
     })
     .catch(err => {
       console.error('Erro ao buscar vet:', err);
-      this.logout();
+      // Do not force logout when partner is creating recipes; just clear vet data
+      this.vetData = null;
     });
 }
 
@@ -208,13 +238,14 @@ onFiltroChange() {
 }
 
 onLogin() {
-  const token = localStorage.getItem('token') || undefined;
+  const token = this.getEffectiveToken();
   if (!token) return;
-  const payload: any = JSON.parse(atob(token.split('.')[1]));
+  let payload: any = null;
+  try { payload = JSON.parse(atob(String(token).split('.')[1])); } catch {}
   this.isLoggedIn = true;
   this.modalLoginAberto = false;
   this.modalCadastroAberto = false;
-  this.carregarVet(payload.id);
+  if (payload?.id) this.carregarVet(payload.id, token);
 }
 
 }

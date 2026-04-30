@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { ApiService, AlergiaLookup, CriarAtendimentoPayload } from '../../../../services/api.service';
+import { AuthService } from '../../../../services/auth.service';
+import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { ToastService } from '../../../../services/toast.service';
 import { debounce, slice } from 'lodash-es';
 import jsPDF from 'jspdf';
@@ -181,9 +183,26 @@ isBrowser: any;
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
   @Inject(PLATFORM_ID) private platformId: Object,
-  private sanitizer: DomSanitizer
+  private sanitizer: DomSanitizer,
+  private authService: AuthService,
+  private parceiroAuth: ParceiroAuthService
     ) {
     this.debouncedFiltrarAtivos = debounce(this.filtrarAtivos.bind(this), 250);
+  }
+
+  getEffectiveToken(): string | null {
+    try {
+      const t = this.authService?.getToken && this.authService.getToken();
+      if (t) return t;
+    } catch {}
+    try {
+      const pt = this.parceiroAuth?.getToken && this.parceiroAuth.getToken();
+      if (pt) return pt;
+    } catch {}
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem('token') || sessionStorage.getItem('token') || null;
+    }
+    return null;
   }
 
   ngOnInit(): void { 
@@ -205,18 +224,35 @@ isBrowser: any;
 
   async carregarVeterinario() {
     if (!isPlatformBrowser(this.platformId)) return;
-    
-    const token = localStorage.getItem('token');
+    const token = this.getEffectiveToken();
     if (!token) {
-      console.error('Token não encontrado no localStorage');
+      // no token available (shouldn't happen if partner shell protects route)
+      console.warn('Nenhum token disponível para carregar veterinário');
       return;
     }
 
     try {
       const decoded: any = jwtDecode(token);
-      const vetId = decoded.id;
-      const response = await this.apiService.getVeterinario(vetId, token).toPromise();
-      this.veterinario = response;
+      const role = decoded?.tipo || decoded?.role;
+      if (decoded?.id && (role === 'vet' || role === 'veterinario' || role === undefined)) {
+        const vetId = decoded.id;
+        const response = await this.apiService.getVeterinario(vetId, token).toPromise();
+        this.veterinario = response;
+      } else {
+        // Partner token: populate basic collaborator info if available
+        const colaborador = this.parceiroAuth.getCurrentColaborador();
+        if (colaborador) {
+          this.veterinario = {
+            id: String(colaborador.id),
+            nome: colaborador.nome,
+            cpf: '',
+            crmv: '',
+            email: colaborador.email,
+            tipo: 'parceiro',
+            approved: true
+          } as any;
+        }
+      }
     } catch (error) {
       console.error(error);
     }
@@ -244,8 +280,8 @@ isBrowser: any;
     }
 
     try {
-      // Obter token do localStorage
-      const token = localStorage.getItem('token');
+      // Obter token efetivo (vet ou parceiro)
+      const token = this.getEffectiveToken();
       if (!token) {
         this.toastService.error('Token de autenticação não encontrado. Faça login novamente.', 'Erro de Autenticação');
         this.carregandoTutor = false;
@@ -984,7 +1020,7 @@ isBrowser: any;
 
     // Persistir alterações de pet se necessário
     let petUsado: Pet | null = this.petSelecionado ? { ...this.petSelecionado } : null;
-    const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') : null;
+    const token = this.getEffectiveToken();
     try {
       if (this.petSavePlan && !this.clienteIdSelecionado) {
         this.toastService.error('Não é possível salvar o pet sem um cliente. Busque o CPF novamente.');
@@ -1143,7 +1179,7 @@ isBrowser: any;
     };
 
     try {
-      const tokenReceita = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') || undefined : undefined;
+      const tokenReceita = this.getEffectiveToken() || undefined;
       await this.apiService.criarAtendimento(atendimentoPayload, tokenReceita).toPromise();
       this.toastService.success('Prontuário do atendimento salvo com sucesso.');
       // Evita carregar o alerta de alergia para a próxima receita
@@ -1311,7 +1347,7 @@ getDoseGatos(id: string): string {
     this.showSugestoesVet = false;
     this.sugestoesVet = [];
     if (!termo) return;
-    const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('token') : null;
+    const token = this.getEffectiveToken();
     if (!token) return;
     const jaSelecionados = new Set(this.alergiasSelecionadasVet.map(a => `${a.alergia_id ?? ''}|${a.ativo_id ?? ''}`));
     this.apiService.getListaAlergias(token, termo).subscribe({

@@ -7,9 +7,9 @@
     <div class="modal-pet-info">
       <div class="pet-avatar">{{ agendamento.pet?.especie === 'Gato' ? '🐱' : '🐶' }}</div>
       <div>
-        <div class="pet-name">{{ agendamento.pet?.nome }}</div>
+        <div class="pet-name">{{ agendamento.pet?.nome || agendamento.pet_nome || agendamento.pet_nome_snapshot }}</div>
         <div class="pet-meta">
-          {{ agendamento.pet?.especie }} · {{ agendamento.pet?.raca }}
+          {{ agendamento.pet?.especie || 'Pet' }} · {{ agendamento.pet?.raca || '-' }}
           <span
             class="status-badge"
             [class]="'badge-' + agendamento.status.toLowerCase().replace('_','-')"
@@ -28,8 +28,8 @@
     <div class="info-grid">
       <div class="info-item">
         <span class="info-lbl">Tutor</span>
-        <span>{{ agendamento.pet?.tutor?.nome }}</span>
-        <span class="info-sub">{{ agendamento.pet?.tutor?.telefone }}</span>
+        <span>{{ agendamento.pet?.tutor?.nome || agendamento.cliente_nome || agendamento.cliente_nome_snapshot }}</span>
+        <span class="info-sub">{{ agendamento.pet?.tutor?.telefone || agendamento.cliente_telefone || agendamento.cliente_telefone_snapshot }}</span>
       </div>
       <div class="info-item">
         <span class="info-lbl">Serviço</span>
@@ -127,6 +127,16 @@
     <div class="obs-lbl">Telemedicina pronta</div>
     <p>Sala: <strong>{{ telemedicinaInfo.sala_codigo }}</strong></p>
     <p>Canal de signaling: <strong>{{ telemedicinaInfo.signaling_channel }}</strong></p>
+
+    <div class="call-area" *ngIf="telemedicinaActive">
+      <video #remoteVideo class="remote-video" autoplay playsinline></video>
+      <video #localVideo class="local-video" autoplay playsinline muted></video>
+      <div class="call-controls">
+        <button type="button" (click)="toggleMute()">Toggle Mute</button>
+        <button type="button" (click)="toggleVideo()">Toggle Video</button>
+        <button type="button" (click)="endCall()">Encerrar</button>
+      </div>
+    </div>
   </div>
 
 </div>

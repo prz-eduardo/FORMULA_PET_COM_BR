@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService, Receita } from '../../../../services/api.service';
+import { AuthService } from '../../../../services/auth.service';
+import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 
 @Component({
@@ -15,6 +17,8 @@ export class ReceitaDetalheComponent {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private auth = inject(AuthService);
+  private parceiroAuth = inject(ParceiroAuthService);
 
   get showSiteNav(): boolean {
     const path = (this.router.url.split('?')[0] || '').split('#')[0] || '';
@@ -25,7 +29,9 @@ export class ReceitaDetalheComponent {
   erro: string | null = null;
   receita: Receita | null = null;
 
-  get token(): string | null { return localStorage.getItem('token') || sessionStorage.getItem('token'); }
+  get token(): string | null {
+    try { return this.auth.getToken() || this.parceiroAuth.getToken() || localStorage.getItem('token') || sessionStorage.getItem('token'); } catch { return localStorage.getItem('token') || sessionStorage.getItem('token'); }
+  }
 
   ngOnInit() { this.load(); }
 

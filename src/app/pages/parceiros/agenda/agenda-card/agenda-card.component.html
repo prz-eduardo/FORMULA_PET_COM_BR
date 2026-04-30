@@ -5,13 +5,13 @@
   (click)="onCardClick()"
   role="button"
   tabindex="0"
-  [attr.aria-label]="(agendamento.pet?.nome || 'Pet') + ' — ' + (agendamento.servico?.nome || 'Serviço')"
+  [attr.aria-label]="(agendamento.pet?.nome || agendamento.pet_nome || agendamento.pet_nome_snapshot || 'Pet') + ' — ' + (agendamento.servico?.nome || 'Serviço')"
 >
   <!-- Status indicator stripe is done via CSS left border -->
 
   <div class="card-main">
     <div class="card-top">
-      <span class="pet-name">{{ agendamento.pet?.nome }}</span>
+      <span class="pet-name">{{ agendamento.pet?.nome || agendamento.pet_nome || agendamento.pet_nome_snapshot }}</span>
       <span class="status-badge">{{ statusLabel }}</span>
     </div>
 

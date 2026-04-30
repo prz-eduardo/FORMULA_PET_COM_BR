@@ -85,6 +85,16 @@ html, body{
     body.mapa-no-topnav .app-navbar .ps-minibag {
         pointer-events: auto;
     }
+    /* Quando abrir overlays/modais do navmenu no mapa, capturar clique na frente */
+    body.mapa-no-topnav app-navmenu .cliente-overlay,
+    body.mapa-no-topnav app-navmenu .cliente-modal,
+    body.mapa-no-topnav app-navmenu .cliente-close,
+    body.mapa-no-topnav .app-navbar .ps-sheet-backdrop,
+    body.mapa-no-topnav .app-navbar .ps-sheet,
+    body.mapa-no-topnav .app-navbar .ps-radial-backdrop,
+    body.mapa-no-topnav .app-navbar .ps-radial {
+        pointer-events: auto;
+    }
     body.mapa-no-topnav .app-navbar .menubar.navbar-mainbg {
         display: none !important;
     }

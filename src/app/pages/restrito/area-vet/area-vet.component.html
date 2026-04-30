@@ -1,14 +1,14 @@
-﻿
-<div class="area-vet-wrapper">
+﻿ 
+<div class="area-vet-wrapper guia-ativos">
 
   <!-- Page header -->
   <div class="page-header">
     <div>
-      <h1 class="page-title">PrincÃ­pios Ativos</h1>
-      <p class="page-subtitle">Guia de compostos farmacÃªuticos com dosagens para cÃ£es e gatos</p>
+      <h1 class="page-title">Princípios Ativos</h1>
+      <p class="page-subtitle">Guia de compostos farmacêuticos com dosagens para cães e gatos</p>
     </div>
     <button class="btn-ref" (click)="abrirModalReferencias()">
-      <i class="fa fa-book"></i> ReferÃªncias
+      <i class="fa fa-book"></i> Referências
     </button>
   </div>
 
@@ -55,11 +55,11 @@
                   <p class="ativo-desc">{{ ativo.descricao }}</p>
                   <div class="dose-grid">
                     <div class="dose-item">
-                      <span class="dose-label">ðŸ¶ CÃ£es</span>
+                      <span class="dose-label">Cães</span>
                       <span class="dose-val">{{ ativo.doseCaes }}</span>
                     </div>
                     <div class="dose-item">
-                      <span class="dose-label">ðŸ± Gatos</span>
+                      <span class="dose-label">Gatos</span>
                       <span class="dose-val">{{ ativo.doseGatos }}</span>
                     </div>
                   </div>
@@ -79,10 +79,10 @@
       <table>
         <thead>
           <tr>
-            <th>Ãndice</th>
+            <th>Índice</th>
             <th>Ativo</th>
-            <th>DescriÃ§Ã£o</th>
-            <th>Dose CÃ£es</th>
+            <th>Descrição</th>
+            <th>Dose Cães</th>
             <th>Dose Gatos</th>
           </tr>
         </thead>
@@ -101,28 +101,28 @@
     </div>
   </div>
 
-  <!-- Modal ReferÃªncias -->
+  <!-- Modal Referências -->
   <ng-container *ngIf="modalReferenciasAberto">
     <div class="modal-overlay" (click)="fecharModalReferencias()"></div>
     <div class="modal-content">
-      <h2>ReferÃªncias BibliogrÃ¡ficas</h2>
+      <h2>Referências Bibliográficas</h2>
       <ul class="referencias">
-        <li>ANDRADE, S.F. Manual de TerapÃªutica VeterinÃ¡ria. SÃ£o Paulo: Ed. Roca, 2002.</li>
-        <li>ÃVILA, L. ITV: Ãndice TerapÃªutico VeterinÃ¡rio. 4 ed. PetrÃ³polis, RJ: EPUB, 2010.</li>
-        <li>PAPICH, M. G. Manual Saunders de Terapia VeterinÃ¡ria. 3 ed. Rio de Janeiro: Elsevier, 2012.</li>
-        <li>PLUMB, D. C. Veterinary Drug Handbook. Ames: Ed. Lowa State Press, 2002.</li>
-        <li>SPINOSA, H. S; et al. Farmacologia aplicada Ã  medicina veterinÃ¡ria. 5 ed. Rio de Janeiro: Guanabara Koogan, 2015.</li>
-        <li>VIANA, F.A.B. Guia TerapÃªutico VeterinÃ¡rio. 2 ed. Belo Horizonte: GrÃ¡fica e Editora CEM Ltda, 2003.</li>
+        <li>ANDRADE, S.F. Manual de Terapêutica Veterinária. São Paulo: Ed. Roca, 2002.</li>
+        <li>ÁVILA, L. ITV: Índice Terapêutico Veterinário. 4 ed. Petrópolis, RJ: EPUB, 2010.</li>
+        <li>PAPICH, M. G. Manual Saunders de Terapia Veterinária. 3 ed. Rio de Janeiro: Elsevier, 2012.</li>
+        <li>PLUMB, D. C. Veterinary Drug Handbook. Ames: Ed. Iowa State Press, 2002.</li>
+        <li>SPINOSA, H. S; et al. Farmacologia aplicada à medicina veterinária. 5 ed. Rio de Janeiro: Guanabara Koogan, 2015.</li>
+        <li>VIANA, F.A.B. Guia Terapêutico Veterinário. 2 ed. Belo Horizonte: Gráfica e Editora CEM Ltda, 2003.</li>
       </ul>
       <button class="btn" (click)="fecharModalReferencias()">Fechar</button>
     </div>
   </ng-container>
 
-  <!-- Modal aviso sessÃ£o -->
+  <!-- Modal aviso sessão -->
   <div class="modal-aviso" *ngIf="modalAvisoAberto">
     <div class="modal-content">
-      <h3>SessÃ£o expirada</h3>
-      <p>Seu token expirou ou Ã© invÃ¡lido. VocÃª serÃ¡ deslogado.</p>
+      <h3>Sessão expirada</h3>
+      <p>Seu token expirou ou é inválido. Você será deslogado.</p>
       <button class="btn" (click)="dismissLogout()">OK</button>
     </div>
   </div>

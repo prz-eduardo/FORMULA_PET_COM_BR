@@ -4,7 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import {
   Agendamento, AgendaConfig, AgendaFiltros, AgendaStatus,
-  PartnerType, Profissional, Servico, SlotInfo, ViewMode
+  PartnerType, Profissional, Recurso, Servico, SlotInfo, ViewMode
 } from '../../../../types/agenda.types';
 import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { AgendaConfigService } from '../services/agenda-config.service';
@@ -56,6 +56,31 @@ export class AgendaShellComponent implements OnInit {
   config = signal<AgendaConfig | null>(null);
   profissionais = signal<Profissional[]>([]);
   servicos = signal<Servico[]>([]);
+  recursos = signal<Recurso[]>([]);
+  loading = signal(false);
+
+  // Day view window presets
+  windowPreset = signal<'default' | '12-24' | '9-18' | '0-24' | 'custom'>('default');
+  customWindowStart = signal<number | null>(null);
+  customWindowEnd = signal<number | null>(null);
+
+  // Computed config with optional window overrides for the active view
+  viewConfig = computed<AgendaConfig | null>(() => {
+    const base = this.config();
+    if (!base) return null;
+    switch (this.windowPreset()) {
+      case '12-24': return { ...base, workStart: 12, workEnd: 24 };
+      case '9-18': return { ...base, workStart: 9, workEnd: 18 };
+      case '0-24': return { ...base, workStart: 0, workEnd: 24 };
+      case 'custom': {
+        const s = this.customWindowStart();
+        const e = this.customWindowEnd();
+        if (typeof s === 'number' && typeof e === 'number') return { ...base, workStart: s, workEnd: e };
+        return base;
+      }
+      default: return base;
+    }
+  });
 
   catalogPets = computed(() => catalogPetsFromAgendamentos(this.agendamentos()));
 
@@ -81,8 +106,8 @@ export class AgendaShellComponent implements OnInit {
       if (f.search) {
         const q = f.search.toLowerCase();
         if (
-          !a.pet?.nome?.toLowerCase().includes(q) &&
-          !a.pet?.tutor?.nome?.toLowerCase().includes(q) &&
+          !(a.pet?.nome || a.pet_nome || a.pet_nome_snapshot || '').toLowerCase().includes(q) &&
+          !(a.pet?.tutor?.nome || a.cliente_nome || a.cliente_nome_snapshot || '').toLowerCase().includes(q) &&
           !a.servico?.nome?.toLowerCase().includes(q) &&
           !a.profissional?.nome?.toLowerCase().includes(q)
         ) return false;
@@ -166,6 +191,7 @@ export class AgendaShellComponent implements OnInit {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       this.viewMode.set('LIST');
     }
+    void this.reloadFromApi();
   }
 
   private formatLocalYmd(d: Date): string {
@@ -250,6 +276,15 @@ export class AgendaShellComponent implements OnInit {
     this.viewMode.set(m);
   }
 
+  setWindow(preset: 'default' | '12-24' | '9-18' | '0-24' | 'custom', start?: number, end?: number): void {
+    if (preset === 'custom' && typeof start === 'number' && typeof end === 'number') {
+      this.customWindowStart.set(start);
+      this.customWindowEnd.set(end);
+    }
+    this.windowPreset.set(preset);
+  }
+
+  // ── Filters ─────────────────────────────────────────────────────────────
   onFiltersChange(f: AgendaFiltros): void {
     this.filters.set(f);
   }
@@ -330,4 +365,5 @@ export class AgendaShellComponent implements OnInit {
   isViewAvailable(m: ViewMode): boolean {
     return this.config()?.viewModes.includes(m) ?? true;
   }
+
 }

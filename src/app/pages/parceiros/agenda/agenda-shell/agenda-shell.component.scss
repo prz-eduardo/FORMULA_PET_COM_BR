@@ -31,6 +31,9 @@
   border-bottom: 1px solid var(--admin-border);
   flex-shrink: 0;
   flex-wrap: wrap;
+
+  position: relative;
+  z-index: 30; /* ensure toolbar stays above sticky grid header */
 }
 
 .toolbar-left {
@@ -181,6 +184,30 @@
   flex-direction: column;
 }
 
+// Time window preset buttons
+.window-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+}
+
+.window-btn {
+  background: none;
+  border: none;
+  border-right: 1px solid var(--admin-border);
+  color: var(--admin-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 8px;
+  transition: background 0.12s, color 0.12s;
+
+  &:last-child { border-right: none; }
+  &:hover { color: var(--admin-text); background: rgba(255, 255, 255, 0.04); }
+  &.active { background: rgba(13, 184, 222, 0.1); color: var(--admin-primary); }
+}
+
 // ── FAB (mobile only) ─────────────────────────────────────────────────────
 
 .fab {
@@ -223,4 +250,45 @@
   .btn-new { display: none; }
 
   .fab { display: flex; }
+}
+
+/* Extra mobile tweaks to avoid header growing too tall on very small screens */
+@media (max-width: 480px) {
+  .toolbar {
+    padding: 6px 10px;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .toolbar-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .date-label {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  .view-toggle {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .view-btn {
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+
+  .window-toggle {
+    display: none;
+  }
+
+  .nav-btn, .today-btn {
+    height: 28px;
+  }
 }

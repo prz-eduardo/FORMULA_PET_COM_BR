@@ -37,6 +37,14 @@
         </button>
       </div>
 
+      <!-- Time window presets (apenas no modo Dia) -->
+      <div *ngIf="viewMode() === 'DAY'" class="window-toggle" role="group" aria-label="Janela de horário">
+        <button class="window-btn" [class.active]="windowPreset() === 'default'" (click)="setWindow('default')">Padrão</button>
+        <button class="window-btn" [class.active]="windowPreset() === '12-24'" (click)="setWindow('12-24')">Meio-dia–Meia-noite</button>
+        <button class="window-btn" [class.active]="windowPreset() === '9-18'" (click)="setWindow('9-18')">09–18</button>
+        <button class="window-btn" [class.active]="windowPreset() === '0-24'" (click)="setWindow('0-24')">Todos</button>
+      </div>
+
       <!-- New appointment -->
       <button class="btn-new" (click)="openSidebar()">
         <span>+</span> Novo
@@ -59,7 +67,9 @@
         <app-agenda-grid
           [agendamentos]="agendamentosForView()"
           [profissionais]="profissionais()"
-          [config]="config()!"
+          [config]="viewConfig()!"
+          [workStart]="viewConfig()?.workStart"
+          [workEnd]="viewConfig()?.workEnd"
           [selectedDate]="selectedDate()"
           (slotClick)="openSidebar($event)"
           (quickAction)="onQuickAction($event)"

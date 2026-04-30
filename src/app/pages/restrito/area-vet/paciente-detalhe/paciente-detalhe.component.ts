@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService, PacienteDetail } from '../../../../services/api.service';
+import { AuthService } from '../../../../services/auth.service';
+import { ParceiroAuthService } from '../../../../services/parceiro-auth.service';
 import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 
 @Component({
@@ -14,12 +16,14 @@ import { NavmenuComponent } from '../../../../navmenu/navmenu.component';
 export class PacienteDetalheComponent {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private auth = inject(AuthService);
+  private parceiroAuth = inject(ParceiroAuthService);
 
   carregando = true;
   erro: string | null = null;
   data: PacienteDetail | null = null;
 
-  get token(): string | null { return localStorage.getItem('token') || sessionStorage.getItem('token'); }
+  get token(): string | null { try { return this.auth.getToken() || this.parceiroAuth.getToken() || localStorage.getItem('token') || sessionStorage.getItem('token'); } catch { return localStorage.getItem('token') || sessionStorage.getItem('token'); } }
 
   ngOnInit() { this.load(); }
 

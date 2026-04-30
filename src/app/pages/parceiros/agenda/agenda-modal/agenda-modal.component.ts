@@ -1,10 +1,19 @@
 import {
-  Component, Input, Output, EventEmitter, ChangeDetectionStrategy
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  AfterViewInit,
+  OnDestroy,
+  ViewChild,
+  ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Agendamento, AgendaStatus } from '../../../../types/agenda.types';
 import { getTime, toDate } from '../utils/date-helpers';
 import { AgendaApiService } from '../services/agenda-api.service';
+import { WebrtcService } from '../../../../services/webrtc.service';
 
 interface StatusStep {
   status: AgendaStatus;
@@ -16,12 +25,18 @@ interface StatusStep {
   selector: 'app-agenda-modal',
   standalone: true,
   imports: [CommonModule],
+  providers: [WebrtcService],
   templateUrl: './agenda-modal.component.html',
   styleUrls: ['./agenda-modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AgendaModalComponent {
-  constructor(private agendaApi: AgendaApiService) {}
+  @ViewChild('localVideo') localVideo!: ElementRef<HTMLVideoElement>;
+  @ViewChild('remoteVideo') remoteVideo!: ElementRef<HTMLVideoElement>;
+  private subs: any[] = [];
+  telemedicinaActive = false;
+
+  constructor(private agendaApi: AgendaApiService, private webrtc: WebrtcService) {}
 
   @Input() agendamento!: Agendamento;
   @Output() close = new EventEmitter<void>();
@@ -145,6 +160,15 @@ export class AgendaModalComponent {
         sala_codigo: joined.sala_codigo,
         signaling_channel: joined.signaling_channel,
       };
+      try {
+        await this.webrtc.joinCall(consultaId, joined.sala_codigo);
+        this.telemedicinaActive = true;
+      } catch (e) {
+        // não bloqueara exibição da sala, apenas avisar
+        window.alert(
+          'Não foi possível iniciar a media da telemedicina: ' + (((e as any)?.message) || String(e))
+        );
+      }
     } catch (err: any) {
       const msg = err?.error?.error || err?.error?.message || err?.message || 'Não foi possível entrar na chamada.';
       window.alert(msg);
@@ -152,4 +176,27 @@ export class AgendaModalComponent {
       this.telemedicinaLoading = false;
     }
   }
+
+  ngAfterViewInit(): void {
+    this.subs.push(this.webrtc.localStream$.subscribe((s: MediaStream | null) => {
+      try { if (this.localVideo?.nativeElement) this.localVideo.nativeElement.srcObject = s || null; } catch(e) {}
+    }));
+    this.subs.push(this.webrtc.remoteStream$.subscribe((s: MediaStream | null) => {
+      try { if (this.remoteVideo?.nativeElement) this.remoteVideo.nativeElement.srcObject = s || null; } catch(e) {}
+    }));
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((s) => s.unsubscribe?.());
+    try { this.webrtc.endCall(); } catch (e) {}
+  }
+
+  endCall(): void {
+    try { this.webrtc.endCall(); } catch (e) {}
+    this.telemedicinaActive = false;
+  }
+
+  toggleMute(): void { try { this.webrtc.toggleMute(); } catch (e) {} }
+
+  toggleVideo(): void { try { this.webrtc.toggleVideo(); } catch (e) {} }
 }

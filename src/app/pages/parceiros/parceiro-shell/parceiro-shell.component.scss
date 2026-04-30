@@ -249,3 +249,73 @@
   min-width: 0;
   min-height: 0;
 }
+
+/* Mobile hamburger menu styles */
+.burger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--admin-text);
+  font-size: 20px;
+  padding: 6px;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+}
+.burger-btn:hover { background: rgba(255,255,255,0.03); }
+
+@media (max-width: 768px) {
+  .header-nav { display: none; }
+  .burger-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+  .mobile-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--admin-surface);
+    border-bottom: 1px solid var(--admin-border);
+    box-shadow: var(--admin-shadow-md);
+    z-index: 150;
+    padding: 10px 12px;
+  }
+
+  .mobile-nav nav { display: flex; flex-direction: column; gap: 8px; }
+  .mobile-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    color: var(--admin-text);
+    text-decoration: none;
+    border-radius: var(--admin-radius-sm);
+  }
+
+  /* hide desktop user actions on mobile — moved into mobile menu */
+  .header-actions { display: none; }
+
+  /* hide inline tipo-badge (keeps visual from overflowing). mobile-brand shows badge */
+  .header-brand .tipo-badge { display: none; }
+
+  .mobile-brand { display:flex; align-items:center; justify-content:space-between; padding: 6px 4px 10px; border-bottom: 1px solid var(--admin-border); }
+  .mobile-brand-left { display:flex; align-items:center; gap:8px; }
+  .mobile-brand .brand-name { font-weight: var(--admin-font-weight-bold); color: var(--admin-text-strong); }
+  .mobile-brand .tipo-badge { font-size: 11px; padding: 4px 8px; }
+
+  .mobile-group-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 8px 10px;
+    color: var(--admin-text);
+    cursor: pointer;
+    border-radius: var(--admin-radius-sm);
+  }
+
+  .mobile-group-list { display: flex; flex-direction: column; gap: 6px; padding-left: 14px; }
+
+  .mobile-user { border-top: 1px solid var(--admin-border); padding-top: 8px; margin-top: 6px; display:flex; flex-direction:column; gap:6px; }
+  .mobile-user button { text-align: left; padding: 8px 10px; border-radius: var(--admin-radius-sm); }
+  .mobile-user-info { font-weight: var(--admin-font-weight-semibold); color: var(--admin-text-strong); }
+}
