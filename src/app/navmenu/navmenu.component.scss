@@ -663,6 +663,11 @@ nav.app-navbar {
       flex-shrink: 0;
       box-shadow: 0 4px 14px rgba(159, 224, 0, 0.34);
     }
+
+    &.ps-ribbon--closing {
+      animation: psRibbonOut 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      pointer-events: none;
+    }
   }
 
   // =============================================================================
@@ -973,6 +978,10 @@ nav.app-navbar.is-night .ps-dock {
 @keyframes psRibbonIn {
   0%   { opacity: 0; transform: translate(-50%, 8px); }
   100% { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes psRibbonOut {
+  0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 10px) scale(0.97); }
 }
 @keyframes psRibbonPulse {
   0%, 100% { box-shadow: 0 12px 32px rgba(6, 4, 24, 0.42), 0 0 0 1px ps.$ps-glass-line inset; }

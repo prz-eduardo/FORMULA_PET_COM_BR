@@ -196,6 +196,69 @@
       </button>
     </div>
 
+    <section class="consent-section">
+      <h3>Solicitações de vínculo</h3>
+      <p class="consent-sub">Empresas que pediram seu consentimento para acessar seus dados.</p>
+
+      <p class="consent-feedback error" *ngIf="consentError">{{ consentError }}</p>
+      <p class="consent-feedback ok" *ngIf="consentSuccess">{{ consentSuccess }}</p>
+
+      <div *ngIf="consentLoading" class="consent-empty">Carregando solicitações...</div>
+      <div *ngIf="!consentLoading && !pendingConvites.length" class="consent-empty">
+        Nenhuma solicitação pendente no momento.
+      </div>
+      <div class="consent-list" *ngIf="pendingConvites.length">
+        <article class="consent-item" *ngFor="let convite of pendingConvites">
+          <div class="consent-main">
+            <strong>{{ convite.parceiro_nome || ('Profissional #' + convite.parceiro_id) }}</strong>
+            <span>Escopo solicitado: {{ convite.escopo }}</span>
+          </div>
+          <div class="consent-actions">
+            <button
+              class="btn btn-accept"
+              type="button"
+              [disabled]="consentActionKey === 'accept:' + convite.id || consentActionKey === 'reject:' + convite.id"
+              (click)="aceitarConviteDados(convite)">
+              Aceitar
+            </button>
+            <button
+              class="btn btn-reject"
+              type="button"
+              [disabled]="consentActionKey === 'accept:' + convite.id || consentActionKey === 'reject:' + convite.id"
+              (click)="recusarConviteDados(convite)">
+              Recusar
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="consent-section">
+      <h3>Profissionais com acesso</h3>
+      <p class="consent-sub">Lista de parceiros/profissionais que já podem acessar seus dados.</p>
+
+      <div *ngIf="!consentLoading && !permissoesParceiros.length" class="consent-empty">
+        Nenhum profissional autorizado ainda.
+      </div>
+      <div class="consent-list" *ngIf="permissoesParceiros.length">
+        <article class="consent-item" *ngFor="let permissao of permissoesParceiros">
+          <div class="consent-main">
+            <strong>{{ permissao.parceiro_nome || ('Profissional #' + permissao.parceiro_id) }}</strong>
+            <span>Status: {{ permissao.status }} • Escopo: {{ permissao.escopo }}</span>
+          </div>
+          <div class="consent-actions" *ngIf="permissao.status === 'concedido'">
+            <button
+              class="btn btn-reject"
+              type="button"
+              [disabled]="consentActionKey === 'revoke:' + permissao.parceiro_id"
+              (click)="revogarPermissaoParceiro(permissao.parceiro_id)">
+              Revogar acesso
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <button class="logout-btn" (click)="openLogoutModal()" type="button" aria-label="Sair da conta">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

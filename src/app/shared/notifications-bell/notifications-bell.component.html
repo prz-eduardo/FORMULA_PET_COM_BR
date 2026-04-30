@@ -12,15 +12,16 @@
     </span>
   </button>
 
-  <div class="panel-backdrop" *ngIf="open && mobileLayout" (click)="close($event)" aria-hidden="true"></div>
+  <div class="panel-backdrop" *ngIf="open && overlayLayout" (click)="close($event)" aria-hidden="true"></div>
 
   <div
     class="panel"
     *ngIf="open"
     [class.panel--mobile]="mobileLayout"
+    [class.panel--overlay]="overlayLayout"
     (click)="$event.stopPropagation()"
-    [attr.aria-modal]="mobileLayout ? 'true' : null"
-    [attr.role]="mobileLayout ? 'dialog' : null"
+    [attr.aria-modal]="overlayLayout ? 'true' : null"
+    [attr.role]="overlayLayout ? 'dialog' : null"
   >
     <div class="panel-header">
       <strong>Notificações</strong>
@@ -51,7 +52,7 @@
           <i class="fa-solid fa-check-double"></i>
         </button>
         <button
-          *ngIf="mobileLayout"
+          *ngIf="overlayLayout"
           type="button"
           class="close"
           (click)="close($event)"

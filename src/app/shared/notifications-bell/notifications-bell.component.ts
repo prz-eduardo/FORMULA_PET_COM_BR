@@ -27,6 +27,7 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
 
   open = false;
   mobileLayout = false;
+  insideClienteModal = false;
   filter: 'all' | 'unread' = 'all';
 
   notifications: NotificationItem[] = [];
@@ -42,6 +43,7 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.insideClienteModal = !!this.host.nativeElement.closest('.cliente-modal-inner');
     this.syncViewportMode();
     this.subs.push(this.svc.notifications$.subscribe(list => {
       this.notifications = (list || []).filter(n => n.audience === this.audience);
@@ -53,6 +55,10 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subs.forEach(s => s.unsubscribe());
+  }
+
+  get overlayLayout(): boolean {
+    return this.mobileLayout || this.insideClienteModal;
   }
 
   get visible(): NotificationItem[] {
@@ -153,7 +159,7 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocClick(ev: MouseEvent) {
     if (!this.open) return;
-    if (this.mobileLayout) return;
+    if (this.overlayLayout) return;
     const t = ev.target as HTMLElement | null;
     if (t && this.host.nativeElement.contains(t)) return;
     this.close();

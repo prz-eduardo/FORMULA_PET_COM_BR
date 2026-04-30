@@ -76,6 +76,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   radialActions: QuickAction[] = [];
   /** Live Context Ribbon — visível quando há mensagem contextual relevante. */
   liveRibbon: { kind: 'cart' | 'reminder' | 'order'; text: string; cta?: string; link?: string } | null = null;
+  liveRibbonClosing = false;
+  private liveRibbonDismissed = false;
 
   // ─── Items: dock móvel = 4 abas + FAB ───────────────────────────────────────
   /**
@@ -195,11 +197,14 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   private menubarSettleTimer: ReturnType<typeof setTimeout> | null = null;
   private pillFlipClearTimer: ReturnType<typeof setTimeout> | null = null;
   private cartBadgeBumpTimer: ReturnType<typeof setTimeout> | null = null;
+  private liveRibbonCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private cartCountSeenFromStore = false;
   private clienteModalOpenSub?: Subscription;
   private nightSub?: Subscription;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private longPressFired = false;
+  private interactionDismissEventsBound = false;
+  private readonly interactionDismissEvents: Array<keyof DocumentEventMap> = ['pointerdown', 'touchstart', 'wheel', 'keydown'];
   private lastPillMetrics: { left: number; top: number; width: number; height: number; key: string } | null = null;
   private static readonly CLIENTE_MODAL_ENTER_MS = 720;
   private static readonly CLIENTE_MODAL_EXIT_MS = 500;
@@ -222,6 +227,8 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.restoreLiveRibbonDismissState();
+    this.bindInteractionDismissEvents();
     this.setCurrentRoutePath(this.router.url);
     this.updateMenuMode();
     this.refreshDockMode();
@@ -367,6 +374,11 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ─── Live Context Ribbon ────────────────────────────────────────────────────
   private recomputeRibbon(): void {
+    if (this.liveRibbonDismissed) {
+      this.liveRibbon = null;
+      this.liveRibbonClosing = false;
+      return;
+    }
     if (this.dockMode === 'guest' || this.dockMode === 'vet' || this.dockMode === 'parceiro') {
       this.liveRibbon = null;
       return;
@@ -395,6 +407,63 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.liveRibbon?.link) return;
     this.haptics.light();
     this.router.navigateByUrl(this.liveRibbon.link);
+  }
+
+  private bindInteractionDismissEvents(): void {
+    if (!isPlatformBrowser(this.platformId) || this.interactionDismissEventsBound) return;
+    this.interactionDismissEventsBound = true;
+    for (const ev of this.interactionDismissEvents) {
+      document.addEventListener(ev, this.onAnyPageInteraction, { passive: true });
+    }
+  }
+
+  private unbindInteractionDismissEvents(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.interactionDismissEventsBound) return;
+    for (const ev of this.interactionDismissEvents) {
+      document.removeEventListener(ev, this.onAnyPageInteraction);
+    }
+    this.interactionDismissEventsBound = false;
+  }
+
+  private onAnyPageInteraction = (): void => {
+    this.dismissLiveRibbon(true);
+  };
+
+  private dismissLiveRibbon(persist = false): void {
+    if (persist) this.persistLiveRibbonDismissState();
+    if (this.liveRibbonDismissed || this.liveRibbonClosing) return;
+    if (!this.liveRibbon) {
+      this.liveRibbonDismissed = true;
+      return;
+    }
+    this.liveRibbonClosing = true;
+    if (this.liveRibbonCloseTimer) clearTimeout(this.liveRibbonCloseTimer);
+    this.liveRibbonCloseTimer = setTimeout(() => {
+      this.liveRibbonCloseTimer = null;
+      this.liveRibbon = null;
+      this.liveRibbonClosing = false;
+      this.liveRibbonDismissed = true;
+      this.cdr.detectChanges();
+    }, 220);
+  }
+
+  private restoreLiveRibbonDismissState(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      this.liveRibbonDismissed = localStorage.getItem('fp_nav_ribbon_dismissed') === '1';
+    } catch {
+      this.liveRibbonDismissed = false;
+    }
+  }
+
+  private persistLiveRibbonDismissState(): void {
+    this.liveRibbonDismissed = true;
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      localStorage.setItem('fp_nav_ribbon_dismissed', '1');
+    } catch {
+      /* ignore */
+    }
   }
 
   // ─── Route helpers ──────────────────────────────────────────────────────────
@@ -837,7 +906,9 @@ export class NavmenuComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.menubarSettleTimer) clearTimeout(this.menubarSettleTimer);
     if (this.pillFlipClearTimer) clearTimeout(this.pillFlipClearTimer);
     if (this.cartBadgeBumpTimer) { clearTimeout(this.cartBadgeBumpTimer); this.cartBadgeBumpTimer = null; }
+    if (this.liveRibbonCloseTimer) { clearTimeout(this.liveRibbonCloseTimer); this.liveRibbonCloseTimer = null; }
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
+    this.unbindInteractionDismissEvents();
     this.trackResize?.disconnect();
     this.trackResize = null;
     this.tabPillLayoutGen += 1;

@@ -642,6 +642,20 @@ export class ApiService {
     );
   }
 
+  acceptConviteDadosParceiro(conviteToken: string, clienteId: number) {
+    return this.http.post<{ permissao?: unknown }>(
+      `${this.baseUrl}/convites/accept`,
+      { token: conviteToken, cliente_id: clienteId }
+    );
+  }
+
+  rejectConviteDadosParceiro(conviteToken: string, clienteId: number) {
+    return this.http.post<{ ok?: boolean }>(
+      `${this.baseUrl}/convites/reject`,
+      { token: conviteToken, cliente_id: clienteId }
+    );
+  }
+
   getMinhaGaleriaFotos(token: string) {
     return this.http.get<ClienteGaleriaFoto[]>(`${this.baseUrl}/clientes/me/galeria-fotos`, {
       headers: { Authorization: `Bearer ${token}` }

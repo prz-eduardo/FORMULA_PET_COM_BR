@@ -23,6 +23,24 @@ interface Pet {
   photoURL?: string;
 }
 
+interface ConviteDadosPendente {
+  id: number;
+  parceiro_id: number;
+  parceiro_nome?: string | null;
+  escopo: string;
+  token: string;
+  status: string;
+  created_at?: string;
+}
+
+interface PermissaoParceiro {
+  id: number;
+  parceiro_id: number;
+  parceiro_nome?: string | null;
+  status: string;
+  escopo: string;
+}
+
 @Component({
   selector: 'app-area-cliente',
   standalone: true, // <-- importante
@@ -49,6 +67,12 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   private _rejectProfile?: (err?: any) => void;
   private profileLoading: boolean = false;
   private lastProfileToken?: string | null = null;
+  consentLoading = false;
+  consentError: string | null = null;
+  consentSuccess: string | null = null;
+  consentActionKey: string | null = null;
+  pendingConvites: ConviteDadosPendente[] = [];
+  permissoesParceiros: PermissaoParceiro[] = [];
 
   // Internal navigation state when in modal
   internalView: 'meus-pedidos' | 'meus-pets' | 'novo-pet' | 'perfil' | 'meus-enderecos' | 'meus-cartoes' | 'telemedicina' | 'suporte' | 'postar-foto' | 'minha-galeria' | null = null;
@@ -93,7 +117,9 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
   onLogin() {
     this.hasAuth = !!this.auth.getToken() && !!this.getStoredUserType();
     if (this.hasAuth) {
-      this.loadProfile(this.auth.getToken()!);
+      const token = this.auth.getToken()!;
+      this.loadProfile(token);
+      this.loadConsentimentoData(token);
       this.queueInitialViewOpen();
     }
   }
@@ -103,6 +129,10 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.hasAuth = false;
     this.clienteData = null;
     this.pets = [];
+    this.pendingConvites = [];
+    this.permissoesParceiros = [];
+    this.consentError = null;
+    this.consentSuccess = null;
     if (this.isBrowser) {
       localStorage.removeItem('userType');
       sessionStorage.removeItem('userType');
@@ -166,6 +196,7 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
     this.pendingInitialView = this.initialView;
     if (this.hasAuth && token) {
       this.loadProfile(token);
+      this.loadConsentimentoData(token);
       this.queueInitialViewOpen();
     }
 
@@ -177,11 +208,14 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
       if (this.hasAuth && tokenNow) {
         // refresh profile quickly
         this.loadProfile(tokenNow);
+        this.loadConsentimentoData(tokenNow);
         this.queueInitialViewOpen();
       } else {
         // reflect logout immediately in the modal
         this.clienteData = null;
         this.pets = [];
+        this.pendingConvites = [];
+        this.permissoesParceiros = [];
       }
     });
 
@@ -299,6 +333,107 @@ export class AreaClienteComponent implements OnInit, OnDestroy {
         this.profileLoading = false;
         this.profilePromise = undefined;
       }
+    });
+  }
+
+  private loadConsentimentoData(token: string): void {
+    this.consentLoading = true;
+    this.consentError = null;
+
+    this.api.listClienteConvitesDadosPendentes(token).subscribe({
+      next: (res) => {
+        this.pendingConvites = Array.isArray(res?.convites) ? res.convites : [];
+      },
+      error: () => {
+        this.pendingConvites = [];
+      },
+    });
+
+    this.api.listClientePermissoesDadosParceiros(token).subscribe({
+      next: (res) => {
+        this.permissoesParceiros = Array.isArray(res?.permissoes) ? res.permissoes : [];
+        this.consentLoading = false;
+      },
+      error: (err) => {
+        this.permissoesParceiros = [];
+        this.consentLoading = false;
+        this.consentError =
+          (err && err.error && (err.error.message || err.error.error)) ||
+          'Não foi possível carregar as permissões de dados.';
+      },
+    });
+  }
+
+  aceitarConviteDados(convite: ConviteDadosPendente): void {
+    const clienteId = Number(this.clienteData?.id);
+    const conviteToken = String(convite?.token || '');
+    const authToken = this.auth.getToken();
+    if (!authToken || !clienteId || !conviteToken) return;
+
+    this.consentActionKey = `accept:${convite.id}`;
+    this.consentError = null;
+    this.consentSuccess = null;
+    this.api.acceptConviteDadosParceiro(conviteToken, clienteId).subscribe({
+      next: () => {
+        this.consentSuccess = 'Solicitação aceita com sucesso.';
+        this.loadConsentimentoData(authToken);
+      },
+      error: (err) => {
+        this.consentError =
+          (err && err.error && (err.error.message || err.error.error)) ||
+          'Não foi possível aceitar a solicitação.';
+      },
+      complete: () => {
+        this.consentActionKey = null;
+      },
+    });
+  }
+
+  recusarConviteDados(convite: ConviteDadosPendente): void {
+    const clienteId = Number(this.clienteData?.id);
+    const conviteToken = String(convite?.token || '');
+    const authToken = this.auth.getToken();
+    if (!authToken || !clienteId || !conviteToken) return;
+
+    this.consentActionKey = `reject:${convite.id}`;
+    this.consentError = null;
+    this.consentSuccess = null;
+    this.api.rejectConviteDadosParceiro(conviteToken, clienteId).subscribe({
+      next: () => {
+        this.consentSuccess = 'Solicitação recusada.';
+        this.loadConsentimentoData(authToken);
+      },
+      error: (err) => {
+        this.consentError =
+          (err && err.error && (err.error.message || err.error.error)) ||
+          'Não foi possível recusar a solicitação.';
+      },
+      complete: () => {
+        this.consentActionKey = null;
+      },
+    });
+  }
+
+  revogarPermissaoParceiro(parceiroId: number): void {
+    const authToken = this.auth.getToken();
+    if (!authToken || !parceiroId) return;
+
+    this.consentActionKey = `revoke:${parceiroId}`;
+    this.consentError = null;
+    this.consentSuccess = null;
+    this.api.revokeClientePermissaoParceiro(authToken, parceiroId).subscribe({
+      next: () => {
+        this.consentSuccess = 'Acesso revogado com sucesso.';
+        this.loadConsentimentoData(authToken);
+      },
+      error: (err) => {
+        this.consentError =
+          (err && err.error && (err.error.message || err.error.error)) ||
+          'Não foi possível revogar o acesso.';
+      },
+      complete: () => {
+        this.consentActionKey = null;
+      },
     });
   }
 

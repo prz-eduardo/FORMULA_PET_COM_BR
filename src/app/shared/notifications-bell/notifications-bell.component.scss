@@ -72,13 +72,27 @@
   animation: fadeDown .15s ease-out;
 }
 
+.panel--overlay {
+  position: fixed;
+  top: 50%;
+  right: auto;
+  left: 50%;
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(72vh, calc(100dvh - 48px));
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.32);
+  animation: fadePanelMobile .2s ease-out;
+  z-index: 2000060;
+}
+
 .panel-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
-  z-index: 10001;
+  z-index: 2000059;
   animation: fadeBackdrop .18s ease-out;
 }
 
